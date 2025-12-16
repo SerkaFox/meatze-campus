@@ -1,0 +1,422 @@
+{# panel/tabs/calendario.html #}
+
+<div id="mzt-cal"></div>
+
+<style>
+  /* ==== ТВОЙ СТАРЫЙ СТИЛЬ КАЛЕНДАРЯ ==== */
+  #mzt-cal .mzc-grid7{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  #mzt-cal .mzc-dow{font-size:11px;color:#6b7a90;text-align:center}
+  #mzt-cal .mzc-cell{
+    position:relative;height:42px;border:1px solid #e9f0f7;border-radius:10px;
+    background:#f8fafc;display:flex;align-items:flex-start;justify-content:center;
+    padding-top:6px;font-size:12px;color:#1f2a44
+  }
+  #mzt-cal .mzc-leg{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
+  #mzt-cal .mzc-legItem{display:flex;gap:6px;align-items:center;font-size:12px}
+  #mzt-cal .mzc-dot{width:14px;height:8px;border-radius:4px}
+  #mzt-cal .mzc-chip{display:inline-flex;gap:6px;align-items:center;border:1px solid #e6eef8;border-radius:999px;padding:3px 8px;margin:3px 6px 0 0}
+  #mzt-cal .mzc-badge-aula{position:absolute;top:2px;left:2px;padding:2px 6px;border-radius:999px;font-size:10px;line-height:1;font-weight:800;background:#0e73b8;color:#fff;pointer-events:none}
+  #mzt-cal .mzc-badge-note{position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;background:#eef5fb;border:1px solid #dbe3ee;color:#0e73b8;pointer-events:none}
+</style>
+
+<script>
+  // ── MZPanel shim ──
+  window.MZPanel = window.MZPanel || (() => {
+    const tabs = {};
+    return {
+      registerTab(name, def){ tabs[name] = def },
+      async mount(name, root, ctx){
+        const t = tabs[name]; if (!t) return;
+        try { await t.mount(root, ctx); } catch(e){ console.warn('[MZPanel] mount error', e); }
+      },
+      async unmount(name, root){
+        const t = tabs[name];
+        try { await t?.unmount?.(root); } catch(e){ console.warn('[MZPanel] unmount error', e); }
+      }
+    };
+  })();
+</script>
+
+<script>
+  // ==== ТВОЙ СТАРЫЙ КАЛЕНДАРЬ (curso/práctica, легенда модулей и т.п.) ====
+  // НИЖЕ — 1:1 ТО, ЧТО ТЫ ПРИСЛАЛ
+  MZPanel.registerTab('cal', {
+    label:'Calendario',
+    async mount(root, {code, api, V5_API, USER_ID, IS_TEACHER}){
+  const ctx = { USER_ID, IS_TEACHER }; // чтобы твой код ниже работал
+
+
+      // helpers
+      const pad2 = n => String(n).padStart(2,'0');
+      const ymd  = d => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+      const title= d => d.toLocaleString('es-ES',{month:'long',year:'numeric'}).replace(/^./,s=>s.toUpperCase());
+      const hashStr=str=>{ let h=2166136261>>>0; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=(h>>>0)*16777619>>>0; } return h>>>0; };
+      const GOLD = 137.508; // golden angle
+const colorForKey = (key) => {
+  const h = (hashStr(String(key)) * GOLD) % 360;
+  const s = 78;  // не слишком кислотно
+  const l = 78;  // чуть темнее, чем 85, лучше различимость
+  return `hsl(${h} ${s}% ${l}%)`;
+};
+
+
+      const pureKey = (it) => {
+        const raw = (it.nota && it.nota.trim())
+          ? it.nota.trim()
+          : `${(it.desde||'').slice(0,5)}-${(it.hasta||'').slice(0,5)}`;
+        return String(raw).split(' · ')[0];
+      };
+
+      const minsBetween = (a,b)=>{
+        const [h1,m1]=(a||'').slice(0,5).split(':').map(Number);
+        const [h2,m2]=(b||'').slice(0,5).split(':').map(Number);
+        if (Number.isNaN(h1)||Number.isNaN(h2)) return 0;
+        return Math.max(0,(h2*60+m2)-(h1*60+m1));
+      };
+
+      const firstMonthFromState = (state)=>{
+        const dates = [...state.det.keys()].sort();
+        if (!dates.length) return null;
+        const [y,m] = dates[0].split('-').map(Number);
+        return new Date(y, m-1, 1);
+      };
+
+      // === 1) узнаём текущего пользователя через /me ===
+async function resolveUserScope() {
+  const userId = (USER_ID != null) ? String(USER_ID) : '';
+  const isTeacher = !!IS_TEACHER;
+
+  console.log('[cal] scope from ctx', { userId, isTeacher });
+
+  if (isTeacher) return { tipo:'curso', grupo:'', isTeacher:true, userId };
+  return { tipo:'curso', grupo:'', isTeacher:false, userId };
+}
+
+
+
+      // === 2) загрузка календаря ===
+async function loadCalendar(scope={tipo:'curso',grupo:''}){
+  const params = new URLSearchParams();
+  params.set('tipo', scope.tipo === 'practica' ? 'practica' : 'curso');
+  if (scope.tipo === 'practica' && scope.grupo) params.set('grupo', scope.grupo);
+
+  const url = `${V5_API}/curso/${encodeURIComponent(code)}/horario?${params.toString()}`;
+  const r = await api(url);
+  const items = Array.isArray(r.items)? r.items : [];
+
+  const normTipo = it => (String(it.tipo||'').trim() || 'curso');
+
+  let filtered = items;
+  if (scope.tipo === 'curso') {
+    filtered = items.filter(it => normTipo(it) !== 'practica');
+  } else {
+    filtered = items.filter(it => normTipo(it) === 'practica');
+    if (scope.grupo) {
+      const g = String(scope.grupo);
+      filtered = filtered.filter(it => String(it.grupo || '') === g);
+    }
+  }
+
+
+        const keys = new Set();
+        const det  = new Map();
+        const map  = new Map();
+
+        filtered.forEach(it=>{
+          const f = it.fecha;
+          if (!f) return;
+          const k = pureKey(it);
+          if (k) keys.add(k);
+
+          const list = det.get(f)||[];
+          list.push(it);
+          det.set(f,list);
+
+          const arr = map.get(f)||[];
+          if (!arr.includes(k) && arr.length<2) arr.push(k);
+          map.set(f,arr);
+        });
+
+        return { map, keys, det, scope };
+      }
+
+      let month = null;
+
+      function render(root, state){
+        root.innerHTML = `
+          <div class="mzc-card" id="mzt-cal">
+            <div class="mzc-cal">
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+                <div class="mz-seg" role="tablist" aria-label="Ámbito">
+				   <button class="mzc-btn ghost" id="mc-scope-curso"
+						data-action="calendar.scope.curso">
+				  Curso
+				</button>
+
+				<button class="mzc-btn ghost" id="mc-scope-prac"
+						data-action="calendar.scope.practica">
+				  Práctica
+				</button>
+                </div>
+              </div>
+
+<div class="mzc-calHead" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0">
+  <button class="mzc-btn ghost" id="mcal-prev" data-action="calendar.month.prev">Mes anterior</button>
+
+  <strong id="mcal-title" style="font-size:14px"></strong>
+
+  <button class="mzc-btn ghost" id="mcal-next" data-action="calendar.month.next">Mes siguiente</button>
+</div>
+
+
+              <div class="mzc-grid7" id="mcal-dow"></div>
+              <div class="mzc-leg" id="mcal-legend"></div>
+              <div class="mzc-grid7" id="mcal-grid"></div>
+              <div class="mzc-day" id="mcal-day" style="margin-top:8px"></div>
+            </div>
+          </div>`;
+
+        ['L','M','X','J','V','S','D'].forEach(x=>{
+          const e=document.createElement('div'); e.className='mzc-dow'; e.textContent=x;
+          root.querySelector('#mcal-dow').appendChild(e);
+        });
+
+        if (!month) {
+          const m0 = firstMonthFromState(state);
+          if (m0) month = m0;
+          else {
+            const now = new Date();
+            month = new Date(now.getFullYear(), now.getMonth(), 1);
+          }
+        }
+
+        function syncScopeButtons(){
+          const bCurso = root.querySelector('#mc-scope-curso');
+          const bPrac  = root.querySelector('#mc-scope-prac');
+          [bCurso,bPrac].forEach(b=>b.classList.remove('is-act'));
+          (state.scope?.tipo === 'practica' ? bPrac : bCurso).classList.add('is-act');
+
+          if (state.scope.isTeacher) {
+            bPrac.disabled = true;
+            bPrac.style.opacity = '0.4';
+            bPrac.title = 'Las prácticas se gestionan sólo para el alumnado.';
+          }
+        }
+
+        function renderLegend(){
+          const box = root.querySelector('#mcal-legend');
+
+          if (state.scope.tipo === 'practica') {
+            const all = [...state.det.entries()];
+            if (!all.length) { box.innerHTML = ''; return; }
+
+            const fechas = all.map(([d]) => d).sort();
+            const primero = fechas[0];
+            const ultimo  = fechas[fechas.length - 1];
+            const sample  = all[0][1][0] || {};
+
+            const empresa   = sample.aula || '—';
+            const direccion = sample.nota || '—';
+            const horario   = (sample.desde && sample.hasta)
+              ? `${sample.desde} – ${sample.hasta}` : '—';
+
+            box.innerHTML = `
+              <div style="
+                font-size:14px;
+                line-height:1.45;
+                padding:10px 12px;
+                border-radius:10px;
+                border:1px solid #d6e3f1">
+                <div><b>Empresa:</b> ${empresa}</div>
+                <div><b>Dirección:</b> ${direccion}</div>
+                <div><b>Horario:</b> ${horario}</div>
+                <div><b>Inicio:</b> ${primero}</div>
+                <div><b>Fin:</b> ${ultimo}</div>
+              </div>`;
+            return;
+          }
+
+          const list = [...state.keys]
+            .map(k => String(k).trim())
+            .filter(Boolean)
+            .sort((a,b)=> a.localeCompare(b,'es',{numeric:true,sensitivity:'base'}));
+
+          box.innerHTML = list.map(k => `
+            <div class="mzc-legItem" title="${k}">
+              <span class="mzc-dot" style="background:${colorForKey(k)}"></span>
+              ${k}
+            </div>
+          `).join('');
+        }
+
+        function renderMonth(){
+          root.querySelector('#mcal-title').textContent = title(month);
+          const grid = root.querySelector('#mcal-grid'); 
+          grid.innerHTML='';
+
+          const first=month, last=new Date(month.getFullYear(),month.getMonth()+1,0);
+          const start=(first.getDay()+6)%7;
+
+          for(let i=0;i<start;i++){
+            const c=document.createElement('div'); c.className='mzc-cell mzc-out'; grid.appendChild(c);
+          }
+
+          for(let d=1; d<=last.getDate(); d++){
+            const dt=new Date(first.getFullYear(), first.getMonth(), d);
+            const key=ymd(dt);
+            const cell=document.createElement('div');
+            cell.className='mzc-cell';
+            cell.textContent=d;
+
+            const dayList = (state.det.get(key) || []).slice()
+              .sort((a,b)=> String(a.desde).localeCompare(String(b.desde)));
+
+            if (dayList.length){
+              const mins = dayList.map(it => minsBetween(it.desde, it.hasta));
+              const total = Math.max(1, mins.reduce((s,v)=>s+v,0));
+              let acc = 0;
+              const stops = dayList.map((it,i)=>{
+                const k = pureKey(it);
+                const color = colorForKey(k);
+                const from = (acc/total*100).toFixed(2)+'%';
+                acc += mins[i];
+                const to   = (acc/total*100).toFixed(2)+'%';
+                return `${color} ${from} ${to}`;
+              });
+              cell.style.background = `linear-gradient(135deg, ${stops.join(', ')})`;
+              cell.style.borderColor='rgba(0,0,0,.06)';
+
+              const tip = dayList
+                .map(it => `${it.desde}–${it.hasta}${it.aula ? ` · AULA: ${it.aula}` : ''}${it.nota ? ` · ${it.nota}` : ''}`)
+                .join('\n');
+              if (tip) { cell.title = tip; cell.setAttribute('aria-label', tip); }
+
+              if (state.scope.tipo === 'practica'){
+                const it = dayList[0];
+                const badge = document.createElement('div');
+                badge.style = `
+                  position:absolute; bottom:2px; left:50%; transform:translateX(-50%);
+                  font-size:10px; font-weight:600; color:#0e73b8`;
+                badge.textContent = `${it.desde}–${it.hasta}`;
+                cell.appendChild(badge);
+              }
+            }
+
+            cell.addEventListener('click', ()=> renderDay(key));
+            grid.appendChild(cell);
+          }
+        }
+
+        function renderDay(key){
+          const box = root.querySelector('#mcal-day');
+          const list = state.det.get(key)||[];
+          if (!list.length){
+            box.innerHTML = `<div class="mzc-muted">No hay sesiones para el ${key}.</div>`;
+            return;
+          }
+
+          const chips = list
+            .sort((a,b)=>String(a.desde).localeCompare(String(b.desde)))
+            .map(it=>{
+              const ck = pureKey(it);
+              return `<span class="mzc-chip">
+                        <span class="mzc-dot" style="background:${colorForKey(ck)}"></span>
+                        ${it.desde}–${it.hasta}${it.aula? ' · ' + it.aula : ''}${it.nota? ' · ' + it.nota : ''}
+                      </span>`;
+            }).join('');
+
+          box.innerHTML = `<div><b>${key}</b></div><div style="margin-top:6px">${chips}</div>`;
+        }
+
+        root.querySelector('#mcal-prev').onclick = ()=>{
+          month=new Date(month.getFullYear(),month.getMonth()-1,1);
+          renderMonth();
+        };
+        root.querySelector('#mcal-next').onclick = ()=>{
+          month=new Date(month.getFullYear(),month.getMonth()+1,1);
+          renderMonth();
+        };
+
+        async function changeScope(next){
+          if (state.scope.isTeacher && next.tipo === 'practica') return;
+
+          const merged = { ...state.scope, ...next };
+
+          if (!merged.isTeacher && merged.tipo === 'practica' && merged.userId) {
+            merged.grupo = `alumno:${merged.userId}`;
+          } else if (merged.tipo === 'curso') {
+            merged.grupo = '';
+          }
+
+          const st = await loadCalendar(merged);
+          state = st;
+
+          const m0 = firstMonthFromState(state);
+          if (m0) month = m0;
+          root.querySelector('#mcal-day').innerHTML = '';
+          if (merged.tipo === 'practica' && state.det.size === 0) {
+            root.querySelector('#mcal-day').innerHTML =
+              '<div class="mzc-note">No hay prácticas asignadas para este alumnado.</div>';
+          }
+          syncScopeButtons();
+          renderLegend();
+          renderMonth();
+        }
+
+        root.querySelector('#mc-scope-curso').onclick = ()=> changeScope({tipo:'curso'});
+        root.querySelector('#mc-scope-prac').onclick  = ()=> changeScope({tipo:'practica'});
+
+        syncScopeButtons();
+        renderLegend();
+        renderMonth();
+      }
+
+      // === 4) старт ===
+      const baseScope = await resolveUserScope();
+      let state  = await loadCalendar(baseScope);
+
+      if (![...state.map.keys()].length && baseScope.tipo === 'practica') {
+        const fallbackScope = { ...baseScope, tipo: 'curso', grupo: '' };
+        state = await loadCalendar(fallbackScope);
+      }
+
+      if (![...state.map.keys()].length){
+        root.innerHTML = '<div class="mzc-note">No hay sesiones.</div>';
+        return;
+      }
+
+      const m0 = firstMonthFromState(state);
+      if (m0) month = m0;
+
+      render(root, state);
+    },
+    unmount(){ }
+  });
+</script>
+
+<script>
+  // ==== МОНТИРУЕМ ТАБ В DJANGO-ПАНЕЛЬ ====
+  document.addEventListener('DOMContentLoaded', function(){
+    const root = document.getElementById('mzt-cal');
+    if (!root || !window.MZPanel) return;
+
+    // простой helper для GET-запросов к V5 API
+    const api = async (url, options={}) => {
+      const opts = Object.assign({ credentials: 'include' }, options || {});
+      const res  = await fetch(url, opts);
+      const ct   = res.headers.get('content-type') || '';
+      if (ct.includes('application/json')) return res.json();
+      return res.text();
+    };
+
+MZPanel.mount('cal', root, {
+  code: "{{ curso.codigo|escapejs }}",
+  api,
+  V5_API: "/meatze/v5",
+  USER_ID: {{ USER_ID|default:"null" }},
+  IS_TEACHER: {{ IS_TEACHER|yesno:"true,false" }}
+});
+
+
+  });
+</script>

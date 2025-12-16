@@ -1,0 +1,50 @@
+<div class="mz-info-card" data-action="course.info.view">
+
+  <div class="mz-info-head">
+    <h4 class="mz-info-title">{{ curso.titulo }}</h4>
+
+    <div class="mz-info-meta">
+      <div class="mz-info-line">
+        <span class="mz-info-label">Código</span>
+        <span class="mz-info-value">{{ curso.codigo }}</span>
+      </div>
+
+      <div class="mz-info-line">
+        <span class="mz-info-label">Fechas</span>
+        <span class="mz-info-value">
+          {% if curso.fecha_inicio %}{{ curso.fecha_inicio }}{% endif %}
+          {% if curso.fecha_fin %} → {{ curso.fecha_fin }}{% endif %}
+        </span>
+      </div>
+
+      <div class="mz-info-line">
+        <span class="mz-info-label">Duración total</span>
+        <span class="mz-info-value">
+          {{ total_hours|floatformat:"-0" }} h
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="mz-info-mods">
+    <div class="mz-info-mods-head">
+      <span class="mz-info-mods-title">Módulos</span>
+      <span class="mz-info-chip">
+        {{ mods|length }} módulos · {{ total_hours|floatformat:"-0" }} h
+      </span>
+    </div>
+
+    <ul class="mz-info-mods-list">
+      {% for m in mods %}
+        <li class="mz-info-mod-item">
+          <div class="mz-info-mod-name">
+            {{ m.name }}
+          </div>
+          <div class="mz-info-mod-hours">
+            {{ m.hours|floatformat:"-0" }} h
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>

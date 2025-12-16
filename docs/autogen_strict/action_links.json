@@ -1,0 +1,1133 @@
+{
+  "actions": [
+    {
+      "selector": null,
+      "event": "click",
+      "line": 34,
+      "handlerName": null,
+      "calls": [
+        "$"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/admin-core.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 71,
+      "handlerName": null,
+      "calls": [
+        "$",
+        "trim",
+        "tryTokenShared"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/admin-core.js"
+    },
+    {
+      "selector": null,
+      "event": "keydown",
+      "line": 83,
+      "handlerName": null,
+      "calls": [
+        "preventDefault",
+        "$",
+        "click"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/admin-core.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 142,
+      "handlerName": null,
+      "calls": [
+        "showPanel"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/admin-core.js"
+    },
+    {
+      "selector": null,
+      "event": "DOMContentLoaded",
+      "line": 157,
+      "handlerName": "initPanelsOnce",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/admin-core.js"
+    },
+    {
+      "selector": null,
+      "event": "input",
+      "line": 165,
+      "handlerName": "updateCounters",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/cursos.js"
+    },
+    {
+      "selector": null,
+      "event": "paste",
+      "line": 166,
+      "handlerName": null,
+      "calls": [
+        "setTimeout"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/cursos.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 357,
+      "handlerName": null,
+      "calls": [
+        "getAttribute",
+        "setAttribute"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/cursos.js"
+    },
+    {
+      "selector": null,
+      "event": "change",
+      "line": 414,
+      "handlerName": "updateAssignedTeachers",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/cursos.js"
+    },
+    {
+      "selector": "#mzc-ca-reload",
+      "event": "click",
+      "line": 415,
+      "handlerName": null,
+      "calls": [
+        "loadAssignForm",
+        "updateAssignedTeachers"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/cursos.js"
+    },
+    {
+      "selector": "#mzc-ca-assign",
+      "event": "click",
+      "line": 421,
+      "handlerName": null,
+      "calls": [
+        "trim",
+        "getSelectedTeacherIdsFromChips",
+        "qs",
+        "auth",
+        "stringify",
+        "apiJSON",
+        "updateAssignedTeachers"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/cursos.js"
+    },
+    {
+      "selector": null,
+      "event": "mz:admin-auth",
+      "line": 443,
+      "handlerName": null,
+      "calls": [
+        "initCursosOnce"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/cursos.js"
+    },
+    {
+      "selector": "#ui-cursos",
+      "event": "mz:pane:show",
+      "line": 446,
+      "handlerName": null,
+      "calls": [
+        "initCursosOnce"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/cursos.js"
+    },
+    {
+      "selector": null,
+      "event": "change",
+      "line": 439,
+      "handlerName": null,
+      "calls": [
+        "clearGrid",
+        "get",
+        "openCurso"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "input",
+      "line": 452,
+      "handlerName": null,
+      "calls": [
+        "updateAutoPreview"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "change",
+      "line": 461,
+      "handlerName": "recalcHorasFromEnd",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "change",
+      "line": 466,
+      "handlerName": null,
+      "calls": [
+        "updateAmbitoUI",
+        "clear",
+        "loadAlumnosForCurso",
+        "autoJumpToFirstDate",
+        "renderMonth"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "change",
+      "line": 481,
+      "handlerName": null,
+      "calls": [
+        "clear",
+        "renderMonth",
+        "autoJumpToFirstDate"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 493,
+      "handlerName": null,
+      "calls": [
+        "getFullYear",
+        "getMonth",
+        "renderMonth"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 498,
+      "handlerName": null,
+      "calls": [
+        "getFullYear",
+        "getMonth",
+        "renderMonth"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 503,
+      "handlerName": "exportWordGraphicAll",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 507,
+      "handlerName": null,
+      "calls": [
+        "getFullYear",
+        "loadFixedNonlective",
+        "String",
+        "split",
+        "map",
+        "compressDateList"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 544,
+      "handlerName": null,
+      "calls": [
+        "getFullYear",
+        "parseYearFieldExpanded",
+        "String",
+        "join",
+        "saveFixedNonlective",
+        "updateAutoPreview"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "change",
+      "line": 569,
+      "handlerName": null,
+      "calls": [
+        "loadHolidaysAndRenderList",
+        "updateAutoPreview"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "change",
+      "line": 576,
+      "handlerName": null,
+      "calls": [
+        "updateAutoPreview"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "(unknown event)",
+      "line": 585,
+      "handlerName": "updateAutoPreview",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "(unknown event)",
+      "line": 586,
+      "handlerName": "updateAutoPreview",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "(unknown event)",
+      "line": 587,
+      "handlerName": "updateAutoPreview",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "(unknown event)",
+      "line": 588,
+      "handlerName": "updateAutoPreview",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "(unknown event)",
+      "line": 591,
+      "handlerName": "updateAutoPreview",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "(unknown event)",
+      "line": 592,
+      "handlerName": "updateAutoPreview",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "(unknown event)",
+      "line": 595,
+      "handlerName": "updateAutoPreview",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 599,
+      "handlerName": "autofillByModules",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "mz:cursos-updated",
+      "line": 631,
+      "handlerName": null,
+      "calls": [
+        "loadCursos",
+        "has",
+        "get",
+        "openCurso"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "pointerdown",
+      "line": 839,
+      "handlerName": null,
+      "calls": [
+        "preventDefault",
+        "selectRange",
+        "has",
+        "toggleCell"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "pointerenter",
+      "line": 847,
+      "handlerName": null,
+      "calls": [
+        "toggleCell"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "pointerup",
+      "line": 854,
+      "handlerName": null,
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "mz:admin-auth",
+      "line": 1852,
+      "handlerName": null,
+      "calls": [
+        "initOnce"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": "#ui-horarios",
+      "event": "mz:pane:show",
+      "line": 1855,
+      "handlerName": null,
+      "calls": [
+        "initOnce"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/horarios.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 84,
+      "handlerName": null,
+      "calls": [
+        "delete",
+        "$",
+        "from",
+        "forEach",
+        "renderSelectedRecipients",
+        "updatePreview"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/subs.js"
+    },
+    {
+      "selector": null,
+      "event": "change",
+      "line": 635,
+      "handlerName": "syncPicked",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/subs.js"
+    },
+    {
+      "selector": null,
+      "event": "change",
+      "line": 641,
+      "handlerName": null,
+      "calls": [
+        "drawSubs",
+        "updatePreview"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/subs.js"
+    },
+    {
+      "selector": null,
+      "event": "change",
+      "line": 650,
+      "handlerName": null,
+      "calls": [
+        "from",
+        "addWaSelected",
+        "forEach"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/subs.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 658,
+      "handlerName": null,
+      "calls": [
+        "updateProgress"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/subs.js"
+    },
+    {
+      "selector": null,
+      "event": "input",
+      "line": 666,
+      "handlerName": "updatePreview",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/subs.js"
+    },
+    {
+      "selector": null,
+      "event": "input",
+      "line": 671,
+      "handlerName": null,
+      "calls": [
+        "querySelector",
+        "syncPicked",
+        "applyWaSearchFilter",
+        "drawSubs"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/subs.js"
+    },
+    {
+      "selector": null,
+      "event": "change",
+      "line": 695,
+      "handlerName": null,
+      "calls": [
+        "updatePreview"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/subs.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 707,
+      "handlerName": null,
+      "calls": [
+        "updatePreview"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/subs.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 718,
+      "handlerName": null,
+      "calls": [
+        "drawSubs"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/subs.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 724,
+      "handlerName": null,
+      "calls": [
+        "drawSubs"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/subs.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 732,
+      "handlerName": null,
+      "calls": [
+        "$",
+        "trim",
+        "alert",
+        "qs",
+        "auth",
+        "stringify",
+        "apiJSON",
+        "loadSubs"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/subs.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 758,
+      "handlerName": "handleWaImport",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/subs.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 763,
+      "handlerName": "sendNow",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/subs.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 768,
+      "handlerName": "loadSubs",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/subs.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 772,
+      "handlerName": null,
+      "calls": [
+        "confirm",
+        "qs",
+        "auth",
+        "stringify",
+        "apiJSON",
+        "clear",
+        "loadSubs",
+        "alert"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/subs.js"
+    },
+    {
+      "selector": null,
+      "event": "mz:admin-auth",
+      "line": 801,
+      "handlerName": null,
+      "calls": [
+        "initOnce"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/subs.js"
+    },
+    {
+      "selector": "#ui-subs",
+      "event": "mz:pane:show",
+      "line": 805,
+      "handlerName": null,
+      "calls": [
+        "initOnce"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/subs.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 115,
+      "handlerName": "refreshPending",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/teachers.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 116,
+      "handlerName": null,
+      "calls": [
+        "applyPendingFilter",
+        "focus"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/teachers.js"
+    },
+    {
+      "selector": null,
+      "event": "input",
+      "line": 117,
+      "handlerName": null,
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/teachers.js"
+    },
+    {
+      "selector": null,
+      "event": "input",
+      "line": 210,
+      "handlerName": null,
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/teachers.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 211,
+      "handlerName": null,
+      "calls": [
+        "applyFilter",
+        "focus"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/teachers.js"
+    },
+    {
+      "selector": "#mzt-save",
+      "event": "click",
+      "line": 214,
+      "handlerName": null,
+      "calls": [
+        "$",
+        "trim",
+        "toLowerCase",
+        "test",
+        "qs",
+        "auth",
+        "stringify",
+        "apiJSON",
+        "refreshList"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/teachers.js"
+    },
+    {
+      "selector": null,
+      "event": "mz:admin-auth",
+      "line": 245,
+      "handlerName": null,
+      "calls": [
+        "initTeachersOnce"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/teachers.js"
+    },
+    {
+      "selector": "#ui-teachers",
+      "event": "mz:pane:show",
+      "line": 248,
+      "handlerName": null,
+      "calls": [
+        "initTeachersOnce"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/teachers.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 171,
+      "handlerName": null,
+      "calls": [
+        "openChat"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/wa.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 175,
+      "handlerName": null,
+      "calls": [
+        "stopPropagation",
+        "confirm",
+        "qs",
+        "auth",
+        "stringify",
+        "apiJSON",
+        "loadInbox",
+        "alert"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/wa.js"
+    },
+    {
+      "selector": null,
+      "event": "change",
+      "line": 423,
+      "handlerName": "renderInboxThreadList",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/wa.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 426,
+      "handlerName": "loadInbox",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/wa.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 431,
+      "handlerName": "closeChat",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/wa.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 432,
+      "handlerName": "sendChatReply",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/wa.js"
+    },
+    {
+      "selector": null,
+      "event": "mz:admin-auth",
+      "line": 443,
+      "handlerName": null,
+      "calls": [
+        "initOnce"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/wa.js"
+    },
+    {
+      "selector": "#ui-wa",
+      "event": "mz:pane:show",
+      "line": 447,
+      "handlerName": null,
+      "calls": [
+        "initOnce"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/admin/wa.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 31,
+      "handlerName": "openChat",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/chat_widget/chat-widget.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 32,
+      "handlerName": "closeChat",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/chat_widget/chat-widget.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 33,
+      "handlerName": "closeChat",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/chat_widget/chat-widget.js"
+    },
+    {
+      "selector": null,
+      "event": "keydown",
+      "line": 34,
+      "handlerName": null,
+      "calls": [
+        "closeChat"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/chat_widget/chat-widget.js"
+    },
+    {
+      "selector": null,
+      "event": "click",
+      "line": 229,
+      "handlerName": "sendMsg",
+      "calls": [],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/chat_widget/chat-widget.js"
+    },
+    {
+      "selector": null,
+      "event": "keydown",
+      "line": 230,
+      "handlerName": null,
+      "calls": [
+        "sendMsg"
+      ],
+      "endpoints": [],
+      "endpointsTemplates": [],
+      "selectorHints": [],
+      "source": "direct.addEventListener",
+      "file": "static/meatze/chat_widget/chat-widget.js"
+    }
+  ]
+}

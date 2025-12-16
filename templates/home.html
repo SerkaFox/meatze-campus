@@ -1,0 +1,554 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  /* ===== HERO + AI (главная) ===== */
+  .mz-home-wrap{
+    min-height: calc(100vh - 90px);
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding:32px 0 40px;
+  }
+  .mz-home-grid{
+    display:grid;
+    grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);
+    gap:28px;
+    align-items:stretch;
+  }
+  @media (max-width:900px){
+    .mz-home-grid{
+      grid-template-columns:1fr;
+    }
+    .mz-home-wrap{
+      padding-top:24px;
+    }
+  }
+
+  .mz-hero-card{
+    border-radius:26px;
+    padding:26px 24px;
+    background:radial-gradient(circle at 0 0,rgba(59,130,246,.45),transparent 55%),
+               radial-gradient(circle at 100% 100%,rgba(34,197,94,.22),transparent 55%),
+               linear-gradient(135deg,#020617,#020617);
+    border:1px solid rgba(148,163,184,.35);
+    box-shadow:0 26px 80px rgba(15,23,42,.9);
+    color:#e5f3ff;
+    position:relative;
+    overflow:hidden;
+  }
+  .mz-hero-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:4px 10px;
+    border-radius:999px;
+    background:rgba(15,23,42,.65);
+    border:1px solid rgba(148,163,184,.5);
+    font-size:13px;
+    margin-bottom:10px;
+  }
+  .mz-hero-pill span.mz-dot{
+    width:8px;height:8px;border-radius:999px;
+    background:radial-gradient(circle,#22c55e,#15803d);
+    box-shadow:0 0 0 4px rgba(34,197,94,.35);
+  }
+  .mz-hero-title{
+    font-size:30px;
+    line-height:1.1;
+    font-weight:800;
+    margin:4px 0 10px;
+  }
+  @media (max-width:900px){
+    .mz-hero-title{font-size:26px;}
+  }
+  .mz-hero-sub{
+    font-size:15px;
+    color:#cbd5f5;
+    max-width:540px;
+  }
+  .mz-hero-feats{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:18px;
+  }
+  .mz-chip-tag{
+    padding:6px 10px;
+    border-radius:999px;
+    border:1px solid rgba(148,163,184,.5);
+    background:rgba(15,23,42,.7);
+    font-size:12px;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+  }
+  .mz-chip-tag i{
+    font-size:13px;
+  }
+  .mz-hero-footer{
+    margin-top:22px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    align-items:center;
+    font-size:14px;
+  }
+  .mz-hero-cta{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 18px;
+    border-radius:999px;
+    border:none;
+    background:linear-gradient(135deg,#38bdf8,#0ea5e9);
+    color:#0b1220;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 12px 32px rgba(8,47,73,.7);
+  }
+  .mz-hero-cta:hover{
+    filter:brightness(1.05);
+  }
+  .mz-hero-note{
+    color:#cbd5f5;
+  }
+
+  /* ===== AI CHAT CARD ===== */
+  .mz-ai-card{
+    border-radius:26px;
+    padding:18px 18px 16px;
+    background:radial-gradient(circle at 0 0,rgba(59,130,246,.4),transparent 55%),
+               linear-gradient(145deg,#020617,#020617);
+    border:1px solid rgba(148,163,184,.4);
+    box-shadow:0 26px 80px rgba(15,23,42,.85);
+    color:#e5e7eb;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    overflow:hidden;
+  }
+  .mz-ai-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:8px;
+  }
+  .mz-ai-badge{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .mz-ai-avatar{
+    width:34px;height:34px;border-radius:999px;
+    background:conic-gradient(from 140deg,#38bdf8,#4ade80,#38bdf8);
+    padding:2px;
+    box-shadow:0 0 0 2px rgba(15,23,42,.9);
+  }
+  .mz-ai-avatar-inner{
+    width:100%;height:100%;border-radius:999px;
+    background:#020617;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:16px;
+  }
+  .mz-ai-head-txt{
+    font-size:14px;
+  }
+  .mz-ai-head-txt strong{
+    font-size:15px;
+  }
+  .mz-ai-status{
+    font-size:11px;
+    color:#a5b4fc;
+  }
+  .mz-ai-tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    font-size:11px;
+    margin-bottom:8px;
+    color:#9ca3af;
+  }
+  .mz-ai-tags span{
+    padding:3px 8px;
+    border-radius:999px;
+    background:rgba(15,23,42,.7);
+    border:1px solid rgba(71,85,105,.7);
+  }
+
+  .mz-ai-log{
+    flex:1;
+    min-height:160px;
+    max-height:280px;
+    border-radius:18px;
+    border:1px solid rgba(31,41,55,.9);
+    background:radial-gradient(circle at 0 0,rgba(37,99,235,.1),transparent 70%),
+               rgba(15,23,42,.95);
+    padding:10px 10px 8px;
+    overflow-y:auto;
+    font-size:14px;
+    scroll-behavior:smooth;
+  }
+  .mz-ai-msg{
+    margin-bottom:8px;
+    display:flex;
+  }
+  .mz-ai-msg.me{
+    justify-content:flex-end;
+  }
+  .mz-ai-bubble{
+    max-width:80%;
+    padding:7px 10px;
+    border-radius:14px;
+    line-height:1.4;
+  }
+  .mz-ai-msg.me .mz-ai-bubble{
+    border-radius:16px 16px 4px 16px;
+    background:linear-gradient(135deg,#1d4ed8,#38bdf8);
+    color:#e0f2fe;
+  }
+  .mz-ai-msg.bot .mz-ai-bubble{
+    border-radius:16px 16px 16px 4px;
+    background:rgba(15,23,42,.95);
+    border:1px solid rgba(30,64,175,.8);
+  }
+  .mz-ai-msg.bot .mz-ai-bubble strong{
+    color:#bfdbfe;
+  }
+  .mz-ai-msg small{
+    display:block;
+    margin-top:3px;
+    font-size:11px;
+    opacity:.7;
+  }
+
+  .mz-ai-input-row{
+    margin-top:10px;
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:8px;
+  }
+  .mz-ai-input{
+    border-radius:999px;
+    padding:10px 14px;
+    background:rgba(15,23,42,.92);
+    border:1px solid rgba(51,65,85,.95);
+    color:#e5e7eb;
+    font-size:14px;
+  }
+  .mz-ai-input::placeholder{
+    color:#6b7280;
+  }
+  .mz-ai-input:focus{
+    outline:none;
+    border-color:#38bdf8;
+    box-shadow:0 0 0 2px rgba(56,189,248,.35);
+  }
+  .mz-ai-send{
+    border-radius:999px;
+    padding:0 16px;
+    border:none;
+    background:linear-gradient(135deg,#38bdf8,#0ea5e9);
+    color:#0b1220;
+    font-weight:700;
+    font-size:14px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    min-width:96px;
+    justify-content:center;
+  }
+  .mz-ai-send[disabled]{
+    opacity:.5;
+    cursor:default;
+  }
+  .mz-ai-foot{
+    margin-top:6px;
+    font-size:11px;
+    color:#6b7280;
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  /* простая анимация появления модалки AI-ассистента при загрузке главной */
+  .mz-ai-card,
+  .mz-hero-card{
+    opacity:0;
+    transform:translateY(18px);
+    animation:mz-slide-in .5s ease-out forwards;
+  }
+  .mz-ai-card{
+    animation-delay:.08s;
+  }
+  @keyframes mz-slide-in{
+    to{opacity:1;transform:translateY(0);}
+  }
+  .mz-ai-bubble a {
+  text-decoration: underline;
+  color: #38bdf8;
+}
+
+</style>
+
+<div class="mz-home-wrap">
+  <div class="mz-home-grid">
+    <!-- LEFT: hero -->
+    <section class="mz-hero-card">
+      <div class="mz-hero-pill">
+        <span class="mz-dot"></span>
+        <span>Campus de formación subvencionada</span>
+      </div>
+      <h1 class="mz-hero-title">
+        Bienvenido a MEATZE Campus
+      </h1>
+      <p class="mz-hero-sub">
+        Aquí podrás seguir tus cursos subvencionados, revisar el calendario de clases,
+        descargar materiales, hablar con tu docente y recibir avisos importantes.
+      </p>
+
+      <div class="mz-hero-feats">
+        <div class="mz-chip-tag">
+          <i>📅</i> Calendario por módulos
+        </div>
+        <div class="mz-chip-tag">
+          <i>📂</i> Materiales siempre disponibles
+        </div>
+        <div class="mz-chip-tag">
+          <i>💬</i> Chat con docentes y compañeros
+        </div>
+        <div class="mz-chip-tag">
+          <i>🤖</i> Asistente IA para dudas rápidas
+        </div>
+      </div>
+
+      <div class="mz-hero-footer">
+<button class="mz-hero-cta"
+        data-action="auth.open"
+        type="button"
+        onclick="window.mzOpenAuth && window.mzOpenAuth();">
+
+          Entrar al Campus
+        </button>
+        <div class="mz-hero-note">
+          ¿Primera vez? Usa el PIN que te llega por e-mail o pide acceso a tu docente.
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: AI assistant -->
+    <section class="mz-ai-card" aria-label="Asistente virtual MEATZE">
+      <header class="mz-ai-head">
+        <div class="mz-ai-badge">
+          <div class="mz-ai-avatar">
+            <div class="mz-ai-avatar-inner">M</div>
+          </div>
+          <div class="mz-ai-head-txt">
+            <strong>Asistente MEATZE</strong><br>
+            <span class="mz-ai-status">Online · responde sobre cursos y el portal</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="mz-ai-tags">
+        <span>Cómo entrar al campus</span>
+        <span>Calendario y módulos</span>
+        <span>Materiales y chat</span>
+      </div>
+
+      <div id="mz-ai-log" class="mz-ai-log" aria-live="polite">
+        <!-- стартовое сообщение -->
+      </div>
+
+      <div class="mz-ai-input-row">
+        <input id="mz-ai-input" class="mz-ai-input"
+               placeholder="Pregúntame cómo funciona el portal, el calendario, etc.">
+        <button id="mz-ai-send" class="mz-ai-send" type="button">
+          <span>Preguntar</span>
+        </button>
+      </div>
+      <div class="mz-ai-foot">
+        <span id="mz-ai-footnote">Responde solo sobre MEATZE Campus.</span>
+        <span>Propulsado por IA local (Ollama).</span>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+  const logEl   = document.getElementById('mz-ai-log');
+  const inputEl = document.getElementById('mz-ai-input');
+  const btnEl   = document.getElementById('mz-ai-send');
+  if (!logEl || !inputEl || !btnEl) return;
+
+  // история сообщений и текущая роль
+  const history = [];
+  let portalRole = 'visitor';
+
+function detectRoleFromText(text) {
+  const t = (text || '').toLowerCase();
+
+  // === ЯВНО: "я ученик / я студент / soy alumno..."
+  if (
+    /(soy|yo soy|я)\s+(alumn[oa]|estudiante|ученик|студент)/.test(t) ||
+    /\bsoy alumno\b/.test(t) ||
+    /\bsoy alumna\b/.test(t)
+  ) {
+    return 'alumno';
+  }
+
+  // === ЯВНО: "я учитель / soy docente..."
+  if (
+    /(soy|yo soy|я)\s+(docente|profesor[a]?|преподаватель|учитель)/.test(t) ||
+    /\bsoy docente\b/.test(t) ||
+    /\bsoy profesor\b/.test(t) ||
+    /\bsoy profesora\b/.test(t)
+  ) {
+    return 'docente';
+  }
+
+  // === ЯВНО: "я админ / soy admin..."
+  if (
+    /(soy|yo soy|я)\s+(admin|administrador[a]?|админ|администратор)/.test(t) ||
+    /\bsoy admin\b/.test(t)
+  ) {
+    return 'admin';
+  }
+
+  // === НЕЯВНО: спрашивают ПРО учителя / profesora / profe ===
+  if (
+    /учител[ья]/.test(t) ||
+    /преподавател[ья]/.test(t) ||
+    /\bdocente\b/.test(t) ||
+    /\bprofesor\b/.test(t) ||
+    /\bprofesora\b/.test(t) ||
+    /\bprofe\b/.test(t)
+  ) {
+    return 'docente';
+  }
+
+  // === НЕЯВНО: спрашивают ПРО панель учителя ===
+  if (
+    /панель\s+учител/.test(t) ||
+    /учительск[а-я]*\s+панел/.test(t) ||
+    /panel\s+(de\s+)?(docente|profesor)/.test(t)
+  ) {
+    return 'docente';
+  }
+
+  // === НЕЯВНО: спрашивают ПРО админа / панель админа ===
+  if (
+    /панель\s+администрат/.test(t) ||
+    /админск[а-я]*\s+панел/.test(t) ||
+    /\badmin\b/.test(t) ||
+    /\badministraci[oó]n\b/.test(t)
+  ) {
+    return 'admin';
+  }
+
+  // если явного сигнала нет — оставляем прежнюю роль
+  return portalRole;
+}
+
+
+  function addMsg(role, text){
+    const div = document.createElement('div');
+    div.className = 'mz-ai-msg ' + (role === 'user' ? 'me' : 'bot');
+    const bubble = document.createElement('div');
+    bubble.className = 'mz-ai-bubble';
+    bubble.innerHTML = text.replace(/\n/g,'<br>');
+    div.appendChild(bubble);
+    logEl.appendChild(div);
+    logEl.scrollTop = logEl.scrollHeight;
+
+    history.push({ role: role === 'user' ? 'user' : 'assistant', content: text });
+    if (history.length > 10) history.splice(0, history.length - 10);
+  }
+
+  // стартовое сообщение — теперь ПОСЛЕ объявления history и addMsg
+  addMsg('assistant',
+    "<strong>Hola, soy el asistente de MEATZE.</strong><br>" +
+    "Puedo explicarte cómo funciona el portal, qué verás en las pestañas de un curso " +
+    "（Información, Materiales, Calendario, Alumnos, IA, Chat）y cómo entrar con tu PIN o contraseña."
+  );
+
+  async function send(){
+    const q = (inputEl.value || '').trim();
+    if (!q) return;
+
+    // авто-детекция роли по тексту
+    portalRole = detectRoleFromText(q);
+
+    addMsg('user', q);
+    inputEl.value = '';
+    inputEl.focus();
+    btnEl.disabled = true;
+    const oldTxt = btnEl.textContent;
+    btnEl.textContent = 'Pensando…';
+    document.getElementById('mz-ai-footnote').textContent = 'Generando respuesta…';
+
+    const payload = {
+      question: q,
+      role: portalRole,
+      // teacher_email / admin_pass пока не используем — позже добавим, когда сделаем верификацию
+    };
+
+    try{
+      const r = await fetch('/meatze/v5/ai/help', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload),
+      });
+
+      const j = await r.json();
+
+      if (!r.ok) {
+        const msg = (j && (j.message || j.error))
+          ? (j.message || j.error)
+          : ('Error ' + r.status);
+
+        addMsg('assistant', msg);
+        document.getElementById('mz-ai-footnote').textContent =
+          'Responde solo sobre MEATZE Campus.';
+        return;
+      }
+
+      const ans = (j.answer || j.message || 'No se pudo generar respuesta.').trim();
+      addMsg('assistant', ans);
+      document.getElementById('mz-ai-footnote').textContent =
+        'Responde solo sobre MEATZE Campus.';
+    }catch(e){
+      addMsg('assistant',
+        'Lo siento, ahora mismo no puedo responder: ' +
+        (e.message || 'Error de conexión con la IA local.')
+      );
+      document.getElementById('mz-ai-footnote').textContent =
+        'Error de conexión con la IA local.';
+    }finally{
+      btnEl.disabled = false;
+      btnEl.textContent = oldTxt;
+    }
+  }
+
+  btnEl.addEventListener('click', send);
+  inputEl.addEventListener('keydown', e=>{
+    if (e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      send();
+    }
+  });
+
+  {% if force_login %}
+  window.addEventListener('load', ()=>{
+    if (window.mzOpenAuth) window.mzOpenAuth();
+    else window.dispatchEvent(new Event('meatze:openAuth'));
+  });
+  {% endif %}
+})();
+</script>
+
+{% endblock %}

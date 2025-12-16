@@ -1,0 +1,858 @@
+{% load static %}
+
+<div class="mzc-card" id="mzt-ai">
+  <h4 class="mzc-h2">Asistente IA (Docentes)</h4>
+
+  {# --- ПРЕСЕТЫ -------------------------------------------------------- #}
+  <div class="mzt-presets-wrap">
+    <div class="mzt-presets-label">¿Qué necesitas hoy?</div>
+    <div class="mz-seg mzt-presets" id="mzt-presets">
+      <button class="mzc-btn ghost" data-preset="actividades" data-action="ia.preset.actividades">Ideas de actividades</button>
+      <button class="mzc-btn ghost" data-preset="preguntas" data-action="ia.preset.preguntas">Banco de preguntas</button>
+      <button class="mzc-btn ghost" data-preset="casos" data-action="ia.preset.casos">Mini-proyectos / casos</button>
+      <button class="mzc-btn ghost" data-preset="guia" data-action="ia.preset.guia">Guía de clase</button>
+      <button class="mzc-btn ghost" data-preset="explicacion" data-action="ia.preset.explicacion">Explicación accesible</button>
+      <button class="mzc-btn ghost" data-preset="rubrica" data-action="ia.preset.rubrica">Rúbrica de evaluación</button>
+      <button class="mzc-btn ghost" data-preset="quiz" data-action="ia.preset.quiz">Quiz rápido</button>
+      <button class="mzc-btn ghost" data-preset="glosario" data-action="ia.preset.glosario">Glosario esencial</button>
+      <button class="mzc-btn ghost" data-preset="anuncio" data-action="ia.preset.anuncio">Anuncio para el aula</button>
+      <button class="mzc-btn ghost" data-preset="plan" data-action="ia.preset.plan">Plan semanal</button>
+    </div>
+  </div>
+
+  {# --- КАРТОЧКА ВВОДА ------------------------------------------------- #}
+  <div class="mzc-card mzt-input-card">
+	<div class="mzt-row mzt-row-topic">
+	  <div class="mzt-field">
+		<label for="mzt-topic" class="mzt-label">Tema / unidad</label>
+		<input id="mzt-topic" class="mzc-inp"
+			   placeholder="Ej.: Atención al cliente en situaciones difíciles">
+	  </div>
+
+	  <div class="mzt-field">
+		<label for="mzt-module" class="mzt-label">Módulo</label>
+		<select id="mzt-module" class="mzc-inp">
+		  <option value="">Todos los módulos</option>
+		</select>
+	  </div>
+
+	  <label class="mzt-checkbox mzc-note">
+		<input id="mzt-use-course" type="checkbox" checked>
+		Usar contexto del curso
+	  </label>
+	</div>
+
+
+    <div class="mzt-row mzt-row-level">
+      <span class="mzc-note">Nivel de detalle:</span>
+      <div class="mzt-levels">
+		<button type="button" class="mzc-btn ghost mzt-lvl" data-lvl="basico"  data-action="ia.level.basico">Básico</button>
+		<button type="button" class="mzc-btn ghost mzt-lvl is-act" data-lvl="medio" data-action="ia.level.medio">Medio</button>
+		<button type="button" class="mzc-btn ghost mzt-lvl" data-lvl="avanzado" data-action="ia.level.avanzado">Avanzado</button>
+
+      </div>
+    </div>
+
+    <div class="mzt-field" style="margin-top:8px">
+      <label class="mzt-label">Tu petición</label>
+      <textarea id="mzt-input" class="mzc-inp mzt-textarea" rows="4"
+                placeholder="Describe lo que necesitas o utiliza uno de los botones de arriba…"></textarea>
+    </div>
+
+    <div class="mzt-footer">
+      <span id="mzt-status" class="mzc-note mzt-status">Listo.</span>
+		<button id="mzt-send"
+				class="mzc-btn mzt-main-btn"
+				data-action="ia.ask">
+		  Preguntar
+		</button>
+<span class="mzc-note" data-action="ia.hotkey.hint">Enviar: Ctrl/Cmd + Enter</span>
+
+    </div>
+  </div>
+
+  {# --- КАРТОЧКА ВЫВОДА ----------------------------------------------- #}
+  <div class="mzc-card mzt-output-card">
+    <div class="mzt-output-head">
+      <span class="mzt-output-title">Resultado</span>
+      <div class="mzt-output-actions">
+        <button id="mzt-copy" data-action="ia.copy" class="mzc-btn ghost mzt-sm-btn" type="button">
+          Copiar texto
+        </button>
+        <button id="mzt-full" data-action="ia.vista" class="mzc-btn ghost mzt-sm-btn" type="button">
+          Vista para el aula
+        </button>
+      </div>
+    </div>
+    <div id="mzt-out" class="mzt-out"></div>
+  </div>
+	<div id="mzt-toast" class="mzt-toast">Respuesta lista.</div>
+
+  {# --- FULLSCREEN PARA PROYECTOR ------------------------------------- #}
+  <div id="mzt-fullscreen" class="mzt-fullscreen">
+    <div class="mzt-full-inner">
+      <div class="mzt-full-head">
+        <h4>Vista para el aula</h4>
+        <div class="mzt-full-actions">
+          <button id="mzt-full-copy" class="mzc-btn ghost mzt-sm-btn" type="button">
+            Copiar
+          </button>
+          <button id="mzt-full-close" class="mzc-btn mzt-sm-btn" type="button">
+            Cerrar
+          </button>
+        </div>
+      </div>
+      <div id="mzt-full-content" class="mzt-full-content"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ===== IA TAB · SHELL ======================================= */
+#mzt-ai{
+  background:
+    radial-gradient(circle at top left, rgba(56,189,248,0.2), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(129,140,248,0.25), transparent 55%),
+    linear-gradient(140deg, rgba(15,23,42,0.96), rgba(15,23,42,0.9));
+  border-radius: 22px;
+  border: 1px solid rgba(148,163,184,0.55);
+  box-shadow:
+    0 20px 50px rgba(15,23,42,0.9),
+    0 0 0 1px rgba(15,23,42,0.95);
+  color:#e5e7eb;
+}
+
+#mzt-ai .mzc-h2{
+  margin:0 0 10px;
+  font-weight:800;
+  color:#e5f0ff;
+  letter-spacing:0.04em;
+  text-transform:uppercase;
+  font-size:0.9rem;
+}
+
+/* ===== PRESETS ======================================================= */
+#mzt-ai .mzt-presets-wrap{
+  margin:4px 0 10px;
+}
+
+#mzt-ai .mzt-presets-label{
+  font-size:0.75rem;
+  text-transform:uppercase;
+  letter-spacing:0.12em;
+  color:#9ca3af;
+  margin-bottom:5px;
+}
+
+#mzt-ai .mzt-presets{
+  display:flex;
+  gap:4px;
+  flex-wrap:wrap;
+  padding:6px;
+  border-radius:999px;
+  background:radial-gradient(circle at top left, rgba(15,23,42,0.95), rgba(15,23,42,0.9));
+  border:1px solid rgba(148,163,184,0.55);
+  max-height:84px;
+  overflow-y:auto;
+}
+
+#mzt-ai .mzt-presets .mzc-btn{
+  font-size:0.78rem;
+  padding:5px 11px;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,0.7);
+  background:rgba(15,23,42,0.95);
+  color:#e5e7eb;
+  cursor:pointer;
+  box-shadow:0 1px 2px rgba(15,23,42,0.8);
+}
+
+#mzt-ai .mzt-presets .mzc-btn:hover{
+  border-color:rgba(191,219,254,0.9);
+  background:rgba(30,64,175,0.92);
+  color:#f9fafb;
+  box-shadow:0 4px 10px rgba(30,64,175,0.7);
+}
+
+
+#mzt-ai .mzt-presets .mzc-btn:hover{
+  border-color:rgba(191,219,254,0.7);
+  background:rgba(30,64,175,0.85);
+  color:#f9fafb;
+}
+
+#mzt-ai .mzt-presets .mzc-btn.is-act{
+  background:radial-gradient(circle at top, #22d3ee, #3b82f6);
+  color:#020617;
+  border-color:rgba(248,250,252,0.95);
+  box-shadow:
+    0 0 0 1px rgba(15,23,42,1),
+    0 8px 18px rgba(37,99,235,0.8);
+}
+
+/* ===== INNER CARDS =================================================== */
+#mzt-ai .mzt-input-card,
+#mzt-ai .mzt-output-card{
+  background:radial-gradient(circle at top left, rgba(15,23,42,0.98), rgba(15,23,42,0.94));
+  border-radius:18px;
+  border:1px solid rgba(30,64,175,0.7);
+  box-shadow:0 10px 30px rgba(15,23,42,0.85);
+}
+
+#mzt-ai .mzt-input-card{ margin-top:10px; }
+#mzt-ai .mzt-output-card{ margin-top:10px; }
+
+/* ===== FORM LAYOUT =================================================== */
+#mzt-ai .mzt-row{
+  display:flex;
+  gap:10px;
+  align-items:flex-end;
+  flex-wrap:wrap;
+}
+
+#mzt-ai .mzt-field{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  min-width:200px;
+}
+
+#mzt-ai .mzt-label{
+  font-size:0.78rem;
+  color:#9ca3af;
+}
+
+#mzt-ai .mzt-checkbox{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:0.8rem;
+  margin-left:auto;
+}
+
+#mzt-ai .mzt-checkbox input{
+  accent-color:#22c55e;
+}
+
+/* поля ввода чуть темнее/стеклянные */
+#mzt-ai .mzc-inp{
+  background:rgba(15,23,42,0.92);
+  border:1px solid rgba(148,163,184,0.7);
+  color:#e5e7eb;
+  font-size:0.86rem;
+}
+
+#mzt-ai .mzc-inp::placeholder{
+  color:#6b7280;
+}
+
+/* уровень детализации */
+#mzt-ai .mzt-row-level{
+  margin-top:8px;
+  align-items:center;
+}
+
+#mzt-ai .mzt-levels{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+
+#mzt-ai .mzt-levels .mzc-btn{
+  font-size:0.8rem;
+  padding:4px 10px;
+}
+
+#mzt-ai .mzt-lvl.is-act{
+  background:radial-gradient(circle at top, #22d3ee, #3b82f6);
+  color:#020617;
+  border-color:rgba(248,250,252,0.95);
+}
+
+/* textarea */
+#mzt-ai .mzt-textarea{
+  resize:vertical;
+  min-height:90px;
+}
+
+/* футер формы */
+#mzt-ai .mzt-footer{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-top:10px;
+}
+
+#mzt-ai .mzt-status{
+  margin-right:auto;
+  font-size:0.72rem;
+  color:#9ca3af;
+}
+
+#mzt-ai .mzt-main-btn{
+  background:linear-gradient(135deg,#22c55e,#16a34a);
+  color:#ecfdf5;
+  border-color:rgba(34,197,94,0.9);
+  padding:7px 18px;
+  font-weight:600;
+}
+
+#mzt-ai .mzt-main-btn:hover{
+  background:linear-gradient(135deg,#4ade80,#22c55e);
+  box-shadow:0 10px 22px rgba(22,163,74,0.7);
+}
+
+/* ===== OUTPUT CARD =================================================== */
+#mzt-ai .mzt-output-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding-bottom:6px;
+  border-bottom:1px solid rgba(148,163,184,0.35);
+  margin-bottom:6px;
+}
+
+#mzt-ai .mzt-output-title{
+  font-size:0.85rem;
+  text-transform:uppercase;
+  letter-spacing:0.11em;
+  color:#9ca3af;
+}
+
+#mzt-ai .mzt-output-actions{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+
+#mzt-ai .mzt-sm-btn{
+  font-size:0.76rem;
+  padding:5px 12px;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,0.8);
+  background:rgba(15,23,42,0.96);
+  color:#e5e7eb;
+  cursor:pointer;
+  box-shadow:0 1px 3px rgba(15,23,42,0.8);
+  transition:transform .1s ease, box-shadow .1s ease, background-color .15s ease, color .15s ease;
+}
+
+#mzt-ai .mzt-sm-btn:hover{
+  background:rgba(30,64,175,0.95);
+  border-color:rgba(191,219,254,0.9);
+  box-shadow:0 4px 12px rgba(30,64,175,0.7);
+}
+
+
+#mzt-ai .mzt-sm-btn:active{
+  transform:scale(0.97);
+  box-shadow:0 0 0 2px rgba(59,130,246,.4);
+}
+
+#mzt-ai .mzt-btn-ok{
+  background:#16a34a;
+  color:#ecfdf5;
+}
+
+/* output text */
+#mzt-ai .mzt-out{
+  white-space:pre-wrap;
+  font-size:0.9rem;
+  line-height:1.5;
+  color:#e5e7eb;
+}
+
+/* ===== FULLSCREEN ==================================================== */
+#mzt-ai .mzt-fullscreen{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(2,6,23,0.98);
+  z-index:9999;
+  padding:24px;
+  box-sizing:border-box;
+}
+
+#mzt-ai .mzt-full-inner{
+  max-width:1200px;
+  margin:0 auto;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+}
+
+#mzt-ai .mzt-full-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:12px;
+  color:#e5e7eb;
+}
+
+#mzt-ai .mzt-full-head h4{
+  margin:0;
+  font-size:20px;
+  font-weight:700;
+}
+
+#mzt-ai .mzt-full-actions{
+  display:flex;
+  gap:8px;
+}
+
+#mzt-ai .mzt-full-content{
+  flex:1;
+  overflow:auto;
+  font-size:20px;
+  line-height:1.5;
+  color:#f9fafb;
+  white-space:pre-wrap;
+}
+
+/* ===== АДАПТИВ ======================================================= */
+@media (max-width: 820px){
+  #mzt-ai{
+    border-radius:18px;
+  }
+  #mzt-ai .mzt-presets{
+    max-height:120px;
+  }
+  #mzt-ai .mzt-fullscreen{
+    padding:14px;
+  }
+}
+#mzt-ai .mzt-toast{
+  position:fixed;
+  right:18px;
+  bottom:18px;
+  z-index:10000;
+  padding:8px 14px;
+  border-radius:999px;
+  background:rgba(22,163,74,0.97);
+  color:#ecfdf5;
+  font-size:0.82rem;
+  box-shadow:0 10px 25px rgba(22,163,74,0.7);
+  opacity:0;
+  pointer-events:none;
+  transform:translateY(6px);
+  transition:opacity .2s ease, transform .2s ease;
+}
+
+#mzt-ai .mzt-toast.is-show{
+  opacity:1;
+  pointer-events:auto;
+  transform:translateY(0);
+}
+/* чтобы точно перекрыть шапку и всё остальное */
+#mzt-fullscreen{
+  position:fixed;
+  inset:0;
+  z-index:999999 !important;
+}
+/* Кнопки в полноэкранном модале AI */
+#mzt-fullscreen .mzt-ai-btn {
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #f1f5f9;
+
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+
+    transition: all .2s ease;
+}
+/* Оверлей для AI-проекций (как у alumnos) */
+#mzt-ai-present-overlay{
+  position:fixed;
+  inset:0;
+  z-index:999999 !important;
+}
+
+/* Кнопки в полноэкранном модале AI */
+#mzt-ai-present-overlay .mzt-ai-btn {
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #f1f5f9;
+
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  transition: all .2s ease;
+}
+
+#mzt-ai-present-overlay .mzt-ai-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.45);
+  transform: translateY(-1px);
+}
+
+/* Красная кнопка закрытия */
+#mzt-ai-present-overlay .mzt-ai-btn.close {
+  background: rgba(255, 80, 80, 0.12);
+  border-color: rgba(255, 120, 120, 0.4);
+}
+
+#mzt-ai-present-overlay .mzt-ai-btn.close:hover {
+  background: rgba(255, 80, 80, 0.25);
+  border-color: rgba(255, 120, 120, 0.55);
+}
+/* тема и модуль — в колонку, чтобы не обрезались */
+#mzt-ai .mzt-row-topic{
+  flex-direction:column;
+  align-items:stretch;
+}
+
+
+</style>
+
+<script>
+(function(){
+  const V5_API = "/meatze/v5";
+  const curso = {
+    codigo: "{{ curso.codigo|escapejs }}",
+    titulo: "{{ curso.titulo|default:''|escapejs }}",
+    modules: {{ curso.modules|default:"[]"|safe }}
+  };
+
+  const root       = document.getElementById('mzt-ai');
+  if (!root) return;
+  const toast = root.querySelector('#mzt-toast');
+  const presetsBox = root.querySelector('#mzt-presets');
+  const topicInp   = root.querySelector('#mzt-topic');
+  const useCourse  = root.querySelector('#mzt-use-course');
+  const input      = root.querySelector('#mzt-input');
+  const sendBtn    = root.querySelector('#mzt-send');
+  const out        = root.querySelector('#mzt-out');
+  const statusEl   = root.querySelector('#mzt-status');
+  const moduleSel  = root.querySelector('#mzt-module');
+
+  const copyBtn    = root.querySelector('#mzt-copy');
+  const fullBtn    = root.querySelector('#mzt-full');
+  const fsOverlay  = root.querySelector('#mzt-fullscreen');
+  const fsCloseBtn = root.querySelector('#mzt-full-close');
+  const fsCopyBtn  = root.querySelector('#mzt-full-copy');
+  const fsContent  = root.querySelector('#mzt-full-content');
+
+  let prevDocOverflow = '';
+  let currentLevel = 'medio';
+  const lvlBtns = root.querySelectorAll('.mzt-lvl');
+
+  // --- модули курса ---
+  let modules = [];
+  try {
+    if (Array.isArray(curso.modules)) {
+      modules = curso.modules;
+    } else if (curso.modules) {
+      modules = JSON.parse(curso.modules);
+    }
+  } catch(e){ modules = []; }
+
+  if (moduleSel && Array.isArray(modules) && modules.length) {
+    modules
+      .filter(m => m && (m.name || m.codigo))
+      .forEach((m, idx) => {
+        const opt   = document.createElement('option');
+        const label = m.name || m.codigo || `Módulo ${idx+1}`;
+        opt.value   = label;
+        opt.textContent = label;
+        moduleSel.appendChild(opt);
+      });
+
+    const allNames = modules
+      .map(m => m && (m.name || m.codigo) || '')
+      .filter(Boolean)
+      .join(' · ');
+    if (allNames) moduleSel.title = allNames;
+  } else if (moduleSel) {
+    moduleSel.style.display = 'none';
+  }
+
+  const autoTitle = (curso.titulo || curso.codigo || '').trim();
+  if (useCourse && useCourse.checked && autoTitle && !topicInp.value) {
+    topicInp.value = autoTitle;
+  }
+  useCourse && useCourse.addEventListener('change', () => {
+    if (useCourse.checked && autoTitle) topicInp.value = autoTitle;
+    else if (!useCourse.checked && !topicInp.value) topicInp.value = '';
+  });
+
+  moduleSel && moduleSel.addEventListener('change', () => {
+    const mod = (moduleSel.value || '').trim();
+    if (!mod) return;
+    const cur = (topicInp.value || '').trim();
+    if (!cur) topicInp.value = mod;
+    else if (!cur.includes(mod)) topicInp.value = `${cur} — ${mod}`;
+  });
+
+  const templates = {
+    actividades: `Genera 6 ideas de actividades (2 en clase, 2 para casa, 2 cooperativas) sobre el tema indicado. Incluye objetivo, materiales y tiempo.`,
+    preguntas:   `Crea un banco de 12 preguntas (6 tipo test con 4 opciones y respuesta correcta, 6 abiertas cortas) sobre el tema indicado.`,
+    casos:       `Diseña 3 mini-proyectos o casos prácticos contextualizados al tema. Incluye descripción, entregables y criterios básicos de evaluación.`,
+    guia:        `Escribe una guía de clase de 45–60 min: objetivos, activación, explicación, práctica guiada, cierre y tarea opcional.`,
+    explicacion: `Explica el tema con lenguaje claro para nivel inicial, usando 2 analogías y 2 ejemplos resueltos paso a paso.`,
+    rubrica:     `Construye una rúbrica de 4 niveles (Insuficiente, Básico, Avanzado, Excelente) con 4 criterios alineados al tema.`,
+    quiz:        `Genera un quiz de 10 preguntas tipo test con solución y breve justificación de la respuesta correcta.`,
+    glosario:    `Crea un glosario de 12 términos clave del tema con definiciones breves y un ejemplo por término.`,
+    anuncio:     `Redacta un anuncio breve para el aula (tono cordial) informando de actividad o tarea relacionada con el tema.`,
+    plan:        `Propón un plan de 1–2 semanas (4–6 sesiones): objetivos por sesión, actividades principales y evaluación formativa.`
+  };
+
+  presetsBox && presetsBox.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-preset]');
+    if (!b) return;
+    input.value = templates[b.dataset.preset] || '';
+    presetsBox.querySelectorAll('button[data-preset]')
+      .forEach(btn => btn.classList.remove('is-act'));
+    b.classList.add('is-act');
+  });
+
+  lvlBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      lvlBtns.forEach(b => b.classList.remove('is-act'));
+      btn.classList.add('is-act');
+      currentLevel = btn.dataset.lvl || 'medio';
+    });
+  });
+
+  fetch(`${V5_API}/ai/warmup`, {method:'POST'}).catch(()=>{});
+
+  function setStatus(txt) {
+    if (!statusEl) return;
+    statusEl.textContent = txt;
+    if (txt && txt !== 'Listo.') {
+      setTimeout(() => {
+        if (statusEl.textContent === txt) statusEl.textContent = 'Listo.';
+      }, 3000);
+    }
+  }
+
+  function showToast(msg){
+    if (!toast) return;
+    toast.textContent = msg || 'Respuesta lista.';
+    toast.classList.add('is-show');
+    setTimeout(() => {
+      toast.classList.remove('is-show');
+    }, 2500);
+  }
+
+
+  async function copyTextFrom(el, button) {
+    const text = (el && el.textContent) ? el.textContent : '';
+    if (!text) return;
+    const originalLabel = button ? button.textContent : '';
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        document.execCommand('copy');
+      }
+      if (button) {
+        button.textContent = 'Copiado ✓';
+        button.classList.add('mzt-btn-ok');
+        setTimeout(() => {
+          button.textContent = originalLabel || 'Copiar';
+          button.classList.remove('mzt-btn-ok');
+        }, 1200);
+      }
+      setStatus('Texto copiado al portapapeles.');
+    } catch(e){
+      setStatus('No se pudo copiar el texto.');
+    }
+  }
+
+  copyBtn && copyBtn.addEventListener('click', () => copyTextFrom(out, copyBtn));
+  fsCopyBtn && fsCopyBtn.addEventListener('click', () => copyTextFrom(fsContent, fsCopyBtn));
+
+	  fullBtn && fullBtn.addEventListener('click', () => {
+    const answer = out.textContent || '';
+
+    // запоминаем текущее состояние скролла
+    const prevOverflow = document.body.style.overflow || '';
+
+    // блокируем прокрутку страницы
+    document.body.style.overflow = 'hidden';
+
+    const html = `
+      <div id="mzt-ai-present-overlay"
+           style="position:fixed; inset:0; background:#020617e6; z-index:999999;
+                  display:flex; align-items:center; justify-content:center;">
+
+        <div style="
+              width:min(1400px,96vw);
+              height:min(90vh,900px);
+              background:#0b1220;
+              border:1px solid #17243a;
+              border-radius:16px;
+              padding:18px;
+              display:flex;
+              flex-direction:column;
+              gap:14px;
+            ">
+
+          <div style="
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                color:#e6f0ff;
+              ">
+            <div style="font-weight:800; font-size:22px;">
+              Vista para el aula
+            </div>
+
+            <div style="display:flex; gap:8px;">
+<button id="mzt-ai-present-copy" class="mzt-ai-btn" data-action="ia.present.copy">Copiar</button>
+<button id="mzt-ai-present-close" class="mzt-ai-btn close" data-action="ia.present.close">Cerrar</button>
+
+            </div>
+          </div>
+
+          <div style="
+                flex:1;
+                overflow:auto;
+                font-size:22px;
+                line-height:1.55;
+                color:#f9fafb;
+                white-space:pre-wrap;
+                font-family:system-ui, sans-serif;
+              ">
+            ${answer.replace(/</g, "&lt;")}
+          </div>
+
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+
+    const overlay = document.getElementById('mzt-ai-present-overlay');
+    const btnClose = document.getElementById('mzt-ai-present-close');
+    const btnCopy  = document.getElementById('mzt-ai-present-copy');
+
+    function closeOverlay() {
+      overlay?.remove();
+      document.body.style.overflow = prevOverflow;
+    }
+
+    btnClose?.addEventListener('click', closeOverlay);
+    overlay?.addEventListener('click', (e) => {
+      if (e.target === overlay) closeOverlay();
+    });
+
+    btnCopy?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(answer);
+        const old = btnCopy.textContent;
+        btnCopy.textContent = 'Copiado ✓';
+        setTimeout(() => btnCopy.textContent = old, 1200);
+      } catch(e){}
+    });
+  });
+
+
+
+
+  function closeFullscreen() {
+    if (!fsOverlay) return;
+    fsOverlay.style.display = 'none';
+    document.documentElement.style.overflow = prevDocOverflow || '';
+  }
+
+  fsCloseBtn && fsCloseBtn.addEventListener('click', closeFullscreen);
+  fsOverlay && fsOverlay.addEventListener('click', (e) => {
+    if (e.target === fsOverlay) closeFullscreen();
+  });
+
+  async function askAI() {
+    const info = curso || {};
+    const tUser = (topicInp.value || '').trim();
+    const baseTopic = (useCourse && useCourse.checked)
+      ? (tUser || (info.titulo || '').trim() || (info.codigo || ''))
+      : tUser;
+
+    const moduleName = moduleSel ? (moduleSel.value || '').trim() : '';
+    const topicFull  = [baseTopic, moduleName].filter(Boolean).join(' — ');
+    const qText      = (input.value || '').trim();
+
+    if (!qText && !topicFull) {
+      out.textContent = 'Indica un tema o usa un botón.';
+      setStatus('Falta tema o petición.');
+      return;
+    }
+
+    const modulesList = (modules || [])
+      .map(m => m && (m.name || m.codigo) || '')
+      .filter(Boolean)
+      .join(' | ');
+
+    const scopeParts = [];
+    scopeParts.push('Curso: ' + (baseTopic || info.titulo || info.codigo || 'sin título'));
+    if (modulesList) {
+      scopeParts.push('Módulos del curso: ' + modulesList);
+    }
+    if (moduleName) {
+      scopeParts.push('Módulo objetivo: ' + moduleName);
+    }
+    const scopeText = scopeParts.join('\n');
+
+    const bodyWP = {
+      course_code: info.codigo || "",
+      language: 'es',
+      topic_hint: topicFull,
+      query: qText || `Ayuda docente sobre: ${topicFull || 'el tema'}`,
+      use_course_context: !!(useCourse && useCourse.checked),
+      strict_scope: true,
+      mode: 'teacher-assistant',
+      module_name: moduleName || '',
+      scope_text: scopeText,
+      level: currentLevel || 'medio'
+    };
+
+    out.textContent = '';
+    sendBtn.disabled = true;
+    setStatus('Conectando con el servidor IA…');
+    out.textContent = 'Pensando…';
+    if (fsContent) fsContent.textContent = out.textContent;
+
+    try {
+      const resp = await fetch(`${V5_API}/ai/ask`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(bodyWP),
+      });
+      const r = await resp.json();
+      out.textContent = (r && r.answer) ? r.answer : 'Sin respuesta.';
+      if (fsContent) fsContent.textContent = out.textContent;
+      setStatus('Respuesta generada.');
+	  showToast('Respuesta lista para usar en clase.');
+
+    } catch(e){
+      out.textContent = e?.message || 'No se pudo generar respuesta.';
+      setStatus('Error al llamar a /ai/ask.');
+    } finally {
+      sendBtn.disabled = false;
+    }
+  }
+
+  sendBtn && sendBtn.addEventListener('click', askAI);
+  input && input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) askAI();
+  });
+})();
+</script>

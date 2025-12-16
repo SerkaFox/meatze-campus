@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<style>
+
+.mz-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #555;
+}
+
+.mz-empty h4 {
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+.mz-empty-hint {
+  margin-top: 16px;
+  font-size: 13px;
+  opacity: .7;
+}
+
+.mz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px,1fr));
+  gap: 12px;
+}
+
+.mz-course {
+  display: block;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #e3ecf5;
+  background: #fff;
+  text-decoration: none;
+  color: inherit;
+  transition: .15s;
+}
+
+.mz-course:hover {
+  border-color: #0e73b8;
+  transform: translateY(-2px);
+  
+}
+/* === Alumno · glass card === */
+.mzc-card{
+  padding:20px 22px;
+  border-radius:18px;
+
+  background: rgba(255,255,255,.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  border:1px solid rgba(255,255,255,.35);
+  box-shadow:
+    0 20px 40px rgba(0,0,0,.18),
+    inset 0 1px 0 rgba(255,255,255,.6);
+}
+
+/* Title */
+.mzc-title{
+  margin:0 0 6px;
+  font-size:22px;
+  font-weight:950;
+  color:#0f172a;
+}
+
+/* Subtitle / note */
+.mzc-note{
+  margin:0 0 14px;
+  font-size:14px;
+  font-weight:700;
+  color:#334155;
+}
+
+</style>
+<div class="mz-wrap">
+
+  <div class="mzc-card">
+    <h3 class="mzc-title">Área de cursos</h3>
+
+    {% if cursos %}
+      <p class="mzc-note">Cursos en los que estás inscrito:</p>
+
+      <div class="mz-grid">
+        {% for c in cursos %}
+<a href="{% url 'panel:course' c.codigo %}"
+   class="mz-course"
+   data-action="course.open"
+   data-curso="{{ c.codigo }}">
+
+            <strong>{{ c.titulo }}</strong><br>
+            <small>{{ c.codigo }}</small>
+          </a>
+        {% endfor %}
+      </div>
+
+    {% else %}
+      <!-- 🟡 ЗАГЛУШКА -->
+      <div class="mz-empty">
+        <h4>⏳ Aún no estás inscrito en ningún curso</h4>
+        <p>
+          Tu acceso está activo, pero todavía no se te ha asignado ningún curso.
+        </p>
+        <p>
+          Cuando comience el curso o se complete la matrícula,
+          aparecerá automáticamente aquí.
+        </p>
+
+        <div class="mz-empty-hint">
+          Si crees que es un error, contacta con tu centro de formación.
+        </div>
+      </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

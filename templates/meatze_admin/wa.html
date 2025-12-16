@@ -1,0 +1,74 @@
+
+<section id="ui-wa" class="mz-pane" data-active="false">
+  <div class="mz-card">
+    <h3 style="margin-top:0">Mensajes entrantes WhatsApp</h3>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+      <select id="mzi-src" class="mz-sel" style="max-width:220px">
+        <option value="">Todos</option>
+        <option value="Bilbao">Bilbao</option>
+        <option value="Barakaldo">Barakaldo</option>
+      </select>
+
+      <button id="mzi-refresh" class="mz-btn link" data-action="wa.inbox.refresh">Recargar</button>
+
+      <span class="mz-help">Últimos mensajes recibidos (máx. 50)</span>
+    </div>
+
+    <div style="
+      display:grid;
+      grid-template-columns:260px minmax(0,1fr);
+      gap:10px;
+      align-items:stretch;
+    ">
+      <div>
+        <div class="mz-help">Conversaciones recientes</div>
+        <div id="mzi-thread-list" style="
+          margin-top:4px;
+          border:1px solid #e5e7eb;
+          border-radius:10px;
+          max-height:360px;
+          overflow-y:auto;
+          background:#f3f4f6;
+          padding:4px;
+        ">
+          <div style="padding:8px" class="mz-help">Cargando…</div>
+        </div>
+      </div>
+
+      <div>
+        <div id="mzi-chat-empty" class="mz-help" style="margin-top:4px">
+          Selecciona un contacto en la lista para ver el historial y responder.
+        </div>
+
+        <div id="mzi-chat" class="wa-chat" style="margin-top:4px; display:none">
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div>
+              <div class="mz-help">Responder a</div>
+              <div id="mzi-chat-title" style="font-weight:600;font-size:14px"></div>
+            </div>
+            <button type="button" id="mzi-chat-close" class="mz-btn link sm" data-action="wa.chat.close">Cerrar</button>
+          </div>
+
+          <div id="mzi-chat-log" style="
+            border:1px solid #e5e7eb;
+            border-radius:10px;
+            padding:8px;
+            max-height:300px;
+            overflow-y:auto;
+            background:#f9fafb;
+            font-size:13px;
+            margin-bottom:6px;
+          "></div>
+
+          <div style="display:flex;gap:6px;align-items:flex-start">
+            <textarea id="mzi-chat-input" rows="2" class="mz-inp"
+                      placeholder="Escribe tu respuesta…"></textarea>
+            <button type="button" id="mzi-chat-send" class="mz-btn sm" data-action="wa.chat.send">Enviar</button>
+          </div>
+          <div id="mzi-chat-msg" class="mz-help" style="margin-top:4px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

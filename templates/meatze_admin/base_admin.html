@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<script>
+  window.MZ_NOTIFY_URL = "{% static 'files/meatze_notify.mp3' %}";
+</script>
+
+{% block extra_head %}
+
+<link rel="stylesheet" href="{% static 'meatze/admin/teachers.css' %}?v={{ now|date:'U' }}">
+<link rel="stylesheet" href="{% static 'meatze/admin/subs.css' %}?v={{ now|date:'U' }}">
+<link rel="stylesheet" href="{% static 'meatze/admin/horarios.css' %}?v={{ now|date:'U' }}">
+<link rel="stylesheet" href="{% static 'meatze/admin/cursos.css' %}?v={{ now|date:'U' }}">
+<link rel="stylesheet" href="{% static 'meatze/admin/wa.css' %}?v={{ now|date:'U' }}">
+<link rel="stylesheet" href="{% static 'meatze/admin/admin-ui.css' %}?v={{ now|date:'U' }}">
+{% endblock %}
+
+
+<div class="mz-admin-scope">
+  <div id="adm-shell" class="mz-shell is-locked">
+
+
+    <div id="adm-shared-gate" class="mz-card">
+      <h3 class="mz-title">Administración</h3>
+      <p class="mz-help">Introduce la contraseña de administrador para acceder a los módulos.</p>
+
+      <div style="display:grid;grid-template-columns:1fr auto;gap:8px;max-width:520px">
+        <div class="mz-eye-wrap">
+          <input id="adm-pass-shared" type="password" class="mz-inp" placeholder="Contraseña de la página">
+          <button id="adm-eye-shared" class="mz-eye-btn" type="button" aria-label="Mostrar/ocultar">👁</button>
+        </div>
+        <button id="adm-enter-shared" class="mz-btn" type="button">Entrar</button>
+      </div>
+
+      <div id="adm-gate-msg" class="mz-help" style="margin-top:6px"></div>
+    </div>
+
+    <div id="adm-pills" class="mz-card" role="tablist" aria-label="Administración">
+      <div class="pillbar">
+        <button class="pill" data-mod="teachers">Docentes</button>
+        <button class="pill" data-mod="cursos">Cursos</button>
+        <button class="pill" data-mod="horarios">Horarios</button>
+        <button class="pill" data-mod="subs">Subs & envíos</button>
+        <button class="pill" data-mod="wa">WhatsApp</button>
+      </div>
+    </div>
+
+    {% include "meatze_admin/teachers.html" %}
+    {% include "meatze_admin/cursos.html" %}
+    {% include "meatze_admin/horarios.html" %}
+    {% include "meatze_admin/subs.html" %}
+    {% include "meatze_admin/wa.html" %}
+
+  </div>
+</div>
+
+<script src="{% static 'meatze/admin/admin-core.js' %}?v={{ now|date:'U' }}"></script>
+<script src="{% static 'meatze/admin/teachers.js' %}?v={{ now|date:'U' }}"></script>
+<script src="{% static 'meatze/admin/cursos.js' %}?v={{ now|date:'U' }}"></script>
+<script src="{% static 'meatze/admin/horarios.js' %}?v={{ now|date:'U' }}"></script>
+<script src="{% static 'meatze/admin/subs.js' %}?v={{ now|date:'U' }}"></script>
+<script src="{% static 'meatze/admin/wa.js' %}?v={{ now|date:'U' }}"></script>
+{% endblock %}

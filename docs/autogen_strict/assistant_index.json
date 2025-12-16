@@ -1,0 +1,2983 @@
+{
+  "meta": {
+    "generated_from": {
+      "portal_map": "/home/iaadmin/meatze/docs/autogen_strict/portal_map.json",
+      "action_links": "/home/iaadmin/meatze/docs/autogen_strict/action_links.json",
+      "router_map": "/home/iaadmin/meatze/docs/autogen_strict/router_map.json"
+    }
+  },
+  "routes": [
+    {
+      "url": "me",
+      "view": "api.auth_views.me_view",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "(non-literal)",
+      "view": "core.views.home",
+      "name": "home",
+      "templates": [
+        "home.html"
+      ],
+      "template_keys": [
+        "tpl:home"
+      ],
+      "page_keys": [
+        "tpl:home"
+      ]
+    },
+    {
+      "url": "alumno/",
+      "view": "(unresolved)",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "admin-panel/",
+      "view": "core.views.admin_panel",
+      "name": "admin_panel",
+      "templates": [
+        "meatze_admin/base_admin.html"
+      ],
+      "template_keys": [
+        "admin:base_admin"
+      ],
+      "page_keys": [
+        "admin:base_admin"
+      ]
+    },
+    {
+      "url": "meatze/v5/me",
+      "view": "api.auth_views.me_view",
+      "name": "meatze-me",
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/me/profile",
+      "view": "api.profile_views.me_profile",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/me/password",
+      "view": "api.profile_views.me_change_password",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/admin/ping",
+      "view": "api.views.admin_ping",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/notify/subscribers",
+      "view": "api.notify_views.subscribers",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/notify/wa-upsert",
+      "view": "api.notify_views.wa_upsert",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/notify/wa-toggle",
+      "view": "api.notify_views.wa_toggle",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/notify/wa-delete",
+      "view": "api.notify_views.wa_delete",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/notify/wa-import",
+      "view": "api.notify_views.wa_import",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/notify/upload-wa",
+      "view": "api.notify_views.upload_wa",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/notify/broadcast",
+      "view": "api.notify_views.broadcast",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/notify/wa-clear",
+      "view": "api.notify_views.wa_clear",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v6/ws-webhook",
+      "view": "api.notify_views.ws_webhook",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/auth/login_password",
+      "view": "api.auth_views.login_password",
+      "name": "meatze-login-password",
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/auth/set_password",
+      "view": "api.auth_views.set_password",
+      "name": "meatze-set-password",
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/auth/logout",
+      "view": "api.auth_views.logout_view",
+      "name": "meatze-logout",
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/auth/request_pin",
+      "view": "api.auth_views.request_pin",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/auth/verify_pin",
+      "view": "api.auth_views.verify_pin",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/teacher/temp/create",
+      "view": "api.views_temp.teacher_temp_create",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/teacher/temp/list",
+      "view": "api.views_temp.teacher_temp_list",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/teacher/temp/rotate",
+      "view": "api.views_temp.teacher_temp_rotate",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/auth/temp_cursos",
+      "view": "api.views.public_cursos_for_temp",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/auth/temp_accounts",
+      "view": "api.views_temp.auth_temp_accounts",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/auth/temp_verify",
+      "view": "api.views_temp.auth_temp_verify",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/auth/temp_claim",
+      "view": "api.views_temp.auth_temp_claim",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/teacher/alumno/reset_pass",
+      "view": "api.views_temp.teacher_alumno_reset_pass",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/ai/warmup",
+      "view": "api.views_ai.ai_warmup",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/ai/ask",
+      "view": "api.views_ai.ai_ask",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/ai/help",
+      "view": "api.views_ai.ai_help",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/admin/teachers",
+      "view": "api.views.admin_teachers_upsert",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/admin/teachers/<int:user_id>",
+      "view": "api.views.admin_teacher_update",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/admin/teachers/<int:user_id>/delete",
+      "view": "api.views.admin_teacher_delete",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/admin/cursos",
+      "view": "api.views.admin_cursos_list",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/admin/cursos/upsert",
+      "view": "api.views.admin_cursos_upsert",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/curso/<str:codigo>/alumnos",
+      "view": "api.views.curso_alumnos",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/admin/cursos/<int:curso_id>/delete",
+      "view": "api.views.admin_curso_delete",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/curso/<str:codigo>/horario",
+      "view": "api.views.curso_horario",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/curso/<str:codigo>/horario/save",
+      "view": "api.views.curso_horario",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/curso/<str:codigo>/horario/bulk-delete",
+      "view": "api.views.curso_horario_bulk_delete",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/admin/curso/<str:codigo>/auto-schedule",
+      "view": "api.views.admin_auto_schedule",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/admin/curso/<str:codigo>/fecha_inicio",
+      "view": "api.views.admin_curso_fecha_inicio",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/export-docx-graphic",
+      "view": "api.views.export_docx_graphic",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/admin/enrolments",
+      "view": "api.views.admin_enrolments_list",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/admin/cursos/assign",
+      "view": "api.views.admin_cursos_assign",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/admin/fixed-nonlective",
+      "view": "api.views.admin_fixed_nonlective",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/admin/holidays/<int:year>",
+      "view": "api.views.admin_holidays",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/news/subscribers",
+      "view": "api.views.news_subscribers",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "meatze/v5/notify/wa-inbox",
+      "view": "api.notify_views.wa_inbox",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    },
+    {
+      "url": "panel/",
+      "view": "(unresolved)",
+      "name": null,
+      "templates": [],
+      "template_keys": [],
+      "page_keys": []
+    }
+  ],
+  "pages": {
+    "tpl:base": {
+      "page_key": "tpl:base",
+      "templates": [
+        "templates/base.html"
+      ],
+      "scripts": [],
+      "script_keys": [],
+      "ui": {
+        "ids": [
+          "ack-saved",
+          "auth-email",
+          "auth-pass",
+          "auth-pass-login",
+          "auth-pin",
+          "auto-login-msg",
+          "btn-done",
+          "btn-login-pass",
+          "btn-open-temp",
+          "btn-resend",
+          "btn-send-pin",
+          "btn-setpass",
+          "btn-temp-back",
+          "btn-temp-cancel",
+          "btn-temp-check",
+          "btn-temp-enter",
+          "btn-temp-finish",
+          "btn-verify",
+          "msg-pass-login",
+          "msg-pin",
+          "msg-setpass",
+          "msg-temp",
+          "msg-temp-finish",
+          "mz-acc",
+          "mz-acc-menu",
+          "mz-acc-user",
+          "mz-auth",
+          "mz-auth-close",
+          "mz-auth-ov",
+          "mz-auth-title",
+          "mz-btn-login",
+          "mz-prof",
+          "mz-prof-bio",
+          "mz-prof-cancel",
+          "mz-prof-close",
+          "mz-prof-display",
+          "mz-prof-first",
+          "mz-prof-last1",
+          "mz-prof-last2",
+          "mz-prof-msg",
+          "mz-prof-ov",
+          "mz-prof-pass-msg",
+          "mz-prof-pass1",
+          "mz-prof-pass2",
+          "mz-prof-save",
+          "mz-prof-title",
+          "mz-top",
+          "new-email-display",
+          "new-pass-display",
+          "pin-wrap",
+          "step-email",
+          "step-setpass",
+          "step-temp",
+          "step-temp-finish",
+          "temp-code",
+          "temp-course",
+          "temp-fullname",
+          "temp-name",
+          "temp-pass"
+        ],
+        "classes": [
+          "ghost",
+          "icon",
+          "link",
+          "mz-acc",
+          "mz-acc-arrow",
+          "mz-acc-avatar",
+          "mz-acc-item",
+          "mz-acc-menu",
+          "mz-acc-name",
+          "mz-auth-actions",
+          "mz-auth-b",
+          "mz-auth-h",
+          "mz-auth-title",
+          "mz-brand",
+          "mz-brand-badge",
+          "mz-btn",
+          "mz-btn-top",
+          "mz-copy",
+          "mz-field",
+          "mz-grid2",
+          "mz-help",
+          "mz-inp",
+          "mz-label",
+          "mz-ok",
+          "mz-page",
+          "mz-prof-b",
+          "mz-prof-h",
+          "mz-prof-title",
+          "mz-reveal",
+          "mz-top-cta",
+          "mz-top-inner",
+          "mz-top-right",
+          "mz-x",
+          "sm"
+        ]
+      },
+      "js": {
+        "apiBases": {},
+        "endpoints": [],
+        "endpointsTemplates": [],
+        "endpointsParts": [],
+        "domSelectors": [],
+        "events": [],
+        "functions": [],
+        "globals": []
+      },
+      "actions": []
+    },
+    "tpl:home": {
+      "page_key": "tpl:home",
+      "templates": [
+        "templates/home.html"
+      ],
+      "scripts": [],
+      "script_keys": [],
+      "ui": {
+        "ids": [
+          "mz-ai-footnote",
+          "mz-ai-input",
+          "mz-ai-log",
+          "mz-ai-send"
+        ],
+        "classes": [
+          "mz-ai-avatar",
+          "mz-ai-avatar-inner",
+          "mz-ai-badge",
+          "mz-ai-card",
+          "mz-ai-foot",
+          "mz-ai-head",
+          "mz-ai-head-txt",
+          "mz-ai-input",
+          "mz-ai-input-row",
+          "mz-ai-log",
+          "mz-ai-send",
+          "mz-ai-status",
+          "mz-ai-tags",
+          "mz-chip-tag",
+          "mz-dot",
+          "mz-hero-card",
+          "mz-hero-cta",
+          "mz-hero-feats",
+          "mz-hero-footer",
+          "mz-hero-note",
+          "mz-hero-pill",
+          "mz-hero-sub",
+          "mz-hero-title",
+          "mz-home-grid",
+          "mz-home-wrap"
+        ]
+      },
+      "js": {
+        "apiBases": {},
+        "endpoints": [],
+        "endpointsTemplates": [],
+        "endpointsParts": [],
+        "domSelectors": [],
+        "events": [],
+        "functions": [],
+        "globals": []
+      },
+      "actions": []
+    },
+    "panel:alumno_home": {
+      "page_key": "panel:alumno_home",
+      "templates": [
+        "templates/panel/alumno_home.html"
+      ],
+      "scripts": [],
+      "script_keys": [],
+      "ui": {
+        "ids": [],
+        "classes": [
+          "mz-course",
+          "mz-empty",
+          "mz-empty-hint",
+          "mz-grid",
+          "mz-wrap",
+          "mzc-card",
+          "mzc-note",
+          "mzc-title"
+        ]
+      },
+      "js": {
+        "apiBases": {},
+        "endpoints": [],
+        "endpointsTemplates": [],
+        "endpointsParts": [],
+        "domSelectors": [],
+        "events": [],
+        "functions": [],
+        "globals": []
+      },
+      "actions": []
+    },
+    "panel:course_panel": {
+      "page_key": "panel:course_panel",
+      "templates": [
+        "templates/panel/course_panel.html"
+      ],
+      "scripts": [],
+      "script_keys": [],
+      "ui": {
+        "ids": [
+          "mz-panel",
+          "mz-panel-overlay",
+          "mz-panel-wrap",
+          "mzp-body"
+        ],
+        "classes": [
+          "%}",
+          "==",
+          "active_tab",
+          "dot",
+          "endif",
+          "ghost{%",
+          "if",
+          "is-act{%",
+          "m.slug",
+          "mz-tabs",
+          "mzc-btn",
+          "mzc-card",
+          "mzc-head",
+          "mzc-note",
+          "mzc-tab-inner",
+          "mzc-title",
+          "mzc-wrap"
+        ]
+      },
+      "js": {
+        "apiBases": {},
+        "endpoints": [],
+        "endpointsTemplates": [],
+        "endpointsParts": [],
+        "domSelectors": [],
+        "events": [],
+        "functions": [],
+        "globals": []
+      },
+      "actions": []
+    },
+    "panel:calendario": {
+      "page_key": "panel:calendario",
+      "templates": [
+        "templates/panel/tabs/calendario.html"
+      ],
+      "scripts": [],
+      "script_keys": [],
+      "ui": {
+        "ids": [
+          "mc-scope-curso",
+          "mc-scope-prac",
+          "mcal-day",
+          "mcal-dow",
+          "mcal-grid",
+          "mcal-legend",
+          "mcal-next",
+          "mcal-prev",
+          "mzt-cal"
+        ],
+        "classes": [
+          "ghost",
+          "mz-seg",
+          "mzc-btn",
+          "mzc-cal",
+          "mzc-calHead",
+          "mzc-card",
+          "mzc-chip",
+          "mzc-day",
+          "mzc-dot",
+          "mzc-grid7",
+          "mzc-leg",
+          "mzc-legItem",
+          "mzc-muted",
+          "mzc-note"
+        ]
+      },
+      "js": {
+        "apiBases": {},
+        "endpoints": [],
+        "endpointsTemplates": [],
+        "endpointsParts": [],
+        "domSelectors": [],
+        "events": [],
+        "functions": [],
+        "globals": []
+      },
+      "actions": []
+    },
+    "panel:info": {
+      "page_key": "panel:info",
+      "templates": [
+        "templates/panel/tabs/info.html"
+      ],
+      "scripts": [],
+      "script_keys": [],
+      "ui": {
+        "ids": [],
+        "classes": [
+          "mz-info-card",
+          "mz-info-chip",
+          "mz-info-head",
+          "mz-info-label",
+          "mz-info-line",
+          "mz-info-meta",
+          "mz-info-mod-hours",
+          "mz-info-mod-item",
+          "mz-info-mod-name",
+          "mz-info-mods",
+          "mz-info-mods-head",
+          "mz-info-mods-list",
+          "mz-info-mods-title",
+          "mz-info-title",
+          "mz-info-value"
+        ]
+      },
+      "js": {
+        "apiBases": {},
+        "endpoints": [],
+        "endpointsTemplates": [],
+        "endpointsParts": [],
+        "domSelectors": [],
+        "events": [],
+        "functions": [],
+        "globals": []
+      },
+      "actions": []
+    },
+    "panel:chat": {
+      "page_key": "panel:chat",
+      "templates": [
+        "templates/panel/tabs/chat.html"
+      ],
+      "scripts": [],
+      "script_keys": [],
+      "ui": {
+        "ids": [
+          "${id}",
+          "${m.id}",
+          "${mid}",
+          "${msgId}",
+          "${msg}",
+          "mz-attach",
+          "mz-chat-root",
+          "mz-emoji",
+          "mz-send",
+          "mzcl",
+          "mzcu-unread",
+          "mzf",
+          "mzi"
+        ],
+        "classes": [
+          "${self",
+          "''}",
+          "'me'",
+          ":",
+          "?",
+          "cnt",
+          "emo",
+          "ghost",
+          "itm",
+          "mz-avatar",
+          "mz-bubble",
+          "mz-chat",
+          "mz-chat-head",
+          "mz-chat-hint",
+          "mz-chat-list",
+          "mz-chat-shell",
+          "mz-chat-title",
+          "mz-chat-unread",
+          "mz-chip",
+          "mz-chip${mine}",
+          "mz-chips",
+          "mz-emoji",
+          "mz-file",
+          "mz-input",
+          "mz-input-btn",
+          "mz-input-send",
+          "mz-input-text",
+          "mz-meta",
+          "mz-msg",
+          "mz-msg-del",
+          "mz-msg-new",
+          "mz-react-btn",
+          "mz-reactions",
+          "mz-tab-badge",
+          "mz-tab-dot",
+          "mz-text",
+          "mzc-btn",
+          "mzc-inp",
+          "mzc-note",
+          "mzc-title"
+        ]
+      },
+      "js": {
+        "apiBases": {},
+        "endpoints": [],
+        "endpointsTemplates": [],
+        "endpointsParts": [],
+        "domSelectors": [],
+        "events": [],
+        "functions": [],
+        "globals": []
+      },
+      "actions": []
+    },
+    "panel:materiales": {
+      "page_key": "panel:materiales",
+      "templates": [
+        "templates/panel/tabs/materiales.html"
+      ],
+      "scripts": [],
+      "script_keys": [],
+      "ui": {
+        "ids": [
+          "mz-upl-add",
+          "mz-upl-rows",
+          "mzf-send",
+          "{{ f.id }}"
+        ],
+        "classes": [
+          "%}",
+          "'none'",
+          "==",
+          "audience",
+          "endif",
+          "ghost",
+          "ghost{%",
+          "if",
+          "is-act{%",
+          "key",
+          "m.name",
+          "muted",
+          "mz-chip-mini",
+          "mz-file-clear",
+          "mz-mat-actions",
+          "mz-mat-audience",
+          "mz-mat-card",
+          "mz-mat-count",
+          "mz-mat-dot",
+          "mz-mat-head",
+          "mz-mat-item",
+          "mz-mat-list",
+          "mz-mat-main",
+          "mz-mat-meta",
+          "mz-mat-modfilters",
+          "mz-mat-sub",
+          "mz-mat-tag",
+          "mz-mat-title",
+          "mz-mat-title-file",
+          "mz-pill{%",
+          "mz-seg",
+          "mz-upl",
+          "mz-upl-input",
+          "mz-upl-remove-row",
+          "mz-upl-row",
+          "mz-upl-rows",
+          "mz-upl-select",
+          "mz-upl-wrap",
+          "mzc-btn",
+          "mzc-card",
+          "mzc-note",
+          "not",
+          "selected_mod"
+        ]
+      },
+      "js": {
+        "apiBases": {},
+        "endpoints": [],
+        "endpointsTemplates": [],
+        "endpointsParts": [],
+        "domSelectors": [],
+        "events": [],
+        "functions": [],
+        "globals": []
+      },
+      "actions": []
+    },
+    "panel:ia": {
+      "page_key": "panel:ia",
+      "templates": [
+        "templates/panel/tabs/ia.html"
+      ],
+      "scripts": [],
+      "script_keys": [],
+      "ui": {
+        "ids": [
+          "mzt-ai",
+          "mzt-ai-present-close",
+          "mzt-ai-present-copy",
+          "mzt-ai-present-overlay",
+          "mzt-copy",
+          "mzt-full",
+          "mzt-full-close",
+          "mzt-full-content",
+          "mzt-full-copy",
+          "mzt-fullscreen",
+          "mzt-input",
+          "mzt-module",
+          "mzt-out",
+          "mzt-presets",
+          "mzt-send",
+          "mzt-status",
+          "mzt-toast",
+          "mzt-topic",
+          "mzt-use-course"
+        ],
+        "classes": [
+          "close",
+          "ghost",
+          "is-act",
+          "mz-seg",
+          "mzc-btn",
+          "mzc-card",
+          "mzc-h2",
+          "mzc-inp",
+          "mzc-note",
+          "mzt-ai-btn",
+          "mzt-checkbox",
+          "mzt-field",
+          "mzt-footer",
+          "mzt-full-actions",
+          "mzt-full-content",
+          "mzt-full-head",
+          "mzt-full-inner",
+          "mzt-fullscreen",
+          "mzt-input-card",
+          "mzt-label",
+          "mzt-levels",
+          "mzt-lvl",
+          "mzt-main-btn",
+          "mzt-out",
+          "mzt-output-actions",
+          "mzt-output-card",
+          "mzt-output-head",
+          "mzt-output-title",
+          "mzt-presets",
+          "mzt-presets-label",
+          "mzt-presets-wrap",
+          "mzt-row",
+          "mzt-row-level",
+          "mzt-row-topic",
+          "mzt-sm-btn",
+          "mzt-status",
+          "mzt-textarea",
+          "mzt-toast"
+        ]
+      },
+      "js": {
+        "apiBases": {},
+        "endpoints": [],
+        "endpointsTemplates": [],
+        "endpointsParts": [],
+        "domSelectors": [],
+        "events": [],
+        "functions": [],
+        "globals": []
+      },
+      "actions": []
+    },
+    "panel:alumnos": {
+      "page_key": "panel:alumnos",
+      "templates": [
+        "templates/panel/tabs/alumnos.html"
+      ],
+      "scripts": [],
+      "script_keys": [],
+      "ui": {
+        "ids": [
+          "mz-alumnos-tab",
+          "mz-temp-count",
+          "mz-temp-dl",
+          "mz-temp-gen",
+          "mz-temp-msg",
+          "mz-temp-present",
+          "mz-temp-present-overlay",
+          "mz-temp-root",
+          "mz-temp-rot",
+          "mz-temp-sel",
+          "mz-temp-table",
+          "mz-tp-close",
+          "{{ s.id }}"
+        ],
+        "classes": [
+          "ghost",
+          "mz-alu-actions",
+          "mz-alu-badge",
+          "mz-alu-head",
+          "mz-alu-inline-pass",
+          "mz-alu-sub",
+          "mz-alu-tablewrap",
+          "mz-alu-title",
+          "mz-copy",
+          "mz-inline-pass",
+          "mz-pass-copy",
+          "mz-tbl",
+          "mz-temp-bar",
+          "mz-temp-input",
+          "mz-temp-present-wrap",
+          "mz-temp-select",
+          "mzc-btn",
+          "mzc-card",
+          "mzc-h2",
+          "mzc-inp",
+          "mzc-note",
+          "sm"
+        ]
+      },
+      "js": {
+        "apiBases": {},
+        "endpoints": [],
+        "endpointsTemplates": [],
+        "endpointsParts": [],
+        "domSelectors": [],
+        "events": [],
+        "functions": [],
+        "globals": []
+      },
+      "actions": []
+    },
+    "admin:cursos": {
+      "page_key": "admin:cursos",
+      "templates": [
+        "templates/meatze_admin/cursos.html"
+      ],
+      "scripts": [
+        "static/meatze/admin/cursos.js"
+      ],
+      "script_keys": [
+        "admin:cursos"
+      ],
+      "ui": {
+        "ids": [
+          "mzc-ca-assign",
+          "mzc-ca-assigned",
+          "mzc-ca-codigo",
+          "mzc-ca-curso",
+          "mzc-ca-msg",
+          "mzc-ca-reload",
+          "mzc-ca-teachers-chips",
+          "mzc-cf-clear",
+          "mzc-cf-codigo",
+          "mzc-cf-list",
+          "mzc-cf-modulos",
+          "mzc-cf-msg",
+          "mzc-cf-save",
+          "mzc-cf-titulo",
+          "mzc-cf-total-horas",
+          "mzc-cf-total-modulos",
+          "mzc-pane-assign",
+          "mzc-pane-form",
+          "mzc-tab-assign",
+          "mzc-tab-form",
+          "ui-cursos"
+        ],
+        "classes": [
+          "cols-2",
+          "hub",
+          "link",
+          "mz-btn",
+          "mz-card",
+          "mz-chipbox",
+          "mz-help",
+          "mz-inp",
+          "mz-pane",
+          "mz-row",
+          "mz-sel",
+          "mz-table"
+        ]
+      },
+      "js": {
+        "apiBases": {
+          "API_BASE": "((window.wpApiSettings?.root)||'/').replace(/\\/$/,'') + '/meatze/v5'",
+          "API_A": "API_BASE + '/admin'"
+        },
+        "endpoints": [],
+        "endpointsTemplates": [
+          "`${API_A}/cursos/upsert${qs()}`",
+          "`${API_A}/cursos${qs(true)}`",
+          "`${API_A}/cursos/${it.id}/delete${qs()}`",
+          "`${API_A}/teachers${qs(true)}`",
+          "`${API_A}/cursos/assign${qs()}`"
+        ],
+        "endpointsParts": [
+          "/",
+          "/meatze/v5",
+          "/admin"
+        ],
+        "domSelectors": [
+          "#ui-cursos",
+          "#mzc-tab-form",
+          "#mzc-tab-assign",
+          "#mzc-pane-form",
+          "#mzc-pane-assign",
+          "#mzc-cf-titulo",
+          "#mzc-cf-codigo",
+          "#mzc-cf-modulos",
+          "#mzc-cf-total-horas",
+          "#mzc-cf-total-modulos",
+          "#mzc-cf-msg",
+          "#mzc-cf-list",
+          "#mzc-ca-curso",
+          "#mzc-ca-codigo",
+          "#mzc-ca-msg",
+          "#mzc-ca-teachers-chips",
+          "#mzc-cf-save",
+          "#mzc-cf-clear",
+          "#mzc-ca-assigned",
+          "#mzc-ca-reload",
+          "#mzc-ca-assign"
+        ],
+        "events": [
+          "input @ line 165",
+          "paste @ line 166",
+          "mz:cursos-updated @ line 213 (dispatchEvent)",
+          "mz:cursos-updated @ line 331 (dispatchEvent)",
+          "click @ line 357",
+          "change @ line 414",
+          "click @ line 415",
+          "click @ line 421",
+          "mz:admin-auth @ line 443",
+          "mz:pane:show @ line 446"
+        ],
+        "functions": [
+          {
+            "name": "$",
+            "type": "arrow",
+            "params": [
+              "s"
+            ],
+            "loc": {
+              "start": {
+                "line": 3
+              }
+            }
+          },
+          {
+            "name": "tok",
+            "type": "arrow",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 6
+              }
+            }
+          },
+          {
+            "name": "qs",
+            "type": "arrow",
+            "params": [
+              "bust=..."
+            ],
+            "loc": {
+              "start": {
+                "line": 7
+              }
+            }
+          },
+          {
+            "name": "auth",
+            "type": "arrow",
+            "params": [
+              "isPost=..."
+            ],
+            "loc": {
+              "start": {
+                "line": 8
+              }
+            }
+          },
+          {
+            "name": "apiJSON",
+            "type": "function",
+            "params": [
+              "url",
+              "opt=..."
+            ],
+            "loc": {
+              "start": {
+                "line": 9
+              }
+            }
+          },
+          {
+            "name": "toModulesArray",
+            "type": "function",
+            "params": [
+              "modsRaw"
+            ],
+            "loc": {
+              "start": {
+                "line": 22
+              }
+            }
+          },
+          {
+            "name": "esc",
+            "type": "arrow",
+            "params": [
+              "s"
+            ],
+            "loc": {
+              "start": {
+                "line": 50
+              }
+            }
+          },
+          {
+            "name": "normId",
+            "type": "arrow",
+            "params": [
+              "v"
+            ],
+            "loc": {
+              "start": {
+                "line": 51
+              }
+            }
+          },
+          {
+            "name": "parseModulesBasic",
+            "type": "function",
+            "params": [
+              "text"
+            ],
+            "loc": {
+              "start": {
+                "line": 74
+              }
+            }
+          },
+          {
+            "name": "updateCounters",
+            "type": "function",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 160
+              }
+            }
+          },
+          {
+            "name": "setTab",
+            "type": "function",
+            "params": [
+              "which"
+            ],
+            "loc": {
+              "start": {
+                "line": 169
+              }
+            }
+          },
+          {
+            "name": "loadList",
+            "type": "function",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 224
+              }
+            }
+          },
+          {
+            "name": "buildTeacherChips",
+            "type": "function",
+            "params": [
+              "teachers",
+              "assignedSet"
+            ],
+            "loc": {
+              "start": {
+                "line": 347
+              }
+            }
+          },
+          {
+            "name": "getSelectedTeacherIdsFromChips",
+            "type": "function",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 364
+              }
+            }
+          },
+          {
+            "name": "renderAssignedBadges",
+            "type": "function",
+            "params": [
+              "enrolItems"
+            ],
+            "loc": {
+              "start": {
+                "line": 367
+              }
+            }
+          },
+          {
+            "name": "loadAssignForm",
+            "type": "function",
+            "params": [
+              "force=..."
+            ],
+            "loc": {
+              "start": {
+                "line": 377
+              }
+            }
+          },
+          {
+            "name": "updateAssignedTeachers",
+            "type": "function",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 402
+              }
+            }
+          },
+          {
+            "name": "initCursosOnce",
+            "type": "function",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 20
+              }
+            }
+          }
+        ],
+        "globals": [
+          "$",
+          "API_BASE",
+          "API_A",
+          "tok",
+          "qs",
+          "auth",
+          "apiJSON",
+          "cursosReady",
+          "editingId",
+          "initCursosOnce"
+        ]
+      },
+      "actions": [
+        {
+          "selector": null,
+          "event": "input",
+          "line": 165,
+          "handlerName": "updateCounters",
+          "calls": [],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": null,
+          "event": "paste",
+          "line": 166,
+          "handlerName": null,
+          "calls": [
+            "setTimeout"
+          ],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": null,
+          "event": "click",
+          "line": 357,
+          "handlerName": null,
+          "calls": [
+            "getAttribute",
+            "setAttribute"
+          ],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": null,
+          "event": "change",
+          "line": 414,
+          "handlerName": "updateAssignedTeachers",
+          "calls": [],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": "#mzc-ca-reload",
+          "event": "click",
+          "line": 415,
+          "handlerName": null,
+          "calls": [
+            "loadAssignForm",
+            "updateAssignedTeachers"
+          ],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": "#mzc-ca-assign",
+          "event": "click",
+          "line": 421,
+          "handlerName": null,
+          "calls": [
+            "trim",
+            "getSelectedTeacherIdsFromChips",
+            "qs",
+            "auth",
+            "stringify",
+            "apiJSON",
+            "updateAssignedTeachers"
+          ],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": null,
+          "event": "mz:admin-auth",
+          "line": 443,
+          "handlerName": null,
+          "calls": [
+            "initCursosOnce"
+          ],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": "#ui-cursos",
+          "event": "mz:pane:show",
+          "line": 446,
+          "handlerName": null,
+          "calls": [
+            "initCursosOnce"
+          ],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        }
+      ]
+    },
+    "admin:base_admin": {
+      "page_key": "admin:base_admin",
+      "templates": [
+        "templates/meatze_admin/base_admin.html"
+      ],
+      "scripts": [],
+      "script_keys": [],
+      "ui": {
+        "ids": [
+          "adm-enter-shared",
+          "adm-eye-shared",
+          "adm-gate-msg",
+          "adm-pass-shared",
+          "adm-pills",
+          "adm-shared-gate"
+        ],
+        "classes": [
+          "mz-btn",
+          "mz-card",
+          "mz-eye-btn",
+          "mz-eye-wrap",
+          "mz-help",
+          "mz-inp",
+          "mz-page",
+          "pill",
+          "pillbar"
+        ]
+      },
+      "js": {
+        "apiBases": {},
+        "endpoints": [],
+        "endpointsTemplates": [],
+        "endpointsParts": [],
+        "domSelectors": [],
+        "events": [],
+        "functions": [],
+        "globals": []
+      },
+      "actions": []
+    },
+    "admin:horarios": {
+      "page_key": "admin:horarios",
+      "templates": [
+        "templates/meatze_admin/horarios.html"
+      ],
+      "scripts": [],
+      "script_keys": [],
+      "ui": {
+        "ids": [
+          "mzh-alumno",
+          "mzh-alumno-wrap",
+          "mzh-auto-aula",
+          "mzh-auto-desde",
+          "mzh-auto-end",
+          "mzh-auto-end-wrap",
+          "mzh-auto-hasta",
+          "mzh-auto-horas",
+          "mzh-auto-horas-wrap",
+          "mzh-auto-msg",
+          "mzh-auto-nota",
+          "mzh-auto-nota-wrap",
+          "mzh-auto-panel",
+          "mzh-auto-run",
+          "mzh-auto-skiphol",
+          "mzh-auto-start",
+          "mzh-busy",
+          "mzh-busybar",
+          "mzh-busytxt",
+          "mzh-ctx",
+          "mzh-curso",
+          "mzh-dow-1",
+          "mzh-dow-2",
+          "mzh-dow-3",
+          "mzh-dow-4",
+          "mzh-dow-5",
+          "mzh-dow-6",
+          "mzh-dow-7",
+          "mzh-export-graphic",
+          "mzh-firstday-desde",
+          "mzh-firstday-hasta",
+          "mzh-firstday-special",
+          "mzh-firstday-wrap",
+          "mzh-fixed-msg",
+          "mzh-fixed-panel",
+          "mzh-fixed-save",
+          "mzh-fixed-toggle",
+          "mzh-fixed-y1",
+          "mzh-fixed-y1-label",
+          "mzh-fixed-y2",
+          "mzh-fixed-y2-label",
+          "mzh-grid",
+          "mzh-hol-list",
+          "mzh-hol-stats",
+          "mzh-legend",
+          "mzh-next",
+          "mzh-prev",
+          "mzh-selcnt",
+          "mzh-tipo",
+          "mzh-title",
+          "ui-horarios"
+        ],
+        "classes": [
+          "busy-bar",
+          "busy-mask",
+          "busy-panel",
+          "cal-head",
+          "dow",
+          "grid",
+          "legend",
+          "link",
+          "mz-auto-aula",
+          "mz-auto-card",
+          "mz-auto-dow",
+          "mz-auto-dow-list",
+          "mz-auto-flag",
+          "mz-auto-flags",
+          "mz-auto-footer",
+          "mz-auto-grid",
+          "mz-auto-head",
+          "mz-auto-info",
+          "mz-auto-panel",
+          "mz-auto-range",
+          "mz-auto-range-sep",
+          "mz-btn",
+          "mz-card",
+          "mz-editor-title",
+          "mz-fixed-actions",
+          "mz-fixed-card",
+          "mz-help",
+          "mz-inp",
+          "mz-pane",
+          "mz-row",
+          "mz-sel",
+          "primary",
+          "title"
+        ]
+      },
+      "js": {
+        "apiBases": {},
+        "endpoints": [],
+        "endpointsTemplates": [],
+        "endpointsParts": [],
+        "domSelectors": [],
+        "events": [],
+        "functions": [],
+        "globals": []
+      },
+      "actions": []
+    },
+    "admin:wa": {
+      "page_key": "admin:wa",
+      "templates": [
+        "templates/meatze_admin/wa.html"
+      ],
+      "scripts": [
+        "static/meatze/admin/wa.js"
+      ],
+      "script_keys": [
+        "admin:wa"
+      ],
+      "ui": {
+        "ids": [
+          "mzi-chat",
+          "mzi-chat-close",
+          "mzi-chat-empty",
+          "mzi-chat-input",
+          "mzi-chat-log",
+          "mzi-chat-msg",
+          "mzi-chat-send",
+          "mzi-chat-title",
+          "mzi-refresh",
+          "mzi-src",
+          "mzi-thread-list",
+          "ui-wa"
+        ],
+        "classes": [
+          "link",
+          "mz-btn",
+          "mz-card",
+          "mz-help",
+          "mz-inp",
+          "mz-pane",
+          "mz-sel",
+          "sm"
+        ]
+      },
+      "js": {
+        "apiBases": {
+          "notifyAudio": "new Audio(\n\t  window.MZ_NOTIFY_URL || '/static/files/meatze_notify.mp3'\n\t)",
+          "API_BASE": "/meatze/v5",
+          "API_N": "API_BASE + '/notify'"
+        },
+        "endpoints": [],
+        "endpointsTemplates": [],
+        "endpointsParts": [
+          "/static/files/meatze_notify.mp3",
+          "/meatze/v5",
+          "/notify",
+          "https://meatze.eus/wp-content/uploads/2024/11/meatze-icon.png"
+        ],
+        "domSelectors": [
+          "[data-thread-wa]",
+          "#ui-wa"
+        ],
+        "events": [
+          "click @ line 171",
+          "click @ line 175",
+          "change @ line 423",
+          "click @ line 426",
+          "click @ line 431",
+          "click @ line 432",
+          "mz:admin-auth @ line 443",
+          "mz:pane:show @ line 447"
+        ],
+        "functions": [
+          {
+            "name": "$",
+            "type": "arrow",
+            "params": [
+              "s",
+              "root=..."
+            ],
+            "loc": {
+              "start": {
+                "line": 4
+              }
+            }
+          },
+          {
+            "name": "tok",
+            "type": "arrow",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 19
+              }
+            }
+          },
+          {
+            "name": "qs",
+            "type": "arrow",
+            "params": [
+              "bust=..."
+            ],
+            "loc": {
+              "start": {
+                "line": 20
+              }
+            }
+          },
+          {
+            "name": "auth",
+            "type": "arrow",
+            "params": [
+              "isPost=..."
+            ],
+            "loc": {
+              "start": {
+                "line": 21
+              }
+            }
+          },
+          {
+            "name": "apiJSON",
+            "type": "function",
+            "params": [
+              "url",
+              "opt=..."
+            ],
+            "loc": {
+              "start": {
+                "line": 27
+              }
+            }
+          },
+          {
+            "name": "showNewMsgToast",
+            "type": "function",
+            "params": [
+              "from",
+              "text"
+            ],
+            "loc": {
+              "start": {
+                "line": 37
+              }
+            }
+          },
+          {
+            "name": "getRowLoc",
+            "type": "function",
+            "params": [
+              "row"
+            ],
+            "loc": {
+              "start": {
+                "line": 52
+              }
+            }
+          },
+          {
+            "name": "loadInbox",
+            "type": "function",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 59
+              }
+            }
+          },
+          {
+            "name": "autoRefreshInbox",
+            "type": "function",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 96
+              }
+            }
+          },
+          {
+            "name": "buildThreadItem",
+            "type": "function",
+            "params": [
+              "t",
+              "activeShort"
+            ],
+            "loc": {
+              "start": {
+                "line": 123
+              }
+            }
+          },
+          {
+            "name": "renderInboxThreadList",
+            "type": "function",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 194
+              }
+            }
+          },
+          {
+            "name": "highlightActiveThread",
+            "type": "function",
+            "params": [
+              "wa"
+            ],
+            "loc": {
+              "start": {
+                "line": 260
+              }
+            }
+          },
+          {
+            "name": "openChat",
+            "type": "function",
+            "params": [
+              "wa",
+              "name"
+            ],
+            "loc": {
+              "start": {
+                "line": 270
+              }
+            }
+          },
+          {
+            "name": "closeChat",
+            "type": "function",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 300
+              }
+            }
+          },
+          {
+            "name": "renderChatLog",
+            "type": "function",
+            "params": [
+              "wa"
+            ],
+            "loc": {
+              "start": {
+                "line": 309
+              }
+            }
+          },
+          {
+            "name": "sendChatReply",
+            "type": "function",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 366
+              }
+            }
+          },
+          {
+            "name": "initOnce",
+            "type": "function",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 413
+              }
+            }
+          },
+          {
+            "name": "boot",
+            "type": "function",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 419
+              }
+            }
+          }
+        ],
+        "globals": [
+          "$",
+          "inboxCache",
+          "currentChatWa",
+          "lastInboxIds",
+          "newMsgThreads",
+          "autoTimer",
+          "notifyAudio",
+          "API_BASE",
+          "API_N",
+          "tok",
+          "qs",
+          "auth",
+          "apiJSON",
+          "showNewMsgToast",
+          "getRowLoc",
+          "loadInbox",
+          "autoRefreshInbox",
+          "buildThreadItem",
+          "renderInboxThreadList",
+          "highlightActiveThread",
+          "openChat",
+          "closeChat",
+          "renderChatLog",
+          "sendChatReply",
+          "inited",
+          "initOnce",
+          "boot"
+        ]
+      },
+      "actions": [
+        {
+          "selector": null,
+          "event": "click",
+          "line": 171,
+          "handlerName": null,
+          "calls": [
+            "openChat"
+          ],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": null,
+          "event": "click",
+          "line": 175,
+          "handlerName": null,
+          "calls": [
+            "stopPropagation",
+            "confirm",
+            "qs",
+            "auth",
+            "stringify",
+            "apiJSON",
+            "loadInbox",
+            "alert"
+          ],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": null,
+          "event": "change",
+          "line": 423,
+          "handlerName": "renderInboxThreadList",
+          "calls": [],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": null,
+          "event": "click",
+          "line": 426,
+          "handlerName": "loadInbox",
+          "calls": [],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": null,
+          "event": "click",
+          "line": 431,
+          "handlerName": "closeChat",
+          "calls": [],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": null,
+          "event": "click",
+          "line": 432,
+          "handlerName": "sendChatReply",
+          "calls": [],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": null,
+          "event": "mz:admin-auth",
+          "line": 443,
+          "handlerName": null,
+          "calls": [
+            "initOnce"
+          ],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": "#ui-wa",
+          "event": "mz:pane:show",
+          "line": 447,
+          "handlerName": null,
+          "calls": [
+            "initOnce"
+          ],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        }
+      ]
+    },
+    "admin:teachers": {
+      "page_key": "admin:teachers",
+      "templates": [
+        "templates/meatze_admin/teachers.html"
+      ],
+      "scripts": [
+        "static/meatze/admin/teachers.js"
+      ],
+      "script_keys": [
+        "admin:teachers"
+      ],
+      "ui": {
+        "ids": [
+          "mzp-body",
+          "mzp-clear",
+          "mzp-refresh",
+          "mzp-search",
+          "mzt-bio",
+          "mzt-body",
+          "mzt-clear",
+          "mzt-email",
+          "mzt-first",
+          "mzt-last1",
+          "mzt-last2",
+          "mzt-msg",
+          "mzt-save",
+          "mzt-search",
+          "ui-teachers"
+        ],
+        "classes": [
+          "cols-4",
+          "link",
+          "mz-btn",
+          "mz-card",
+          "mz-help",
+          "mz-inp",
+          "mz-pane",
+          "mz-row",
+          "mz-table"
+        ]
+      },
+      "js": {
+        "apiBases": {
+          "API_BASE": "((window.wpApiSettings?.root)||'/').replace(/\\/$/,'') + '/meatze/v5'",
+          "API_A": "API_BASE + '/admin'"
+        },
+        "endpoints": [],
+        "endpointsTemplates": [
+          "`${API_A}/teachers${qs(true)}`",
+          "`${API_A}/teachers/${it.id}${qs()}`",
+          "`${API_A}/teachers/${id}/delete${qs()}`",
+          "`${API_A}/teachers${qs()}`"
+        ],
+        "endpointsParts": [
+          "/",
+          "/meatze/v5",
+          "/admin",
+          "/admin/pending"
+        ],
+        "domSelectors": [
+          "#mzt-body",
+          "#mzt-search",
+          "#mzt-clear",
+          "#mzt-msg",
+          "#mzp-body",
+          "#mzp-search",
+          "#mzp-refresh",
+          "#mzp-clear",
+          "#mzt-save",
+          "#mzt-email",
+          "#mzt-first",
+          "#mzt-last1",
+          "#mzt-last2",
+          "#mzt-bio",
+          "#ui-teachers"
+        ],
+        "events": [
+          "click @ line 115",
+          "click @ line 116",
+          "input @ line 117",
+          "input @ line 210",
+          "click @ line 211",
+          "click @ line 214",
+          "mz:admin-auth @ line 245",
+          "mz:pane:show @ line 248"
+        ],
+        "functions": [
+          {
+            "name": "$",
+            "type": "arrow",
+            "params": [
+              "s"
+            ],
+            "loc": {
+              "start": {
+                "line": 2
+              }
+            }
+          },
+          {
+            "name": "tok",
+            "type": "arrow",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 7
+              }
+            }
+          },
+          {
+            "name": "qs",
+            "type": "arrow",
+            "params": [
+              "bust=..."
+            ],
+            "loc": {
+              "start": {
+                "line": 8
+              }
+            }
+          },
+          {
+            "name": "auth",
+            "type": "arrow",
+            "params": [
+              "isPost=..."
+            ],
+            "loc": {
+              "start": {
+                "line": 9
+              }
+            }
+          },
+          {
+            "name": "apiJSON",
+            "type": "function",
+            "params": [
+              "url",
+              "opt=..."
+            ],
+            "loc": {
+              "start": {
+                "line": 10
+              }
+            }
+          },
+          {
+            "name": "esc",
+            "type": "arrow",
+            "params": [
+              "s"
+            ],
+            "loc": {
+              "start": {
+                "line": 23
+              }
+            }
+          },
+          {
+            "name": "escAttr",
+            "type": "arrow",
+            "params": [
+              "s"
+            ],
+            "loc": {
+              "start": {
+                "line": 24
+              }
+            }
+          },
+          {
+            "name": "nrm",
+            "type": "arrow",
+            "params": [
+              "s"
+            ],
+            "loc": {
+              "start": {
+                "line": 25
+              }
+            }
+          },
+          {
+            "name": "debounce",
+            "type": "arrow",
+            "params": [
+              "fn",
+              "ms=..."
+            ],
+            "loc": {
+              "start": {
+                "line": 26
+              }
+            }
+          },
+          {
+            "name": "refreshPending",
+            "type": "function",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 45
+              }
+            }
+          },
+          {
+            "name": "pendingRow",
+            "type": "function",
+            "params": [
+              "it"
+            ],
+            "loc": {
+              "start": {
+                "line": 57
+              }
+            }
+          },
+          {
+            "name": "drawPending",
+            "type": "function",
+            "params": [
+              "items"
+            ],
+            "loc": {
+              "start": {
+                "line": 95
+              }
+            }
+          },
+          {
+            "name": "applyPendingFilter",
+            "type": "function",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 105
+              }
+            }
+          },
+          {
+            "name": "refreshList",
+            "type": "function",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 123
+              }
+            }
+          },
+          {
+            "name": "rowView",
+            "type": "function",
+            "params": [
+              "it"
+            ],
+            "loc": {
+              "start": {
+                "line": 134
+              }
+            }
+          },
+          {
+            "name": "rowEdit",
+            "type": "function",
+            "params": [
+              "it"
+            ],
+            "loc": {
+              "start": {
+                "line": 151
+              }
+            }
+          },
+          {
+            "name": "doDelete",
+            "type": "function",
+            "params": [
+              "id"
+            ],
+            "loc": {
+              "start": {
+                "line": 186
+              }
+            }
+          },
+          {
+            "name": "drawRows",
+            "type": "function",
+            "params": [
+              "items"
+            ],
+            "loc": {
+              "start": {
+                "line": 194
+              }
+            }
+          },
+          {
+            "name": "applyFilter",
+            "type": "function",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 200
+              }
+            }
+          },
+          {
+            "name": "initTeachersOnce",
+            "type": "function",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 20
+              }
+            }
+          }
+        ],
+        "globals": [
+          "$",
+          "API_BASE",
+          "API_A",
+          "tok",
+          "qs",
+          "auth",
+          "apiJSON",
+          "teachersReady",
+          "initTeachersOnce"
+        ]
+      },
+      "actions": [
+        {
+          "selector": null,
+          "event": "click",
+          "line": 115,
+          "handlerName": "refreshPending",
+          "calls": [],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": null,
+          "event": "click",
+          "line": 116,
+          "handlerName": null,
+          "calls": [
+            "applyPendingFilter",
+            "focus"
+          ],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": null,
+          "event": "input",
+          "line": 117,
+          "handlerName": null,
+          "calls": [],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": null,
+          "event": "input",
+          "line": 210,
+          "handlerName": null,
+          "calls": [],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": null,
+          "event": "click",
+          "line": 211,
+          "handlerName": null,
+          "calls": [
+            "applyFilter",
+            "focus"
+          ],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": "#mzt-save",
+          "event": "click",
+          "line": 214,
+          "handlerName": null,
+          "calls": [
+            "$",
+            "trim",
+            "toLowerCase",
+            "test",
+            "qs",
+            "auth",
+            "stringify",
+            "apiJSON",
+            "refreshList"
+          ],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": null,
+          "event": "mz:admin-auth",
+          "line": 245,
+          "handlerName": null,
+          "calls": [
+            "initTeachersOnce"
+          ],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": "#ui-teachers",
+          "event": "mz:pane:show",
+          "line": 248,
+          "handlerName": null,
+          "calls": [
+            "initTeachersOnce"
+          ],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        }
+      ]
+    },
+    "admin:subs": {
+      "page_key": "admin:subs",
+      "templates": [
+        "templates/meatze_admin/subs.html"
+      ],
+      "scripts": [],
+      "script_keys": [],
+      "ui": {
+        "ids": [
+          "mzs-counts",
+          "mzs-filter-loc",
+          "mzs-msg",
+          "mzs-picked",
+          "mzs-picked-list",
+          "mzs-preview-card",
+          "mzs-preview-media",
+          "mzs-preview-text",
+          "mzs-progress",
+          "mzs-progress-cancel",
+          "mzs-progress-sub",
+          "mzs-progress-text",
+          "mzs-refresh",
+          "mzs-sel-wa",
+          "mzs-send",
+          "mzs-text",
+          "mzs-wa-body",
+          "mzs-wa-clear",
+          "mzs-wa-edit-active",
+          "mzs-wa-edit-loc",
+          "mzs-wa-edit-name",
+          "mzs-wa-edit-num",
+          "mzs-wa-edit-save",
+          "mzs-wa-file",
+          "mzs-wa-file-clear",
+          "mzs-wa-file-help",
+          "mzs-wa-file-name",
+          "mzs-wa-import-file",
+          "mzs-wa-import-loc",
+          "mzs-wa-import-msg",
+          "mzs-wa-import-run",
+          "mzs-wa-next",
+          "mzs-wa-page-info",
+          "mzs-wa-prev",
+          "mzs-wa-search",
+          "ui-subs"
+        ],
+        "classes": [
+          "danger",
+          "link",
+          "mz-btn",
+          "mz-card",
+          "mz-help",
+          "mz-inp",
+          "mz-pane",
+          "mz-row",
+          "mz-sec",
+          "mz-sel",
+          "mz-table",
+          "sm"
+        ]
+      },
+      "js": {
+        "apiBases": {},
+        "endpoints": [],
+        "endpointsTemplates": [],
+        "endpointsParts": [],
+        "domSelectors": [],
+        "events": [],
+        "functions": [],
+        "globals": []
+      },
+      "actions": []
+    },
+    "tpl:chat_widget": {
+      "page_key": "tpl:chat_widget",
+      "templates": [
+        "templates/includes/chat_widget.html"
+      ],
+      "scripts": [],
+      "script_keys": [],
+      "ui": {
+        "ids": [
+          "mz-chat-backdrop",
+          "mz-chat-body",
+          "mz-chat-close",
+          "mz-chat-fab",
+          "mz-chat-input",
+          "mz-chat-panel",
+          "mz-chat-send"
+        ],
+        "classes": [
+          "mz-chat-avatars",
+          "mz-chat-backdrop",
+          "mz-chat-body",
+          "mz-chat-foot",
+          "mz-chat-h1",
+          "mz-chat-h2",
+          "mz-chat-head",
+          "mz-chat-input",
+          "mz-chat-panel",
+          "mz-chat-send",
+          "mz-chat-title",
+          "mz-chat-x",
+          "mz-fab",
+          "mz-fab-dot",
+          "mz-fab-ico"
+        ]
+      },
+      "js": {
+        "apiBases": {},
+        "endpoints": [],
+        "endpointsTemplates": [],
+        "endpointsParts": [],
+        "domSelectors": [],
+        "events": [],
+        "functions": [],
+        "globals": []
+      },
+      "actions": []
+    },
+    "js:chat-widget": {
+      "page_key": "js:chat-widget",
+      "templates": [],
+      "scripts": [
+        "static/meatze/chat_widget/chat-widget.js"
+      ],
+      "script_keys": [
+        "js:chat-widget"
+      ],
+      "ui": {
+        "ids": [],
+        "classes": []
+      },
+      "js": {
+        "apiBases": {
+          "AVA_ANA": "/static/meatze/avatars/ana.png",
+          "AVA_CARLOS": "/static/meatze/avatars/carlos.png"
+        },
+        "endpoints": [
+          "/meatze/v5/ai/help"
+        ],
+        "endpointsTemplates": [],
+        "endpointsParts": [
+          "/static/meatze/avatars/ana.png",
+          "/static/meatze/avatars/carlos.png",
+          "/meatze/v5/ai/help"
+        ],
+        "domSelectors": [
+          "#mz-chat-fab",
+          "#mz-chat-panel",
+          "#mz-chat-close",
+          "#mz-chat-backdrop",
+          "#mz-chat-body",
+          "#mz-chat-input",
+          "#mz-chat-send"
+        ],
+        "events": [
+          "click @ line 31",
+          "click @ line 32",
+          "click @ line 33",
+          "keydown @ line 34",
+          "click @ line 229",
+          "keydown @ line 230"
+        ],
+        "functions": [
+          {
+            "name": "$",
+            "type": "arrow",
+            "params": [
+              "s"
+            ],
+            "loc": {
+              "start": {
+                "line": 2
+              }
+            }
+          },
+          {
+            "name": "openChat",
+            "type": "function",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 17
+              }
+            }
+          },
+          {
+            "name": "closeChat",
+            "type": "function",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 24
+              }
+            }
+          },
+          {
+            "name": "escapeHTML",
+            "type": "function",
+            "params": [
+              "s"
+            ],
+            "loc": {
+              "start": {
+                "line": 38
+              }
+            }
+          },
+          {
+            "name": "linkifyPlainText",
+            "type": "function",
+            "params": [
+              "s"
+            ],
+            "loc": {
+              "start": {
+                "line": 47
+              }
+            }
+          },
+          {
+            "name": "walk",
+            "type": "arrow",
+            "params": [
+              "node"
+            ],
+            "loc": {
+              "start": {
+                "line": 72
+              }
+            }
+          },
+          {
+            "name": "sanitizeBotHTML",
+            "type": "function",
+            "params": [
+              "html"
+            ],
+            "loc": {
+              "start": {
+                "line": 65
+              }
+            }
+          },
+          {
+            "name": "formatBotMessage",
+            "type": "function",
+            "params": [
+              "text"
+            ],
+            "loc": {
+              "start": {
+                "line": 109
+              }
+            }
+          },
+          {
+            "name": "appendUser",
+            "type": "function",
+            "params": [
+              "text"
+            ],
+            "loc": {
+              "start": {
+                "line": 136
+              }
+            }
+          },
+          {
+            "name": "appendBot",
+            "type": "function",
+            "params": [
+              "name",
+              "avatar",
+              "text"
+            ],
+            "loc": {
+              "start": {
+                "line": 152
+              }
+            }
+          },
+          {
+            "name": "renderDuoAnswer",
+            "type": "function",
+            "params": [
+              "answer"
+            ],
+            "loc": {
+              "start": {
+                "line": 178
+              }
+            }
+          },
+          {
+            "name": "sendMsg",
+            "type": "function",
+            "params": [],
+            "loc": {
+              "start": {
+                "line": 200
+              }
+            }
+          }
+        ],
+        "globals": [
+          "$",
+          "fab",
+          "panel",
+          "closeBtn",
+          "backdrop",
+          "body",
+          "input",
+          "send",
+          "AVA_ANA",
+          "AVA_CARLOS",
+          "openChat",
+          "closeChat",
+          "escapeHTML",
+          "linkifyPlainText",
+          "sanitizeBotHTML",
+          "formatBotMessage",
+          "appendUser",
+          "appendBot",
+          "renderDuoAnswer",
+          "sendMsg"
+        ]
+      },
+      "actions": [
+        {
+          "selector": null,
+          "event": "click",
+          "line": 31,
+          "handlerName": "openChat",
+          "calls": [],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": null,
+          "event": "click",
+          "line": 32,
+          "handlerName": "closeChat",
+          "calls": [],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": null,
+          "event": "click",
+          "line": 33,
+          "handlerName": "closeChat",
+          "calls": [],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": null,
+          "event": "keydown",
+          "line": 34,
+          "handlerName": null,
+          "calls": [
+            "closeChat"
+          ],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": null,
+          "event": "click",
+          "line": 229,
+          "handlerName": "sendMsg",
+          "calls": [],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        },
+        {
+          "selector": null,
+          "event": "keydown",
+          "line": 230,
+          "handlerName": null,
+          "calls": [
+            "sendMsg"
+          ],
+          "endpoints": [],
+          "endpointsTemplates": [],
+          "selectorHints": [],
+          "source": "direct.addEventListener"
+        }
+      ]
+    }
+  },
+  "view_template_index": {
+    "core.views.home": [
+      "home.html"
+    ],
+    "core.views.admin_panel": [
+      "meatze_admin/base_admin.html"
+    ],
+    "core.views.login_redirect": [
+      "home.html"
+    ],
+    "panel.views.course_panel": [
+      "panel/course_panel.html"
+    ],
+    "panel.views.alumno_home": [
+      "panel/alumno_home.html"
+    ]
+  },
+  "templatekey_to_pages": {
+    "tpl:base": [
+      "tpl:base"
+    ],
+    "tpl:home": [
+      "tpl:home"
+    ],
+    "panel:alumno_home": [
+      "panel:alumno_home"
+    ],
+    "panel:course_panel": [
+      "panel:course_panel"
+    ],
+    "panel:calendario": [
+      "panel:calendario"
+    ],
+    "panel:info": [
+      "panel:info"
+    ],
+    "panel:chat": [
+      "panel:chat"
+    ],
+    "panel:materiales": [
+      "panel:materiales"
+    ],
+    "panel:ia": [
+      "panel:ia"
+    ],
+    "panel:alumnos": [
+      "panel:alumnos"
+    ],
+    "admin:cursos": [
+      "admin:cursos"
+    ],
+    "admin:base_admin": [
+      "admin:base_admin"
+    ],
+    "admin:horarios": [
+      "admin:horarios"
+    ],
+    "admin:wa": [
+      "admin:wa"
+    ],
+    "admin:teachers": [
+      "admin:teachers"
+    ],
+    "admin:subs": [
+      "admin:subs"
+    ],
+    "tpl:chat_widget": [
+      "tpl:chat_widget"
+    ]
+  }
+}

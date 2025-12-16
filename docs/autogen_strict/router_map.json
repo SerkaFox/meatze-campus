@@ -1,0 +1,823 @@
+{
+  "urlconf_root": "meatze_site.urls",
+  "routes_tree": [
+    {
+      "type": "route",
+      "route": "me",
+      "view": "api.auth_views.me_view",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "(non-literal)",
+      "view": "core.views.home",
+      "name": "home",
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "alumno/",
+      "view": "(unresolved)",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "admin-panel/",
+      "view": "core.views.admin_panel",
+      "name": "admin_panel",
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/me",
+      "view": "api.auth_views.me_view",
+      "name": "meatze-me",
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/me/profile",
+      "view": "api.profile_views.me_profile",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/me/password",
+      "view": "api.profile_views.me_change_password",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/ping",
+      "view": "api.views.admin_ping",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/notify/subscribers",
+      "view": "api.notify_views.subscribers",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/notify/wa-upsert",
+      "view": "api.notify_views.wa_upsert",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/notify/wa-toggle",
+      "view": "api.notify_views.wa_toggle",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/notify/wa-delete",
+      "view": "api.notify_views.wa_delete",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/notify/wa-import",
+      "view": "api.notify_views.wa_import",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/notify/upload-wa",
+      "view": "api.notify_views.upload_wa",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/notify/broadcast",
+      "view": "api.notify_views.broadcast",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/notify/wa-clear",
+      "view": "api.notify_views.wa_clear",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v6/ws-webhook",
+      "view": "api.notify_views.ws_webhook",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/auth/login_password",
+      "view": "api.auth_views.login_password",
+      "name": "meatze-login-password",
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/auth/set_password",
+      "view": "api.auth_views.set_password",
+      "name": "meatze-set-password",
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/auth/logout",
+      "view": "api.auth_views.logout_view",
+      "name": "meatze-logout",
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/auth/request_pin",
+      "view": "api.auth_views.request_pin",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/auth/verify_pin",
+      "view": "api.auth_views.verify_pin",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/teacher/temp/create",
+      "view": "api.views_temp.teacher_temp_create",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/teacher/temp/list",
+      "view": "api.views_temp.teacher_temp_list",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/teacher/temp/rotate",
+      "view": "api.views_temp.teacher_temp_rotate",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/auth/temp_cursos",
+      "view": "api.views.public_cursos_for_temp",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/auth/temp_accounts",
+      "view": "api.views_temp.auth_temp_accounts",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/auth/temp_verify",
+      "view": "api.views_temp.auth_temp_verify",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/auth/temp_claim",
+      "view": "api.views_temp.auth_temp_claim",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/teacher/alumno/reset_pass",
+      "view": "api.views_temp.teacher_alumno_reset_pass",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/ai/warmup",
+      "view": "api.views_ai.ai_warmup",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/ai/ask",
+      "view": "api.views_ai.ai_ask",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/ai/help",
+      "view": "api.views_ai.ai_help",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/teachers",
+      "view": "api.views.admin_teachers_upsert",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/teachers/<int:user_id>",
+      "view": "api.views.admin_teacher_update",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/teachers/<int:user_id>/delete",
+      "view": "api.views.admin_teacher_delete",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/cursos",
+      "view": "api.views.admin_cursos_list",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/cursos/upsert",
+      "view": "api.views.admin_cursos_upsert",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/curso/<str:codigo>/alumnos",
+      "view": "api.views.curso_alumnos",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/cursos/<int:curso_id>/delete",
+      "view": "api.views.admin_curso_delete",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/curso/<str:codigo>/horario",
+      "view": "api.views.curso_horario",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/curso/<str:codigo>/horario/save",
+      "view": "api.views.curso_horario",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/curso/<str:codigo>/horario/bulk-delete",
+      "view": "api.views.curso_horario_bulk_delete",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/curso/<str:codigo>/auto-schedule",
+      "view": "api.views.admin_auto_schedule",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/curso/<str:codigo>/fecha_inicio",
+      "view": "api.views.admin_curso_fecha_inicio",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/export-docx-graphic",
+      "view": "api.views.export_docx_graphic",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/enrolments",
+      "view": "api.views.admin_enrolments_list",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/cursos/assign",
+      "view": "api.views.admin_cursos_assign",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/fixed-nonlective",
+      "view": "api.views.admin_fixed_nonlective",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/holidays/<int:year>",
+      "view": "api.views.admin_holidays",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/news/subscribers",
+      "view": "api.views.news_subscribers",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/notify/wa-inbox",
+      "view": "api.notify_views.wa_inbox",
+      "name": null,
+      "raw": null
+    },
+    {
+      "type": "route",
+      "route": "panel/",
+      "view": "(unresolved)",
+      "name": null,
+      "raw": null
+    }
+  ],
+  "routes_flat": [
+    {
+      "type": "route",
+      "route": "me",
+      "view": "api.auth_views.me_view",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "(non-literal)",
+      "view": "core.views.home",
+      "name": "home",
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "alumno/",
+      "view": "(unresolved)",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "admin-panel/",
+      "view": "core.views.admin_panel",
+      "name": "admin_panel",
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/me",
+      "view": "api.auth_views.me_view",
+      "name": "meatze-me",
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/me/profile",
+      "view": "api.profile_views.me_profile",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/me/password",
+      "view": "api.profile_views.me_change_password",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/ping",
+      "view": "api.views.admin_ping",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/notify/subscribers",
+      "view": "api.notify_views.subscribers",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/notify/wa-upsert",
+      "view": "api.notify_views.wa_upsert",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/notify/wa-toggle",
+      "view": "api.notify_views.wa_toggle",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/notify/wa-delete",
+      "view": "api.notify_views.wa_delete",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/notify/wa-import",
+      "view": "api.notify_views.wa_import",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/notify/upload-wa",
+      "view": "api.notify_views.upload_wa",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/notify/broadcast",
+      "view": "api.notify_views.broadcast",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/notify/wa-clear",
+      "view": "api.notify_views.wa_clear",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v6/ws-webhook",
+      "view": "api.notify_views.ws_webhook",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/auth/login_password",
+      "view": "api.auth_views.login_password",
+      "name": "meatze-login-password",
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/auth/set_password",
+      "view": "api.auth_views.set_password",
+      "name": "meatze-set-password",
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/auth/logout",
+      "view": "api.auth_views.logout_view",
+      "name": "meatze-logout",
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/auth/request_pin",
+      "view": "api.auth_views.request_pin",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/auth/verify_pin",
+      "view": "api.auth_views.verify_pin",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/teacher/temp/create",
+      "view": "api.views_temp.teacher_temp_create",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/teacher/temp/list",
+      "view": "api.views_temp.teacher_temp_list",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/teacher/temp/rotate",
+      "view": "api.views_temp.teacher_temp_rotate",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/auth/temp_cursos",
+      "view": "api.views.public_cursos_for_temp",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/auth/temp_accounts",
+      "view": "api.views_temp.auth_temp_accounts",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/auth/temp_verify",
+      "view": "api.views_temp.auth_temp_verify",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/auth/temp_claim",
+      "view": "api.views_temp.auth_temp_claim",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/teacher/alumno/reset_pass",
+      "view": "api.views_temp.teacher_alumno_reset_pass",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/ai/warmup",
+      "view": "api.views_ai.ai_warmup",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/ai/ask",
+      "view": "api.views_ai.ai_ask",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/ai/help",
+      "view": "api.views_ai.ai_help",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/teachers",
+      "view": "api.views.admin_teachers_upsert",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/teachers/<int:user_id>",
+      "view": "api.views.admin_teacher_update",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/teachers/<int:user_id>/delete",
+      "view": "api.views.admin_teacher_delete",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/cursos",
+      "view": "api.views.admin_cursos_list",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/cursos/upsert",
+      "view": "api.views.admin_cursos_upsert",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/curso/<str:codigo>/alumnos",
+      "view": "api.views.curso_alumnos",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/cursos/<int:curso_id>/delete",
+      "view": "api.views.admin_curso_delete",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/curso/<str:codigo>/horario",
+      "view": "api.views.curso_horario",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/curso/<str:codigo>/horario/save",
+      "view": "api.views.curso_horario",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/curso/<str:codigo>/horario/bulk-delete",
+      "view": "api.views.curso_horario_bulk_delete",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/curso/<str:codigo>/auto-schedule",
+      "view": "api.views.admin_auto_schedule",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/curso/<str:codigo>/fecha_inicio",
+      "view": "api.views.admin_curso_fecha_inicio",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/export-docx-graphic",
+      "view": "api.views.export_docx_graphic",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/enrolments",
+      "view": "api.views.admin_enrolments_list",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/cursos/assign",
+      "view": "api.views.admin_cursos_assign",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/fixed-nonlective",
+      "view": "api.views.admin_fixed_nonlective",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/admin/holidays/<int:year>",
+      "view": "api.views.admin_holidays",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/news/subscribers",
+      "view": "api.views.news_subscribers",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "meatze/v5/notify/wa-inbox",
+      "view": "api.notify_views.wa_inbox",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    },
+    {
+      "type": "route",
+      "route": "panel/",
+      "view": "(unresolved)",
+      "name": null,
+      "raw": null,
+      "full_prefix": ""
+    }
+  ],
+  "view_templates": {
+    "core/views.py": {
+      "home": [
+        "home.html"
+      ],
+      "admin_panel": [
+        "meatze_admin/base_admin.html"
+      ],
+      "login_redirect": [
+        "home.html"
+      ]
+    },
+    "panel/views.py": {
+      "course_panel": [
+        "panel/course_panel.html"
+      ],
+      "alumno_home": [
+        "panel/alumno_home.html"
+      ]
+    }
+  }
+}

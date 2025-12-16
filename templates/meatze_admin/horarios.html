@@ -1,0 +1,226 @@
+<!-- === MEATZE · Horarios (panel bajo gate compartido) === -->
+<section id="ui-horarios" class="mz-pane" data-active="false">
+  <div class="mz-card">
+	<h3 style="margin:0 0 8px">Seleccionar curso y ámbito</h3>
+	<div class="mz-row" style="grid-template-columns:2fr 1fr">
+	  <label><span class="mz-help">Curso</span>
+		<select id="mzh-curso" class="mz-sel"><option value="">—</option></select>
+	  </label>
+	  <label><span class="mz-help">Ámbito</span>
+		<select id="mzh-tipo" class="mz-sel">
+		  <option value="curso">Curso</option>
+		  <option value="practica">Práctica</option>
+		</select>
+	  </label>
+
+	  <!-- выбор alumno только для prácticas -->
+	  <label id="mzh-alumno-wrap" style="display:none;grid-column:1 / -1">
+		<span class="mz-help">Alumno (prácticas)</span>
+		<select id="mzh-alumno" class="mz-sel">
+		  <option value="">— Todos —</option>
+		</select>
+	  </label>
+	</div>
+
+
+    <div id="mzh-ctx" class="mz-help" style="margin-top:6px">—</div>
+  </div>
+
+  <div class="mz-card">
+    <div class="cal-head">
+      <div style="display:flex;gap:8px;align-items:center">
+        <button id="mzh-prev" class="mz-btn link" type="button" data-action="horarios.month.prev">←</button>
+        <strong id="mzh-title">—</strong>
+        <button id="mzh-next" class="mz-btn link" type="button" data-action="horarios.month.next">→</button>
+
+      </div>
+      <div class="mz-help">Seleccionados: <b id="mzh-selcnt">0</b></div>
+    </div>
+    <div class="dow">
+      <div class="mz-help" style="text-align:center">L</div>
+      <div class="mz-help" style="text-align:center">M</div>
+      <div class="mz-help" style="text-align:center">X</div>
+      <div class="mz-help" style="text-align:center">J</div>
+      <div class="mz-help" style="text-align:center">V</div>
+      <div class="mz-help" style="text-align:center">S</div>
+      <div class="mz-help" style="text-align:center">D</div>
+    </div>
+    <div id="mzh-grid" class="grid"></div>
+    <div id="mzh-legend" class="legend"></div>
+  </div>
+    <div style="margin-top:10px; display:flex; justify-content:flex-end;">
+<button id="mzh-export-graphic" class="mz-btn link" type="button" data-action="horarios.export.word_graphic">
+  Descargar Word (gráfico)
+</button>
+    </div>
+
+  <!-- AUTORRELLENAR (módulos) -->
+  <div class="mz-card mz-auto-card">
+    <div class="mz-auto-head">
+      <div>
+        <h3 class="mz-editor-title">Autorrellenar (módulos)</h3>
+        <div class="mz-help">
+          Calcula automáticamente el calendario del curso a partir de los módulos (MF/UF), 
+          omitiendo fines de semana, festivos oficiales y días no lectivos del centro.
+        </div>
+      </div>
+<button id="mzh-fixed-toggle" class="mz-btn link" type="button" data-action="horarios.fixed.toggle">
+  Actualizar días no lectivos del centro
+</button>
+      <div id="mzh-fixed-panel" class="mz-card mz-fixed-card" style="display:none;margin-top:8px">
+        <div class="mz-help" style="margin-bottom:4px">
+          Días fijos no lectivos por año (formato <b>DD/MM</b>, separados por coma.
+Se admiten rangos: <b>01/08-31/08</b>, <b>10-20/09</b>.
+
+          Se aplican a <b>todos</b> los cursos.
+        </div>
+        <div class="mz-row" style="grid-template-columns:1fr 1fr;gap:8px">
+          <label>
+            <span class="mz-help">Año <span id="mzh-fixed-y1-label"></span></span>
+            <input id="mzh-fixed-y1" class="mz-inp" placeholder="13/01, 15/01">
+          </label>
+          <label>
+            <span class="mz-help">Año <span id="mzh-fixed-y2-label"></span></span>
+            <input id="mzh-fixed-y2" class="mz-inp" placeholder="10/01, 20/06">
+          </label>
+        </div>
+        <div class="mz-fixed-actions">
+          <button id="mzh-fixed-save" class="mz-btn" type="button" data-action="horarios.fixed.save">
+  Guardar días no lectivos
+</button>
+          <span id="mzh-fixed-msg" class="mz-help"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- панель параметров автозаполнения, всегда открыта -->
+    <div id="mzh-auto-panel" class="mz-auto-panel">
+		<div class="mz-row mz-auto-grid">
+		  <label>
+			<span class="mz-help">Empezar desde</span>
+			<input id="mzh-auto-start" class="mz-inp" type="date">
+		  </label>
+
+		  <div class="mz-auto-range">
+			<label>
+			  <span class="mz-help">Desde</span>
+			  <input id="mzh-auto-desde" class="mz-inp" type="time" value="09:00" step="900">
+			</label>
+			<span class="mz-auto-range-sep">–</span>
+			<label>
+			  <span class="mz-help">Hasta</span>
+			  <input id="mzh-auto-hasta" class="mz-inp" type="time" value="14:00" step="900">
+			</label>
+		  </div>
+
+		  <!-- empresa -->
+		  <label class="mz-auto-aula">
+			<span class="mz-help">Aula (opcional)</span>
+			<input id="mzh-auto-aula" class="mz-inp" placeholder="Aula…">
+		  </label>
+
+		  <!-- АДРЕС / NOTA: только для prácticas -->
+		  <label id="mzh-auto-nota-wrap">
+			<span class="mz-help">Dirección / ubicación (opcional)</span>
+			<input id="mzh-auto-nota" class="mz-inp" placeholder="Dirección / ubicación…">
+		  </label>
+
+		  <!-- Длительность и дата конца: только для prácticas -->
+		  <label id="mzh-auto-horas-wrap">
+			<span class="mz-help">Duración total (horas prácticas)</span>
+			<input id="mzh-auto-horas" class="mz-inp" type="number" min="1" step="1" placeholder="p.ej. 80">
+		  </label>
+
+		  <label id="mzh-auto-end-wrap">
+			<span class="mz-help">Fin previsto de prácticas</span>
+			<input id="mzh-auto-end" class="mz-inp" type="date">
+		  </label>
+		</div>
+
+<div class="mz-row mz-auto-row">
+
+  <div class="mz-row mz-auto-dow">
+    <span class="mz-help">Días lectivos por semana</span>
+    <div class="mz-auto-dow-list">
+      <label class="mz-help mz-auto-flag"><input type="checkbox" id="mzh-dow-1" checked> L</label>
+      <label class="mz-help mz-auto-flag"><input type="checkbox" id="mzh-dow-2" checked> M</label>
+      <label class="mz-help mz-auto-flag"><input type="checkbox" id="mzh-dow-3" checked> X</label>
+      <label class="mz-help mz-auto-flag"><input type="checkbox" id="mzh-dow-4" checked> J</label>
+      <label class="mz-help mz-auto-flag"><input type="checkbox" id="mzh-dow-5" checked> V</label>
+      <label class="mz-help mz-auto-flag"><input type="checkbox" id="mzh-dow-6"> S</label>
+      <label class="mz-help mz-auto-flag"><input type="checkbox" id="mzh-dow-7"> D</label>
+    </div>
+  </div>
+
+  <div class="mz-row mz-auto-flags">
+    <label class="mz-help mz-auto-flag">
+      <input id="mzh-auto-skiphol" type="checkbox" checked>
+      Omitir festivos ES-PV (online)
+    </label>
+  </div>
+
+</div>
+
+
+      <!-- Primer día especial (más corto) -->
+      <div class="mz-row mz-auto-flags">
+        <label class="mz-help mz-auto-flag">
+          <input id="mzh-firstday-special" type="checkbox">
+          Primer día con horario diferente
+        </label>
+      </div>
+
+      <div id="mzh-firstday-wrap" class="mz-row" style="display:none; margin-top:4px;">
+        <div class="mz-auto-range">
+          <label>
+            <span class="mz-help">Primer día: desde</span>
+            <input id="mzh-firstday-desde" class="mz-inp" type="time" value="09:00" step="900">
+          </label>
+          <span class="mz-auto-range-sep">–</span>
+          <label>
+            <span class="mz-help">Hasta</span>
+            <input id="mzh-firstday-hasta" class="mz-inp" type="time" value="13:00" step="900">
+          </label>
+        </div>
+      </div>
+      <div class="mz-auto-footer">
+<button id="mzh-auto-run" class="mz-btn primary" type="button" data-action="horarios.auto.run">
+  Autorrellenar ahora
+</button>
+<!-- мини-карта практики: показываем выбранного alumno -->
+<div id="mzh-student-card" class="mz-student-card" style="display:none">
+  <div class="mz-student-title">Prácticas de</div>
+  <div class="mz-student-name" id="mzh-student-name">—</div>
+  <div class="mz-student-email" id="mzh-student-email">—</div>
+</div>
+
+        <div class="mz-auto-info">
+		<div id="mzh-final" class="mz-final" style="display:none">
+  <div class="mz-final-lbl">Fin previsto</div>
+  <div class="mz-final-date" id="mzh-final-date">—</div>
+</div>
+
+          <div id="mzh-hol-stats" class="mz-help"></div>
+          <span id="mzh-auto-msg" class="mz-help"></span>
+        </div>
+      </div>
+
+      <details id="mzh-hol-box" class="mz-hol-box">
+  <summary class="mz-hol-sum">
+    Días omitidos <span id="mzh-hol-badge" class="mz-hol-badge">0</span>
+  </summary>
+  <div id="mzh-hol-list" class="mz-hol-list"></div>
+</details>
+
+    </div>
+  </div>
+<div id="mzh-busy" class="mzh-busy">
+  <div class="mzh-busy-card">
+    <div id="mzh-busytxt" class="mzh-busy-txt">Procesando…</div>
+    <div class="mzh-busy-track">
+      <div id="mzh-busybar" class="mzh-busy-bar"></div>
+    </div>
+  </div>
+</div>
+
+</section>

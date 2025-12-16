@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>MEATZE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:#f3f4f6;
+      color:#0f172a;
+    }
+    a{color:inherit;text-decoration:none}
+
+    /* ====== TOP BAR ====== */
+    #mz-top{
+      position:sticky; top:0; z-index:1000;
+      background:linear-gradient(90deg,#0e73b8,#0c5284);
+      color:#fff;
+      box-shadow:0 2px 8px rgba(15,23,42,.35);
+    }
+    .mz-top-inner{
+      max-width:1080px;
+      margin:0 auto;
+      padding:10px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+    }
+    .mz-brand{
+      display:flex;align-items:center;gap:8px;
+      font-weight:800;font-size:20px;letter-spacing:.03em;
+    }
+    .mz-brand-badge{
+      font-size:11px;font-weight:700;
+      padding:2px 6px;border-radius:999px;
+      background:rgba(15,23,42,.25);
+      border:1px solid rgba(226,232,240,.3);
+    }
+    .mz-top-right{
+      display:flex;align-items:center;gap:12px;
+    }
+
+    .mz-top-cta{
+      display:inline-flex;align-items:center;gap:6px;
+      font-size:14px;opacity:.9;
+    }
+    .mz-top-cta span{
+      padding:2px 8px;
+      border-radius:999px;
+      background:rgba(15,23,42,.25);
+      border:1px solid rgba(226,232,240,.25);
+    }
+
+    /* Кнопка входа/кнопки в шапке */
+    .mz-btn-top{
+      display:inline-flex;align-items:center;justify-content:center;gap:6px;
+      padding:8px 12px;border-radius:999px;
+      border:1px solid rgba(191,219,254,.9);
+      background:#fff;
+      color:#0e73b8;
+      font-size:14px;font-weight:700;
+      cursor:pointer;
+      box-shadow:0 1px 3px rgba(15,23,42,.25);
+    }
+    .mz-btn-top svg{
+      width:16px;height:16px;
+    }
+    .mz-btn-top:hover{
+      filter:brightness(.97);
+    }
+
+    /* ====== АККАУНТ В ШАПКЕ ====== */
+    .mz-acc{
+      position:relative;
+    }
+    #mz-acc-user{
+      display:flex;align-items:center;gap:8px;
+      padding:4px 8px 4px 4px;
+      border-radius:999px;
+      border:1px solid rgba(191,219,254,.4);
+      background:rgba(15,23,42,.15);
+      color:#e5f3ff;
+      cursor:pointer;
+      font-size:14px;
+    }
+    .mz-acc-avatar{
+      width:28px;height:28px;border-radius:999px;
+      background:#e5f3ff;
+      color:#0e73b8;
+      display:flex;align-items:center;justify-content:center;
+      font-weight:800;font-size:14px;
+      box-shadow:0 0 0 2px rgba(15,23,42,.25);
+    }
+    .mz-acc-name{
+      max-width:160px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .mz-acc-arrow{
+      opacity:.7;font-size:10px;
+    }
+
+    #mz-acc-menu{
+      position:absolute;right:0;top:110%;
+      min-width:200px;
+      background:#fff;
+      color:#0f172a;
+      border-radius:14px;
+      border:1px solid #e5e7eb;
+      box-shadow:0 18px 40px rgba(15,23,42,.35);
+      padding:6px;
+      display:none;
+    }
+    #mz-acc-menu.show{display:block}
+    .mz-acc-item{
+      width:100%;
+      text-align:left;
+      border:0;
+      background:transparent;
+      padding:8px 10px;
+      border-radius:10px;
+      font-size:14px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      cursor:pointer;
+    }
+    .mz-acc-item:hover{
+      background:#eff6ff;
+    }
+    .mz-acc-item span.icon{
+      font-size:14px;
+      width:18px;text-align:center;
+    }
+
+    /* ====== LAYOUT CONTENT ====== */
+    .mz-page{
+      max-width:1080px;
+      margin:16px auto 32px;
+      padding:0 16px;
+    }
+	   /* ===== PROFILE MODAL (misma línea visual que el login) ===== */
+  #mz-prof-ov{
+    position:fixed;
+    inset:0;
+    background:rgba(15,33,51,.45);
+    display:none;
+    z-index:2147483640;
+  }
+  #mz-prof-ov.show{display:block}
+
+  #mz-prof{
+    --mz-prof-font:16px;
+    --mz-prof-label:#0f1b2d;
+    --mz-prof-help:#4b5563;
+    --mz-prof-border:#b7d6ec;
+    --mz-prof-focus:#0e73b8;
+
+    position:fixed;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    width:540px;
+    max-width:94vw;
+    max-height:calc(100vh - 24px);
+    display:none;
+    overflow:auto;
+
+    background:#ffffff;
+    border-radius:18px;
+    border:1px solid #cfe6f8;
+    box-shadow:0 22px 60px rgba(15,23,42,.35);
+    z-index:2147483641;
+    font-size:var(--mz-prof-font);
+  }
+  #mz-prof.show{display:block}
+
+  /* Шапка модалки */
+  #mz-prof .mz-prof-h{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:12px 16px;
+    border-bottom:1px solid #e5e7eb;
+    background:linear-gradient(90deg,#0e73b8,#0c5284);
+    color:#e5f3ff;
+  }
+  #mz-prof .mz-prof-title{
+    margin:0;
+    font-size:19px;
+    font-weight:800;
+    letter-spacing:.02em;
+  }
+
+  #mz-prof .mz-x{
+    width:34px;
+    height:34px;
+    border-radius:10px;
+    border:1px solid rgba(191,219,254,.9);
+    background:#ffffff;
+    color:#0e73b8;
+    font-weight:800;
+    cursor:pointer;
+    box-shadow:0 1px 3px rgba(15,23,42,.25);
+  }
+  #mz-prof .mz-x:hover{
+    filter:brightness(.97);
+  }
+
+  /* Тело */
+  #mz-prof .mz-prof-b{
+    padding:18px 16px 16px;
+    display:grid;
+    gap:12px;
+  }
+
+  #mz-prof .mz-label{
+    font-size:15px;
+    font-weight:600;
+    color:var(--mz-prof-label);
+  }
+  #mz-prof .mz-help{
+    font-size:14px;
+    color:var(--mz-prof-help);
+  }
+
+  #mz-prof .mz-inp,
+  #mz-prof textarea{
+    width:100%;
+    min-height:40px;
+    padding:10px 12px;
+    border-radius:12px;
+    border:1.5px solid var(--mz-prof-border);
+    font-size:15px;
+  }
+  #mz-prof textarea{
+    min-height:80px;
+    resize:vertical;
+  }
+  #mz-prof .mz-inp:focus,
+  #mz-prof textarea:focus{
+    outline:none;
+    border-color:var(--mz-prof-focus);
+    box-shadow:0 0 0 3px rgba(14,115,184,.18);
+  }
+
+  #mz-prof .mz-grid2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+
+  /* Кнопки внутри модалки (локально, чтобы не трогать глобальные .mz-btn) */
+  #mz-prof .mz-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:40px;
+    padding:8px 12px;
+    border-radius:10px;
+    border:1px solid #cfe6f8;
+    font-weight:700;
+    font-size:15px;
+    cursor:pointer;
+    background:#0e73b8;
+    color:#ffffff;
+    box-shadow:0 1px 3px rgba(15,23,42,.25);
+    transition:filter .15s ease, transform .04s ease;
+  }
+  #mz-prof .mz-btn:hover{
+    filter:brightness(.97);
+    transform:translateY(0.5px);
+  }
+  #mz-prof .mz-btn.link{
+    background:#ffffff;
+    color:#0e73b8;
+    border-color:transparent;
+    box-shadow:none;
+  }
+  #mz-prof .mz-btn.link:hover{
+    background:#ecf5ff;
+  }
+
+  #mz-prof .mz-ok{
+    background:#e8f7ee;
+    color:#0b6d22;
+    border:1px solid #bfe7c7;
+    border-radius:10px;
+    padding:6px 8px;
+    font-size:14px;
+    font-weight:600;
+  }
+  #mz-prof .mz-err{
+    color:#b91c1c;
+    font-size:14px;
+    font-weight:600;
+  }
+
+  @media (max-width:640px){
+    #mz-prof{
+      width:100%;
+      max-width:100vw;
+      border-radius:0;
+      top:0; left:0;
+      transform:none;
+      max-height:100vh;
+    }
+    #mz-prof .mz-prof-h{
+      border-radius:0;
+    }
+  }
+ </style>
+
+{% load static %}
+<link rel="stylesheet" href="{% static 'meatze/chat_widget/chat-widget.css' %}">
+
+</head>
+<body>
+
+<header id="mz-top">
+  <div class="mz-top-inner">
+    <a href="/" class="mz-brand">
+      <span>MEATZE</span>
+      <span class="mz-brand-badge">Campus</span>
+    </a>
+
+    <div class="mz-top-right">
+      <div class="mz-top-cta">
+        <span>Formación subvencionada</span>
+      </div>
+
+      {% if request.user.is_authenticated %}
+        <div id="mz-acc" class="mz-acc">
+          <button id="mz-acc-user" type="button" aria-expanded="false">
+            <div class="mz-acc-avatar">
+              {% with name=request.user.first_name|default:request.user.username %}
+                {{ name|first|upper }}
+              {% endwith %}
+            </div>
+            <div class="mz-acc-name">
+              {% if request.user.profile.display_name %}
+                {{ request.user.profile.display_name }}
+              {% elif request.user.get_full_name %}
+                {{ request.user.get_full_name }}
+              {% else %}
+                {{ request.user.username }}
+              {% endif %}
+            </div>
+            <div class="mz-acc-arrow">▾</div>
+          </button>
+
+          <div id="mz-acc-menu" class="mz-acc-menu" aria-hidden="true">
+            <button class="mz-acc-item" type="button" data-action="panel">
+              <span class="icon">🏠</span><span>Ir al panel</span>
+            </button>
+            <button class="mz-acc-item" type="button" data-action="profile">
+              <span class="icon">👤</span><span>Datos personales</span>
+            </button>
+            <hr style="border:none;border-top:1px solid #e5e7eb;margin:4px 0">
+            <button class="mz-acc-item" type="button" data-action="logout">
+              <span class="icon">⏏</span><span>Cerrar sesión</span>
+            </button>
+          </div>
+        </div>
+      {% else %}
+        <button id="mz-btn-login" class="mz-btn-top" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+            <polyline points="10 17 15 12 10 7"/>
+            <line x1="15" y1="12" x2="3" y2="12"/>
+          </svg>
+          <span>Acceder</span>
+        </button>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+<div class="mz-page">
+  {% block content %}
+  {% endblock %}
+</div>
+
+<script>
+(function(){
+  const btnLogin = document.getElementById('mz-btn-login');
+  if (btnLogin) {
+    btnLogin.addEventListener('click', function(e){
+      e.preventDefault();
+      if (window.mzOpenAuth) {
+        window.mzOpenAuth();
+      } else {
+        window.dispatchEvent(new Event('meatze:openAuth'));
+      }
+    });
+  }
+
+  const menu = document.getElementById('mz-acc-menu');
+  if (menu) {
+    menu.addEventListener('click', async function(e){
+      const item = e.target.closest('.mz-acc-item');
+      if (!item) return;
+      const action = item.dataset.action;
+
+      if (action === 'profile') {
+        window.dispatchEvent(new Event('meatze:openProfile'));
+      }
+      if (action === 'panel') {
+        window.location.href = '/alumno/';
+      }
+      if (action === 'logout') {
+        try {
+          await fetch('/meatze/v5/auth/logout', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+          });
+        } catch(e) {}
+        window.location.href = '/';
+      }
+    });
+  }
+})();
+</script>
+
+<!-- ===== AUTH MODAL · FINAL CLEAN VERSION ===== -->
+
+<!-- 1) PORTAL + BASE STYLES (single, no duplicates) -->
+<style>
+   /* Портал поверх всего */
+  #mz-auth-portal{
+    position:fixed;
+    inset:0;
+    z-index:2147483643;
+    display:none;
+  }
+  #mz-auth-portal.show{display:block}
+
+  /* Блокируем фон, когда модалка открыта */
+  body.mz-no-scroll{
+    overflow:hidden;
+    overscroll-behavior:none;
+  }
+
+  /* Оверлей */
+  #mz-auth-ov{
+    position:fixed;
+    inset:0;
+    background:radial-gradient(circle at top,#0b1120aa 0,#020617ee 45%,#000 100%);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    display:none;
+    z-index:2147483642;
+  }
+  #mz-auth-ov.show{display:block}
+
+  /* Коробка модалки + темы */
+  #mz-auth{
+    --mz-base-font: 16px;
+    --mz-label:#e5e7eb;
+    --mz-help:#9ca3af;
+    --mz-border:#1e293b;
+    --mz-border-strong:#38bdf8;
+    --mz-focus:#38bdf8;
+
+    position:fixed;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    width:480px;
+    max-width:94vw;
+    max-height:calc(100vh - 32px);
+    display:none;
+    overflow:auto;
+
+    background:
+      radial-gradient(circle at top left, rgba(56,189,248,.18) 0, transparent 55%),
+      radial-gradient(circle at bottom right, rgba(59,130,246,.24) 0, transparent 60%),
+      linear-gradient(135deg,#020617,#020617 40%,#020b1f);
+    border-radius:22px;
+    border:1px solid rgba(148,163,184,.6);
+    box-shadow:
+      0 30px 80px rgba(15,23,42,.85),
+      0 0 0 1px rgba(15,23,42,.8);
+    z-index:2147483643;
+    font-size:var(--mz-base-font);
+    color:#e5e7eb;
+  }
+  #mz-auth.show{display:block}
+
+  /* Шапка модалки */
+  #mz-auth .mz-auth-h{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    padding:12px 16px;
+    border-bottom:1px solid rgba(15,23,42,.9);
+    background:
+      linear-gradient(90deg,rgba(15,23,42,.95),rgba(15,23,42,.9)),
+      radial-gradient(circle at top,#38bdf822 0,transparent 55%);
+    border-radius:22px 22px 0 0;
+  }
+  #mz-auth .mz-auth-title{
+    margin:0;
+    font-weight:800;
+    font-size:19px;
+    letter-spacing:.03em;
+    color:#f9fafb;
+  }
+  #mz-auth .mz-auth-actions{
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+
+  /* Кнопка-таба "Crea una cuenta..." */
+  #mz-auth .mz-btn.is-act{
+    background:linear-gradient(135deg,#38bdf8,#2563eb);
+    color:#0b1120;
+    outline:1px solid rgba(191,219,254,.9);
+    box-shadow:0 0 0 1px rgba(15,23,42,.8),0 12px 30px rgba(15,23,42,.6);
+  }
+
+  /* Close */
+  #mz-auth .mz-x{
+    width:32px;
+    height:32px;
+    border-radius:999px;
+    border:1px solid rgba(148,163,184,.9);
+    background:#020617;
+    color:#e5e7eb;
+    font-weight:800;
+    cursor:pointer;
+    box-shadow:0 1px 4px rgba(15,23,42,.7);
+  }
+  #mz-auth .mz-x:hover,
+  #mz-auth .mz-x:focus-visible{
+    background:#0b1120;
+  }
+
+  /* Тело */
+  #mz-auth .mz-auth-b{
+    padding:18px 16px 16px;
+    display:grid;
+    gap:14px;
+  }
+
+  /* Тексты и поля */
+  #mz-auth .mz-label{
+    font-size:15px;
+    color:var(--mz-label);
+    font-weight:600;
+  }
+  #mz-auth .mz-help{
+    font-size:14px;
+    color:var(--mz-help);
+  }
+
+  #mz-auth .mz-inp{
+    width:100%;
+    min-height:44px;
+    padding:10px 14px;
+    font-size:15px;
+    border-radius:14px;
+    border:1px solid var(--mz-border);
+    background:rgba(15,23,42,.92);
+    color:#e5e7eb;
+  }
+  #mz-auth .mz-inp::placeholder{
+    color:#6b7280;
+  }
+  #mz-auth .mz-inp:focus{
+    outline:none;
+    border-color:var(--mz-border-strong);
+    box-shadow:0 0 0 2px rgba(56,189,248,.35);
+  }
+
+  #mz-auth .mz-field{
+    position:relative;
+  }
+
+  /* Глазик пароля */
+  #mz-auth .mz-reveal{
+    position:absolute;
+    right:6px;
+    top:50%;
+    transform:translateY(-50%);
+    width:40px;
+    height:40px;
+    border-radius:999px;
+    cursor:pointer;
+    border:1px solid var(--mz-border);
+    background:rgba(15,23,42,.95);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 0 0 1px rgba(15,23,42,.8);
+    line-height:0;
+    font-size:0;
+  }
+  #mz-auth .mz-reveal svg{
+    width:20px;
+    height:20px;
+    stroke:#e5e7eb;
+  }
+  #mz-auth .mz-reveal:hover{
+    background:#020617;
+    border-color:var(--mz-border-strong);
+  }
+  #mz-auth .mz-reveal[aria-pressed="true"]{
+    background:#020617;
+  }
+  #mz-auth .mz-field .mz-inp{
+    padding-right:52px;
+  }
+
+  /* Кнопки в модалке */
+  #mz-auth .mz-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:44px;
+    padding:10px 16px;
+    font-size:15px;
+    font-weight:700;
+    border-radius:999px;
+    border:1px solid rgba(56,189,248,.9);
+    background:linear-gradient(135deg,#0ea5e9,#2563eb);
+    color:#f9fafb;
+    cursor:pointer;
+    box-shadow:0 12px 30px rgba(15,23,42,.8);
+    transition:transform .05s ease, box-shadow .1s ease, filter .15s ease;
+  }
+  #mz-auth .mz-btn:hover{
+    filter:brightness(1.03);
+    transform:translateY(0.5px);
+    box-shadow:0 18px 40px rgba(15,23,42,.9);
+  }
+  #mz-auth .mz-btn:active{
+    transform:translateY(1px);
+    box-shadow:0 8px 20px rgba(15,23,42,.9);
+  }
+
+  /* Варианты */
+  #mz-auth .mz-btn.link{
+    background:transparent;
+    color:#e5e7eb;
+    border-color:rgba(148,163,184,.7);
+    box-shadow:none;
+  }
+  #mz-auth .mz-btn.link:hover{
+    background:rgba(15,23,42,.9);
+  }
+  #mz-auth .mz-btn.ghost{
+    background:rgba(15,23,42,.95);
+    color:#e5e7eb;
+    border-color:rgba(148,163,184,.7);
+    box-shadow:none;
+  }
+  #mz-auth .mz-btn.sm{
+    min-height:36px;
+    padding:8px 12px;
+    font-size:14px;
+  }
+
+  /* Инфо / ошибки */
+  #mz-auth .mz-ok{
+    background:rgba(22,163,74,.18);
+    color:#bbf7d0;
+    border:1px solid rgba(34,197,94,.7);
+    border-radius:12px;
+    padding:8px 10px;
+    font-weight:600;
+    font-size:14px;
+  }
+  #mz-auth .mz-help.error{
+    color:#fecaca;
+    font-size:14px;
+    font-weight:700;
+  }
+  @keyframes mz-blink-border{
+    0%{border-color:#f87171; box-shadow:0 0 0 2px rgba(248,113,113,.25)}
+    50%{border-color:var(--mz-border); box-shadow:none}
+    100%{border-color:#f87171; box-shadow:0 0 0 2px rgba(248,113,113,.25)}
+  }
+  #mz-auth .mz-inp.error{
+    animation:mz-blink-border .5s ease-in-out 3;
+  }
+
+  /* Мобильная адаптация */
+  @media (max-width:640px){
+    #mz-auth{
+      width:100%;
+      max-width:100vw;
+      height:100vh;
+      max-height:100vh;
+      border-radius:0;
+      transform:none;
+      left:0; top:0;
+    }
+    #mz-auth .mz-auth-h{
+      border-radius:0;
+    }
+  }
+/* ==== POLISH: auth modal (scroll, pin width, animation) ==== */
+
+/* чтобы ничего не вылезало за пределы и не было горизонтального скролла */
+#mz-auth,
+#mz-auth *{
+  box-sizing:border-box;
+}
+
+/* чуть больше “воздуха” внутри */
+#mz-auth .mz-auth-b{
+  padding:18px 18px 16px;
+}
+
+/* аккуратный PIN и код профа: компактно, по центру, без огромной ширины */
+#mz-auth #auth-pin,
+#mz-auth #temp-code{
+  max-width:160px;
+  text-align:center;
+  letter-spacing:.18em;
+}
+
+/* а вот обычные select-ы для временного доступа пусть будут широкие */
+#mz-auth #temp-course,
+#mz-auth #temp-name{
+  max-width:100%;
+}
+
+/* чуть больше отступов вокруг блока PIN */
+#mz-auth #pin-wrap{
+  margin-top:12px;
+}
+
+/* анимация появления модалки – лёгкий подъём снизу + fade */
+#mz-auth{
+  opacity:0;
+  transform:translate(-50%,-44%); /* чуть ниже центра */
+  transition:opacity .24s ease-out, transform .24s ease-out;
+}
+#mz-auth.show{
+  opacity:1;
+  transform:translate(-50%,-50%);
+}
+
+/* анимация смены “панелей” внутри (email / temp / finish / setpass) */
+#mz-auth #step-email,
+#mz-auth #step-temp,
+#mz-auth #step-temp-finish,
+#mz-auth #step-setpass{
+  animation:mz-step-fade .18s ease-out;
+}
+@keyframes mz-step-fade{
+  from{
+    opacity:0;
+    transform:translateY(8px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
+</style>
+
+<!-- 2) INJECTION SCRIPT -->
+<script>
+(function () {
+  const WP_ROOT = (window.wpApiSettings && wpApiSettings.root)
+    ? wpApiSettings.root
+    : (location.origin + '/');
+  const V5 = WP_ROOT.replace(/\/$/, '') + '/meatze/v5';
+
+  function injectAuthModal() {
+    if (document.getElementById('mz-auth')) return;
+    let LAST_EMAIL = null;
+    let LAST_PIN   = null;
+
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="mz-auth-ov" aria-hidden="true"></div>
+      <div id="mz-auth" role="dialog" aria-modal="true" aria-labelledby="mz-auth-title" aria-hidden="true">
+        <div class="mz-auth-h">
+          <h3 id="mz-auth-title" class="mz-auth-title">Acceso</h3>
+          <div class="mz-auth-actions">
+            <button id="btn-open-temp" class="mz-btn ghost sm" type="button">Crea una cuenta de estudiante</button>
+            <button id="mz-auth-close" class="mz-x" aria-label="Cerrar">✕</button>
+          </div>
+        </div>
+        <div class="mz-auth-b">
+          <div id="step-temp" style="display:none">
+            <div class="mz-help" style="margin-bottom:6px">Introduce los datos que te dio el profesor para crear tu cuenta de alumno.</div>
+            <label class="mz-help">Curso</label><select id="temp-course" class="mz-inp"></select>
+            <label class="mz-help">Alumno</label><select id="temp-name" class="mz-inp"></select>
+            <label class="mz-help">Código del profesor (2 dígitos)</label>
+            <div class="mz-field">
+              <input id="temp-code" class="mz-inp" inputmode="numeric" maxlength="2" placeholder="00–99">
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button id="btn-temp-check" class="mz-btn">Continuar</button>
+              <button id="btn-temp-back" class="mz-btn ghost sm" type="button">Volver</button>
+            </div>
+            <div id="msg-temp" class="mz-help"></div>
+          </div>
+
+          <div id="step-temp-finish" style="display:none">
+            <div class="mz-ok">Código verificado. Crea tu cuenta.</div>
+            <label class="mz-help">Tu nombre y apellidos</label>
+            <input id="temp-fullname" class="mz-inp" placeholder="Nombre Apellidos" autocomplete="name">
+            <label class="mz-label" style="margin-top:8px">Contraseña (min. 6)</label>
+            <div class="mz-field">
+              <input id="temp-pass" class="mz-inp" type="password" placeholder="Contraseña" autocomplete="new-password">
+              <button class="mz-reveal" type="button" aria-label="Mostrar contraseña" data-target="#temp-pass">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button id="btn-temp-finish" class="mz-btn">Crear y entrar</button>
+              <button id="btn-temp-cancel" class="mz-btn link" type="button">Cancelar</button>
+            </div>
+            <div id="msg-temp-finish" class="mz-help"></div>
+          </div>
+
+          <div id="step-email">
+            <label class="mz-help">E-mail</label>
+            <input id="auth-email" class="mz-inp" type="email" placeholder="tu@correo.com" autocomplete="email">
+            <label class="mz-help">Contraseña (si no tienes, usa PIN)</label>
+            <div class="mz-field">
+              <input id="auth-pass-login" class="mz-inp" type="password" placeholder="Contraseña" autocomplete="current-password">
+              <button class="mz-reveal" type="button" aria-label="Mostrar contraseña" data-target="#auth-pass-login">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button id="btn-login-pass" class="mz-btn">Entrar</button>
+              <button id="btn-send-pin" class="mz-btn link" type="button">Recibir PIN por e-mail</button>
+            </div>
+            <div id="msg-pass-login" class="mz-help"></div>
+
+            <div id="pin-wrap" style="margin-top:8px;display:none">
+              <label class="mz-help">PIN (6 dígitos)</label>
+              <input id="auth-pin" class="mz-inp" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="one-time-code">
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button id="btn-verify" class="mz-btn">Segir con PIN</button>
+                <button id="btn-resend" class="mz-btn link" type="button">Reenviar PIN</button>
+              </div>
+              <div id="msg-pin" class="mz-help"></div>
+            </div>
+          </div>
+
+          <div id="step-setpass" style="display:none">
+            <div class="mz-ok">Sesión iniciada correctamente.</div>
+            <label class="mz-help">Opcional: define una contraseña para próximas veces</label>
+            <div class="mz-field">
+              <input id="auth-pass" class="mz-inp" type="password" placeholder="Contraseña (min. 6)" autocomplete="new-password">
+              <button class="mz-reveal" type="button" aria-label="Mostrar contraseña" data-target="#auth-pass">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button id="btn-setpass" class="mz-btn">Guardar contraseña</button>
+              <button id="btn-done" class="mz-btn link" type="button">Listo</button>
+            </div>
+            <div id="msg-setpass" class="mz-help"></div>
+          </div>
+        </div>
+      </div>
+    `);
+
+    const $ = s => document.querySelector(s);
+	function bindAction(id, actionKey){
+  const el = document.getElementById(id);
+  if (el && !el.dataset.action) el.dataset.action = actionKey;
+}
+
+// === Auth modal actions ===
+bindAction('mz-btn-login',      'auth.open');        // кнопка в шапке (если есть)
+bindAction('btn-login-pass',    'auth.login_password');
+bindAction('btn-send-pin',      'auth.request_pin');
+bindAction('btn-verify',        'auth.verify_pin');
+bindAction('btn-resend',        'auth.resend_pin');
+bindAction('btn-open-temp',     'auth.temp.open');
+bindAction('btn-temp-check',    'auth.temp.verify');
+bindAction('btn-temp-finish',   'auth.temp.claim');
+bindAction('btn-setpass',       'auth.set_password');
+bindAction('btn-done',          'auth.finish');
+bindAction('mz-auth-close',     'auth.close');
+bindAction('mz-acc-user',     'account.menu.open');
+bindAction('mz-prof-save',    'profile.save');
+bindAction('mz-prof-cancel',  'profile.cancel');
+bindAction('mz-prof-close',   'profile.close');
+
+    const stepEmail = $('#step-email'), stepTemp = $('#step-temp'), stepFin = $('#step-temp-finish');
+    const ov = $('#mz-auth-ov'), box = $('#mz-auth');
+    const emailEl = $('#auth-email'), passEl = $('#auth-pass-login'), msgPwd = $('#msg-pass-login');
+    const pinWrap = $('#pin-wrap'), pinEl = $('#auth-pin'), msgPin = $('#msg-pin');
+    const setWrap = $('#step-setpass'), setPass = $('#auth-pass'), msgSet = $('#msg-setpass');
+
+    function showStep(which){
+      stepEmail.style.display = (which==='email')?'block':'none';
+      stepTemp.style.display  = (which==='temp')?'block':'none';
+      stepFin.style.display   = (which==='finish')?'block':'none';
+    }
+    function showSetPass() {
+      // спрятать остальные шаги и показать "задать пароль"
+      stepEmail.style.display = 'none';
+      stepTemp.style.display  = 'none';
+      stepFin.style.display   = 'none';
+      setWrap.style.display   = 'block';
+      try { setPass.focus(); } catch(_){}
+    }
+
+    function setTempHeaderActive(on){
+      const b=document.getElementById('btn-open-temp');
+      if(b) b.classList.toggle('is-act', !!on);           // <= .mz-btn.is-act стилизован
+    }
+    function show(v){
+      ov.classList.toggle('show', v);
+      box.classList.toggle('show', v);
+      box.setAttribute('aria-hidden', v ? 'false' : 'true');
+      ov.setAttribute('aria-hidden',  v ? 'false' : 'true');
+      document.body.classList.toggle('mz-no-scroll', v);  // <= блокируем фон
+      if (v){
+        window.dispatchEvent(new Event('meatze:authOpened'));
+        setTimeout(()=>emailEl?.focus(),20);
+      }
+    }
+    function close(){ show(false); }
+    function finishAuthRedirect(){
+      try{
+        document.body.classList.remove('mz-no-scroll');
+        document.getElementById('mz-auth-portal')?.classList.remove('show');
+        document.getElementById('mz-auth-ov')?.classList.remove('show');
+        document.getElementById('mz-auth')?.classList.remove('show');
+      }catch(_){}
+      location.replace('/alumno');
+    }
+let MUST_SET = false;
+    document.getElementById('mz-auth-close')?.addEventListener('click', close);
+        ov?.addEventListener('click', e=>{ if(e.target===ov) close(); });
+    document.addEventListener('keydown', e=>{ if (box.classList.contains('show') && e.key==='Escape') close(); });
+
+    window.mzOpenAuth = () => { showStep('email'); setTempHeaderActive(false); show(true); };
+
+    box.addEventListener('click', (e)=>{
+      const btn=e.target.closest('.mz-reveal'); if(!btn) return;
+      const inp=document.querySelector(btn.getAttribute('data-target')); if(!inp) return;
+      const isText=inp.type==='text'; inp.type=isText?'password':'text';
+      btn.setAttribute('aria-pressed', String(!isText)); inp.focus({preventScroll:true});
+    });
+async function mzApi(actionKey, url, opt = {}) {
+  return api(url, opt);
+}
+
+
+    async function api(url, opt = {}) {
+      const o = Object.assign({ credentials:'include', cache:'no-store' }, opt);
+      if ((!o.method || o.method==='GET') && typeof URL==='function'){
+        const u=new URL(url, window.location.origin);
+        u.searchParams.set('_', Date.now().toString()); url=u.toString();
+      }
+      o.headers = Object.assign({ 'Cache-Control':'no-cache' }, o.headers||{});
+      const isV5=/\/meatze\/v5\//.test(url), isPublic=/\/meatze\/v5\/(?:cursos|curso|me|auth\/)/.test(url);
+      if (isV5 && window.mzRestNonce && !isPublic) o.headers['X-WP-Nonce']=window.mzRestNonce;
+      if (!isV5 && window.wpApiSettings?.nonce)   o.headers['X-WP-Nonce']=window.wpApiSettings.nonce;
+      if (o.body && typeof o.body!=='string' && !(o.body instanceof FormData)){ o.headers['Content-Type']='application/json'; o.body=JSON.stringify(o.body); }
+      const r=await fetch(url,o); const t=await r.text(); let j=null; try{ j=JSON.parse(t);}catch(_){}
+      if(!r.ok) throw (j || {status:r.status, text:t}); return j||{};
+    }
+
+    // TEMP access
+    const btnOpenTemp = $('#btn-open-temp'), btnTempBack = $('#btn-temp-back'), btnTempCheck = $('#btn-temp-check'), btnTempOk = $('#btn-temp-finish');
+    const btnTempCancel = $('#btn-temp-cancel');
+    const selCourse = $('#temp-course'), selName = $('#temp-name'), inpCode = $('#temp-code'),
+          msgTemp = $('#msg-temp'), msgTempFin = $('#msg-temp-finish'),
+          inpFull = $('#temp-fullname'), inpPass = $('#temp-pass');
+
+    btnTempCancel?.addEventListener('click', async ()=>{
+      const code  = stepTemp.dataset.course || '';
+      const tname = stepTemp.dataset.tname  || '';
+      msgTempFin.textContent = '';
+
+      // опционально: освобождение резерва на бэке
+      // try { await api(V5+'/auth/temp_release', { method:'POST', body:{ course_code: code, temp_name: tname } }); } catch(_) {}
+
+      delete stepTemp.dataset.course;
+      delete stepTemp.dataset.tname;
+      delete stepTemp.dataset.key;
+      inpFull.value = '';
+      inpPass.value = '';
+      try { await loadTempNamesForCourse(); } catch(_) {}
+      showStep('temp'); setTempHeaderActive(true);
+      document.querySelector('#temp-code')?.focus();
+    });
+
+	btnOpenTemp?.addEventListener('click', async ()=>{
+	  msgTemp.textContent=''; 
+	  try{
+		const r = await api(V5 + '/auth/temp_cursos');
+		const items = Array.isArray(r.items) ? r.items : [];
+		selCourse.innerHTML = items
+		  .map(it => `<option value="${it.codigo}">${it.titulo || it.codigo}</option>`)
+		  .join('');
+		await loadTempNamesForCourse();
+		showStep('temp');
+		setTempHeaderActive(true);
+		selCourse?.focus();
+	  }catch(e){
+		console.error('temp_cursos error', e);
+		msgTemp.textContent = 'No se pudo cargar cursos.';
+	  }
+	});
+
+    btnTempBack?.addEventListener('click', ()=>{ showStep('email'); setTempHeaderActive(false); document.getElementById('auth-email')?.focus(); });
+
+    async function loadTempNamesForCourse(){
+      msgTemp.textContent='Cargando…'; selName.innerHTML='';
+      const code=selCourse.value; if(!code){ msgTemp.textContent=''; return; }
+      try{
+        const r=await api(V5+'/auth/temp_accounts?course_code='+encodeURIComponent(code));
+        const names=Array.isArray(r.items)?r.items:[];
+        if(!names.length){ msgTemp.textContent='No hay cuentas temporales disponibles.'; return; }
+        selName.innerHTML=names.map(n=>`<option value="${n}">${n}</option>`).join('');
+        msgTemp.textContent='';
+      } catch(e){ msgTemp.textContent='No se pudo cargar alumnos.'; }
+    }
+    selCourse?.addEventListener('change', loadTempNamesForCourse);
+
+    btnTempCheck?.addEventListener('click', async ()=>{
+      const code=selCourse.value, tname=selName.value, key=(inpCode.value||'').replace(/\D/g,'').slice(0,2);
+      msgTemp.textContent='';
+      if(!code||!tname||key.length!==2){ msgTemp.textContent='Completa los campos.'; return; }
+      try{
+        await api(V5+'/auth/temp_verify',{method:'POST',body:{course_code:code,temp_name:tname,key}});
+        stepTemp.dataset.course=code; stepTemp.dataset.tname=tname; stepTemp.dataset.key=key;
+        inpFull.value=''; inpPass.value=''; showStep('finish');
+      }catch(e){
+        msgTemp.textContent =
+          e?.code==='gone'      ? 'Este código ya fue usado o caducó.' :
+          e?.code==='forbidden' ? 'Código incorrecto. Revisa los 2 dígitos.' :
+          e?.code==='not_found' ? 'Curso o cuenta temporal no encontrada.' :
+          (e?.message||'No se pudo verificar el código.');
+        if(e?.code==='forbidden'){ inpCode.classList.add('error'); setTimeout(()=>inpCode.classList.remove('error'),1500); }
+      }
+    });
+
+    btnTempOk?.addEventListener('click', async ()=>{
+      const code=stepTemp.dataset.course, tname=stepTemp.dataset.tname, key=stepTemp.dataset.key;
+      const full=(inpFull.value||'').trim(), pass=(inpPass.value||'').trim();
+      msgTempFin.textContent=''; if(!full||pass.length<6){ msgTempFin.textContent='Indica nombre y contraseña (min. 6).'; return; }
+      try{
+        const j=await api(V5+'/auth/temp_claim',{method:'POST',body:{course_code:code,temp_name:tname,key,full_name:full,password:pass}});
+		const createdEmail = j?.email || '(desconocido)';
+
+		stepFin.innerHTML = `
+		  <div class="mz-ok" style="margin-bottom:10px">Cuenta creada.</div>
+		  <div class="mz-help" style="margin-bottom:8px">Guarda estos datos para entrar más tarde:</div>
+
+		  <label class="mz-help">Usuario (e-mail de acceso)</label>
+		  <div style="display:flex; gap:8px; align-items:center;">
+			<input id="new-email-display" class="mz-inp" value="${createdEmail}" readonly onclick="this.select()">
+			<button class="mz-btn mz-copy" type="button" data-copy-target="#new-email-display">Copiar</button>
+		  </div>
+
+		  <label class="mz-help" style="margin-top:8px">Contraseña</label>
+		  <div style="display:flex; gap:8px; align-items:center; width:100%;">
+			<div class="mz-field" style="flex:1;">
+			  <input id="new-pass-display" class="mz-inp" type="password" value="${pass}" readonly>
+			  <button class="mz-reveal" type="button" aria-label="Mostrar contraseña" data-target="#new-pass-display">
+				<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+			  </button>
+			</div>
+			<button class="mz-btn mz-copy" type="button" data-copy-target="#new-pass-display">Copiar</button>
+		  </div>
+
+		  <div class="mz-help" style="margin-top:12px"><strong>Nota:</strong> este e-mail <u>NO</u> es un correo real; es tu <em>usuario de acceso</em>.</div>
+
+		  <label class="mz-help" style="display:flex;gap:8px;align-items:center;margin-top:12px">
+			<input type="checkbox" id="ack-saved">
+			He guardado mi usuario y contraseña
+		  </label>
+
+		  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+			<button id="btn-temp-enter" class="mz-btn" disabled>Entrar ahora</button>
+			<span id="auto-login-msg" class="mz-help"></span>
+		  </div>`;
+
+		// копирование как раньше
+		stepFin.querySelectorAll('[data-copy-target]').forEach(b=>b.addEventListener('click',()=>{
+		  const sel=b.getAttribute('data-copy-target'); const inp=stepFin.querySelector(sel);
+		  const val=(inp?.value||'')+''; (navigator.clipboard?.writeText(val)||Promise.reject()).then(()=>{
+			const old=b.textContent; b.textContent='Copiado'; b.disabled=true;
+			setTimeout(()=>{b.textContent=old;b.disabled=false;},1000);
+		  }).catch(()=>{ inp?.select(); document.execCommand && document.execCommand('copy'); });
+		}));
+
+
+		// разблокировать кнопку после подтверждения
+		const ack = stepFin.querySelector('#ack-saved');
+		const enterBtn = stepFin.querySelector('#btn-temp-enter');
+		const msg = stepFin.querySelector('#auto-login-msg');
+		ack?.addEventListener('change', ()=> enterBtn.disabled = !ack.checked);
+
+		// визуальное мигание при ошибке
+		function flashAckError(){
+		  const lbl = ack.closest('label');
+		  lbl.style.transition = 'none';
+		  lbl.style.color = '#b91c1c'; // красный текст
+		  lbl.style.fontWeight = '700';
+		  lbl.classList.add('ack-error');
+		  setTimeout(()=>{
+			lbl.style.transition = 'color .4s ease';
+			lbl.style.color = '';
+			lbl.style.fontWeight = '';
+			lbl.classList.remove('ack-error');
+		  }, 1200);
+		  msg.textContent = 'Confirma que has guardado tus datos antes de entrar.';
+		  msg.style.color = '#b91c1c';
+		  setTimeout(()=>{ msg.textContent=''; msg.style.color=''; }, 2500);
+		}
+
+		// вход по кнопке
+		async function doLoginNow(){
+		  if (!ack.checked){
+			flashAckError();
+			return;
+		  }
+		  msg.textContent = 'Entrando…';
+		  msg.style.color = '';
+		  try{
+			const r = await api(V5+'/auth/login_password', { method:'POST', body:{ email: createdEmail, password: pass } });
+			
+			if (r?.me){
+			  try{ localStorage.setItem('mz_me', JSON.stringify(r.me)); }catch(_){}
+			  if(!window.wpApiSettings) window.wpApiSettings={root:WP_ROOT};
+			  if(r.me.rest_nonce){ window.wpApiSettings.nonce=r.me.rest_nonce; window.mzRestNonce=r.me.rest_nonce; }
+			} else {
+			  try{ const me2=await api(V5+'/me'); if(me2?.rest_nonce){ window.wpApiSettings={root:WP_ROOT,nonce:me2.rest_nonce}; window.mzRestNonce=me2.rest_nonce; } }catch(_){}
+			}
+			window.dispatchEvent(new CustomEvent('meatze:authChanged',{ detail:{ logged_in:true } }));
+			finishAuthRedirect();
+		  }catch(e){
+			msg.textContent = e?.message || 'No se pudo entrar — inténtalo de nuevo.';
+			msg.style.color = '#b91c1c';
+		  }
+		}
+		enterBtn?.addEventListener('click', doLoginNow);
+
+
+
+      }catch(e){ msgTempFin.textContent=e?.message||'No se pudo crear la cuenta.'; }
+    });
+
+    // Email / PIN / Password
+    const validEmail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((v||'').trim());
+    function clearMsgs(){ msgPwd.textContent=''; msgPin.textContent=''; msgSet.textContent=''; }
+
+    async function apiLoginPassword(){
+      const email=(emailEl.value||'').trim().toLowerCase(), pwd=(passEl.value||'').trim();
+      clearMsgs(); if(!validEmail(email)){ msgPwd.textContent='E-mail inválido'; return; }
+      if(!pwd){ msgPwd.textContent='Introduce la contraseña'; return; }
+      try{
+        const j=await api(V5+'/auth/login_password',{method:'POST',body:{email,password:pwd}});
+        if (j?.me){
+          try{ localStorage.setItem('mz_me', JSON.stringify(j.me)); }catch(_){}
+          if(!window.wpApiSettings) window.wpApiSettings={root:WP_ROOT};
+          if(j.me.rest_nonce) window.wpApiSettings.nonce=j.me.rest_nonce, window.mzRestNonce=j.me.rest_nonce;
+        } else {
+          try{ const me2=await api(V5+'/me'); if(me2?.rest_nonce) window.mzRestNonce=me2.rest_nonce; }catch(_){}
+        }
+        window.dispatchEvent(new CustomEvent('meatze:authChanged',{ detail: Object.assign({logged_in:true}, j?.me||{}) }));
+        ov.classList.remove('show'); box.classList.remove('show'); document.body.classList.remove('mz-no-scroll');
+        finishAuthRedirect();
+      }catch(e){ msgPwd.textContent=e?.message||'Credenciales inválidas.'; }
+    }
+    async function requestPIN(){
+      const email=(emailEl.value||'').trim().toLowerCase(); clearMsgs();
+      if(!validEmail(email)){ msgPwd.textContent='E-mail inválido'; return; }
+      try{ await api(V5+'/auth/request_pin',{method:'POST',body:{email}}); pinWrap.style.display='block'; msgPin.textContent='PIN enviado (válido 10 min).'; pinEl.focus(); }
+      catch(e){ msgPwd.textContent=e?.message||'No se pudo enviar el PIN.'; }
+    }    async function verifyPIN(){
+      const email = (emailEl.value || '').trim().toLowerCase();
+      const pin   = (pinEl.value || '').replace(/\D/g,'').slice(0,6);
+
+      clearMsgs();
+
+      if (!validEmail(email)) {
+        msgPin.textContent = 'E-mail inválido';
+        return;
+      }
+      if (pin.length !== 6) {
+        msgPin.textContent = 'PIN debe tener 6 dígitos';
+        return;
+      }
+
+      try{
+        const j = await api(V5 + '/auth/verify_pin', {
+          method: 'POST',
+          body: { email, pin }
+        });
+
+        // запоминаем, что логинились по PIN'у
+        LAST_EMAIL = email;
+        LAST_PIN   = pin;
+
+        // сначала берем me из ответа
+        let me = j?.me || null;
+
+        // сохранить me/nonce как раньше
+        if (me){
+          try { localStorage.setItem('mz_me', JSON.stringify(me)); } catch(_){}
+          if (!window.wpApiSettings) {
+            window.wpApiSettings = { root: WP_ROOT };
+          }
+          if (me.rest_nonce) {
+            window.wpApiSettings.nonce = me.rest_nonce;
+            window.mzRestNonce = me.rest_nonce;
+          }
+        } else {
+          // на всякий случай пробуем вытащить /me
+          try {
+            const me2 = await api(V5 + '/me');
+            if (me2) {
+              me = me2;
+              if (me2.rest_nonce){
+                window.wpApiSettings = { root: WP_ROOT, nonce: me2.rest_nonce };
+                window.mzRestNonce   = me2.rest_nonce;
+              }
+            }
+          } catch(_){}
+        }
+
+        // теперь me точно объявлен, можно смотреть роли/флаги
+        const isTeacher   = !!(me && (me.is_teacher === true || me.is_teacher == 1));
+        const hasPassword = !!(me && (me.has_password === true || me.has_password == 1));
+
+        // ❶ фиксируем требование
+        MUST_SET = !!(isTeacher && !hasPassword);
+
+        // ❷ настраиваем текст и показываем шаг пароля
+        const note = setWrap.querySelector('.mz-ok');
+        if (note){
+          note.textContent = MUST_SET
+            ? 'Sesión iniciada. Como docente, define una contraseña (obligatorio).'
+            : 'Sesión iniciada. Puedes definir una contraseña para próximos accesos (opcional).';
+        }
+
+        showSetPass();
+      } catch(e){
+        msgPin.textContent = e?.message || 'PIN incorrecto o caducado.';
+      }
+    }
+
+async function setPassword(){
+  const p = (setPass.value || '').trim(); 
+  clearMsgs();
+  if (p.length < 6){ 
+    msgSet.textContent = 'Mínimo 6 caracteres'; 
+    return; 
+  }
+
+  try {
+    const body = { password: p };
+
+    // ВАЖНО: отправляем email + pin из шага verifyPIN
+    if (LAST_EMAIL && LAST_PIN) {
+      body.email = LAST_EMAIL;
+      body.pin   = LAST_PIN;
+    }
+
+    const j = await api(V5 + '/auth/set_password', { method:'POST', body });
+
+    msgSet.textContent = 'Contraseña guardada. Entrando…';
+
+   try{
+      const me2 = await api(V5 + '/me');
+      if (me2?.rest_nonce){
+        window.wpApiSettings = { root: WP_ROOT, nonce: me2.rest_nonce };
+        window.mzRestNonce   = me2.rest_nonce;
+      }
+      window.dispatchEvent(
+        new CustomEvent('meatze:authChanged', {
+          detail: Object.assign({ logged_in: true }, me2 || {})
+        })
+      );
+    } catch(_) {}
+
+    finishAuthRedirect();
+  } catch(e){
+    msgSet.textContent = e?.message || 'Error';
+  }
+}
+
+
+	document.getElementById('btn-done')?.addEventListener('click', async ()=>{
+	  if (MUST_SET){
+		msgSet.textContent = 'Como docente, primero define una contraseña.';
+		try{ setPass.focus(); }catch(_){}
+		return;
+	  }
+	  finishAuthRedirect();
+	});
+
+
+
+    document.getElementById('btn-send-pin')?.addEventListener('click', requestPIN);
+    document.getElementById('btn-resend')  ?.addEventListener('click', requestPIN);
+    document.getElementById('btn-verify')  ?.addEventListener('click', verifyPIN);
+	
+    document.getElementById('btn-login-pass')?.addEventListener('click', apiLoginPassword);
+    document.getElementById('btn-setpass')?.addEventListener('click', setPassword);
+    passEl?.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); apiLoginPassword(); }});
+    pinEl ?.addEventListener('keydown',  e=>{ if(e.key==='Enter'){ e.preventDefault(); verifyPIN(); }});
+  }
+
+  // Слушатель «мягкого» открытия
+  window.addEventListener('meatze:openAuth', ()=>{
+    injectAuthModal();
+    const ov=document.getElementById('mz-auth-ov'); const box=document.getElementById('mz-auth');
+    ov?.classList.add('show'); box?.classList.add('show'); box?.setAttribute('aria-hidden','false');
+    document.body.classList.add('mz-no-scroll');
+    window.dispatchEvent(new Event('meatze:authOpened'));
+    setTimeout(()=> document.getElementById('auth-email')?.focus(), 20);
+  });
+
+  // Готовим модалку заранее
+  if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', injectAuthModal);
+  else injectAuthModal();
+})();
+</script>
+
+<!-- 3) PORTAL BOOTSTRAP (перемещение модалки в портал) -->
+<script>
+(function(){
+  function ensurePortal(){
+    let p = document.getElementById('mz-auth-portal');
+    if (p) return p;
+    p = document.createElement('div');
+    p.id = 'mz-auth-portal';
+    document.body.appendChild(p);
+    return p;
+  }
+  function moveModalIntoPortal(){
+    const portal = ensurePortal();
+    const ov  = document.getElementById('mz-auth-ov');
+    const box = document.getElementById('mz-auth');
+    if (!ov || !box) return false;
+    if (ov.parentNode !== portal) portal.appendChild(ov);
+    if (box.parentNode !== portal) portal.appendChild(box);
+    return true;
+  }
+  function hookOpenClose(){
+    const portal = ensurePortal();
+    const open = ()=>{
+      if (!moveModalIntoPortal()) return;
+      portal.classList.add('show');
+      document.body.classList.add('mz-no-scroll');
+      window.dispatchEvent(new Event('meatze:authOpened'));
+      setTimeout(()=>document.getElementById('auth-email')?.focus(), 20);
+    };
+    const close = ()=>{
+      portal.classList.remove('show');
+      document.body.classList.remove('mz-no-scroll');
+    };
+    window.addEventListener('meatze:openAuth', open);
+    document.addEventListener('click', (e)=>{
+      const id = (e.target && e.target.id) || '';
+      if (id==='mz-auth-close' || id==='btn-done') close();
+      if (e.target === document.getElementById('mz-auth-ov')) close();
+    });
+    document.addEventListener('keydown', (e)=>{
+      if (e.key==='Escape' && document.getElementById('mz-auth-portal')?.classList.contains('show')) close();
+    });
+    window.mzOpenAuth = ()=>{ window.dispatchEvent(new Event('meatze:openAuth')); };
+  }
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', ()=>{ ensurePortal(); moveModalIntoPortal(); hookOpenClose(); });
+  } else {
+    ensurePortal(); moveModalIntoPortal(); hookOpenClose();
+  }
+})();
+</script>
+
+<!-- 4) ACCOUNT MENU STABILIZER (оставляем как было) -->
+<script>
+// гасит двойное срабатывание при клике на аватар
+(function(){
+  const wrap = document.getElementById('mz-acc');
+  const btn  = document.getElementById('mz-acc-user');
+  const menu = document.getElementById('mz-acc-menu');
+  if (!wrap || !btn || !menu || btn.dataset.mzBound) return;
+  btn.dataset.mzBound = '1';
+  function setOpen(v){
+    btn.setAttribute('aria-expanded', v ? 'true' : 'false');
+    menu.classList.toggle('show', v);
+    menu.setAttribute('aria-hidden', v ? 'false' : 'true');
+  }
+  btn.addEventListener('click', function(e){
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    e.stopPropagation();
+    const open = btn.getAttribute('aria-expanded') !== 'true';
+    setOpen(open);
+  }, { capture: true });
+  document.addEventListener('click', function(e){
+    if (!wrap.contains(e.target)) setOpen(false);
+  });
+})();
+</script>
+
+
+
+<div id="mz-prof-ov" aria-hidden="true"></div>
+<div id="mz-prof" role="dialog" aria-modal="true" aria-labelledby="mz-prof-title" aria-hidden="true">
+  <div class="mz-prof-h">
+    <h3 id="mz-prof-title" class="mz-prof-title">Datos personales</h3>
+    <button id="mz-prof-close" class="mz-x" type="button" aria-label="Cerrar">✕</button>
+  </div>
+  <div class="mz-prof-b">
+    <div id="mz-prof-msg" class="mz-help"></div>
+
+    <div class="mz-grid2">
+      <div>
+        <label class="mz-label" for="mz-prof-first">Nombre</label>
+        <input id="mz-prof-first" class="mz-inp" autocomplete="given-name">
+      </div>
+      <div>
+        <label class="mz-label" for="mz-prof-last1">1º apellido</label>
+        <input id="mz-prof-last1" class="mz-inp" autocomplete="family-name">
+      </div>
+    </div>
+
+    <div class="mz-grid2">
+      <div>
+        <label class="mz-label" for="mz-prof-last2">2º apellido</label>
+        <input id="mz-prof-last2" class="mz-inp">
+      </div>
+      <div>
+        <label class="mz-label" for="mz-prof-display">Nombre mostrado</label>
+        <input id="mz-prof-display" class="mz-inp" placeholder="Como se verá en la lista">
+      </div>
+    </div>
+
+    <div>
+      <label class="mz-label" for="mz-prof-bio">Notas / bio</label>
+      <textarea id="mz-prof-bio"></textarea>
+    </div>
+
+    <hr>
+
+    <div>
+      <div class="mz-label">Cambiar contraseña</div>
+      <div class="mz-help">Déjalo vacío si no quieres cambiarla.</div>
+    </div>
+    <div class="mz-grid2">
+      <div>
+        <label class="mz-help" for="mz-prof-pass1">Nueva contraseña</label>
+        <input id="mz-prof-pass1" class="mz-inp" type="password" autocomplete="new-password">
+      </div>
+      <div>
+        <label class="mz-help" for="mz-prof-pass2">Repetir contraseña</label>
+        <input id="mz-prof-pass2" class="mz-inp" type="password" autocomplete="new-password">
+      </div>
+    </div>
+
+    <div id="mz-prof-pass-msg" class="mz-help"></div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <button id="mz-prof-save" class="mz-btn" type="button">Guardar cambios</button>
+      <button id="mz-prof-cancel" class="mz-btn link" type="button">Cerrar</button>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const WP_ROOT = (window.wpApiSettings && wpApiSettings.root)
+    ? window.wpApiSettings.root
+    : (location.origin + '/');
+  const V5 = WP_ROOT.replace(/\/$/,'') + '/meatze/v5';
+
+  const ov    = document.getElementById('mz-prof-ov');
+  const box   = document.getElementById('mz-prof');
+  if (!ov || !box) return;
+
+  const $ = s => document.querySelector(s);
+  const fFirst   = $('#mz-prof-first');
+  const fLast1   = $('#mz-prof-last1');
+  const fLast2   = $('#mz-prof-last2');
+  const fDisp    = $('#mz-prof-display');
+  const fBio     = $('#mz-prof-bio');
+  const fPass1   = $('#mz-prof-pass1');
+  const fPass2   = $('#mz-prof-pass2');
+  const msgTop   = $('#mz-prof-msg');
+  const msgPass  = $('#mz-prof-pass-msg');
+  const btnSave  = $('#mz-prof-save');
+  const btnClose = $('#mz-prof-close');
+  const btnCancel= $('#mz-prof-cancel');
+
+  async function api(url, opt = {}){
+    const o = Object.assign({ credentials:'include', cache:'no-store' }, opt);
+    if ((!o.method || o.method==='GET') && typeof URL === 'function'){
+      const u = new URL(url, window.location.origin);
+      u.searchParams.set('_', Date.now().toString());
+      url = u.toString();
+    }
+    o.headers = Object.assign({ 'Cache-Control':'no-cache' }, o.headers||{});
+    const isV5 = /\/meatze\/v5\//.test(url);
+    const isPublic = /\/meatze\/v5\/(?:cursos|curso|me\/?[^p]|auth\/)/.test(url); // profile = privado
+    if (isV5 && window.mzRestNonce && !isPublic) o.headers['X-WP-Nonce'] = window.mzRestNonce;
+    if (!isV5 && window.wpApiSettings?.nonce) o.headers['X-WP-Nonce'] = window.wpApiSettings.nonce;
+    if (o.body && typeof o.body!=='string' && !(o.body instanceof FormData)) {
+      o.headers['Content-Type'] = 'application/json';
+      o.body = JSON.stringify(o.body);
+    }
+    const r = await fetch(url, o);
+    const t = await r.text(); let j=null;
+    try{ j = JSON.parse(t); }catch(_){}
+    if (!r.ok) throw (j || { status:r.status, text:t });
+    return j || {};
+  }
+
+  function show(v){
+    ov.classList.toggle('show', v);
+    box.classList.toggle('show', v);
+    box.setAttribute('aria-hidden', v ? 'false' : 'true');
+    ov.setAttribute('aria-hidden', v ? 'false' : 'true');
+    document.body.classList.toggle('mz-no-scroll', v);
+    if (v){ setTimeout(()=>fFirst?.focus(), 20); }
+  }
+
+  function clearMsgs(){
+    msgTop.textContent = '';
+    msgPass.textContent = '';
+    msgTop.classList.remove('mz-err');
+    msgPass.classList.remove('mz-err');
+  }
+
+  async function loadProfile(){
+    clearMsgs();
+    msgTop.textContent = 'Cargando…';
+    try{
+      const p = await api(V5 + '/me/profile');
+      const pr = p.profile || p;
+      fFirst.value = pr.first_name  || '';
+      fLast1.value = pr.last_name1  || '';
+      fLast2.value = pr.last_name2  || '';
+      fDisp.value  = pr.display_name|| '';
+      fBio.value   = pr.bio         || '';
+      msgTop.textContent = '';
+    }catch(e){
+      msgTop.textContent = e?.message || 'No se pudo cargar el perfil.';
+      msgTop.classList.add('mz-err');
+    }
+  }
+
+  async function saveProfile(){
+    clearMsgs();
+    const body = {
+      first_name:   fFirst.value || '',
+      last_name1:   fLast1.value || '',
+      last_name2:   fLast2.value || '',
+      display_name: fDisp.value  || '',
+      bio:          fBio.value   || '',
+    };
+    const p1 = (fPass1.value || '').trim();
+    const p2 = (fPass2.value || '').trim();
+
+    if (p1 || p2){
+      if (p1.length < 6){
+        msgPass.textContent = 'Contraseña mínima 6 caracteres.';
+        msgPass.classList.add('mz-err');
+        fPass1.focus();
+        return;
+      }
+      if (p1 !== p2){
+        msgPass.textContent = 'Las contraseñas no coinciden.';
+        msgPass.classList.add('mz-err');
+        fPass2.focus();
+        return;
+      }
+    }
+
+    btnSave.disabled = true;
+    btnSave.textContent = 'Guardando…';
+
+    try{
+      await api(V5 + '/me/profile', { method:'POST', body });
+
+if (p1){
+  await api(V5 + '/me/password', {
+    method: 'POST',
+    body: { password: p1 }
+  });
+  msgPass.textContent = 'Contraseña actualizada.';
+}
+
+      msgTop.textContent = 'Datos guardados.';
+      msgTop.classList.remove('mz-err');
+      msgPass.classList.remove('mz-err');
+
+      // обновим me в localStorage, если нужно
+      try{
+        const me = await api(V5 + '/me');
+        if (me?.rest_nonce){
+          if (!window.wpApiSettings) window.wpApiSettings = { root: WP_ROOT };
+          window.wpApiSettings.nonce = me.rest_nonce;
+          window.mzRestNonce = me.rest_nonce;
+        }
+        window.dispatchEvent(new CustomEvent('meatze:authChanged',{ detail: Object.assign({logged_in:true}, me || {}) }));
+      }catch(_){}
+
+      setTimeout(()=>{ show(false); }, 800);
+    }catch(e){
+      msgTop.textContent = e?.message || 'No se pudo guardar.';
+      msgTop.classList.add('mz-err');
+    }finally{
+      btnSave.disabled = false;
+      btnSave.textContent = 'Guardar cambios';
+      fPass1.value = '';
+      fPass2.value = '';
+    }
+  }
+
+  btnSave   ?.addEventListener('click', saveProfile);
+  btnClose  ?.addEventListener('click', ()=>show(false));
+  btnCancel ?.addEventListener('click', ()=>show(false));
+  ov        ?.addEventListener('click', e=>{ if (e.target === ov) show(false); });
+  document.addEventListener('keydown', e=>{
+    if (e.key === 'Escape' && box.classList.contains('show')) show(false);
+  });
+
+  // глобальный триггер от меню аккаунта
+  window.addEventListener('meatze:openProfile', ()=>{
+    loadProfile().then(()=>show(true));
+  });
+})();
+</script>
+
+{% if force_login %}
+<script>
+  window.addEventListener("DOMContentLoaded", () => {
+      if (window.mzOpenAuth) {
+          window.mzOpenAuth();
+      } else {
+          window.dispatchEvent(new Event('meatze:openAuth'));
+      }
+  });
+</script>
+{% endif %}
+{% include "includes/chat_widget.html" %}
+<script src="{% static 'meatze/chat_widget/chat-widget.js' %}"></script>
+
+</body>
+</html>

@@ -1,0 +1,602 @@
+{# panel/tabs/alumnos.html #}
+
+<style>
+  /* ================================
+     MEATZE · TAB ALUMNOS (DOCENTES)
+  ================================= */
+  #mz-alumnos-tab .mz-alu-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  #mz-alumnos-tab .mz-alu-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  #mz-alumnos-tab .mz-alu-sub {
+    margin: 2px 0 0;
+    font-size: 0.82rem;
+    opacity: 0.85;
+  }
+  #mz-alumnos-tab .mz-alu-badge {
+    font-size: 0.76rem;
+    padding: 4px 9px;
+    border-radius: 999px;
+    border: 1px solid rgba(148,163,184,0.7);
+    background: rgba(15,23,42,0.9);
+    white-space: nowrap;
+  }
+
+  #mz-alumnos-tab .mz-alu-tablewrap {
+    margin-top: 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(148,163,184,0.45);
+    overflow: auto;
+    background: rgba(15,23,42,0.85);
+  }
+
+  #mz-alumnos-tab .mz-tbl {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.86rem;
+  }
+  #mz-alumnos-tab .mz-tbl thead tr {
+    background: rgba(15,23,42,0.98);
+  }
+  #mz-alumnos-tab .mz-tbl th,
+  #mz-alumnos-tab .mz-tbl td {
+    padding: 6px 9px;
+    text-align: left;
+    border-bottom: 1px solid rgba(30,64,175,0.45);
+  }
+  #mz-alumnos-tab .mz-tbl th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.85;
+  }
+  #mz-alumnos-tab .mz-tbl tbody tr:nth-child(2n) {
+    background: rgba(15,23,42,0.9);
+  }
+
+  #mz-alumnos-tab .mz-alu-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  #mz-alumnos-tab .mz-alu-inline-pass {
+    margin-top: 4px;
+    padding: 4px 6px;
+    border-radius: 10px;
+    border: 1px dashed rgba(148,163,184,0.65);
+    font-size: 0.78rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  #mz-alumnos-tab .mz-alu-inline-pass code {
+    font-size: 0.9rem;
+  }
+
+  /* ================================
+     ACCESOS TEMPORALES
+  ================================= */
+  #mz-alumnos-tab #mz-temp-root {
+    margin-top: 14px;
+  }
+  #mz-alumnos-tab .mz-temp-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin: 6px 0;
+  }
+  #mz-alumnos-tab .mz-temp-bar label,
+  #mz-alumnos-tab .mz-temp-bar span {
+    font-size: 0.8rem;
+    opacity: 0.9;
+  }
+  #mz-alumnos-tab .mz-temp-input {
+    max-width: 120px;
+  }
+  #mz-alumnos-tab .mz-temp-select {
+    max-width: 200px;
+  }
+
+  #mz-alumnos-tab #mz-temp-table {
+    margin-top: 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(148,163,184,0.45);
+    overflow: auto;
+  }
+
+  #mz-alumnos-tab #mz-temp-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.86rem;
+  }
+  #mz-alumnos-tab #mz-temp-table th,
+  #mz-alumnos-tab #mz-temp-table td {
+    padding: 6px 9px;
+    border-bottom: 1px solid rgba(30,64,175,0.45);
+  }
+  #mz-alumnos-tab #mz-temp-table thead tr {
+    background: rgba(15,23,42,0.98);
+  }
+  #mz-alumnos-tab #mz-temp-table tbody tr:nth-child(2n) {
+    background: rgba(15,23,42,0.9);
+  }
+
+  #mz-alumnos-tab .mz-temp-present-wrap {
+    display: flex;
+    justify-content: flex-end;
+    padding: 6px 6px 0;
+  }
+
+  @media (max-width: 780px) {
+    #mz-alumnos-tab .mz-alu-head {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+    #mz-alumnos-tab .mz-alu-actions {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+  }
+    /* КНОПКИ В АЛУМНОС — СТЕКЛО, ЧТОБЫ НЕ ПРОПАДАЛИ */
+  #mz-alumnos-tab .mzc-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 16px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    border-radius: 999px;
+    border: 1px solid rgba(148,163,184,0.7);
+    cursor: pointer;
+    user-select: none;
+    text-decoration: none;
+    background: radial-gradient(circle at top, rgba(56,189,248,0.22), rgba(15,23,42,0.96));
+    color: #e5e7eb;
+    transition:
+      background 140ms ease,
+      border-color 140ms ease,
+      box-shadow 140ms ease,
+      transform 90ms ease;
+  }
+
+  #mz-alumnos-tab .mzc-btn.ghost {
+    background: radial-gradient(circle at top, rgba(15,23,42,0.9), rgba(30,64,175,0.85));
+  }
+
+  #mz-alumnos-tab .mzc-btn:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 8px 20px rgba(15,23,42,0.9),
+      0 0 0 1px rgba(15,23,42,1);
+    border-color: rgba(191,219,254,0.9);
+  }
+
+  #mz-alumnos-tab .mzc-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(15,23,42,0.9);
+  }
+
+</style>
+
+<div id="mz-alumnos-tab">
+
+{% if not is_teacher %}
+  <div class="mzc-card">
+    <h4 class="mzc-h2">Alumnos</h4>
+    <div class="mzc-note">Esta sección solo está disponible para el equipo docente.</div>
+  </div>
+{% else %}
+
+  {# ==== LISTA DE ALUMNOS ==== #}
+  <div class="mzc-card">
+    <div class="mz-alu-head">
+      <div>
+        <h4 class="mz-alu-title">Alumnos inscritos</h4>
+        <p class="mz-alu-sub">
+          Gestión de acceso al campus para este curso.
+        </p>
+      </div>
+      <div class="mz-alu-badge">
+        {% if students %}
+          {{ students|length }} alumno{{ students|length|pluralize:"s" }}
+        {% else %}
+          0 alumnos
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="mz-alu-tablewrap">
+      <table class="mz-tbl">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Alta</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if students %}
+            {% for s in students %}
+              <tr>
+                <td>{{ s.idx }}</td>
+                <td><b>{{ s.name }}</b></td>
+                <td class="mzc-note">{{ s.email }}</td>
+                <td>
+                  {% if s.enrol_created_at %}
+                    {{ s.enrol_created_at|date:"d/m/Y H:i" }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="mz-alu-actions">
+
+                    {# сброс пароля #}
+                    <form method="post" style="margin:0">
+                      {% csrf_token %}
+                      <input type="hidden" name="reset_id" value="{{ s.id }}">
+						<button type="submit"
+								class="mzc-btn sm ghost"
+								title="Reiniciar clave"
+								data-action="alumno.password.reset"
+								data-alumno-id="{{ s.id }}">
+						  🔑 Reiniciar
+						</button>
+
+                    </form>
+
+                    {# удалить ученика #}
+                    <form method="post" style="margin:0"
+                          onsubmit="return confirm('¿Eliminar a este alumno del curso?');">
+                      {% csrf_token %}
+                      <input type="hidden" name="remove_id" value="{{ s.id }}">
+						<button type="submit"
+								class="mzc-btn sm ghost"
+								title="Eliminar del curso"
+								data-action="alumno.remove"
+								data-alumno-id="{{ s.id }}">
+						  ✕ Eliminar
+						</button>
+                    </form>
+
+                    {# последний выданный пароль (если есть) #}
+                    {% if s.last_pass %}
+                      <div class="mzc-note mz-alu-inline-pass mz-inline-pass"
+                           data-pass="{{ s.last_pass }}">
+                        Nueva clave:
+                        <code>{{ s.last_pass }}</code>
+						<button type="button"
+								class="mzc-btn sm ghost mz-pass-copy"
+								data-action="alumno.password.copy"
+								data-alumno-id="{{ s.id }}">
+						  Copiar
+						</button>
+                      </div>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="5" class="mzc-note">
+                Aún no hay alumnos inscritos en este curso.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {# ==== ACCESOS TEMPORALES (через V5 API, как раньше) ==== #}
+  <div class="mzc-card" id="mz-temp-root"
+       data-course-code="{{ curso.codigo }}">
+
+    <div class="mz-alu-head">
+      <div>
+        <h4 class="mz-alu-title">Accesos temporales</h4>
+        <p class="mz-alu-sub">
+          Códigos para exámenes, pruebas o accesos de corta duración.
+        </p>
+      </div>
+    </div>
+
+    <div class="mz-temp-bar">
+      <label class="mzc-note">Cantidad</label>
+      <input id="mz-temp-count"
+             class="mzc-inp mz-temp-input"
+             type="number" min="1" max="100" step="1"
+             value="10">
+      <button id="mz-temp-gen" class="mzc-btn" type="button">
+        Generar
+      </button>
+      <button id="mz-temp-dl" class="mzc-btn ghost" type="button">
+        Descargar CSV
+      </button>
+    </div>
+
+    <div class="mz-temp-bar">
+      <span class="mzc-note">Rotar clave para:</span>
+      <select id="mz-temp-sel"
+              class="mzc-inp mz-temp-select"></select>
+      <button id="mz-temp-rot" class="mzc-btn ghost" type="button">
+        Rotar
+      </button>
+    </div>
+
+    <div id="mz-temp-msg" class="mzc-note" style="margin-top:4px"></div>
+    <div id="mz-temp-table"></div>
+  </div>
+
+  {# ==== JS: копирование пароля + временные аккаунты ==== #}
+  <script>
+  // копирование "Nueva clave" в буфер
+  (function(){
+    document.querySelectorAll('.mz-inline-pass').forEach(function(box){
+      const btn  = box.querySelector('.mz-pass-copy');
+      const pass = box.dataset.pass || box.textContent;
+      if (!btn || !pass) return;
+      btn.addEventListener('click', async function(){
+        try{
+          await navigator.clipboard.writeText(pass.trim());
+          const old = btn.textContent;
+          btn.textContent = 'Copiado';
+          setTimeout(function(){ btn.textContent = old; }, 1200);
+        }catch(e){}
+      });
+    });
+  })();
+
+  // ==== ACCESOS TEMPORALES (V5 API) — без изменений по логике ====
+  (function(){
+    const root = document.getElementById('mz-temp-root');
+    if (!root) return;
+
+    const courseCode = root.dataset.courseCode;
+    const V5_API = '/meatze/v5';
+
+    const $cnt = root.querySelector('#mz-temp-count');
+    const $gen = root.querySelector('#mz-temp-gen');
+    const $dl  = root.querySelector('#mz-temp-dl');
+    const $sel = root.querySelector('#mz-temp-sel');
+    const $rot = root.querySelector('#mz-temp-rot');
+    const $msg = root.querySelector('#mz-temp-msg');
+    const $tbl = root.querySelector('#mz-temp-table');
+
+    async function api(url, opts){
+      opts = opts || {};
+      const init = {
+        method: opts.method || 'GET',
+        credentials: 'include',
+        headers: opts.headers || {}
+      };
+      if (opts.body){
+        if (opts.body instanceof FormData){
+          init.body = opts.body;
+        } else {
+          init.body = JSON.stringify(opts.body);
+          init.headers['Content-Type'] = 'application/json';
+        }
+      }
+      const resp = await fetch(url, init);
+      let data = null;
+      try { data = await resp.json(); } catch(_){}
+      if (!resp.ok){
+        const msg = (data && data.message) || ('HTTP ' + resp.status);
+        throw new Error(msg);
+      }
+      return data || {};
+    }
+
+    const cntKey = 'mz-temp-count::' + courseCode;
+    $cnt.value = (localStorage.getItem(cntKey) || '').trim() || '10';
+    $cnt.addEventListener('change', function(){
+      localStorage.setItem(cntKey, ($cnt.value || '10').trim());
+    });
+
+    async function genTempAccounts(n){
+      const fd = new FormData();
+      fd.append('course_code', courseCode);
+      fd.append('count', String(n));
+      fd.append('mode', 'set');
+      return await api(V5_API + '/teacher/temp/create', {
+        method: 'POST',
+        body: fd
+      });
+    }
+
+    async function loadTempList(limit){
+      limit = limit || 300;
+      const u = new URL(V5_API + '/teacher/temp/list', window.location.origin);
+      u.searchParams.set('course_code', courseCode);
+      u.searchParams.set('limit', String(limit));
+      const r = await api(u.toString());
+      return (r.items || []).map(function(x){
+        return { temp_name: x.temp_name, key: x.key };
+      });
+    }
+
+    async function rotateKey(tempName){
+      return await api(V5_API + '/teacher/temp/rotate', {
+        method: 'POST',
+        body: { course_code: courseCode, temp_name: tempName }
+      });
+    }
+
+    function renderTempTable(list){
+      if (!list.length){
+        $tbl.innerHTML = '<div class="mzc-note" style="padding:6px 8px">No hay accesos temporales aún.</div>';
+        return;
+      }
+      $tbl.innerHTML = `
+        <div class="mz-temp-present-wrap">
+          <button id="mz-temp-present" class="mzc-btn" type="button">
+            Presentar en pantalla
+          </button>
+        </div>
+        <table class="mz-tbl">
+          <thead>
+            <tr><th>Usuario</th><th>Clave</th></tr>
+          </thead>
+          <tbody>
+            ${list.map(it => `
+              <tr>
+                <td>${it.temp_name}</td>
+                <td>
+                  <code>${it.key}</code>
+                  <button class="mzc-btn ghost mz-copy" data-key="${it.key}" type="button">
+                    Copiar
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      $tbl.querySelectorAll('.mz-copy').forEach(function(b){
+        b.addEventListener('click', async function(){
+          try{
+            await navigator.clipboard.writeText(b.dataset.key || '');
+            const old = b.textContent;
+            b.textContent = 'Copiado';
+            setTimeout(function(){ b.textContent = old; }, 1200);
+          }catch(_){}
+        });
+      });
+
+      const presentBtn = $tbl.querySelector('#mz-temp-present');
+      if (presentBtn){
+        presentBtn.addEventListener('click', function(){
+		const html = `
+		  <div id="mz-temp-present-overlay"
+			   style="position:fixed;inset:0;background:#0b1220e6;z-index:99999;
+					  display:flex;align-items:center;justify-content:center">
+			<div style="width:min(1400px,96vw);height:min(90vh,900px);
+						background:#0b1220;border:1px solid #17243a;border-radius:16px;
+						padding:18px;display:flex;flex-direction:column;gap:14px">
+			  <div style="display:flex;justify-content:space-between;align-items:center;color:#e6f0ff">
+				<div style="font-weight:800;font-size:24px">Accesos temporales</div>
+				<button class="mzc-btn" id="mz-tp-close">Cerrar</button>
+			  </div>
+			  <div style="
+					flex:1;
+					overflow:auto;
+					display:grid;
+					gap:16px;
+					grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+				  ">
+				${list.map(x => `
+				  <div style="background:#0f1b2d;border:1px solid #1d2c45;border-radius:16px;
+							  padding:20px;display:flex;flex-direction:column;gap:12px">
+					<div style="color:#93b7e6;font-size:22px;font-weight:700;
+								white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+					  ${x.temp_name}
+					</div>
+					<div style="color:#fff;font-size:56px;font-weight:900;
+								font-family:ui-monospace,Menlo,Consolas,monospace;
+								letter-spacing:0.08em;text-align:center">
+					  ${x.key}
+					</div>
+				  </div>
+				`).join('')}
+			  </div>
+			</div>
+		  </div>`;
+
+          document.body.insertAdjacentHTML('beforeend', html);
+          document.getElementById('mz-tp-close')
+            ?.addEventListener('click', function(){
+              document.getElementById('mz-temp-present-overlay')?.remove();
+            });
+        });
+      }
+    }
+
+    async function refreshTempList(){
+      try{
+        const list = await loadTempList(Math.max(100, parseInt($cnt.value || '10', 10)));
+        renderTempTable(list);
+        $sel.innerHTML = list
+          .map(x => `<option value="${x.temp_name}">${x.temp_name}</option>`)
+          .join('');
+      }catch(e){
+        $tbl.innerHTML = '<div class="mzc-note" style="padding:6px 8px">No hay accesos temporales aún.</div>';
+      }
+    }
+
+    $gen.addEventListener('click', async function(){
+      const n = parseInt($cnt.value, 10);
+      if (!Number.isFinite(n) || n < 1 || n > 100){
+        $msg.textContent = 'Indica cantidad de 1 a 100.';
+        return;
+      }
+      $msg.textContent = 'Generando…';
+      try{
+        await genTempAccounts(n);
+        $msg.textContent = 'Generado correctamente.';
+        await refreshTempList();
+        setTimeout(function(){ $msg.textContent = ''; }, 1200);
+      }catch(e){
+        $msg.textContent = e.message || 'Error al generar.';
+      }
+    });
+
+    $dl.addEventListener('click', async function(){
+      try{
+        const list = await loadTempList(1000);
+        const rows = list.map(function(it){ return it.temp_name + ',' + it.key; }).join('\n');
+        const blob = new Blob(['temp_name,key\n' + rows + '\n'], {type:'text/csv;charset=utf-8;'});
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url;
+        a.download = courseCode + '_temp_accounts.csv';
+        a.click();
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+      }catch(e){
+        $msg.textContent = 'No se pudo descargar CSV.';
+      }
+    });
+
+    $rot.addEventListener('click', async function(){
+      const t = $sel.value || '';
+      if (!t){
+        $msg.textContent = 'Selecciona un alumno';
+        return;
+      }
+      $msg.textContent = 'Rotando…';
+      try{
+        const res = await rotateKey(t);
+        const key = res && res.key;
+        $msg.textContent = t + ': nueva clave ' + (key || '');
+        await refreshTempList();
+      }catch(e){
+        $msg.textContent = e.message || 'Error al rotar.';
+      }
+    });
+
+    // старт
+    refreshTempList();
+  })();
+  </script>
+
+{% endif %}
+</div>

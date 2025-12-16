@@ -1,0 +1,1334 @@
+<div id="mz-chat-root" data-action="chat.root"></div>
+
+<style>
+  /* Только для рамки списка чата */
+  :root{
+    --mz-border:#e1eaf5;
+  }
+
+  /* ===== Chat UI ===== */
+  .mz-chat{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    min-height:480px;
+  }
+
+  .mz-chat-head{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+
+  .mz-chat-unread{
+    margin-left:auto;
+    font-size:12px;
+    color:#fff;
+    background:#b90e2e;
+    border-radius:10px;
+    padding:2px 8px;
+    display:none;
+  }
+
+  .mz-chat-list{
+    border:1px solid var(--mz-border);
+    border-radius:14px;
+    padding:10px;
+    overflow:auto;
+    max-height:60vh;
+    background:linear-gradient(180deg,#f7fbff,#f3f7fd 40%,#eef3fb);
+    box-shadow:0 8px 28px rgba(15,33,51,.06) inset;
+  }
+
+  .mz-msg{
+    position:relative;
+    display:flex;
+    gap:10px;
+    margin:10px 0;
+  }
+  .mz-msg.me{
+    flex-direction:row-reverse;
+  }
+
+  .mz-avatar{
+    width:36px;
+    height:36px;
+    border-radius:50%;
+    color:#fff;
+    font-weight:800;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 4px 12px rgba(0,0,0,.08);
+  }
+
+  .mz-bubble{
+    max-width:76%;
+    background:#fff;
+    border:1px solid #e6eef6;
+    border-radius:14px;
+    padding:10px 12px;
+    box-shadow:0 6px 20px rgba(15,33,51,.06);
+  }
+  .mz-msg.me .mz-bubble{
+    background:#e8f5ff;
+    border-color:#cfe0f4;
+  }
+
+  .mz-meta{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:6px;
+    font-size:12px;
+    color:#51607a;
+    margin-bottom:6px;
+  }
+
+  .mz-text{
+    font-size:15px;
+    line-height:1.5;
+    color:#0f1b2d;
+  }
+
+  .mz-file{
+    margin-top:6px;
+  }
+  .mz-file a{
+    text-decoration:none;
+    word-break:break-all;
+  }
+
+  /* ===== Reacciones ===== */
+  .mz-reactions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:8px;
+    align-items:center;
+  }
+
+  .mz-chip{
+    border:1px solid #cfe0f4;
+    border-radius:14px;
+    padding:2px 8px;
+    font-size:13px;
+    cursor:pointer;
+    background:#fff;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    transition:transform .08s ease, background .12s ease, border-color .12s ease;
+  }
+  .mz-chip .cnt{
+    min-width:14px;
+    text-align:center;
+  }
+
+  .mz-chip.is-mine{
+    background:#dff0ff;
+    border-color:#9ec9f3;
+  }
+
+  /* Кнопка "🙂 Reaccionar" */
+  .mz-react-btn{
+    margin-left:auto;
+    border:1px dashed #cfe0f4;
+    background:#fff;
+    border-radius:12px;
+    padding:2px 8px;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .mz-react-btn:hover{
+    border-style:solid;
+  }
+
+  /* Popup-picker для реакций над сообщением */
+	.mz-picker{
+	  position:fixed;          /* ключевое изменение */
+	  z-index:9999;
+	  background:#fff;
+	  border:1px solid #e1eaf5;
+	  border-radius:12px;
+	  box-shadow:0 12px 30px rgba(9,23,41,.15);
+	  padding:6px;
+	  display:flex;
+	  gap:6px;
+	}
+
+
+  .mz-picker .mz-emoji{
+    font-size:20px;
+    cursor:pointer;
+    background:#fff;
+    border:1px solid #e6eef6;
+    border-radius:8px;
+    padding:4px 6px;
+    transition:transform .08s ease, background .12s ease, border-color .12s ease;
+  }
+  .mz-picker .mz-emoji:hover{
+    transform:scale(1.08);
+    border-color:#cfe0f4;
+  }
+
+  /* Общая микро-анимация */
+  .mz-emoji,
+  .mz-chip{
+    transition:transform .08s ease, background .12s ease, border-color .12s ease;
+  }
+  .mz-chip.pop,
+  .mz-emoji.pop{
+    transform:scale(1.12);
+  }
+
+  /* ===== Меню эмодзи для поля ввода ===== */
+  .mz-emo-menu{
+    position:fixed;
+    z-index:50;
+    background:#fff;
+    border:1px solid #e1eaf5;
+    border-radius:12px;
+    box-shadow:0 14px 30px rgba(9,23,41,.18);
+    padding:8px;
+    display:grid;
+    grid-template-columns:repeat(8,1fr);
+    gap:6px;
+    width:320px;
+    max-width:92vw;
+  }
+
+  .mz-emo-menu .itm{
+    font-size:20px;
+    line-height:1;
+    cursor:pointer;
+    background:#fff;
+    border:1px solid #e6eef6;
+    border-radius:8px;
+    padding:6px 0;
+    text-align:center;
+    transition:transform .08s ease, border-color .12s ease, background .12s ease;
+  }
+  .mz-emo-menu .itm:hover{
+    transform:scale(1.08);
+    border-color:#cfe0f4;
+    background:#f7fbff;
+  }
+
+  /* Кнопка удаления сообщения (для docentes) */
+  .mz-msg-del{
+    margin-left:8px;
+    border:1px solid #e6eef6;
+    border-radius:10px;
+    padding:2px 6px;
+    font-size:12px;
+    background:#fff;
+    cursor:pointer;
+  }
+  .mz-msg-del:hover{
+    border-color:#cfe0f4;
+    background:#f7fbff;
+  }
+  /* Нормализуем размер реакций и запрещаем ужиматься */
+.mz-reactions .mz-chip{
+  font-size:14px !important;
+  line-height:1.2;
+  padding:2px 8px;
+  flex-shrink:0;
+}
+
+.mz-reactions .mz-chip .emo{
+  font-size:18px;
+  line-height:1;
+}
+
+/* На всякий случай — и для "моих" сообщений */
+.mz-msg.me .mz-reactions .mz-chip{
+  font-size:14px !important;
+}
+/* Увеличить размер emoji-иконок в реакциях и пикере */
+.mz-picker .mz-emoji img.emoji,
+.mz-reactions .mz-chip .emo img.emoji{
+  width: 22px !important;
+  height: 22px !important;
+  max-width: none !important;
+  max-height: none !important;
+  display: inline-block;
+}
+
+/* Заодно убьём возможный старый мелкий шрифт на своих сообщениях */
+.mz-msg.me .mz-reactions .mz-chip{
+  font-size: 14px !important;
+}
+
+/* ===== CHAT — обёртка и шапка ====================================== */
+#mz-chat-root .mz-chat-shell{
+  background:
+    radial-gradient(circle at top left, rgba(56,189,248,.18), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(129,140,248,.18), transparent 55%),
+    linear-gradient(135deg, #0f172a, #020617);
+  border-radius:22px;
+  border:1px solid rgba(148,163,184,0.6);
+  box-shadow:
+    0 20px 50px rgba(15,23,42,0.8),
+    0 0 0 1px rgba(15,23,42,0.9);
+  padding:14px;
+  color:#e5e7eb;
+}
+
+#mz-chat-root .mz-chat{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  min-height:480px;
+}
+
+#mz-chat-root .mz-chat-head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+#mz-chat-root .mz-chat-title h4.mzc-title{
+  margin:0;
+  font-weight:800;
+  letter-spacing:0.04em;
+  text-transform:uppercase;
+  font-size:0.9rem;
+  color:#e5f0ff;
+}
+
+#mz-chat-root .mz-chat-title .mzc-note{
+  font-size:0.75rem;
+  color:#9ca3af;
+}
+
+#mz-chat-root .mz-chat-unread{
+  margin-left:auto;
+  font-size:0.78rem;
+  color:#f9fafb;
+  background:#b91c1c;
+  border-radius:999px;
+  padding:3px 10px;
+  display:none;
+  box-shadow:0 6px 18px rgba(185,28,28,.7);
+}
+
+/* ===== Список сообщений ============================================ */
+#mz-chat-root .mz-chat-list{
+  border:1px solid rgba(148,163,184,0.5);
+  border-radius:16px;
+  padding:10px;
+  overflow:auto;
+  max-height:60vh;
+  background:radial-gradient(circle at top, #0b1220, #020617 60%);
+  box-shadow:0 8px 30px rgba(15,23,42,.85) inset;
+}
+
+/* ===== Баблы и аватарки ============================================ */
+#mz-chat-root .mz-msg{
+  position:relative;
+  display:flex;
+  gap:10px;
+  margin:10px 0;
+}
+
+#mz-chat-root .mz-msg.me{
+  flex-direction:row-reverse;
+}
+
+#mz-chat-root .mz-avatar{
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  color:#0b1120;
+  font-weight:800;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 6px 18px rgba(0,0,0,.45);
+  border:2px solid rgba(15,23,42,.9);
+}
+
+#mz-chat-root .mz-bubble{
+  max-width:76%;
+  background:rgba(15,23,42,0.96);
+  border:1px solid rgba(148,163,184,0.7);
+  border-radius:16px;
+  padding:9px 11px 8px;
+  box-shadow:0 12px 32px rgba(15,23,42,.8);
+}
+
+#mz-chat-root .mz-msg.me .mz-bubble{
+  background:linear-gradient(135deg,#1d4ed8,#22c55e);
+  border-color:rgba(191,219,254,.9);
+}
+
+#mz-chat-root .mz-meta{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:6px;
+  font-size:11px;
+  color:#FFFF00;
+  margin-bottom:4px;
+}
+
+#mz-chat-root .mz-text{
+  font-size:14px;
+  line-height:1.55;
+  color:#e5e7eb;
+}
+
+#mz-chat-root .mz-msg.me .mz-text{
+  color:#f9fafb;
+}
+
+/* ===== Нижняя панель ввода ========================================= */
+#mz-chat-root .mz-input{
+  margin-top:8px;
+  display:flex;
+  align-items:flex-end;
+  gap:8px;
+  padding:8px 10px;
+  border-radius:999px;
+  background:rgba(15,23,42,0.96);
+  border:1px solid rgba(148,163,184,0.7);
+  box-shadow:0 12px 30px rgba(15,23,42,.8);
+}
+
+#mz-chat-root .mz-input-text{
+  flex:1 1 auto;
+  min-height:44px;
+  max-height:120px;
+  resize:vertical;
+  background:transparent;
+  border:none;
+  color:#e5e7eb;
+  font-size:0.9rem;
+}
+
+#mz-chat-root .mz-input-text::placeholder{
+  color:#6b7280;
+}
+
+#mz-chat-root .mz-input-btn{
+  border-radius:999px;
+  padding:6px 10px;
+  min-width:40px;
+}
+
+#mz-chat-root .mz-input-send{
+  border-radius:999px;
+  padding:7px 18px;
+  font-weight:600;
+  background:linear-gradient(135deg,#22c55e,#16a34a);
+  color:#ecfdf5;
+  border-color:rgba(34,197,94,0.9);
+  box-shadow:0 10px 24px rgba(22,163,74,.8);
+  transition:transform .08s ease, box-shadow .12s ease, background .12s ease;
+}
+
+#mz-chat-root .mz-input-send:hover{
+  background:linear-gradient(135deg,#4ade80,#22c55e);
+  transform:translateY(-1px);
+}
+
+#mz-chat-root .mz-input-send:active{
+  transform:scale(0.97);
+  box-shadow:0 0 0 2px rgba(34,197,94,.6);
+}
+
+#mz-chat-root .mz-chat-hint{
+  font-size:0.75rem;
+  color:#9ca3af;
+}
+/* Прижимаем чужие сообщения влево, свои — вправо */
+#mz-chat-root .mz-msg{
+  max-width: 100%;
+}
+
+#mz-chat-root .mz-msg:not(.me){
+  margin-right: auto;   /* прижать к левому краю */
+}
+
+#mz-chat-root .mz-msg.me{
+  margin-left: auto;    /* прижать к правому краю */
+}
+
+/* Новое сообщение слева/справа — вылет + пружинка */
+#mz-chat-root .mz-msg.mz-msg-new:not(.me){
+  animation: mz-msg-in-left 0.28s cubic-bezier(.22,.76,.31,1.13);
+}
+
+#mz-chat-root .mz-msg.mz-msg-new.me{
+  animation: mz-msg-in-right 0.28s cubic-bezier(.22,.76,.31,1.13);
+}
+
+@keyframes mz-msg-in-left{
+  0%{
+    transform: translateX(80px) scale(.97); /* прилетает с правой стороны */
+    opacity:0;
+  }
+  60%{
+    transform: translateX(-6px) scale(1.02); /* лёгкий переразлёт */
+    opacity:1;
+  }
+  100%{
+    transform: translateX(0) scale(1);
+    opacity:1;
+  }
+}
+
+@keyframes mz-msg-in-right{
+  0%{
+    transform: translateX(-80px) scale(.97); /* прилетает с левой стороны */
+    opacity:0;
+  }
+  60%{
+    transform: translateX(6px) scale(1.02);
+    opacity:1;
+  }
+  100%{
+    transform: translateX(0) scale(1);
+    opacity:1;
+  }
+}
+/* Header: без белой плашки, в стиле shell */
+#mz-chat-root .mz-chat-head{
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;          /* у тебя head уже внутри shell */
+}
+/* Attach button: видно на тёмном фоне */
+#mz-chat-root #mz-attach{
+  background: rgba(255,255,255,.10) !important;
+  border: 1px solid rgba(148,163,184,.55) !important;
+  color: #e5e7eb !important;
+  box-shadow: 0 10px 24px rgba(15,23,42,.65);
+}
+
+#mz-chat-root #mz-attach:hover{
+  background: rgba(56,189,248,.14) !important;
+  border-color: rgba(56,189,248,.55) !important;
+}
+#mz-chat-root #mz-emoji{
+  background: rgba(255,255,255,.10) !important;
+  border: 1px solid rgba(148,163,184,.55) !important;
+  color: #e5e7eb !important;
+}
+#mz-chat-root #mz-emoji:hover{
+  background: rgba(255,255,255,.14) !important;
+}
+@media (max-width: 640px){
+  /* Вся нижняя панель становится card */
+  #mz-chat-root .mz-input{
+    border-radius: 16px;
+    padding: 10px;
+    flex-direction: column;     /* КЛЮЧ */
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  /* textarea занимает всю ширину */
+  #mz-chat-root .mz-input-text{
+    width: 100%;
+    min-height: 90px;           /* чтобы не было “сжато” */
+    border-radius: 14px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(148,163,184,.45);
+  }
+
+  /* Кнопки в ряд снизу */
+  #mz-chat-root .mz-input .mz-input-btn,
+  #mz-chat-root .mz-input #mz-attach,
+  #mz-chat-root .mz-input #mz-emoji{
+    height: 44px;
+    min-width: 44px;
+    border-radius: 14px;
+  }
+
+  /* Ряд действий: сделаем гридом из 3 колонок */
+  #mz-chat-root .mz-input{
+    position: relative;
+  }
+
+  /* Переставляем кнопки без изменения HTML: делаем flex-wrap внутри отдельным правилом */
+  #mz-chat-root .mz-input{
+    flex-wrap: nowrap;
+  }
+
+  /* На мобиле: кнопки и send в нижний ряд */
+  #mz-chat-root #mz-emoji,
+  #mz-chat-root #mz-attach,
+  #mz-chat-root #mz-send{
+    width: auto;
+  }
+
+  /* “Enviar” — на всю оставшуюся ширину */
+  #mz-chat-root #mz-send{
+    flex: 1 1 auto;
+    height: 44px;
+  }
+
+  /* Чтобы кнопки реально были “вместе”, делаем контейнером сам .mz-input grid */
+  #mz-chat-root .mz-input{
+    display: grid;
+    grid-template-columns: 44px 44px 1fr;
+    grid-template-areas:
+      "text text text"
+      "emo  att  send";
+  }
+
+  #mz-chat-root .mz-input-text{ grid-area: text; }
+  #mz-chat-root #mz-emoji{ grid-area: emo; }
+  #mz-chat-root #mz-attach{ grid-area: att; }
+  #mz-chat-root #mz-send{ grid-area: send; }
+}
+
+</style>
+
+
+<script>
+(async function(){
+  const root = document.getElementById('mz-chat-root');
+  if (!root) return;
+
+  // --- 1. helper для CSRF ---
+  function getCookie(name) {
+    const value = document.cookie
+      .split('; ')
+      .find(row => row.startsWith(name + '='));
+    return value ? decodeURIComponent(value.split('=')[1]) : null;
+  }
+
+  // данные с бэка
+  const code   = "{{ curso.codigo|escapejs }}";
+  const V5_API = "{{ V5_API_BASE|default:'/meatze/v5'|escapejs }}";
+
+  const mzAuth = {
+    me: {
+      id: {{ user.id|default:'null' }},
+      is_teacher: {{ is_teacher|yesno:"true,false" }},
+    }
+  };
+
+  // --- 2. api() с CSRF ---
+  async function api(url, options = {}) {
+    const opts = { credentials: 'include', ...options };
+    const method = (opts.method || 'GET').toUpperCase();
+
+    // тело → JSON, если не FormData
+    if (opts.body && !(opts.body instanceof FormData)) {
+      opts.headers = {
+        'Content-Type': 'application/json',
+        ...(opts.headers || {})
+      };
+      opts.body = JSON.stringify(opts.body);
+    } else {
+      opts.headers = {
+        ...(opts.headers || {})
+      };
+    }
+
+    // CSRF для небезопасных методов
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+      const csrftoken = getCookie('csrftoken');
+      if (csrftoken) {
+        opts.headers['X-CSRFToken'] = csrftoken;
+      }
+      // не обязательно, но удобно:
+      opts.headers['X-Requested-With'] = 'XMLHttpRequest';
+    }
+
+    const res = await fetch(url, opts);
+    if (!res.ok) {
+      let msg;
+      try {
+        const j = await res.json();
+        msg = j.error || j.message || j.detail;
+      } catch(_) {}
+      throw new Error(msg || `HTTP ${res.status}`);
+    }
+    try { return await res.json(); } catch { return {}; }
+  }
+
+    if (!code){ root.innerHTML = '<div class="mzc-note">Selecciona un curso.</div>'; return; }
+
+    let lastId = 0, loading = false, stopPoll = false, firstPaint = true;
+    let burstUntil = 0;
+	let lastDeletedTs = 0;
+    const me = mzAuth?.me || {};
+    const isMe = (uid)=> String(uid) === String(me?.id || '');
+
+    const nameCache = new Map(); // email -> display_name
+
+    const getLocalDisplay = (m) => {
+      const rawName = (m.author_name || '').trim();
+      const mail    = (m.author_email || '').trim();
+
+      // если с сервера уже пришло не-почтовое имя — берём его
+      if (rawName && !rawName.includes('@')) return rawName;
+
+      if (mail) {
+        const local = mail.split('@')[0];
+        return local || 'Usuario';
+      }
+      return 'Usuario';
+    };
+
+    async function ensureDisplayNameForMessage(m){
+      const email = (m.author_email || '').trim();
+      if (!email) return;
+      if (nameCache.has(email)) return; // уже знаем
+
+      try{
+        const r  = await api(`${V5_API}/user_display?email=${encodeURIComponent(email)}`);
+        const dn = (r?.display_name || '').trim();
+        if (!dn) return;
+
+        nameCache.set(email, dn);
+
+        // обновить все сообщения с этой почтой
+        const sel = `.mz-msg[data-email="${CSS.escape(email)}"] .mz-meta`;
+        const metas = $list.querySelectorAll(sel);
+		metas.forEach(meta => {
+		  const ts = Number(meta.getAttribute('data-ts') || '0');
+		  const prettyTime = ts ? fmtTime(ts) : meta.getAttribute('data-ts-text') || '';
+
+		  // если внутри уже есть кнопка удаления — заберём её HTML
+		  const delBtn = meta.querySelector('.mz-msg-del');
+		  const delHtml = delBtn ? delBtn.outerHTML : '';
+
+		  meta.innerHTML = `${dn} · ${prettyTime}${delHtml}`;
+		});
+
+      }catch(e){
+        // молча игнорируем
+        console.warn('user_display lookup failed', e);
+      }
+    }
+
+	  root.innerHTML = `
+		<div class="mz-chat-shell">
+		  <div class="mz-chat">
+			<div class="mz-chat-head">
+			  <div class="mz-chat-title">
+				<h4 class="mzc-title">Chat del curso</h4>
+				<div class="mzc-note">Código: <b>${code}</b></div>
+			  </div>
+			  <span id="mzcu-unread" class="mz-chat-unread"></span>
+			</div>
+
+			<div id="mzcl" class="mz-chat-list"></div>
+
+			<div class="mz-input">
+			  <button id="mz-emoji" class="mzc-btn ghost mz-input-btn" title="Añadir emoji rápido">🙂</button>
+			  <textarea id="mzi" class="mzc-inp mz-input-text" placeholder="Escribe un mensaje... (Ctrl/⌘+Enter para enviar)"></textarea>
+			  <input id="mzf" type="file" style="display:none"
+       accept="image/*,application/pdf,
+               application/msword,
+               application/vnd.openxmlformats-officedocument.wordprocessingml.document,
+               application/vnd.ms-excel,
+               application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+
+			  <button id="mz-attach" data-action="chat.adjuntar"class="mzc-btn ghost mz-input-btn" title="Adjuntar archivo">📎</button>
+			  <button id="mz-send" data-action="chat.send" class="mzc-btn mz-input-send">Enviar</button>
+			</div>
+
+			<div class="mzc-note mz-chat-hint">
+			  Una sola reacción por mensaje. Toca otra para cambiar; toca la misma para quitarla.
+			</div>
+		  </div>
+		</div>
+	  `;
+
+
+    const $list = root.querySelector('#mzcl');
+    const $in   = root.querySelector('#mzi');
+    const $send = root.querySelector('#mz-send');
+    const $att  = root.querySelector('#mz-attach');
+    const $file = root.querySelector('#mzf');
+    const $emo  = root.querySelector('#mz-emoji');
+    const $unr  = root.querySelector('#mzcu-unread');
+
+    const fmtTime = (ts)=>{ const d=new Date(ts*1000); return d.toLocaleString([], {hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'}); };
+    const hashColor = (s='?')=>{ let h=0; for(let i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; } const hue=h%360; return `hsl(${hue} 70% 52%)`; };
+    const initials = (name,email)=>{ const s=(name||email||'?').trim(); const p=s.split(/\s+/); const a=(p[0]||'').charAt(0).toUpperCase(); const b=(p[1]||'').charAt(0).toUpperCase(); return (a+b).trim()||'U'; };
+
+const renderMsg = (m)=>{
+  const self    = isMe(m.user_id);
+  const display = getLocalDisplay(m);
+  const mail    = (m.author_email || '').trim();
+  const metaTxt = `${display} · ${fmtTime(m.ts)}`;
+
+  const file = m.file_url
+    ? `<div class="mz-file"><a href="${m.file_url}" target="_blank" rel="noopener">📎 ${m.file_url}</a></div>`
+    : '';
+  const bodySafe = m.body
+    ? m.body.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))
+    : '';
+
+  const canDelete = !!(mzAuth?.me?.is_teacher);
+  const delBtn = canDelete
+    ? `<button class="mz-msg-del" data-type="del" data-msg="${m.id}" title="Eliminar mensaje">🗑️</button>`
+    : '';
+
+  const reacts = (m.reactions||[])
+    .filter(r => (r.count||0) > 0)
+    .map(r => {
+      const mine = r.me ? ' is-mine' : '';
+      return `<button class="mz-chip${mine}" data-type="chip" data-msg="${m.id}" data-emoji="${r.emoji}" aria-pressed="${r.me? 'true':'false'}">
+                <span class="emo">${r.emoji}</span>
+                <span class="cnt">${r.count}</span>
+              </button>`;
+    }).join('');
+
+  const avBg = hashColor(mail || display || '');
+  const emailAttr = mail.replace(/"/g,'&quot;');
+
+  const reactBtn = self
+    ? ''
+    : `<button class="mz-react-btn" data-action="chat.react.open" data-type="open-picker" data-msg="${m.id}" title="Reaccionar">🙂 Reaccionar</button>`;
+
+  return `
+    <div class="mz-msg ${self ? 'me' : ''} mz-msg-new"
+         data-id="${m.id}" data-email="${emailAttr}">
+      <div class="mz-avatar" style="background:${avBg}">
+        ${initials(display, mail)}
+      </div>
+      <div class="mz-bubble">
+        <div class="mz-meta"
+             data-ts="${m.ts}"
+             data-ts-text="${fmtTime(m.ts)}">
+          ${metaTxt}
+          ${delBtn}
+        </div>
+        ${bodySafe ? `<div class="mz-text">${bodySafe}</div>` : ''}
+        ${file}
+        <div class="mz-reactions">
+          <span class="mz-chips">${reacts}</span>
+          ${reactBtn}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+
+
+
+	async function refreshDeleted(){
+	  try{
+		const r = await api(`${V5_API}/chat/${encodeURIComponent(code)}/deleted?after=${lastDeletedTs}`);
+		const ids = Array.isArray(r?.deleted_ids) ? r.deleted_ids : [];
+		if (ids.length){
+		  for (const id of ids){
+			const node = $list.querySelector(`.mz-msg[data-id="${id}"]`);
+			if (node) node.remove();
+		  }
+		}
+		lastDeletedTs = Math.max(lastDeletedTs, r?.last_ts || lastDeletedTs);
+	  }catch(e){}
+	}
+
+    function collectMessageIdsForSync(limit=80){
+      const nodes = Array.from($list.querySelectorAll('.mz-msg[data-id]'));
+      // Возьмём последние limit сообщений (они чаще трогаются)
+      return nodes.slice(-limit).map(n => parseInt(n.getAttribute('data-id'),10)).filter(Boolean);
+    }
+    
+    // Патчинг DOM по сводке
+	function applyReactionSummary(summary, idsRequested){
+	  const processed = new Set();
+
+	  for (const [midStr, entries] of Object.entries(summary||{})){
+		const mid = parseInt(midStr,10);
+		processed.add(mid);
+
+		const wrap = $list.querySelector(`.mz-msg[data-id="${mid}"] .mz-reactions`);
+		if (!wrap) continue;
+		const chipsWrap = wrap.querySelector('.mz-chips');
+		if (!chipsWrap) continue;
+
+		const domChips = Array.from(chipsWrap.querySelectorAll('.mz-chip'));
+		const byEmoji = new Map((entries||[]).map(e => [e.emoji, e]));
+
+		// обновить/создать существующие
+		for (const [emo, data] of byEmoji.entries()){
+		  let chip = chipsWrap.querySelector(`.mz-chip[data-emoji="${CSS.escape(emo)}"]`);
+		  if (!chip){
+			if ((data.count||0) <= 0) continue;
+			chipsWrap.insertAdjacentHTML('afterbegin', 
+			  `<button class="mz-chip" data-type="chip" data-action="chat.react.toggle" data-msg="${mid}" data-emoji="${emo}" aria-pressed="false">
+				 <span class="emo">${emo}</span> <span class="cnt">${data.count}</span>
+			   </button>`);
+			chip = chipsWrap.querySelector(`.mz-chip[data-emoji="${CSS.escape(emo)}"]`);
+		  } else {
+			const cntEl = chip.querySelector('.cnt');
+			if (cntEl) cntEl.textContent = data.count;
+		  }
+		  chip.classList.toggle('is-mine', !!data.me);
+		  chip.setAttribute('aria-pressed', data.me ? 'true' : 'false');
+		}
+
+		// удалить те, которых нет в summary или cnt=0
+		for (const chip of domChips){
+		  const emo = chip.getAttribute('data-emoji');
+		  const rec = byEmoji.get(emo);
+		  if (!rec || (rec.count||0) <= 0){
+			chip.remove();
+		  }
+		}
+	  }
+
+	  // зачистка: если по запрошенному id сервер вернул ПУСТОЙ список ([]) или вообще не вернул ключ (не должно быть после фикса),
+	  // то просто убираем все чипы
+	  if (Array.isArray(idsRequested)){
+		for (const mid of idsRequested){
+		  if (processed.has(mid)) continue;
+		  const wrap = $list.querySelector(`.mz-msg[data-id="${mid}"] .mz-reactions .mz-chips`);
+		  if (!wrap) continue;
+		  wrap.querySelectorAll('.mz-chip').forEach(node => node.remove());
+		}
+	  }
+	}
+
+    
+    // Вызов сводки и применение
+	async function refreshReactions(){
+	  const ids = collectMessageIdsForSync();
+	  if (!ids.length) return;
+	  try{
+		const qs = ids.join(',');              // без encodeURIComponent, чтобы запятая не превратилась в %2C
+		const r = await api(`${V5_API}/chat/${encodeURIComponent(code)}/react_summary?ids=${qs}`);
+		applyReactionSummary(r?.summary || {}, ids);  // ← передаём ids
+	  }catch(e){}
+	}
+
+
+    const appendMessages = (items)=>{
+      const atBottom = $list.scrollTop + $list.clientHeight >= ($list.scrollHeight - 28);
+      const html = items.map(renderMsg).join('');
+      $list.insertAdjacentHTML('beforeend', html);
+		// снимаем класс анимации после первого проигрывания
+		$list.addEventListener('animationend', (e)=>{
+		  const node = e.target.closest('.mz-msg.mz-msg-new');
+		  if (node){
+			node.classList.remove('mz-msg-new');
+		  }
+		});
+
+      // Попросить бэк выдать красивые имена
+      items.forEach(m => {
+        if (m && (m.author_email || '').trim()) {
+          ensureDisplayNameForMessage(m);
+        }
+      });
+
+      if (firstPaint || atBottom) $list.scrollTop = $list.scrollHeight + 1000;
+      firstPaint = false;
+    };
+
+
+    const fetchMore = async ()=>{
+      if (loading) return; loading = true;
+      try{
+        const r = await api(`${V5_API}/chat/${encodeURIComponent(code)}/messages?after_id=${lastId}&limit=50`);
+        const items = Array.isArray(r?.items) ? r.items : [];
+        if (items.length){
+          appendMessages(items);
+          lastId = r.last_id || lastId;
+          maybeMarkRead();
+        }
+      }catch(e){ console.warn('chat fetch', e); }
+      finally{ loading = false; }
+    };
+
+    const updateUnreadBadge = async ()=>{
+      try{
+        const r = await api(`${V5_API}/chat/${encodeURIComponent(code)}/unread`);
+        const n = parseInt(r?.unread || 0,10);
+        $unr.textContent = n>0 ? `${n} nuevos` : '';
+        $unr.style.display = n>0 ? '' : 'none';
+        const btn = document.querySelector(`#mzp-tabs .mzc-btn[data-tab="chat"]`);
+        if (btn){
+          if (!btn.querySelector('.mz-tab-badge')) {
+            const t = btn.textContent.trim();
+            btn.innerHTML = `<span class="mz-tab-badge"><span class="mz-tab-dot"></span><span>${t}</span></span>`;
+          }
+          btn.querySelector('.mz-tab-badge').setAttribute('data-has', n>0 ? '1' : '0');
+        }
+      }catch(e){}
+    };
+
+    const markRead = async ()=>{
+      if (!lastId) return;
+      try{ await api(`${V5_API}/chat/${encodeURIComponent(code)}/read`, {method:'POST', body:{last_id:lastId}}); }
+      catch(e){}
+      updateUnreadBadge();
+    };
+    const maybeMarkRead = ()=>{ const atBottom = $list.scrollTop + $list.clientHeight >= ($list.scrollHeight - 10); if (atBottom) markRead(); };
+
+    // ==== Picker de reacciones (tipo WhatsApp) ====
+    const pickerEmojis = ['👍','❤️','🎉','😂','🤔','🔥'];
+    let openPicker = null; // {msg, el}
+
+    function closePicker(){
+      if (openPicker && openPicker.el && openPicker.el.parentNode){
+        openPicker.el.parentNode.removeChild(openPicker.el);
+      }
+      openPicker = null;
+    }
+
+function showPicker(btn){
+  closePicker();
+
+  const msg = btn.getAttribute('data-msg');
+  const box = document.createElement('div');
+  box.className = 'mz-picker';
+  box.setAttribute('data-msg', msg);
+  box.innerHTML = pickerEmojis
+    .map(e => `<button class="mz-emoji" data-type="pick" data-msg="${msg}" data-emoji="${e}" title="Reaccionar ${e}">${e}</button>`)
+    .join('');
+
+  // ВСТАВЛЯЕМ ВНУТРЬ root, чтобы root.addEventListener('click', …) видел клики
+  root.appendChild(box);
+
+  const btnRect = btn.getBoundingClientRect();
+  const boxRect = box.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  let left = btnRect.left + btnRect.width / 2 - boxRect.width / 2;
+  let top  = btnRect.top - boxRect.height - 8;
+
+  if (top < 8){
+    top = btnRect.bottom + 8;
+  }
+  if (left < 8) left = 8;
+  if (left + boxRect.width > vw - 8) left = vw - boxRect.width - 8;
+  if (top + boxRect.height > vh - 8) top = vh - boxRect.height - 8;
+
+  box.style.left = `${left}px`;
+  box.style.top  = `${top}px`;
+
+  openPicker = { msg, el: box };
+}
+
+
+
+    document.addEventListener('click', (ev)=>{
+      if (!openPicker) return;
+      const inside = ev.target.closest('.mz-picker, .mz-react-btn');
+      if (!inside) closePicker();
+    });
+
+    // ===== Reacciones: UNA por usuario — chips sólo >0; quitar chip en 0 =====
+    root.addEventListener('click', async (e)=>{
+
+// abrir picker (но не на своих сообщениях)
+const openBtn = e.target.closest('.mz-react-btn');
+if (openBtn){
+  const msgNode = openBtn.closest('.mz-msg');
+  if (msgNode && msgNode.classList.contains('me')) {
+    return; // свои — игнор
+  }
+  showPicker(openBtn);
+  return;
+}
+
+	// eliminar mensaje (solo docentes)
+	const del = e.target.closest('.mz-msg-del');
+	if (del){
+	  const msgId = del.getAttribute('data-msg');
+	  if (msgId && confirm('¿Eliminar este mensaje para todos?')){
+		try{
+		  await api(`${V5_API}/chat/${encodeURIComponent(code)}/messages/${encodeURIComponent(msgId)}`, { method:'DELETE' });
+		  const node = root.querySelector(`.mz-msg[data-id="${msgId}"]`);
+		  if (node) node.remove(); // оптимистично убираем из DOM
+		  burst();
+		  await refreshDeleted();  // на всякий случай синхронизация
+		}catch(err){
+		  alert('No se pudo eliminar.');
+		}
+	  }
+	  return;
+	}
+
+
+const btn = e.target.closest('.mz-chip, .mz-emoji');
+if (!btn) return;
+
+// не позволяем ставить/менять реакцию на своём сообщении
+const msgNode = btn.closest('.mz-msg');
+if (msgNode && msgNode.classList.contains('me')){
+  return;
+}
+
+	
+      const msg = btn.getAttribute('data-msg');
+      const emoji = btn.getAttribute('data-emoji');
+      if (!msg || !emoji) return;
+
+      const isChip = btn.classList.contains('mz-chip');
+      btn.classList.add('pop'); setTimeout(()=>btn.classList.remove('pop'), 120);
+
+      const wrap = root.querySelector(`.mz-msg[data-id="${msg}"] .mz-reactions`);
+      const chipsWrap = wrap?.querySelector('.mz-chips');
+      const chips = chipsWrap ? Array.from(chipsWrap.querySelectorAll('.mz-chip')) : [];
+      const currentMine = chips.find(c => c.getAttribute('aria-pressed') === 'true');
+
+      try{
+        if (isChip){
+          const pressed = btn.getAttribute('aria-pressed') === 'true';
+          const cntEl = btn.querySelector('.cnt');
+          let cnt = parseInt(cntEl.textContent|| (pressed?'1':'0'), 10);
+
+          if (pressed){
+            // quitar mi reacción
+            cnt = Math.max(0, cnt-1);
+            if (cnt === 0) { btn.remove(); } else { cntEl.textContent = cnt; }
+            btn.classList.remove('is-mine'); btn.setAttribute('aria-pressed','false');
+            await api(`${V5_API}/chat/${encodeURIComponent(code)}/react?msg_id=${msg}&emoji=${encodeURIComponent(emoji)}`, { method:'DELETE' });
+          } else {
+            // si tenía otra, bájala (y oculta si llega a 0)
+            if (currentMine && currentMine !== btn){
+              const cnt2 = currentMine.querySelector('.cnt');
+              const v = Math.max(0, parseInt(cnt2.textContent||'1',10)-1);
+              if (v===0) currentMine.remove(); else cnt2.textContent = v;
+              currentMine.classList.remove('is-mine');
+              currentMine.setAttribute('aria-pressed','false');
+            }
+            // subir la nueva
+            cntEl.textContent = cnt+1;
+            btn.classList.add('is-mine'); btn.setAttribute('aria-pressed','true');
+            await api(`${V5_API}/chat/${encodeURIComponent(code)}/react?msg_id=${msg}&emoji=${encodeURIComponent(emoji)}`, { method:'POST' });
+          }
+        } else {
+          // picker emoji: establece mi única reacción
+          // 1) baja la anterior
+          if (currentMine){
+            const cnt2 = currentMine.querySelector('.cnt');
+            const v = Math.max(0, parseInt(cnt2.textContent||'1',10)-1);
+            if (v===0) currentMine.remove(); else cnt2.textContent = v;
+            currentMine.classList.remove('is-mine');
+            currentMine.setAttribute('aria-pressed','false');
+          }
+          // 2) sube o crea chip нового эмодзи
+          let chip = chips.find(c => c.getAttribute('data-emoji') === emoji);
+          if (!chip && chipsWrap){
+            chipsWrap.insertAdjacentHTML('afterbegin', `<button class="mz-chip" data-type="chip" data-msg="${msg}" data-emoji="${emoji}" aria-pressed="false"><span class="emo">${emoji}</span> <span class="cnt">0</span></button>`);
+            chip = chipsWrap.querySelector(`.mz-chip[data-emoji="${CSS.escape(emoji)}"]`);
+          }
+          if (chip){
+            const cnt = chip.querySelector('.cnt');
+            cnt.textContent = parseInt(cnt.textContent||'0',10)+1;
+            chip.classList.add('is-mine'); chip.setAttribute('aria-pressed','true');
+          }
+          await api(`${V5_API}/chat/${encodeURIComponent(code)}/react?msg_id=${msg}&emoji=${encodeURIComponent(emoji)}`, { method:'POST' });
+          closePicker();
+        }
+
+        burst();
+        refreshReactions();
+      } catch(err){
+        console.warn('react failed', err);
+        fetchMore(); // resync si algo falló
+      }
+    });
+
+    // ===== Envío =====
+  const MAX_FILE_MB = 5;  // подстрой под свой лимит сервера
+
+  $send.onclick = async ()=>{
+    const text = $in.value.trim();
+    const hasFile = $file.files && $file.files[0];
+
+    if (!text && !hasFile) return;
+
+    // --- валидация файла ---
+    if (hasFile){
+      const file = $file.files[0];
+      const sizeMb = file.size / (1024 * 1024);
+
+      if (sizeMb > MAX_FILE_MB){
+        alert(`Archivo demasiado grande (máx. ${MAX_FILE_MB} MB).`);
+        return;
+      }
+
+      const allowedTypes = [
+        'image/',                 // любые картинки
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ];
+
+      const ok = allowedTypes.some(t => {
+        if (t.endsWith('/')) return file.type.startsWith(t);  // image/*
+        return file.type === t;
+      });
+
+      if (!ok){
+        alert('Tipo de archivo no permitido. Usa PDF, imágenes o documentos Office.');
+        return;
+      }
+    }
+
+    try{
+      if (hasFile){
+        const fd = new FormData();
+        if (text) fd.append('body', text);
+        fd.append('file', $file.files[0]);
+        await api(`${V5_API}/chat/${encodeURIComponent(code)}/messages`, {
+          method:'POST',
+          body: fd
+        });
+      } else {
+        await api(`${V5_API}/chat/${encodeURIComponent(code)}/messages`, {
+          method:'POST',
+          body:{ body: text }
+        });
+      }
+
+      $in.value = '';
+      $file.value = '';
+
+      await fetchMore();
+      await refreshReactions();
+      await refreshDeleted();
+      await updateUnreadBadge();
+      $list.scrollTop = $list.scrollHeight + 1000;
+
+    } catch(e){
+      console.warn('send failed', e);
+      const msg = (e && (e.message || e.code))
+        ? `${e.message} (${e.code||''})`
+        : 'Error al enviar';
+      alert(msg);
+    }
+
+    burst();
+  };
+
+
+    // menores
+    $att.onclick = ()=> $file.click();
+    const composeEmojis = [
+      '😀','😁','😂','🤣','😊','😉','😍','😘',
+      '😎','🤩','🥳','🤗','🙂','🙃','😇','😅',
+      '🤔','😏','😴','🤤','😭','😤','😱','🤯',
+      '👍','👎','🙏','👏','🙌','🔥','❤️','💯'
+    ];
+    // Меню (лениво создаём по первому клику)
+    let composeMenu = null;
+    function ensureComposeMenu(){
+      if (composeMenu) return composeMenu;
+      const el = document.createElement('div');
+      el.className = 'mz-emo-menu';
+      el.setAttribute('role','menu');
+      el.innerHTML = composeEmojis.map(e=>`<button class="itm" type="button" data-emo="${e}" title="${e}">${e}</button>`).join('');
+      document.body.appendChild(el);
+      composeMenu = el;
+      // делегирование кликов по эмодзи
+      el.addEventListener('click', (ev)=>{
+        const b = ev.target.closest('.itm'); if (!b) return;
+        const emo = b.getAttribute('data-emo'); if (!emo) return;
+        insertEmojiAtCaret(emo + ' ');
+        closeComposeMenu();
+      });
+      return el;
+    }
+    function openComposeMenu(anchorBtn){
+      const el = ensureComposeMenu();
+      el.style.display = 'grid';
+      // позиционируем под кнопкой
+      const r = anchorBtn.getBoundingClientRect();
+      const pad = 6;
+      let top = r.bottom + pad;
+      let left = r.left;
+      const vw = window.innerWidth, vh = window.innerHeight;
+      const rectW = el.offsetWidth || 320, rectH = el.offsetHeight || 220;
+      if (left + rectW > vw - 8) left = vw - rectW - 8;
+      if (top + rectH > vh - 8) top = r.top - rectH - pad; // вверх, если не влазит вниз
+      el.style.top = `${Math.max(8, top)}px`;
+      el.style.left = `${Math.max(8, left)}px`;
+    
+      // закрытие по клику вне / ESC / скролл/resize
+      setTimeout(()=>{
+        document.addEventListener('click', onComposeOuter, {capture:true, once:true});
+        window.addEventListener('keydown', onComposeKey, {once:true});
+        window.addEventListener('scroll', closeComposeMenu, {once:true});
+        window.addEventListener('resize', closeComposeMenu, {once:true});
+      }, 0);
+    }
+    function closeComposeMenu(){
+      if (!composeMenu) return;
+      composeMenu.style.display = 'none';
+    }
+    function onComposeOuter(ev){
+      if (!composeMenu) return;
+      const inside = ev.target.closest('.mz-emo-menu') || ev.target.closest('#mz-emoji');
+      if (!inside) closeComposeMenu();
+    }
+    function onComposeKey(ev){
+      if (ev.key === 'Escape') closeComposeMenu();
+    }
+    function insertEmojiAtCaret(emoji){
+      const el = $in;
+      el.focus();
+      const start = el.selectionStart ?? el.value.length;
+      const end   = el.selectionEnd ?? el.value.length;
+      const before = el.value.slice(0, start);
+      const after  = el.value.slice(end);
+      el.value = before + emoji + after;
+      const newPos = start + emoji.length;
+      el.setSelectionRange(newPos, newPos);
+    }
+    
+    // Переключатель пикера на кнопке 🙂
+    $emo.addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      if (composeMenu && composeMenu.style.display !== 'none' && composeMenu.style.display !== ''){
+        closeComposeMenu();
+      } else {
+        openComposeMenu($emo);
+      }
+    });
+    $in.addEventListener('keydown', (e)=>{ if ((e.ctrlKey || e.metaKey) && e.key==='Enter'){ e.preventDefault(); $send.click(); } });
+
+    // Boot y polling
+    await fetchMore(); 
+	await refreshReactions();  
+	await refreshDeleted();
+	await updateUnreadBadge(); 
+	markRead();
+
+    function burst(){ burstUntil = Date.now() + 10000; }
+    const ticker = async ()=>{
+      if (stopPoll) return;
+      await fetchMore();
+	  await refreshReactions();
+	  await refreshDeleted();
+	  await updateUnreadBadge();
+      const now = Date.now();
+      setTimeout(ticker, (now < burstUntil) ? (1200 + Math.floor(Math.random()*400))
+                                            : (6500 + Math.floor(Math.random()*1500)));
+    };
+    setTimeout(ticker, 3000);
+
+    const onVis = ()=> { 
+      if (!document.hidden) { 
+        maybeMarkRead(); 
+        refreshReactions(); 
+        refreshDeleted();
+        updateUnreadBadge(); 
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+})();
+</script>

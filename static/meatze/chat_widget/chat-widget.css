@@ -1,0 +1,185 @@
+:root{
+  --mz-blue:#0e73b8;
+  --mz-border:#e6eef6;
+  --mz-shadow:0 12px 40px rgba(0,0,0,.18);
+}
+
+/* FAB */
+.mz-fab{
+  position:fixed; right:18px; bottom:18px;
+  width:56px; height:56px;
+  border-radius:16px;
+  background:var(--mz-blue);
+  color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:var(--mz-shadow);
+  cursor:pointer;
+  z-index:9999;
+  user-select:none;
+}
+.mz-fab-ico{font-size:22px; line-height:1;}
+.mz-fab-dot{
+  position:absolute; top:10px; right:10px;
+  width:10px; height:10px; border-radius:50%;
+  background:#22c55e;
+}
+
+/* Panel + backdrop */
+.mz-chat-backdrop{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.25);
+  opacity:0; pointer-events:none;
+  transition:opacity .18s ease;
+  z-index:9998;
+}
+.mz-chat-panel{
+  position:fixed;
+  right:18px; bottom:86px;
+  width:360px; max-width:calc(100vw - 24px);
+  height:520px; max-height:calc(100vh - 120px);
+  background:#fff;
+  border:1px solid var(--mz-border);
+  border-radius:18px;
+  box-shadow:var(--mz-shadow);
+  overflow:hidden;
+  transform:translateY(12px);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .18s ease, transform .18s ease;
+  z-index:9999;
+  display:flex; flex-direction:column;
+}
+
+.mz-chat-panel.is-open{opacity:1; transform:translateY(0); pointer-events:auto;}
+.mz-chat-backdrop.is-open{opacity:1; pointer-events:auto;}
+
+.mz-chat-head{
+  padding:10px 12px;
+  border-bottom:1px solid var(--mz-border);
+  display:flex; align-items:center; justify-content:space-between;
+  background:#fff;
+}
+.mz-chat-title{display:flex; gap:10px; align-items:center;}
+.mz-chat-avatars{display:flex; gap:6px;}
+.mz-chat-avatars img{
+  width:28px;height:28px;border-radius:50%;
+  border:1px solid var(--mz-border);
+  object-fit:cover;
+}
+.mz-chat-h1{font-weight:700; font-size:14px;}
+.mz-chat-h2{font-size:12px; opacity:.65; margin-top:1px;}
+.mz-chat-x{
+  border:0; background:transparent; cursor:pointer;
+  font-size:18px; line-height:1;
+  width:34px; height:34px; border-radius:10px;
+}
+.mz-chat-x:hover{background:#f3f6fb;}
+
+.mz-chat-body{
+  flex:1;
+  padding:12px;
+  overflow:auto;
+  background:#fbfdff;
+}
+
+.mz-msg{display:flex; gap:10px; margin:10px 0; align-items:flex-end;}
+.mz-msg .ava{width:30px;height:30px;border-radius:50%;overflow:hidden;flex:0 0 30px;border:1px solid var(--mz-border);background:#fff;}
+.mz-msg .ava img{width:100%;height:100%;object-fit:cover;}
+.mz-bubble{
+  max-width:78%;
+  border:1px solid var(--mz-border);
+  border-radius:14px;
+  padding:9px 10px;
+  background:#fff;
+}
+.mz-name{font-size:11px;opacity:.65;margin-bottom:3px;}
+.mz-text{white-space:pre-wrap; font-size:13px; line-height:1.35;}
+
+.mz-msg.user{justify-content:flex-end;}
+.mz-msg.user .ava{display:none;}
+.mz-msg.user .mz-bubble{background:#eef7ff;border-color:#d7ebff;}
+
+.mz-chat-foot{
+  padding:10px;
+  border-top:1px solid var(--mz-border);
+  display:flex; gap:8px;
+  background:#fff;
+}
+.mz-chat-input{
+  flex:1;
+  border:1px solid var(--mz-border);
+  border-radius:12px;
+  padding:10px 10px;
+  outline:none;
+}
+.mz-chat-send{
+  border:1px solid #cfe6f8;
+  background:var(--mz-blue);
+  color:#fff;
+  border-radius:12px;
+  padding:10px 12px;
+  cursor:pointer;
+}
+.mz-chat-send:disabled{opacity:.6; cursor:not-allowed;}
+
+@media (max-width: 480px){
+  .mz-chat-panel{right:12px; left:12px; width:auto;}
+  .mz-fab{right:12px; bottom:12px;}
+}
+.mz-chat-panel .mz-text a {
+  color: #0e73b8;
+  font-weight: 500;
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(14,115,184,.5);
+  transition: color .15s ease, border-color .15s ease;
+}
+
+.mz-chat-panel .mz-text a:hover {
+  color: #094d7a;
+  border-bottom-color: #094d7a;
+  text-decoration: none;
+}
+/* ===== Общие стили ссылок в чате ===== */
+.mz-chat-panel .mz-text a {
+  font-weight: 500;
+  text-decoration: none;
+  border-bottom: 1px dashed;
+  transition: all .15s ease;
+}
+
+/* ===== ANA (инструкции, навигация) ===== */
+.mz-msg.bot[data-bot="ANA"] .mz-text a {
+  color: #0e73b8;
+  border-bottom-color: rgba(14,115,184,.5);
+}
+
+.mz-msg.bot[data-bot="ANA"] .mz-text a:hover {
+  color: #0a5b93;
+  border-bottom-color: #0a5b93;
+}
+
+/* ===== CARLOS (soporte / errores) ===== */
+.mz-msg.bot[data-bot="CARLOS"] .mz-text a {
+  color: #7a1c1c;
+  border-bottom-color: rgba(122,28,28,.4);
+}
+
+.mz-msg.bot[data-bot="CARLOS"] .mz-text a:hover {
+  color: #5c1515;
+  border-bottom-color: #5c1515;
+}
+.mz-chat-panel .mz-link-btn {
+  display: inline-block;
+  margin: 6px 0;
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: #0e73b8;
+  color: #fff !important;
+  font-weight: 600;
+  text-decoration: none;
+  border: none;
+}
+
+.mz-chat-panel .mz-link-btn:hover {
+  background: #0a5b93;
+}

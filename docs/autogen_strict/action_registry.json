@@ -1,0 +1,377 @@
+[
+  {
+    "key": "password.change",
+    "intents": ["cambiar contraseña","cambiar contrasena","cambiar clave","change password","contraseña nueva"],
+    "roles": ["alumno","docente","admin","visitor"],
+    "ui_steps_es": [
+      "Entra al portal y abre tu menú de cuenta (Perfil/Datos personales).",
+      "En la sección de contraseña, escribe la nueva contraseña dos veces.",
+      "Pulsa Guardar."
+    ]
+  },
+  {
+    "key": "panel.tab.calendario",
+    "intents": ["calendario","horario","agenda","fechas","clases"],
+    "roles": ["alumno","docente"],
+    "ui_steps_es": [
+      "Abre un curso desde tu panel.",
+      "En el panel del curso, pulsa la pestaña “Calendario”."
+    ]
+  }
+]
+{
+  "key": "admin.cursos.create",
+  "priority": 20,
+  "intents": [
+    "crear curso",
+    "crear un curso",
+    "crear curso para alumnos",
+    "cómo crear un curso",
+    "como crear un curso"
+  ],
+  "roles": ["admin"],
+  "ui_steps_es": [
+    "Abre el panel administrativo.",
+    "Entra en la pestaña “Cursos”.",
+    "Pulsa “Crear / Editar Curso”.",
+    "Rellena los datos y pulsa “Guardar”."
+  ],
+  "carlos_es": "Si no ves “Cursos”, no tienes permisos de administración."
+}
+{
+  "key": "cursos.no_permission",
+  "priority": 25,
+  "intents": ["crear curso", "crear curso para alumnos", "crear un curso"],
+  "roles": ["docente","alumno","visitor"],
+  "ui_steps_es": [
+    "La creación de cursos la realiza el administrador del centro.",
+    "Como docente puedes gestionar un curso ya existente (alumnos, calendario, materiales)."
+  ],
+  "carlos_es": "Si necesitas crear uno nuevo, pide acceso al panel admin."
+}
+{
+  "key": "admin.cursos.create",
+  "priority": 10,
+  "intents": ["crear curso", "crear un curso", "crear curso para alumnos", "crar un curso", "crar curso"],
+  "roles": ["admin"],
+  "ui_steps_es": [
+    "Abre el panel administrativo.",
+    "Entra en la pestaña “Cursos”.",
+    "Pulsa “Crear / Editar Curso”.",
+    "Rellena los datos y pulsa “Guardar Curso”."
+  ],
+  "carlos_es": "Si no ves “Cursos”, no tienes permisos de administración."
+}
+{
+  "key": "cursos.no_permission",
+  "priority": 15,
+  "intents": ["crear curso", "crear curso para alumnos", "crar un curso", "crar curso"],
+  "roles": ["docente","alumno","visitor"],
+  "ui_steps_es": [
+    "La creación de cursos la hace el administrador del centro.",
+    "Como docente puedes trabajar dentro de cursos ya creados (Alumnos, Calendario, Materiales, IA)."
+  ],
+  "carlos_es": "Si necesitas crear uno nuevo, pide acceso al panel admin."
+}
+{
+  "key": "docente.ia.howto",
+  "priority": 20,
+  "intents": ["usar ia", "como usar ia", "ia docente", "usar inteligencia artificial", "usar la pestaña ia"],
+  "roles": ["docente","admin"],
+  "ui_steps_es": [
+    "Abre un curso y entra en la pestaña “IA”.",
+    "Elige un preset (Actividades, Preguntas, Quiz, etc.).",
+    "Selecciona el nivel (Básico/Medio/Avanzado).",
+    "Escribe tu petición y pulsa “Preguntar/Enviar”."
+  ],
+  "carlos_es": "La pestaña IA no gestiona calendario ni materiales: para eso usa las pestañas “Calendario” y “Materiales”."
+}
+[
+  {
+    "key": "nav.open_portal",
+    "priority": 1,
+    "intents": ["entrar portal", "entrar al portal", "acceder", "login", "iniciar sesion", "iniciar sesión", "entrar", "acceso", "acessar", "aceder"],
+    "roles": ["visitor", "alumno", "docente", "admin"],
+    "ui_steps_es": [
+      "Abre https://meatzeaula.es/.",
+      "Pulsa el botón “Acceder”.",
+      "Introduce tu e-mail y contraseña (o el método indicado por tu centro)."
+    ],
+    "carlos_es": "Si no recuerdas tus credenciales, contacta con tu centro/administración."
+  },
+
+  {
+    "key": "nav.open_admin_panel",
+    "priority": 2,
+    "intents": ["admin", "administrador", "administrador pagina", "administrador página", "panel admin", "panel administrativo", "admin panel", "admin-panel", "entrar administrador", "entar administador", "como entrar admin", "como entar admin", "acceder admin", "pagina admin"],
+    "roles": ["visitor", "docente", "admin"],
+    "ui_steps_es": [
+      "Abre la URL del panel administrativo: /admin-panel/.",
+      "Introduce la contraseña de la página (acceso compartido) y pulsa “Entrar”."
+    ],
+    "carlos_es": "Si no te deja entrar, revisa la contraseña compartida del panel o pide acceso al administrador."
+  },
+
+  {
+    "key": "nav.open_alumno_panel",
+    "priority": 5,
+    "intents": ["panel alumno", "mi panel", "panel del alumno", "ver mis cursos", "mis cursos", "alumno home"],
+    "roles": ["alumno", "visitor"],
+    "ui_steps_es": [
+      "Inicia sesión.",
+      "El sistema te redirige a tu panel del alumno automáticamente, donde verás tus cursos."
+    ],
+    "carlos_es": "Si no se abre tu panel, revisa que has iniciado sesión con la cuenta correcta."
+  },
+
+  {
+    "key": "panel.open_course",
+    "priority": 6,
+    "intents": ["abrir curso", "entrar a un curso", "ver curso", "panel del curso", "curso", "abrir el curso"],
+    "roles": ["alumno", "docente", "admin"],
+    "ui_steps_es": [
+      "En tu panel, elige el curso que quieres abrir.",
+      "Al abrirlo, verás las pestañas del curso (Información, Materiales, Calendario, Chat, IA, etc.)."
+    ],
+    "carlos_es": "Si no aparece el curso, puede que no estés matriculado o estés en otra cuenta."
+  },
+
+  {
+    "key": "panel.tab.calendario",
+    "priority": 10,
+    "intents": ["calendario", "donde calendario", "dónde calendario", "horario", "agenda", "fechas", "clases", "ver calendario", "pestaña calendario"],
+    "roles": ["visitor", "alumno", "docente", "admin"],
+    "ui_steps_es": [
+      "Abre un curso desde tu panel.",
+      "En el panel del curso, pulsa la pestaña “Calendario”."
+    ],
+    "carlos_es": "Si no ves “Calendario”, asegúrate de estar dentro del curso (no en la página principal)."
+  },
+
+  {
+    "key": "panel.tab.materiales",
+    "priority": 11,
+    "intents": ["materiales", "archivos", "subir archivo", "subir archivos", "documentos", "pdf", "presentacion", "pestaña materiales", "donde materiales", "dónde materiales"],
+    "roles": ["visitor", "alumno", "docente", "admin"],
+    "ui_steps_es": [
+      "Abre un curso desde tu panel.",
+      "Pulsa la pestaña “Materiales” para ver o subir archivos (según permisos)."
+    ],
+    "carlos_es": "Si al subir falla, revisa tamaño/tipo permitido (puede devolver 400/413)."
+  },
+
+  {
+    "key": "panel.materiales.add_row",
+    "priority": 12,
+    "intents": ["añadir archivo", "agregar archivo", "añadir material", "agregar material", "nuevo archivo", "sumar archivo", "subida materiales"],
+    "roles": ["docente", "admin"],
+    "ui_steps_es": [
+      "En la pestaña “Materiales”, pulsa “Añadir” para crear una fila de subida.",
+      "Selecciona el archivo y completa los campos (si aparecen).",
+      "Pulsa “Enviar/Subir”."
+    ],
+    "carlos_es": "Si da error 413, el archivo es demasiado grande. Si 400, puede ser tipo de archivo no permitido."
+  },
+
+  {
+    "key": "panel.tab.chat",
+    "priority": 13,
+    "intents": ["chat", "donde chat", "dónde chat", "mensaje", "mensajes", "enviar mensaje", "hablar", "conversacion", "conversación"],
+    "roles": ["visitor", "alumno", "docente", "admin"],
+    "ui_steps_es": [
+      "Abre un curso desde tu panel.",
+      "Pulsa la pestaña “Chat”.",
+      "Escribe tu mensaje y pulsa “Enviar”."
+    ],
+    "carlos_es": "Si no puedes adjuntar archivos, puede ser límite de tamaño o tipo."
+  },
+
+  {
+    "key": "panel.tab.ia",
+    "priority": 14,
+    "intents": ["ia", "inteligencia artificial", "usar ia", "como usar ia", "ia docente", "pestaña ia", "herramienta ia"],
+    "roles": ["docente", "admin"],
+    "ui_steps_es": [
+      "Abre un curso y entra en la pestaña “IA”.",
+      "Elige un preset/botón (por ejemplo: Actividades, Preguntas, Quiz, Rúbrica, Guía, Glosario).",
+      "Selecciona nivel (Básico/Medio/Avanzado) si aparece.",
+      "Escribe tu petición y pulsa “Enviar/Preguntar”."
+    ],
+    "carlos_es": "La pestaña IA genera contenido pedagógico. Para calendario usa “Calendario”; para archivos usa “Materiales”."
+  },
+
+  {
+    "key": "panel.tab.alumnos",
+    "priority": 15,
+    "intents": ["alumnos", "lista alumnos", "inscritos", "generar pin", "pin alumno", "crear pin", "codigo profesor", "código profesor", "reset pass alumno", "resetear contraseña alumno", "reiniciar contraseña alumno"],
+    "roles": ["docente", "admin"],
+    "ui_steps_es": [
+      "Abre un curso y entra en la pestaña “Alumnos”.",
+      "Desde ahí puedes ver alumnos inscritos y realizar acciones disponibles (generar PIN/credenciales o reset, según aparezca en pantalla)."
+    ],
+    "carlos_es": "Si no aparece la pestaña “Alumnos”, revisa que hayas entrado como docente/admin."
+  },
+
+  {
+    "key": "me.change_password",
+    "priority": 20,
+    "intents": ["cambiar contraseña", "cambiar contrasena", "cambiar clave", "nueva contraseña", "modificar contraseña", "reset password", "change password"],
+    "roles": ["visitor", "alumno", "docente", "admin"],
+    "ui_steps_es": [
+      "Entra a tu cuenta (panel).",
+      "Abre tu perfil/datos personales (si existe en tu menú).",
+      "En “Contraseña”, escribe la nueva contraseña y guarda."
+    ],
+    "carlos_es": "Endpoint interno existe (/meatze/v5/me/password), pero el usuario solo debe seguir el flujo visual del portal."
+  },
+
+  {
+    "key": "admin.cursos.open",
+    "priority": 30,
+    "intents": ["cursos", "gestionar cursos", "crear curso", "crar un curso", "crar curso", "editar curso", "nuevo curso", "cursos admin"],
+    "roles": ["admin"],
+    "ui_steps_es": [
+      "En el panel administrativo, abre la pestaña “Cursos”.",
+      "Usa “Crear / Editar Curso” para crear o modificar.",
+      "Pulsa “Guardar” para aplicar cambios."
+    ],
+    "carlos_es": "Si no ves la pestaña Cursos, no has entrado al panel admin (/admin-panel/)."
+  },
+
+  {
+    "key": "admin.cursos.create_edit",
+    "priority": 31,
+    "intents": ["crear / editar curso", "crear editar curso", "crear curso", "editar curso", "guardar curso", "titulo curso", "código curso", "modulos", "horas totales", "total horas"],
+    "roles": ["admin"],
+    "ui_steps_es": [
+      "En “Cursos”, abre el panel “Crear / Editar Curso”.",
+      "Rellena Título, Código, módulos y horas (según campos visibles).",
+      "Pulsa “Guardar” para crear/actualizar."
+    ],
+    "carlos_es": "Si al guardar falla, revisa que el código no esté duplicado."
+  },
+
+  {
+    "key": "admin.cursos.assign_teachers",
+    "priority": 32,
+    "intents": ["asignar docentes", "asignar profesores", "asignar teachers", "profesores curso", "docentes curso", "chips docentes", "guardar asignación", "guardar asignacion"],
+    "roles": ["admin"],
+    "ui_steps_es": [
+      "En “Cursos”, abre la sección de “Asignar” (asignación).",
+      "Elige el curso y selecciona docentes (chips).",
+      "Pulsa “Guardar Asignación”."
+    ],
+    "carlos_es": "Si no aparecen docentes, revisa la pestaña “Docentes” del panel admin."
+  },
+
+  {
+    "key": "admin.teachers.open",
+    "priority": 40,
+    "intents": ["docentes", "profesores", "teachers", "crear docente", "editar docente", "borrar docente", "lista docentes"],
+    "roles": ["admin"],
+    "ui_steps_es": [
+      "En el panel administrativo, abre la pestaña “Docentes”.",
+      "Desde ahí puedes crear/editar/borrar docentes según los botones visibles."
+    ],
+    "carlos_es": "Si no ves “Docentes”, no estás en /admin-panel/."
+  },
+
+  {
+    "key": "admin.horarios.open",
+    "priority": 50,
+    "intents": ["horarios admin", "autofill horario", "auto horario", "auto schedule", "crear horario", "generar horario", "calendario automatico", "calendario automático", "exportar grafico", "exportar gráfico", "no lectivo", "festivos", "vacaciones"],
+    "roles": ["admin"],
+    "ui_steps_es": [
+      "En el panel administrativo, abre la pestaña “Horarios”.",
+      "Selecciona curso/alumno y usa el bloque de auto-programación si está disponible.",
+      "Guarda o exporta cuando termines."
+    ],
+    "carlos_es": "Si algo devuelve 405/403, revisa permisos y la URL del endpoint correspondiente."
+  },
+
+  {
+    "key": "admin.subs.open",
+    "priority": 60,
+    "intents": ["subs", "envios", "envíos", "notificaciones", "broadcast", "enviar whatsapp", "wa enviar", "subscribers", "suscriptores"],
+    "roles": ["admin"],
+    "ui_steps_es": [
+      "En el panel administrativo, abre “Subs & envíos”.",
+      "Carga/selecciona destinatarios y redacta el mensaje.",
+      "Pulsa “Enviar” o “Broadcast” si aparece."
+    ],
+    "carlos_es": "Si falla el envío, revisa la configuración de WhatsApp/notify."
+  },
+
+  {
+    "key": "admin.wa.open",
+    "priority": 70,
+    "intents": ["whatsapp", "wa", "inbox whatsapp", "mensajes whatsapp", "responder whatsapp", "chat whatsapp", "recargar whatsapp", "bilbao barakaldo whatsapp"],
+    "roles": ["admin"],
+    "ui_steps_es": [
+      "En el panel administrativo, abre la pestaña “WhatsApp”.",
+      "Elige el origen (Bilbao/Barakaldo) si aparece.",
+      "Selecciona un hilo y responde desde el panel de chat."
+    ],
+    "carlos_es": "Si no carga, pulsa “Recargar” y revisa conexión/servicio notify."
+  },
+
+  {
+    "key": "api.me.profile",
+    "priority": 90,
+    "intents": ["perfil", "mi perfil", "datos personales", "nombre", "apellidos", "editar perfil", "guardar perfil"],
+    "roles": ["visitor", "alumno", "docente", "admin"],
+    "ui_steps_es": [
+      "Abre tu sección de perfil/datos personales (si está disponible en tu panel).",
+      "Edita los campos y guarda."
+    ],
+    "carlos_es": "La API existe (/meatze/v5/me/profile), pero el usuario debe usar solo el formulario visual."
+  }
+]
+{
+  "id": "admin_docentes_actuales",
+  "roles": ["admin"],
+  "match": {
+    "any": [
+      "docentes actuales",
+      "docentes",
+      "profesores actuales",
+      "lista de docentes"
+    ]
+  },
+  "where": {
+    "page_keys_any": ["admin:teachers"]
+  },
+  "ui_steps_es": [
+    "Abre el panel administrativo.",
+    "Entra en la sección de Docentes.",
+    "Localiza el bloque “Docentes actuales”.",
+    "Revisa el listado de profesores ya dados de alta."
+  ],
+  "evidence": {
+    "templates_any": ["templates/meatze_admin/teachers.html"]
+  }
+}
+{
+  "id": "admin_solicitudes_por_correo",
+  "roles": ["admin"],
+  "match": {
+    "any": [
+      "solicitudes por correo",
+      "solicitudes pendientes",
+      "correo pendiente",
+      "solicitudes docentes"
+    ]
+  },
+  "where": {
+    "page_keys_any": ["admin:teachers"]
+  },
+  "ui_steps_es": [
+    "Abre el panel administrativo.",
+    "Entra en la sección de Docentes.",
+    "Localiza el bloque “Solicitudes por correo (pendientes)”.",
+    "Revisa las solicitudes recibidas que aún no han sido procesadas."
+  ],
+  "evidence": {
+    "templates_any": ["templates/meatze_admin/teachers.html"]
+  }
+}

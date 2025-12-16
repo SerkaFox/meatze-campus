@@ -1,0 +1,556 @@
+{# panel/tabs/materiales.html #}
+
+<style>
+  /* === MATERIALS TAB === */
+  .mz-mat-card {
+    padding: 16px 18px 18px;
+    border-radius: 18px;
+  }
+
+  .mz-mat-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .mz-mat-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #e5e7eb;
+  }
+
+  .mz-mat-sub {
+    margin: 2px 0 0;
+    font-size: 0.8rem;
+    color: #9ca3af;
+  }
+
+  .mz-mat-count {
+    font-size: 0.76rem;
+    padding: 4px 9px;
+    border-radius: 999px;
+    border: 1px solid rgba(148,163,184,0.5);
+    background: radial-gradient(circle at top, rgba(15,23,42,0.9), rgba(15,23,42,0.85));
+    color: #e5e7eb;
+    white-space: nowrap;
+  }
+
+  .mz-mat-audience {
+    margin: 8px 0 4px;
+  }
+
+  .mz-mat-modfilters {
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .mz-pill {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    border: 1px solid rgba(148,163,184,0.5);
+    background: rgba(15,23,42,0.8);
+    color: #cbd5f5;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 140ms ease, color 140ms ease, border-color 140ms ease,
+                box-shadow 140ms ease, transform 100ms ease;
+    white-space: nowrap;
+  }
+
+  .mz-pill:hover {
+    background: rgba(30,64,175,0.9);
+    border-color: rgba(191,219,254,0.7);
+    color: #f9fafb;
+    box-shadow: 0 0 0 1px rgba(15,23,42,0.9);
+    transform: translateY(-1px);
+  }
+
+  .mz-pill.is-act {
+    background: radial-gradient(circle at top, #22d3ee, #3b82f6);
+    border-color: rgba(248,250,252,0.9);
+    color: #0b1120;
+    box-shadow:
+      0 0 0 1px rgba(15,23,42,0.95),
+      0 8px 18px rgba(37,99,235,0.7);
+  }
+
+  /* upload form */
+  .mz-upl-wrap {
+    margin-top: 10px;
+    padding: 10px 11px;
+    border-radius: 14px;
+    border: 1px dashed rgba(148,163,184,0.6);
+    background: radial-gradient(circle at top left, rgba(30,64,175,0.35), rgba(15,23,42,0.9));
+  }
+
+  .mz-upl-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .mz-upl-label.pick {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(148,163,184,0.7);
+    cursor: pointer;
+    font-size: 0.82rem;
+    background: rgba(15,23,42,0.9);
+    color: #e5e7eb;
+  }
+
+  .mz-upl-label.pick:hover {
+    background: rgba(30,64,175,0.9);
+    border-color: rgba(191,219,254,0.8);
+  }
+
+  .mz-upl-input,
+  .mz-upl-select {
+    min-width: 180px;
+    padding: 7px 9px;
+    border-radius: 10px;
+    border: 1px solid rgba(148,163,184,0.6);
+    background: rgba(15,23,42,0.95);
+    color: #e5e7eb;
+    font-size: 0.82rem;
+  }
+
+  .mz-upl-input::placeholder {
+    color: #6b7280;
+  }
+
+  /* files list */
+  .mz-mat-list {
+    list-style: none;
+    padding: 0;
+    margin: 12px 0 0;
+    display: grid;
+    gap: 8px;
+  }
+
+  .mz-mat-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 8px 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(30,64,175,0.7);
+    background: radial-gradient(circle at top left, rgba(15,23,42,0.96), rgba(15,23,42,0.9));
+  }
+
+  .mz-mat-main {
+    min-width: 0;
+  }
+
+  .mz-mat-title-file {
+    margin: 0 0 2px;
+    font-size: 0.88rem;
+  }
+
+  .mz-mat-title-file a {
+    color: #f9fafb;
+    text-decoration: none;
+  }
+
+  .mz-mat-title-file a:hover {
+    text-decoration: underline;
+  }
+
+  .mz-mat-meta {
+    font-size: 0.78rem;
+    color: #9ca3af;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .mz-mat-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(148,163,184,0.7);
+  }
+
+  .mz-mat-tag {
+    font-size: 0.72rem;
+    padding: 2px 7px;
+    border-radius: 999px;
+    border: 1px solid rgba(148,163,184,0.7);
+    background: radial-gradient(circle at top, rgba(15,23,42,0.9), rgba(15,23,42,0.85));
+    color: #e5e7eb;
+  }
+
+  .mz-mat-tag.muted {
+    border-style: dashed;
+    color: #9ca3af;
+  }
+
+  .mz-chip-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 999px;
+    border: 1px solid rgba(45,212,191,0.8);
+    background: rgba(6,95,70,0.35);
+    color: #a7f3d0;
+    margin-top: 3px;
+  }
+
+  .mz-mat-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  @media (max-width: 720px) {
+    .mz-mat-head {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .mz-mat-actions {
+      justify-content: flex-start;
+    }
+  }
+    .mz-file-clear {
+    margin-left: 6px;
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    border: 1px solid rgba(148,163,184,0.8);
+    background: rgba(15,23,42,0.95);
+    color: #e5e7eb;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .mz-file-clear:hover {
+    background: rgba(185,28,28,0.9);
+    border-color: rgba(254,202,202,0.9);
+    color: #fef2f2;
+  }
+
+</style>
+
+<div class="mzc-card mz-mat-card">
+  <div class="mz-mat-head">
+    <div>
+      <h4 class="mz-mat-title">Materiales</h4>
+      <p class="mz-mat-sub">Archivos y recursos asociados al curso.</p>
+    </div>
+    {% if files %}
+      <div class="mz-mat-count">
+        {{ files|length }} archivo{{ files|length|pluralize:"s" }}
+      </div>
+    {% endif %}
+  </div>
+
+  {# ---- верхний бар: alumnos / docentes / mis ---- #}
+  {% if is_teacher %}
+    <div class="mz-mat-audience">
+      <div class="mz-seg">
+        {% for key,label in audience_options %}
+			<a href="?tab=materiales&aud={{ key }}"
+			   class="mzc-btn ghost{% if audience == key %} is-act{% endif %}"
+			   data-action="materials.audience"
+			   data-aud="{{ key }}">
+			  {{ label }}
+			</a>
+
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {# ---- фильтр по модулю (пилюли) ---- #}
+  <div class="mz-mat-modfilters">
+ <a href="?tab=materiales&aud={{ audience }}"
+   class="mz-pill{% if not selected_mod %} is-act{% endif %}"
+   data-action="materials.filter"
+   data-mod="">
+  Todos{% if total_files %} · {{ total_files }}{% endif %}
+    </a>
+
+<a href="?tab=materiales&aud={{ audience }}&mod=none"
+   class="mz-pill{% if selected_mod == 'none' %} is-act{% endif %}"
+   data-action="materials.filter"
+   data-mod="none">
+  Sin módulo{% if none_count %} · {{ none_count }}{% endif %}
+    </a>
+
+    {% for m in mods_with_counts %}
+<a href="?tab=materiales&aud={{ audience }}&mod={{ m.name|urlencode }}"
+   class="mz-pill{% if selected_mod == m.name %} is-act{% endif %}"
+   data-action="materials.filter"
+   data-mod="{{ m.name }}">
+  {{ m.name }}{% if m.count %} · {{ m.count }}{% endif %}
+      </a>
+    {% endfor %}
+  </div>
+
+
+
+
+  {# ---- форма загрузки (только преподаватель) ---- #}
+  {% if is_teacher %}
+    <div class="mz-upl-wrap">
+<form method="post" enctype="multipart/form-data" class="mz-upl"
+      data-action="materials.upload.form">
+
+        {% csrf_token %}
+        <input type="hidden" name="upload" value="1">
+        <input type="hidden" name="tipo"
+               value="{% if audience == 'docentes' %}docentes{% elif audience == 'mis' %}privado{% else %}alumnos{% endif %}">
+
+        <div id="mz-upl-rows" class="mz-upl-rows">
+          <div class="mz-upl-row" data-row-idx="1">
+            <input type="file"
+                   name="file_1"
+                   data-role="file"
+                   class="mz-upl-input"
+                   required>
+
+            <input type="text"
+                   name="title_1"
+                   data-role="title"
+                   class="mz-upl-input"
+                   placeholder="Título (opcional)">
+
+            <select name="module_key_1"
+                    data-role="module_key"
+                    class="mz-upl-select">
+              <option value="">Sin módulo</option>
+              {% for m in mods %}
+                {% with name=m.name %}
+                  {% if name %}
+                    <option value="{{ name|default_if_none:'' }}">{{ name }}</option>
+                  {% endif %}
+                {% endwith %}
+              {% endfor %}
+            </select>
+
+<button type="button"
+        class="mz-file-clear mz-upl-remove-row"
+        title="Quitar fila"
+        data-action="materials.upload.row.remove">
+  ×
+</button>
+
+          </div>
+        </div>
+
+        <div class="mz-upl-row" style="margin-top:8px">
+<button type="button" class="mzc-btn ghost" id="mz-upl-add"
+        data-action="materials.upload.row.add">
+  Añadir otro archivo
+</button>
+
+
+<button type="submit" class="mzc-btn" id="mzf-send"
+        data-action="materials.upload.submit">
+  Subir
+</button>
+
+        </div>
+      </form>
+    </div>
+  {% endif %}
+
+
+  {# ---- список файлов ---- #}
+  <ul class="mz-mat-list">
+    {% if files %}
+      {% for f in files %}
+        <li class="mz-mat-item">
+          <div class="mz-mat-main">
+            <p class="mz-mat-title-file">
+              <a href="{{ f.file.url }}" target="_blank" rel="noopener"
+				   data-action="materials.open"
+				   data-file-id="{{ f.id }}">
+                {{ f.title|default:f.filename }}
+              </a>
+            </p>
+
+            <div class="mz-mat-meta">
+              <span>{{ f.ext|upper }}</span>
+              <span class="mz-mat-dot"></span>
+              <span>{{ f.fmt_size }}</span>
+              <span class="mz-mat-dot"></span>
+              <span>{{ f.uploaded_by.get_full_name|default:f.uploaded_by.email }}</span>
+
+              {% if f.module_key %}
+                <span class="mz-mat-dot"></span>
+                <span class="mz-mat-tag">{{ f.module_key }}</span>
+              {% else %}
+                <span class="mz-mat-dot"></span>
+                <span class="mz-mat-tag muted">Sin módulo</span>
+              {% endif %}
+            </div>
+
+            {% if not is_teacher and f.tipo != "alumnos" %}
+              <div class="mz-chip-mini">
+                Compartido por el docente
+              </div>
+            {% endif %}
+
+            {% if is_teacher and f.share_alumnos %}
+              <div class="mz-chip-mini">
+                Visible para alumnos
+              </div>
+            {% endif %}
+          </div>
+
+          {% if is_teacher %}
+            <div class="mz-mat-actions">
+              <form method="post" style="margin:0">
+                {% csrf_token %}
+                <input type="hidden" name="share_id" value="{{ f.id }}">
+                <button class="mzc-btn ghost" type="submit"
+        data-action="materials.share.toggle"
+        data-file-id="{{ f.id }}">
+                  {% if f.share_alumnos %}Ocultar de alumnos{% else %}Mostrar a alumnos{% endif %}
+                </button>
+              </form>
+
+              {% if f.tipo == "docentes" %}
+                <form method="post" style="margin:0">
+                  {% csrf_token %}
+                  <input type="hidden" name="copy_id" value="{{ f.id }}">
+ <button class="mzc-btn ghost" type="submit"
+        data-action="materials.copy.to_private"
+        data-file-id="{{ f.id }}">
+  Copiar a privados
+</button>
+
+                </form>
+              {% endif %}
+
+              <form method="post" style="margin:0"
+                    onsubmit="return confirm('¿Eliminar este archivo?');">
+                {% csrf_token %}
+                <input type="hidden" name="delete_id" value="{{ f.id }}">
+                <button class="mzc-btn ghost" type="submit">
+                  Eliminar
+                </button>
+              </form>
+            </div>
+          {% endif %}
+        </li>
+      {% endfor %}
+    {% else %}
+      <li class="mzc-note">No hay materiales aún.</li>
+    {% endif %}
+  </ul>
+</div>
+<script>
+(function() {
+  const input = document.getElementById('mz-file-input');
+  if (!input) return;
+
+  const labelSpan = document.getElementById('mz-file-label');
+  const clearBtn  = document.getElementById('mz-file-clear');
+
+  function resetFile() {
+    input.value = '';
+    labelSpan.textContent = 'Seleccionar archivo…';
+    clearBtn.style.display = 'none';
+  }
+
+  input.addEventListener('change', function() {
+    if (input.files && input.files.length > 0) {
+      labelSpan.textContent = input.files[0].name;
+      clearBtn.style.display = 'inline-flex';
+    } else {
+      resetFile();
+    }
+  });
+
+  clearBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    resetFile();
+  });
+})();
+</script>
+<script>
+(function() {
+  const rowsContainer = document.getElementById('mz-upl-rows');
+  const addBtn = document.getElementById('mz-upl-add');
+  if (!rowsContainer || !addBtn) return;
+
+  let idx = rowsContainer.children.length || 1;
+
+  function bindRow(row) {
+    const removeBtn = row.querySelector('.mz-upl-remove-row');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (rowsContainer.children.length > 1) {
+          row.remove();
+        } else {
+          // если строка одна — просто очищаем поля
+          const file = row.querySelector('[data-role="file"]');
+          const title = row.querySelector('[data-role="title"]');
+          const mod = row.querySelector('[data-role="module_key"]');
+          if (file) file.value = '';
+          if (title) title.value = '';
+          if (mod) mod.value = '';
+        }
+      });
+    }
+  }
+
+  function addRow() {
+    const template = rowsContainer.children[0];
+    if (!template) return;
+
+    idx += 1;
+    const clone = template.cloneNode(true);
+    clone.setAttribute('data-row-idx', String(idx));
+
+    clone.querySelectorAll('[data-role]').forEach(function(el) {
+      const role = el.getAttribute('data-role');
+      if (!role) return;
+      el.name = role + '_' + idx;
+      if (role === 'file' || role === 'title') {
+        el.value = '';
+      }
+      if (role === 'module_key') {
+        el.value = '';
+      }
+    });
+
+    rowsContainer.appendChild(clone);
+    bindRow(clone);
+  }
+
+  // инициализируем первую строку
+  Array.from(rowsContainer.children).forEach(bindRow);
+
+  addBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    addRow();
+  });
+})();
+</script>

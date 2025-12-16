@@ -1,0 +1,218 @@
+/* =========================================================
+   MEATZE · Subs & envíos
+   Scoped to #ui-subs
+   ========================================================= */
+
+#ui-subs {
+  color: #0f172a;
+}
+
+/* ---------- Cards ---------- */
+#ui-subs .mz-card {
+  color: #0f172a;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 8px 22px rgba(0,0,0,.08);
+}
+
+/* ---------- Head / filters ---------- */
+#ui-subs .subs-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+#ui-subs .subs-title {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+#ui-subs .subs-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px,1fr));
+  gap: 8px;
+}
+
+/* ---------- Inputs ---------- */
+#ui-subs .mz-inp,
+#ui-subs .mz-sel,
+#ui-subs textarea {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  color: #0f172a;
+}
+
+#ui-subs .mz-inp:focus,
+#ui-subs .mz-sel:focus,
+#ui-subs textarea:focus {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(59,130,246,.2);
+}
+
+/* ---------- Toolbar ---------- */
+#ui-subs .mz-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+/* ---------- Table ---------- */
+#ui-subs .mz-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+#ui-subs .mz-table thead th {
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 800;
+  font-size: 13px;
+  padding: 10px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+#ui-subs .mz-table tbody td {
+  padding: 10px;
+  font-size: 13px;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: top;
+}
+
+#ui-subs .mz-table tbody tr:hover td {
+  background: #f8fafc;
+}
+
+/* ---------- Status pills ---------- */
+#ui-subs .st {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+#ui-subs .st.new {
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+
+#ui-subs .st.sent {
+  background: #dcfce7;
+  color: #14532d;
+}
+
+#ui-subs .st.error {
+  background: #fee2e2;
+  color: #7f1d1d;
+}
+
+/* ---------- Actions ---------- */
+#ui-subs .subs-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+#ui-subs .mz-btn {
+  background: #0e73b8;
+  border-color: #0e73b8;
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(14,115,184,.25);
+}
+
+#ui-subs .mz-btn:hover {
+  filter: brightness(1.05);
+}
+
+#ui-subs .mz-btn.link {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #e5e7eb;
+  box-shadow: none;
+}
+
+#ui-subs .mz-btn.danger {
+  background: #dc2626;
+  border-color: #dc2626;
+  box-shadow: 0 4px 10px rgba(220,38,38,.25);
+}
+
+/* ---------- Message preview ---------- */
+#ui-subs .subs-preview {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 13px;
+  color: #334155;
+  white-space: pre-wrap;
+}
+
+/* ---------- Empty state ---------- */
+#ui-subs .subs-empty {
+  text-align: center;
+  padding: 20px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* ---------- Pagination ---------- */
+#ui-subs .subs-pages {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+#ui-subs .subs-pages button {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+#ui-subs .subs-pages button.active {
+  background: #0e73b8;
+  border-color: #0e73b8;
+  color: #fff;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 640px) {
+  #ui-subs .subs-filters {
+    grid-template-columns: 1fr;
+  }
+
+  #ui-subs .mz-table thead {
+    display: none;
+  }
+
+  #ui-subs .mz-table,
+  #ui-subs .mz-table tbody,
+  #ui-subs .mz-table tr,
+  #ui-subs .mz-table td {
+    display: block;
+    width: 100%;
+  }
+
+  #ui-subs .mz-table tr {
+    margin-bottom: 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  #ui-subs .mz-table td {
+    border-bottom: none;
+  }
+}

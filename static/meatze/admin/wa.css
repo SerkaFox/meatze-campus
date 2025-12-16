@@ -1,0 +1,364 @@
+/* =========================================================
+   MEATZE · WhatsApp Inbox
+   Scoped to #ui-wa
+   ========================================================= */
+
+#ui-wa{
+  color: var(--mz-ink, #142333);
+}
+
+/* card как везде */
+#ui-wa .mz-card{
+  border-radius: 14px;
+  border: 1px solid var(--mz-border, #e6eef6);
+  background: rgba(255,255,255,.78);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 26px rgba(15,23,42,.10);
+}
+
+/* top controls */
+#ui-wa .mz-sel{
+  border-radius: 12px;
+  border: 1px solid #dbe3ee;
+  background: rgba(255,255,255,.85);
+  padding: 10px 12px;
+}
+
+/* ===== Layout: left threads + right chat ===== */
+#ui-wa .wa-grid{
+  display:grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+@media (max-width: 860px){
+  #ui-wa .wa-grid{
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Left panel (threads) ===== */
+#ui-wa #mzi-thread-list{
+  border:1px solid rgba(15,23,42,.10);
+  border-radius: 14px;
+  background: rgba(248,250,252,.72);
+  padding: 6px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+/* thread item (JS can add .wa-thread and .is-active) */
+#ui-wa .wa-thread{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 10px;
+  border-radius: 12px;
+  border:1px solid transparent;
+  background: rgba(255,255,255,.75);
+  cursor:pointer;
+  transition: transform .05s ease, background .12s ease, border-color .12s ease;
+}
+#ui-wa .wa-thread:hover{
+  background: rgba(14,115,184,.06);
+  border-color: rgba(14,115,184,.18);
+}
+#ui-wa .wa-thread:active{
+  transform: translateY(1px);
+}
+#ui-wa .wa-thread.is-active{
+  background: rgba(14,115,184,.10);
+  border-color: rgba(14,115,184,.28);
+  box-shadow: 0 6px 14px rgba(14,115,184,.10);
+}
+
+#ui-wa .wa-thread .t-main{
+  min-width:0;
+}
+#ui-wa .wa-thread .t-name{
+  font-weight: 900;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#ui-wa .wa-thread .t-last{
+  font-size: 12px;
+  font-weight: 700;
+  opacity: .75;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#ui-wa .wa-thread .t-meta{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:6px;
+  flex: 0 0 auto;
+}
+#ui-wa .wa-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 12px;
+  border: 1px solid rgba(14,115,184,.22);
+  background: rgba(14,115,184,.10);
+}
+#ui-wa .wa-time{
+  font-size: 11px;
+  font-weight: 800;
+  opacity: .65;
+}
+
+/* ===== Right panel (chat) ===== */
+#ui-wa .wa-chat{
+  border:1px solid rgba(15,23,42,.10);
+  border-radius: 14px;
+  background: rgba(255,255,255,.72);
+  padding: 10px;
+}
+
+/* header */
+#ui-wa .wa-chat-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(15,23,42,.08);
+  margin-bottom: 8px;
+}
+#ui-wa #mzi-chat-title{
+  font-weight: 950;
+  font-size: 14px;
+  letter-spacing: .01em;
+}
+#ui-wa .wa-sub{
+  font-size: 12px;
+  font-weight: 800;
+  opacity: .7;
+}
+
+/* log */
+#ui-wa #mzi-chat-log{
+  border:1px solid rgba(15,23,42,.10);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at top left, rgba(14,115,184,.08) 0, transparent 55%),
+    radial-gradient(circle at bottom right, rgba(59,130,246,.10) 0, transparent 60%),
+    rgba(248,250,252,.70);
+  padding: 10px;
+  max-height: 360px;
+  overflow: auto;
+}
+
+/* messages (JS should add .wa-msg + .in/.out) */
+#ui-wa .wa-msg{
+  display:flex;
+  margin: 8px 0;
+}
+#ui-wa .wa-msg .b{
+  max-width: 82%;
+  padding: 8px 10px;
+  border-radius: 14px;
+  border:1px solid rgba(15,23,42,.10);
+  background: rgba(255,255,255,.85);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: pre-wrap;
+  word-break: break-word;
+  box-shadow: 0 6px 14px rgba(15,23,42,.06);
+}
+#ui-wa .wa-msg .m-meta{
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  opacity: .6;
+}
+
+/* incoming vs outgoing */
+#ui-wa .wa-msg.in{ justify-content:flex-start; }
+#ui-wa .wa-msg.in .b{
+  border-top-left-radius: 10px;
+}
+#ui-wa .wa-msg.out{ justify-content:flex-end; }
+#ui-wa .wa-msg.out .b{
+  background: rgba(14,115,184,.10);
+  border-color: rgba(14,115,184,.22);
+  border-top-right-radius: 10px;
+}
+
+/* composer */
+#ui-wa .wa-compose{
+  display:flex;
+  gap:8px;
+  align-items:flex-end;
+  margin-top: 8px;
+}
+#ui-wa #mzi-chat-input{
+  min-height: 44px;
+  max-height: 120px;
+  resize: vertical;
+  border-radius: 14px;
+  border: 1px solid #dbe3ee;
+  background: rgba(255,255,255,.90);
+}
+#ui-wa #mzi-chat-send{
+  min-height: 44px;
+  border-radius: 14px;
+}
+
+/* empty state */
+#ui-wa #mzi-chat-empty{
+  border: 1px dashed rgba(15,23,42,.18);
+  border-radius: 14px;
+  padding: 14px;
+  background: rgba(255,255,255,.55);
+}
+
+/* small buttons alignment */
+#ui-wa .mz-btn.sm{ padding:8px 10px; border-radius: 12px; }
+
+/* make the inline styles you have "look consistent" */
+#ui-wa h3{ font-weight: 950; }
+/* ==============================
+   WA threads (left list) — nice
+   ============================== */
+#ui-wa #mzi-thread-list{
+  background: rgba(248,250,252,.72);
+  border: 1px solid rgba(15,23,42,.10);
+  border-radius: 14px;
+  padding: 6px;
+  overflow: auto;
+}
+
+#ui-wa .wa-thread{
+  width: 100%;
+  text-align: left;
+  display:flex;
+  align-items: stretch;
+  gap: 10px;
+
+  padding: 10px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(15,23,42,.08);
+  background: rgba(255,255,255,.78);
+  cursor: pointer;
+
+  transition: background .12s ease, border-color .12s ease, box-shadow .12s ease, transform .05s ease;
+}
+#ui-wa .wa-thread:hover{
+  background: rgba(14,115,184,.06);
+  border-color: rgba(14,115,184,.18);
+}
+#ui-wa .wa-thread:active{ transform: translateY(1px); }
+
+#ui-wa .wa-thread + .wa-thread{ margin-top: 6px; }
+
+#ui-wa .wa-thread.is-active{
+  background: rgba(14,115,184,.10);
+  border-color: rgba(14,115,184,.28);
+  box-shadow: 0 10px 22px rgba(14,115,184,.12);
+}
+
+#ui-wa .wa-thread.is-new{
+  border-color: rgba(245,158,11,.35);
+  background: rgba(255,247,214,.75);
+}
+
+#ui-wa .wa-thread-main{
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+#ui-wa .wa-thread-top{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+#ui-wa .wa-thread-name{
+  font-weight: 950;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#ui-wa .wa-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height: 18px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  border: 1px solid rgba(15,23,42,.12);
+  background: rgba(255,255,255,.75);
+  opacity: .9;
+}
+#ui-wa .wa-pill.new{
+  border-color: rgba(239,68,68,.22);
+  background: rgba(239,68,68,.12);
+  color: #991b1b;
+}
+
+#ui-wa .wa-thread-meta{
+  font-size: 12px;
+  font-weight: 800;
+  opacity: .72;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#ui-wa .wa-thread-last{
+  margin-top: 6px;
+  font-size: 12.5px;
+  font-weight: 800;
+  opacity: .82;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#ui-wa .wa-thread-foot{
+  margin-top: 6px;
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+#ui-wa .wa-time{
+  font-size: 11px;
+  font-weight: 900;
+  opacity: .65;
+}
+
+/* delete button */
+#ui-wa .wa-del{
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(15,23,42,.10);
+  background: rgba(255,255,255,.75);
+  cursor: pointer;
+}
+#ui-wa .wa-del:hover{
+  border-color: rgba(185,14,46,.25);
+  background: rgba(185,14,46,.08);
+}

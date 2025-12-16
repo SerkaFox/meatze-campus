@@ -1,0 +1,674 @@
+# Archivo: static/meatze/admin/horarios.js
+
+## Tipo de archivo
+js
+
+## Funciones
+- $:
+    - tipo: arrow
+    - línea: 6
+    - argumentos: s
+- H:
+    - tipo: arrow
+    - línea: 11
+    - argumentos: code
+- tok:
+    - tipo: arrow
+    - línea: 12
+    - argumentos: (sin parámetros)
+- qs:
+    - tipo: arrow
+    - línea: 13
+    - argumentos: bust=...
+- auth:
+    - tipo: arrow
+    - línea: 14
+    - argumentos: isPost=...
+- apiJSON:
+    - tipo: function
+    - línea: 15
+    - argumentos: url, opt=...
+- initOnce:
+    - tipo: function
+    - línea: 25
+    - argumentos: (sin parámetros)
+- pad2:
+    - tipo: arrow
+    - línea: 28
+    - argumentos: n
+- ymd:
+    - tipo: arrow
+    - línea: 29
+    - argumentos: d
+- addDays:
+    - tipo: arrow
+    - línea: 30
+    - argumentos: d, n
+- title:
+    - tipo: arrow
+    - línea: 31
+    - argumentos: d
+- getAllowedDowsSet:
+    - tipo: function
+    - línea: 91
+    - argumentos: (sin parámetros)
+- nameOfAlumno:
+    - tipo: function
+    - línea: 125
+    - argumentos: u
+- isAllowedByDOW:
+    - tipo: function
+    - línea: 133
+    - argumentos: dateOrYmd, allowedSet
+- loadAlumnosForCurso:
+    - tipo: function
+    - línea: 141
+    - argumentos: code
+- updateAmbitoUI:
+    - tipo: function
+    - línea: 170
+    - argumentos: (sin parámetros)
+- loadFixedNonlective:
+    - tipo: function
+    - línea: 199
+    - argumentos: force=...
+- addDate:
+    - tipo: arrow
+    - línea: 218
+    - argumentos: d
+- parseYearFieldExpanded:
+    - tipo: function
+    - línea: 211
+    - argumentos: str, year
+- fmt:
+    - tipo: function
+    - línea: 287
+    - argumentos: d
+- compressDateList:
+    - tipo: function
+    - línea: 274
+    - argumentos: list
+- saveFixedNonlective:
+    - tipo: function
+    - línea: 317
+    - argumentos: yearMap
+- fixedDatesBetween:
+    - tipo: function
+    - línea: 332
+    - argumentos: startYMD, endYMD
+- getAlumnoGroupKey:
+    - tipo: function
+    - línea: 356
+    - argumentos: (sin parámetros)
+- qp:
+    - tipo: function
+    - línea: 375
+    - argumentos: (sin parámetros)
+- pad2:
+    - tipo: arrow
+    - línea: 393
+    - argumentos: n
+- ymdFromDate:
+    - tipo: function
+    - línea: 392
+    - argumentos: d
+- pad2:
+    - tipo: arrow
+    - línea: 410
+    - argumentos: n
+- pad2:
+    - tipo: arrow
+    - línea: 422
+    - argumentos: n
+- normalizeDateStr:
+    - tipo: function
+    - línea: 397
+    - argumentos: s, inputEl
+- boot:
+    - tipo: function
+    - línea: 431
+    - argumentos: (sin parámetros)
+- wire:
+    - tipo: function
+    - línea: 437
+    - argumentos: (sin parámetros)
+- deleteFechasBulk:
+    - tipo: function
+    - línea: 604
+    - argumentos: codigo, fechas
+- clearGrid:
+    - tipo: function
+    - línea: 629
+    - argumentos: (sin parámetros)
+- loadCursos:
+    - tipo: function
+    - línea: 646
+    - argumentos: (sin parámetros)
+- infoCtx:
+    - tipo: function
+    - línea: 663
+    - argumentos: (sin parámetros)
+- openCurso:
+    - tipo: function
+    - línea: 685
+    - argumentos: code, meta
+- horarioMap:
+    - tipo: function
+    - línea: 730
+    - argumentos: (sin parámetros)
+- toHex:
+    - tipo: arrow
+    - línea: 760
+    - argumentos: v
+- hslToHex:
+    - tipo: function
+    - línea: 747
+    - argumentos: h, s, l
+- colorForKey:
+    - tipo: function
+    - línea: 767
+    - argumentos: key
+- renderMonth:
+    - tipo: function
+    - línea: 777
+    - argumentos: (sin parámetros)
+- refreshOutlines:
+    - tipo: function
+    - línea: 858
+    - argumentos: (sin parámetros)
+- toggleCell:
+    - tipo: function
+    - línea: 863
+    - argumentos: key, toAdd
+- selectRange:
+    - tipo: function
+    - línea: 870
+    - argumentos: a, b, toSelect
+- esDateDMY:
+    - tipo: function
+    - línea: 880
+    - argumentos: iso
+- fetchFestivosESPVFull:
+    - tipo: function
+    - línea: 892
+    - argumentos: year
+- loadHolidaysAndRenderList:
+    - tipo: function
+    - línea: 917
+    - argumentos: baseDate
+- getHolidayMapForSpan:
+    - tipo: function
+    - línea: 930
+    - argumentos: startYMD, endYMD
+- ymdPlusOne:
+    - tipo: function
+    - línea: 951
+    - argumentos: ymdStr
+- buildVacacionesSegments:
+    - tipo: function
+    - línea: 960
+    - argumentos: holMap, extrasSet, startYMD, endYMD
+- collectManualOmitFromCalendar:
+    - tipo: function
+    - línea: 1017
+    - argumentos: det, holMap, startYMD, endYMD
+- ymOf:
+    - tipo: arrow
+    - línea: 1066
+    - argumentos: d
+- monthName:
+    - tipo: arrow
+    - línea: 1078
+    - argumentos: ym
+- renderHolidayListForPeriod:
+    - tipo: function
+    - línea: 1044
+    - argumentos: holMap, startYMD, endYMD, extrasSet
+- parseHHMM:
+    - tipo: function
+    - línea: 1112
+    - argumentos: t
+- minutesBetween:
+    - tipo: function
+    - línea: 1116
+    - argumentos: a, b
+- addMinutes:
+    - tipo: function
+    - línea: 1117
+    - argumentos: base, mins
+- getAllModulesRaw:
+    - tipo: function
+    - línea: 1119
+    - argumentos: meta
+- norm:
+    - tipo: arrow
+    - línea: 1138
+    - argumentos: x, i
+- getModulesGrouped:
+    - tipo: function
+    - línea: 1130
+    - argumentos: meta
+- horasByMF:
+    - tipo: function
+    - línea: 1161
+    - argumentos: meta
+- getModules:
+    - tipo: function
+    - línea: 1171
+    - argumentos: meta
+- totalCourseMinutes:
+    - tipo: function
+    - línea: 1182
+    - argumentos: meta
+- isWeekend:
+    - tipo: arrow
+    - línea: 1186
+    - argumentos: d
+- daysFrom:
+    - tipo: function
+    - línea: 1187
+    - argumentos: startYMD
+- dayDiff:
+    - tipo: function
+    - línea: 1192
+    - argumentos: a, b
+- previewEndDate:
+    - tipo: function
+    - línea: 1197
+    - argumentos: {startYMD,meta,desde,hasta,skipWE,skipHol,holSet,firstDay}
+- previewPracticaByHoras:
+    - tipo: function
+    - línea: 1268
+    - argumentos: startYMD
+- updateAutoPreview:
+    - tipo: function
+    - línea: 1327
+    - argumentos: (sin parámetros)
+- recalcHorasFromEnd:
+    - tipo: function
+    - línea: 1432
+    - argumentos: (sin parámetros)
+- jumpCalendarTo:
+    - tipo: function
+    - línea: 1478
+    - argumentos: ymdStr
+- autoJumpToFirstDate:
+    - tipo: function
+    - línea: 1486
+    - argumentos: (sin parámetros)
+- nextDate:
+    - tipo: function
+    - línea: 1592
+    - argumentos: (sin parámetros)
+- pushSpan:
+    - tipo: function
+    - línea: 1615
+    - argumentos: fecha, t1, t2, key, groupKey
+- autofillByModules:
+    - tipo: function
+    - línea: 1496
+    - argumentos: (sin parámetros)
+- autofillPracticas:
+    - tipo: function
+    - línea: 1704
+    - argumentos: (sin parámetros)
+- esMonthTitle:
+    - tipo: function
+    - línea: 1860
+    - argumentos: y, m
+- esDowShort:
+    - tipo: function
+    - línea: 1865
+    - argumentos: i
+- monthsFromDet:
+    - tipo: function
+    - línea: 1869
+    - argumentos: det
+- xOf:
+    - tipo: arrow
+    - línea: 1893
+    - argumentos: c
+- yOf:
+    - tipo: arrow
+    - línea: 1894
+    - argumentos: r
+- minsBetweenSafe:
+    - tipo: arrow
+    - línea: 1912
+    - argumentos: a, b
+- buildMonthSVG:
+    - tipo: function
+    - línea: 1877
+    - argumentos: ym, detForMonth, keyColor
+- svgSize:
+    - tipo: function
+    - línea: 1994
+    - argumentos: svg
+- svgToRasterDataUrl:
+    - tipo: function
+    - línea: 2003
+    - argumentos: svg, {scale,mime,quality}=...
+- esc:
+    - tipo: arrow
+    - línea: 2032
+    - argumentos: s
+- normHHMM:
+    - tipo: function
+    - línea: 2083
+    - argumentos: t
+- minTime:
+    - tipo: function
+    - línea: 2090
+    - argumentos: a, b
+- maxTime:
+    - tipo: function
+    - línea: 2091
+    - argumentos: a, b
+- ensureTimeInfo:
+    - tipo: function
+    - línea: 2098
+    - argumentos: map, key
+- extractModuleKeyFromNota:
+    - tipo: function
+    - línea: 2107
+    - argumentos: raw
+- updateTimes:
+    - tipo: arrow
+    - línea: 2200
+    - argumentos: date, items
+- buildHorarioSegments:
+    - tipo: function
+    - línea: 2195
+    - argumentos: det
+- mergeHorarioSegmentsByTime:
+    - tipo: function
+    - línea: 2224
+    - argumentos: segs
+- renderMonthsTable:
+    - tipo: function
+    - línea: 2262
+    - argumentos: cells
+- dayLine:
+    - tipo: function
+    - línea: 2376
+    - argumentos: d
+- legendHTML:
+    - tipo: function
+    - línea: 2293
+    - argumentos: (sin parámetros)
+- exportWordGraphicAll:
+    - tipo: function
+    - línea: 2027
+    - argumentos: (sin parámetros)
+
+## API bases detectadas
+- API_A = API_BASE + '/admin'
+- API_BASE = ((window.wpApiSettings?.root)||'/').replace(/\/$/,'') + '/meatze/v5'
+
+## Endpoints detectados (literales)
+- (ninguno detectado)
+
+## Endpoints detectados (templates)
+- `${API_BASE}/curso/${encodeURIComponent(code)}/alumnos${qs(true)}`
+- `${API_A}/fixed-nonlective${qs(true)}`
+- `${API_A}/cursos${qs(true)}`
+- `${API_A}/curso/${encodeURIComponent(codigo)}/fecha_inicio${qs()}`
+- `${API_BASE}/export-docx-graphic${qs()}`
+
+## Endpoints detectados (partes / strings)
+- /
+- /meatze/v5
+- /admin
+- /bulk-delete
+
+## Selectores DOM usados
+- #mzh-busytxt
+- #mzh-busybar
+- #mzh-busy
+- #mzh-alumno-wrap
+- #mzh-alumno
+- #mzh-auto-horas
+- #mzh-auto-horas-wrap
+- #mzh-auto-end
+- #mzh-auto-end-wrap
+- #mzh-curso
+- #mzh-tipo
+- #mzh-ctx
+- #mzh-title
+- #mzh-grid
+- #mzh-legend
+- #mzh-selcnt
+- #mzh-prev
+- #mzh-next
+- #mzh-auto-nota
+- #mzh-auto-nota-wrap
+- #mzh-auto-toggle
+- #mzh-auto-start
+- #mzh-auto-desde
+- #mzh-auto-hasta
+- #mzh-auto-aula
+- #mzh-auto-skipweekend
+- #mzh-auto-skiphol
+- #mzh-dow-1
+- #mzh-dow-2
+- #mzh-dow-3
+- #mzh-dow-4
+- #mzh-dow-5
+- #mzh-dow-6
+- #mzh-dow-7
+- #mzh-firstday-special
+- #mzh-firstday-wrap
+- #mzh-firstday-desde
+- #mzh-firstday-hasta
+- #mzh-auto-run
+- #mzh-auto-msg
+- #mzh-export-graphic
+- #mzh-fixed-toggle
+- #mzh-fixed-panel
+- #mzh-fixed-y1
+- #mzh-fixed-y2
+- #mzh-fixed-y1-label
+- #mzh-fixed-y2-label
+- #mzh-fixed-save
+- #mzh-fixed-msg
+- #mzh-auto-panel
+- #mzh-hol-list
+- #mzh-hol-stats
+- #ui-horarios
+
+## Eventos registrados (addEventListener)
+- change @ line 439
+- input @ line 452
+- change @ line 461
+- change @ line 466
+- change @ line 481
+- click @ line 493
+- click @ line 498
+- click @ line 503
+- click @ line 507
+- click @ line 544
+- change @ line 569
+- change @ line 576
+- click @ line 599
+- mz:cursos-updated @ line 631
+- pointerdown @ line 839
+- pointerenter @ line 847
+- pointerup @ line 854
+- mz:admin-auth @ line 1852
+- mz:pane:show @ line 1855
+
+## Llamadas significativas (fetch/apiJSON/addEventListener/dispatchEvent)
+- fetch @ line 16: arg0=None
+- apiJSON @ line 148: arg0={'__template': '`${API_BASE}/curso/${encodeURIComponent(code)}/alumnos${qs(true)}`'}
+- apiJSON @ line 202: arg0={'__template': '`${API_A}/fixed-nonlective${qs(true)}`'}
+- fetch @ line 318: arg0={'__template': '`${API_A}/fixed-nonlective${qs(true)}`'}
+- addEventListener @ line 439: arg0=change
+- addEventListener @ line 452: arg0=input
+- addEventListener @ line 461: arg0=change
+- addEventListener @ line 466: arg0=change
+- addEventListener @ line 481: arg0=change
+- addEventListener @ line 493: arg0=click
+- addEventListener @ line 498: arg0=click
+- addEventListener @ line 503: arg0=click
+- addEventListener @ line 507: arg0=click
+- addEventListener @ line 544: arg0=click
+- addEventListener @ line 569: arg0=change
+- addEventListener @ line 576: arg0=change
+- addEventListener @ line 585: arg0=None
+- addEventListener @ line 586: arg0=None
+- addEventListener @ line 587: arg0=None
+- addEventListener @ line 588: arg0=None
+- addEventListener @ line 591: arg0=None
+- addEventListener @ line 592: arg0=None
+- addEventListener @ line 595: arg0=None
+- addEventListener @ line 599: arg0=click
+- apiJSON @ line 622: arg0=None
+- addEventListener @ line 631: arg0=mz:cursos-updated
+- apiJSON @ line 649: arg0={'__template': '`${API_A}/cursos${qs(true)}`'}
+- apiJSON @ line 732: arg0=None
+- addEventListener @ line 839: arg0=pointerdown
+- addEventListener @ line 847: arg0=pointerenter
+- addEventListener @ line 854: arg0=pointerup
+- fetch @ line 895: arg0=None
+- apiJSON @ line 1672: arg0=None
+- apiJSON @ line 1683: arg0={'__template': '`${API_A}/curso/${encodeURIComponent(codigo)}/fecha_inicio${qs()}`'}
+- apiJSON @ line 1823: arg0=None
+- addEventListener @ line 1852: arg0=mz:admin-auth
+- addEventListener @ line 1855: arg0=mz:pane:show
+- fetch @ line 2707: arg0={'__template': '`${API_BASE}/export-docx-graphic${qs()}`'}
+
+## Variables globales declaradas
+- $
+- API_BASE
+- API_A
+- H
+- tok
+- qs
+- auth
+- apiJSON
+- initialized
+- initOnce
+- pad2
+- ymd
+- addDays
+- title
+- busy
+- wrapAlumno
+- selAlumno
+- alumnosById
+- autoHoras
+- autoHorasWrap
+- autoEnd
+- autoEndWrap
+- selCurso
+- selTipo
+- ctxInfo
+- gTitle
+- grid
+- legend
+- selCnt
+- btnPrev
+- btnNext
+- autoNota
+- autoNotaWrap
+- btnAutoToggle
+- autoStart
+- autoDesde
+- autoHasta
+- autoAula
+- autoSkipWE
+- autoSkipHol
+- dowInputs
+- firstDaySpecial
+- firstDayWrap
+- firstDayDesde
+- firstDayHasta
+- dowMapToJS
+- getAllowedDowsSet
+- autoRun
+- autoMsg
+- btnExportGraphic
+- fixedToggle
+- fixedPanel
+- fixedY1
+- fixedY2
+- fixedY1Lbl
+- fixedY2Lbl
+- fixedSave
+- fixedMsg
+- autoPanel
+- nameOfAlumno
+- isAllowedByDOW
+- loadAlumnosForCurso
+- updateAmbitoUI
+- month
+- selected
+- FIXED_NONLECTIVE
+- FIXED_LOADED
+- loadFixedNonlective
+- parseYearFieldExpanded
+- compressDateList
+- saveFixedNonlective
+- fixedDatesBetween
+- codigo
+- cursoMeta
+- cache
+- isDragging
+- dragAdd
+- anchor
+- dragPointerId
+- cursosByCode
+- getAlumnoGroupKey
+- qp
+- ymdFromDate
+- normalizeDateStr
+- boot
+- wire
+- deleteFechasBulk
+- clearGrid
+- loadCursos
+- infoCtx
+- openCurso
+- horarioMap
+- colorByKey
+- hslToHex
+- colorForKey
+- renderMonth
+- refreshOutlines
+- toggleCell
+- selectRange
+- esDateDMY
+- fetchFestivosESPVFull
+- loadHolidaysAndRenderList
+- getHolidayMapForSpan
+- ymdPlusOne
+- buildVacacionesSegments
+- collectManualOmitFromCalendar
+- renderHolidayListForPeriod
+- parseHHMM
+- minutesBetween
+- addMinutes
+- getAllModulesRaw
+- getModulesGrouped
+- horasByMF
+- getModules
+- totalCourseMinutes
+- isWeekend
+- daysFrom
+- dayDiff
+- previewEndDate
+- previewPracticaByHoras
+- updateAutoPreview
+- practicaSyncGuard
+- recalcHorasFromEnd
+- jumpCalendarTo
+- autoJumpToFirstDate
+- autofillByModules
+- autofillPracticas
+- esMonthTitle
+- esDowShort
+- monthsFromDet
+- buildMonthSVG
+- svgSize
+- svgToRasterDataUrl
+- exportWordGraphicAll

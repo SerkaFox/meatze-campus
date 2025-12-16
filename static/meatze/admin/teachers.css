@@ -1,0 +1,83 @@
+/* ===== Teachers layout ===== */
+#ui-teachers .t-grid{
+  display:grid;
+  grid-template-columns: 380px minmax(0, 1fr);
+  gap: 16px;
+  align-items:start;
+}
+@media (max-width: 900px){
+  #ui-teachers .t-grid{ grid-template-columns:1fr; }
+}
+
+#ui-teachers .t-grid > .mz-card{ min-width:0; }
+#ui-teachers .t-table-wrap{
+  min-width:0;
+  border-radius:14px;
+  overflow:visible;          /* чтобы кнопки/тени не резались */
+  padding-right:10px;        /* маленький запас справа */
+}
+
+
+/* form */
+#ui-teachers .t-form{ display:grid; gap:10px; }
+#ui-teachers .t-row{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap:8px;
+}
+@media (max-width: 720px){
+  #ui-teachers .t-row{ grid-template-columns:1fr; }
+}
+#ui-teachers .t-field{ display:grid; gap:6px; }
+#ui-teachers .t-field .mz-help{ margin:0; }
+
+#ui-teachers .t-w-email{ max-width: 420px; }
+#ui-teachers .t-w-bio{ max-width: 520px; }
+
+#ui-teachers .t-actionsbar{
+  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+}
+
+/* topbar */
+#ui-teachers .t-topbar{
+  display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;
+}
+#ui-teachers .t-topbar .mz-inp{
+  flex: 1 1 280px;
+  min-width: 220px;
+  max-width: 620px;
+}
+
+/* table (без горизонтального скролла) */
+#ui-teachers .mz-table{
+  width:100%;
+  table-layout: fixed;
+}
+
+/* колонки через nth-child, чтобы не зависеть от классов td */
+#ui-teachers .mz-table th:nth-child(1),
+#ui-teachers .mz-table td:nth-child(1){ width: 30%; }
+
+#ui-teachers .mz-table th:nth-child(2),
+#ui-teachers .mz-table td:nth-child(2){ width: 30%; }
+
+#ui-teachers .mz-table th:nth-child(3),
+#ui-teachers .mz-table td:nth-child(3){
+  width: 28%;
+  white-space: normal;
+  word-break: break-word;
+}
+
+#ui-teachers .mz-table th:nth-child(4),
+#ui-teachers .mz-table td:nth-child(4){ width: 140px; }
+
+
+/* email — переносим, чтобы не ломал */
+#ui-teachers .mz-table td:nth-child(2){
+  word-break: break-all;
+}
+#ui-teachers .t-table-wrap{
+  overflow:visible;
+  border-radius:14px;
+  padding-right:16px;  /* чтобы кнопки не упирались в край */
+}

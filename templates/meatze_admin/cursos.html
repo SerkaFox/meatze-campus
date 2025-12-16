@@ -1,0 +1,130 @@
+
+
+<!-- === MEATZE · Cursos (panel bajo gate compartido) === -->
+
+
+<section id="ui-cursos" class="mz-pane" data-active="false">
+  <div class="mz-card">
+    <h3 style="margin-top:0">Gestión de Cursos</h3>
+
+    <div class="hub" style="margin-bottom:10px">
+      <button id="mzc-tab-form"
+        class="mz-btn"
+        data-action="admin.cursos.tab.form">
+  Crear / Editar Curso
+</button>
+      <button id="mzc-tab-assign"
+        class="mz-btn link"
+        data-action="admin.cursos.tab.assign">
+  Asignar Código y Docentes
+</button>
+    </div>
+
+    <!-- Pane: Crear/Editar -->
+    <div id="mzc-pane-form">
+      <div class="mz-row cols-2 mz-card" style="grid-template-columns:1fr 1fr; margin:0 0 12px">
+        <label><span class="mz-help">Título del curso *</span>
+          <input id="mzc-cf-titulo" class="mz-inp" placeholder="Ej: Técnico en Redes Locales">
+        </label>
+        <label><span class="mz-help">Código *</span>
+          <input id="mzc-cf-codigo" class="mz-inp" placeholder="Ej: IFCT0209">
+        </label>
+      </div>
+
+      <label class="mz-help">Módulos (una línea por módulo, termina en “– 86 horas”)</label>
+      <textarea id="mzc-cf-modulos" rows="10" class="mz-inp" placeholder="UF0852 Instalación – 86 horas"></textarea>
+
+      <div class="mz-row cols-2" style="grid-template-columns:1fr 1fr; margin-top:8px">
+        <div class="mz-help"><strong>Total horas:</strong> <span id="mzc-cf-total-horas">0</span> h</div>
+        <div class="mz-help"><strong>Módulos detectados:</strong> <span id="mzc-cf-total-modulos">0</span></div>
+      </div>
+
+      <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
+        <button id="mzc-cf-save"
+        class="mz-btn"
+        data-action="admin.cursos.save">
+  Guardar Curso
+</button>
+        <button id="mzc-cf-clear"
+        class="mz-btn link"
+        type="button"
+        data-action="admin.cursos.clear">
+  Limpiar
+</button>
+        <span id="mzc-cf-msg" class="mz-help"></span>
+      </div>
+
+<div class="mz-card" style="margin-top:16px">
+  <h4 style="margin:0 0 6px">Todos los cursos</h4>
+
+  <div class="mz-table-scroll">
+    <table class="mz-table mz-table-cursos">
+      <thead><tr><th>Código</th><th>Título</th><th>Horas</th><th>Acciones</th></tr></thead>
+      <tbody id="mzc-cf-list"><tr><td colspan="4">—</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+    </div>
+
+    <!-- Pane: Asignar -->
+<div id="mzc-pane-assign" style="display:none">
+
+  <div class="ca-grid">
+
+    <!-- LEFT: course / code / assigned -->
+    <div class="mz-card ca-left">
+      <h4 class="ca-h">Asignación</h4>
+
+      <div class="ca-form">
+        <label class="ca-field">
+          <span class="mz-help">Seleccionar curso</span>
+          <select id="mzc-ca-curso" class="mz-sel"><option value="">—</option></select>
+        </label>
+
+        <label class="ca-field">
+          <span class="mz-help">Código oficial</span>
+          <input id="mzc-ca-codigo" class="mz-inp" placeholder="—" readonly>
+        </label>
+      </div>
+
+      <div class="ca-box">
+        <div class="mz-help"><strong>Docentes asignados</strong></div>
+        <div id="mzc-ca-assigned" class="ca-assigned">No hay docentes asignados.</div>
+      </div>
+
+      <div class="ca-actions">
+        <button id="mzc-ca-assign" class="mz-btn" data-action="admin.cursos.assign_teachers">
+          Guardar Asignación
+        </button>
+        <button id="mzc-ca-reload" class="mz-btn link" type="button" data-action="admin.cursos.reload_teachers">
+          Recargar listas
+        </button>
+      </div>
+
+      <div id="mzc-ca-msg" class="mz-help" style="margin-top:8px"></div>
+    </div>
+
+    <!-- RIGHT: teachers list -->
+    <div class="mz-card ca-right">
+      <h4 class="ca-h">Docentes disponibles</h4>
+<div class="mz-help" style="margin-bottom:10px">
+  Marca los docentes que impartirán el curso. Puedes seleccionar varios.
+  <br>
+  <span style="display:inline-flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap">
+    <span><b>Azul</b> = asignado</span>
+    <span>•</span>
+    <span><b>Blanco</b> = no asignado</span>
+  </span>
+</div>
+
+
+      <div id="mzc-ca-teachers-chips" class="ca-list" role="group" aria-label="Docentes"></div>
+    </div>
+
+  </div>
+
+</div>
+
+  </div>
+</section>

@@ -1,0 +1,211 @@
+
+<!-- === MEATZE · Subs & Broadcast (panel bajo gate compartido) === -->
+
+<section id="ui-subs" class="mz-pane" data-active="false">
+  <div class="mz-card">
+    <h3 style="margin-top:0">Enviar mensaje</h3>
+
+    <div class="mz-row mz-sec" style="grid-template-columns:1.5fr 1.5fr;align-items:center">
+      <div>
+        <div class="mz-help">Filtrar por localidad (solo WhatsApp)</div>
+        <select id="mzs-filter-loc" class="mz-sel">
+          <option value="">Todas</option>
+          <option value="Bilbao">Bilbao</option>
+          <option value="Barakaldo">Barakaldo</option>
+        </select>
+      </div>
+      <div>
+        <div class="mz-help">Destinatarios</div>
+        <label><input type="radio" name="mzs-mode" value="all" checked> A todos</label>
+        <label style="margin-left:10px"><input type="radio" name="mzs-mode" value="selected"> A seleccionados</label>
+      </div>
+    </div>
+	
+	<div id="mzs-picked" class="mz-row"
+		 style="display:none; margin:8px 0; grid-template-columns:1.5fr 1.5fr">
+	  <!-- Левый столбец: исходный список -->
+	  <div>
+		<div class="mz-help">WhatsApp (contactos filtrados por localidad)</div>
+		<select id="mzs-sel-wa" multiple size="6" class="mz-sel"></select>
+		<div class="mz-help">Haz clic en un contacto para añadirlo a la lista de destinatarios.</div>
+	  </div>
+
+	  <!-- Правый столбец: выбранные получатели -->
+	  <div>
+		<div class="mz-help">Destinatarios seleccionados</div>
+		<div id="mzs-picked-list" style="
+		  margin-top:4px;
+		  border:1px solid #e5e7eb;
+		  border-radius:8px;
+		  padding:6px;
+		  max-height:160px;
+		  overflow-y:auto;
+		  font-size:12px;
+		">
+		  <div class="mz-help">Todavía no hay contactos seleccionados.</div>
+		</div>
+	  </div>
+	</div>
+
+
+	<div class="mz-row" style="margin-top:8px;grid-template-columns:1fr">
+	  <div>
+		<input id="mzs-wa-search" class="mz-inp" placeholder="Buscar contacto por nombre o número">
+		<div class="mz-help">
+		  Escribe parte del nombre o del número para filtrar la lista de WhatsApp.
+		</div>
+	  </div>
+	</div>
+
+
+        <!-- Tema e-mail убрали, сейчас не используется -->
+<div class="mz-row" style="margin-top:8px;grid-template-columns:2fr 1.5fr;align-items:flex-start;gap:12px">
+  <!-- Левая колонка: текст + файл -->
+  <div>
+    <textarea id="mzs-text" rows="5" class="mz-inp"
+              placeholder="Texto del envío (se enviará por WhatsApp)"></textarea>
+
+    <div style="margin-top:8px">
+      <div class="mz-help">Adjuntar imagen o documento (opcional)</div>
+      <input id="mzs-wa-file" type="file" class="mz-inp" accept=".jpg,.jpeg,.png,.pdf">
+      <div class="mz-help" id="mzs-wa-file-help">
+        Si no adjuntas nada, se enviará solo texto (personalizado).<br>
+        Si adjuntas una imagen (JPG/PNG) se enviará como foto.<br>
+        Si adjuntas un PDF se enviará como documento.<br>
+        En ambos casos es obligatorio rellenar el texto.
+      </div>
+      <div style="margin-top:4px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span class="mz-help" id="mzs-wa-file-name"></span>
+<button id="mzs-wa-file-clear" class="mz-btn link sm" type="button" data-action="subs.wa.file_clear">Quitar archivo</button>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Правая колонка: превью WhatsApp -->
+  <div>
+    <div class="mz-help">
+      Vista previa WhatsApp (ejemplo con el primer contacto)
+    </div>
+    <div id="mzs-preview-card" style="
+      margin-top:4px;
+      padding:10px;
+      border-radius:10px;
+      border:1px solid #e5e7eb;
+      background:#f9fafb;
+      font-size:13px;
+    ">
+      <div id="mzs-preview-media" style="margin-bottom:8px"></div>
+      <pre id="mzs-preview-text" style="
+        margin:0;
+        white-space:pre-wrap;
+        font-family:system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      ">—</pre>
+    </div>
+  </div>
+</div>
+
+
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+      <button id="mzs-send" class="mz-btn" type="button" data-action="subs.send">Enviar</button>
+      <span id="mzs-msg" class="mz-help"></span>
+    </div>
+  </div>
+
+  <div class="mz-card">
+    <h3 style="margin-top:0">Suscriptores</h3>
+	<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+	  <button id="mzs-refresh" class="mz-btn link" type="button" data-action="subs.refresh">Recargar</button>
+
+<button id="mzs-wa-clear" class="mz-btn link sm" type="button" data-action="subs.wa.clear">Limpiar</button>
+
+	  <span id="mzs-counts" class="mz-help"></span>
+	</div>
+
+
+    <div>
+      <h4 style="margin:0 0 6px">Contactos WhatsApp</h4>
+      <table class="mz-table">
+        <thead>
+          <tr>
+            <th>Número</th>
+            <th>Nombre</th>
+            <th>Localidad</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="mzs-wa-body">
+          <tr><td colspan="5">—</td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button id="mzs-wa-prev" class="mz-btn link sm" type="button" data-action="subs.wa.page_prev">←</button>
+        <button id="mzs-wa-next" class="mz-btn link sm" type="button" data-action="subs.wa.page_next">→</button>
+        <span id="mzs-wa-page-info" class="mz-help"></span>
+      </div>
+
+      <div style="margin-top:10px">
+        <h5 style="margin:0 0 6px">Añadir / editar contacto WhatsApp</h5>
+        <div class="mz-row" style="grid-template-columns:1.2fr 1.5fr 1.3fr">
+          <input id="mzs-wa-edit-num"  class="mz-inp" placeholder="Número (600...)">
+          <input id="mzs-wa-edit-name" class="mz-inp" placeholder="Nombre">
+          <select id="mzs-wa-edit-loc" class="mz-sel">
+            <option value="">Localidad (opcional)</option>
+            <option value="Bilbao">Bilbao</option>
+            <option value="Barakaldo">Barakaldo</option>
+          </select>
+        </div>
+
+        <div style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <label><input type="checkbox" id="mzs-wa-edit-active" checked> Activo</label>
+          <button id="mzs-wa-edit-save" class="mz-btn" type="button" data-action="subs.wa.contact_save">Guardar contacto</button>
+          <span class="mz-help">Si el número ya existe, se actualizará.</span>
+        </div>
+
+        <div style="margin-top:18px;padding-top:10px;border-top:1px solid #e5e7eb">
+          <h5 style="margin:0 0 6px">Importar contactos desde fichero (CSV/Excel)</h5>
+          <div class="mz-row" style="grid-template-columns:2fr 1fr">
+            <input id="mzs-wa-import-file" type="file" class="mz-inp" accept=".csv,.txt,.xlsx">
+            <select id="mzs-wa-import-loc" class="mz-sel">
+              <option value="">Sin localidad</option>
+              <option value="Bilbao">Bilbao</option>
+              <option value="Barakaldo">Barakaldo</option>
+            </select>
+          </div>
+          <div style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button id="mzs-wa-import-run" class="mz-btn" type="button" data-action="subs.wa.import_run">Importar</button>
+            <span id="mzs-wa-import-msg" class="mz-help"></span>
+          </div>
+          <div class="mz-help" style="margin-top:4px">
+            Exporta la hoja de Excel como CSV (separado por ; o ,).<br>
+            Formato esperado por línea: índice (opcional), nombre, teléfono (sin +34).
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<div id="mzs-progress" style="
+  position:fixed; inset:0;
+  background:rgba(0,0,0,0.45); backdrop-filter:blur(2px);
+  display:none; align-items:center; justify-content:center;
+  z-index:99999;
+">
+  <div style="
+    background:#fff; padding:18px 22px; border-radius:14px;
+    width:320px; max-width:90%; text-align:center;
+    font-size:14px; box-shadow:0 4px 18px rgba(0,0,0,0.25);
+  ">
+    <div id="mzs-progress-text" style="font-weight:600;margin-bottom:6px">
+      Preparando envío…
+    </div>
+    <div id="mzs-progress-sub" style="font-size:12px;color:#6b7280;margin-bottom:12px">
+      —
+    </div>
+    <button type="button" id="mzs-progress-cancel" class="mz-btn danger sm">
+      Cancelar envíos
+    </button>
+  </div>
+</div>
+
+</section>
