@@ -1,0 +1,110 @@
+<h1>Acceder</h1>
+<div class="mz-help">Entra con tu correo y contraseña, o solicita un PIN. También puedes crear cuenta de estudiante.</div>
+
+<div class="mz-tabs">
+  <button id="tab-email" class="mz-tab is-act" type="button">Acceso</button>
+  <button id="tab-temp" class="mz-tab" type="button">Cuenta de estudiante</button>
+</div>
+
+<!-- STEP: TEMP -->
+<div id="step-temp" style="display:none">
+  <div class="mz-help" style="margin-bottom:8px">
+    Introduce los datos que te dio el profesor para crear tu cuenta de alumno.
+  </div>
+
+  <label class="mz-label">Curso</label>
+  <select id="temp-course" class="mz-inp"></select>
+
+  <label class="mz-label">Alumno</label>
+  <select id="temp-name" class="mz-inp"></select>
+
+  <label class="mz-label">Código del profesor (2 dígitos)</label>
+  <div class="mz-field">
+    <input id="temp-code" class="mz-inp" inputmode="numeric" maxlength="2" placeholder="00–99">
+  </div>
+
+  <div class="mz-actions">
+    <button id="btn-temp-check" class="mz-btn" type="button">Continuar</button>
+    <button id="btn-temp-back" class="mz-btn ghost" type="button">Volver</button>
+  </div>
+  <div id="msg-temp" class="mz-help"></div>
+</div>
+
+<!-- STEP: TEMP FINISH -->
+<div id="step-temp-finish" style="display:none">
+  <div class="mz-ok">Código verificado. Crea tu cuenta.</div>
+
+  <label class="mz-label" style="margin-top:10px">Tu nombre y apellidos</label>
+  <input id="temp-fullname" class="mz-inp" placeholder="Nombre Apellidos" autocomplete="name">
+
+  <label class="mz-label" style="margin-top:10px">Contraseña (min. 6)</label>
+  <div class="mz-field">
+    <input id="temp-pass" class="mz-inp" type="password" placeholder="Contraseña" autocomplete="new-password">
+    <button class="mz-reveal" type="button" aria-label="Mostrar contraseña" data-target="#temp-pass">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path><circle cx="12" cy="12" r="3"></circle>
+      </svg>
+    </button>
+  </div>
+
+  <div class="mz-actions">
+    <button id="btn-temp-finish" class="mz-btn" type="button">Crear y entrar</button>
+    <button id="btn-temp-cancel" class="mz-btn link" type="button">Cancelar</button>
+  </div>
+  <div id="msg-temp-finish" class="mz-help"></div>
+</div>
+
+<!-- STEP: EMAIL -->
+<div id="step-email">
+  <label class="mz-label">E-mail</label>
+  <input id="auth-email" class="mz-inp" type="email" placeholder="tu@correo.com" autocomplete="email">
+
+  <label class="mz-label" style="margin-top:10px">Contraseña</label>
+  <div class="mz-field">
+    <input id="auth-pass-login" class="mz-inp" type="password" placeholder="Contraseña" autocomplete="current-password">
+    <button class="mz-reveal" type="button" aria-label="Mostrar contraseña" data-target="#auth-pass-login">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path><circle cx="12" cy="12" r="3"></circle>
+      </svg>
+    </button>
+  </div>
+
+  <div class="mz-actions">
+    <button id="btn-login-pass" class="mz-btn" type="button">Entrar</button>
+    <button id="btn-send-pin" class="mz-btn link" type="button">Recibir PIN por e-mail</button>
+  </div>
+  <div id="msg-pass-login" class="mz-help"></div>
+
+  <div id="pin-wrap" style="margin-top:12px;display:none">
+    <label class="mz-label">PIN (6 dígitos)</label>
+    <input id="auth-pin" class="mz-inp" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="one-time-code">
+
+    <div class="mz-actions">
+      <button id="btn-verify" class="mz-btn" type="button">Seguir con PIN</button>
+      <button id="btn-resend" class="mz-btn link" type="button">Reenviar PIN</button>
+    </div>
+    <div id="msg-pin" class="mz-help"></div>
+  </div>
+</div>
+
+<!-- STEP: SET PASSWORD -->
+<div id="step-setpass" style="display:none">
+  <div class="mz-ok">Sesión iniciada correctamente.</div>
+  <div class="mz-help" style="margin-top:8px">Opcional: define una contraseña para próximas veces</div>
+
+  <label class="mz-label" style="margin-top:10px">Nueva contraseña</label>
+  <div class="mz-field">
+    <input id="auth-pass" class="mz-inp" type="password" placeholder="Contraseña (min. 6)" autocomplete="new-password">
+    <button class="mz-reveal" type="button" aria-label="Mostrar contraseña" data-target="#auth-pass">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path><circle cx="12" cy="12" r="3"></circle>
+      </svg>
+    </button>
+  </div>
+
+  <div class="mz-actions">
+    <button id="btn-setpass" class="mz-btn" type="button">Guardar contraseña</button>
+    <button id="btn-done" class="mz-btn link" type="button">Listo</button>
+  </div>
+  <div id="msg-setpass" class="mz-help"></div>
+</div>

@@ -7,12 +7,13 @@
 
 {% block extra_head %}
 
-<link rel="stylesheet" href="{% static 'meatze/admin/teachers.css' %}?v={{ now|date:'U' }}">
-<link rel="stylesheet" href="{% static 'meatze/admin/subs.css' %}?v={{ now|date:'U' }}">
-<link rel="stylesheet" href="{% static 'meatze/admin/horarios.css' %}?v={{ now|date:'U' }}">
-<link rel="stylesheet" href="{% static 'meatze/admin/cursos.css' %}?v={{ now|date:'U' }}">
-<link rel="stylesheet" href="{% static 'meatze/admin/wa.css' %}?v={{ now|date:'U' }}">
-<link rel="stylesheet" href="{% static 'meatze/admin/admin-ui.css' %}?v={{ now|date:'U' }}">
+<link rel="stylesheet" href="{% static 'meatze/admin/teachers.css' %}">
+<link rel="stylesheet" href="{% static 'meatze/admin/subs.css' %}">
+<link rel="stylesheet" href="{% static 'meatze/admin/horarios.css' %}">
+<link rel="stylesheet" href="{% static 'meatze/admin/cursos.css' %}">
+<link rel="stylesheet" href="{% static 'meatze/admin/wa.css' %}">
+<link rel="stylesheet" href="{% static 'meatze/admin/admin-ui.css' %}">
+
 {% endblock %}
 
 
@@ -31,6 +32,14 @@
         </div>
         <button id="adm-enter-shared" class="mz-btn" type="button">Entrar</button>
       </div>
+<div class="mz-remember" style="margin-top:10px;max-width:520px">
+  <label class="mz-check">
+    <input id="adm-remember" type="checkbox">
+    <span class="mz-check-ui"></span>
+    <span class="mz-check-label">Recordarme en este dispositivo</span>
+  </label>
+</div>
+
 
       <div id="adm-gate-msg" class="mz-help" style="margin-top:6px"></div>
     </div>
@@ -42,6 +51,8 @@
         <button class="pill" data-mod="horarios">Horarios</button>
         <button class="pill" data-mod="subs">Subs & envíos</button>
         <button class="pill" data-mod="wa">WhatsApp</button>
+		<button class="pill" data-mod="lanbide">Lanbide</button>
+
       </div>
     </div>
 
@@ -50,14 +61,36 @@
     {% include "meatze_admin/horarios.html" %}
     {% include "meatze_admin/subs.html" %}
     {% include "meatze_admin/wa.html" %}
+	{% include "meatze_admin/lanbide.html" %}
+
 
   </div>
 </div>
 
-<script src="{% static 'meatze/admin/admin-core.js' %}?v={{ now|date:'U' }}"></script>
-<script src="{% static 'meatze/admin/teachers.js' %}?v={{ now|date:'U' }}"></script>
-<script src="{% static 'meatze/admin/cursos.js' %}?v={{ now|date:'U' }}"></script>
-<script src="{% static 'meatze/admin/horarios.js' %}?v={{ now|date:'U' }}"></script>
-<script src="{% static 'meatze/admin/subs.js' %}?v={{ now|date:'U' }}"></script>
-<script src="{% static 'meatze/admin/wa.js' %}?v={{ now|date:'U' }}"></script>
+<script src="{% static 'meatze/admin/admin-core.js' %}
+"></script>
+<script src="{% static 'meatze/admin/teachers.js' %}
+"></script>
+<script src="{% static 'meatze/admin/cursos.js' %}
+"></script>
+<script src="{% static 'meatze/admin/horarios.js' %}
+"></script>
+<script src="{% static 'meatze/admin/subs.js' %}
+"></script>
+<script src="{% static 'meatze/admin/wa.js' %}
+"></script>
+<script src="{% static 'meatze/admin/lanbide.js' %}
+"></script>
+
+<style>
+  .mz-remember { display:block; }
+  #adm-remember{
+    display:inline-block !important;
+    width:18px; height:18px;
+    appearance:auto !important;
+    -webkit-appearance:auto !important;
+    accent-color: var(--mz-primary, #0e73b8);
+  }
+</style>
+
 {% endblock %}

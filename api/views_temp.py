@@ -9,7 +9,7 @@ from rest_framework.authentication import SessionAuthentication, BasicAuthentica
 from api.utils_temp import CsrfExemptSessionAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.views.decorators.csrf import csrf_exempt
-
+from api.models import Curso, Enrol
 
 from api.utils_temp import (
     is_teacher, two_digit_code,
@@ -79,13 +79,21 @@ def teacher_temp_create(request):
     for ix in range(1, count + 1):
         name = f"Alumno{ix:02d}"
         ta = existing_by_name.get(name)
+
         if ta is None:
             TempAccess.objects.create(
                 teacher=user,
                 curso=curso,
                 temp_name=name,
                 key=two_digit_code(),
+                used=False,
             )
+        else:
+            # ✅ ВАЖНО: если уже использован — реюзаем слот
+            if ta.used:
+                ta.key = two_digit_code()
+                ta.used = False
+                ta.save(update_fields=["key", "used", "updated_at"])
 
     # перечитываем заново
     items = TempAccess.objects.filter(
@@ -121,7 +129,7 @@ def teacher_temp_list(request):
         return Response({"message": "No eres docente de este curso"}, status=403)
 
     items = TempAccess.objects.filter(
-        teacher=user, curso=curso
+        teacher=user, curso=curso, used=False
     ).order_by("temp_name")
 
     return Response({

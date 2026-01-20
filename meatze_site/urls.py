@@ -11,12 +11,15 @@ from api import views_temp
 from api import views_ai
 from api import notify_views
 from api.views_ai import ai_ask, ai_warmup, ai_help
+from api.views_events import log_learning_event, admin_lanbide_activity, admin_lanbide_daily
+
 
 
 urlpatterns = [
     path("me", api_auth.me_view),
     path("", home, name="home"),
     path("alumno/", include("panel.urls", namespace="panel")),
+    path("acceder/", api_views.acceder, name="acceder"),
 
     path("admin-panel/", core_views.admin_panel, name="admin_panel"),
     path("meatze/v5/me", api_auth.me_view, name="meatze-me"),
@@ -85,15 +88,12 @@ urlpatterns = [
     path("meatze/v5/admin/enrolments", api_views.admin_enrolments_list),
     path("meatze/v5/admin/cursos/assign", api_views.admin_cursos_assign),
 
+
     # заглушки
     path("meatze/v5/admin/fixed-nonlective", api_views.admin_fixed_nonlective),
     path("meatze/v5/admin/holidays/<int:year>", api_views.admin_holidays),
     path("meatze/v5/news/subscribers", api_views.news_subscribers),
     path("meatze/v5/notify/wa-inbox", notify_views.wa_inbox),
-
-    
-    path("panel/", include("panel.urls", namespace="panel")),
-
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
@@ -108,9 +108,30 @@ urlpatterns += [
     path("meatze/v5/chat/<str:codigo>/react_summary", views_chat.chat_react_summary),
     path("meatze/v5/chat/<str:codigo>/read", views_chat.chat_read),
     path("meatze/v5/chat/<str:codigo>/unread", views_chat.chat_unread),
+    path("meatze/v5/chat/<str:codigo>/teachers", views_chat.chat_teachers),
+    path("meatze/v5/chat/<str:codigo>/dm_peers", views_chat.chat_dm_peers),
+    path("chat/<str:codigo>/dm_unread_map", views_chat.chat_dm_unread_map),
+    path("meatze/v5/chat/<str:codigo>/dm_unread_map", views_chat.chat_dm_unread_map),
+
     path("meatze/v5/user_display", api_profile.user_display),
     path("meatze/v5/admin/pending", views_temp.admin_pending_list),
 
     path("meatze/v5/admin/pending/<int:pending_id>/approve-teacher", views_temp.admin_pending_approve_teacher),
     path("meatze/v5/admin/pending/<int:pending_id>/mark-student", views_temp.admin_pending_mark_student),
 ]
+
+urlpatterns += [
+    path("meatze/v5/event", log_learning_event),
+    path("meatze/v5/admin/lanbide/activity", admin_lanbide_activity),
+    path("meatze/v5/admin/lanbide/daily", admin_lanbide_daily),
+    path("meatze/v5/admin/lanbide/material_status", api_views.admin_material_status, name="admin_material_status"),
+]
+from panel.views_attendance import attendance_request, attendance_heartbeat, teacher_attendance_pending, teacher_attendance_decide
+
+urlpatterns += [
+    path("meatze/v5/attendance/request", attendance_request),
+    path("meatze/v5/attendance/heartbeat", attendance_heartbeat),
+    path("meatze/v5/teacher/attendance/pending", teacher_attendance_pending),
+    path("meatze/v5/teacher/attendance/decide", teacher_attendance_decide),
+]
+

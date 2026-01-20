@@ -13,6 +13,11 @@
           <input id="mzt-email" class="mz-inp" placeholder="E-mail *">
         </label>
 
+        <label class="t-field t-w-phone">
+          <span class="mz-help">WhatsApp (9 dígitos)</span>
+          <input id="mzt-wa" class="mz-inp" placeholder="600123123">
+        </label>
+
         <div class="t-row">
           <label class="t-field">
             <span class="mz-help">Nombre</span>
@@ -40,52 +45,58 @@
       </div>
     </div>
 
-    <!-- RIGHT: current teachers -->
+    <!-- RIGHT: pending -->
     <div class="mz-card">
-      <h3 style="margin-top:0">Docentes actuales</h3>
+      <h3 style="margin-top:0">Solicitudes por correo (pendientes)</h3>
+
+      <div class="mz-help" style="margin-bottom:10px">
+        Aquí aparecen usuarios que se registraron por PIN de correo. Confirma si son <b>docentes</b> o <b>alumnos</b>.
+      </div>
 
       <div class="t-topbar">
-        <input id="mzt-search" class="mz-inp" placeholder="Buscar por nombre, e-mail o descripción">
-        <button id="mzt-clear" class="mz-btn link" type="button">Limpiar</button>
+        <input id="mzp-search" class="mz-inp" placeholder="Buscar por nombre o e-mail">
+        <button id="mzp-refresh" class="mz-btn link" type="button" data-action="pending.refresh">Recargar</button>
+        <button id="mzp-clear" class="mz-btn link" type="button" data-action="pending.clear">Limpiar</button>
       </div>
 
       <div class="t-table-wrap">
         <table class="mz-table">
           <thead>
-            <tr><th>Nombre</th><th>E-mail</th><th>Descripción</th><th>Acciones</th></tr>
+            <tr>
+              <th>Nombre</th>
+              <th>E-mail</th>
+              <th>Descripción</th>
+              <th>Acciones</th>
+            </tr>
           </thead>
-          <tbody id="mzt-body"><tr><td colspan="4">—</td></tr></tbody>
+          <tbody id="mzp-body"><tr><td colspan="4">—</td></tr></tbody>
         </table>
       </div>
     </div>
 
   </div>
 
-  <!-- BOTTOM: pending -->
+  <!-- BOTTOM: current teachers -->
   <div class="mz-card">
-    <h3>Solicitudes por correo (pendientes)</h3>
-
-    <div class="mz-help" style="margin-bottom:10px">
-      Aquí aparecen usuarios que se registraron por PIN de correo. Confirma si son <b>docentes</b> o <b>alumnos</b>.
-    </div>
+    <h3 style="margin-top:0">Docentes actuales</h3>
 
     <div class="t-topbar">
-      <input id="mzp-search" class="mz-inp" placeholder="Buscar por nombre o e-mail">
-      <button id="mzp-refresh" class="mz-btn link" type="button" data-action="pending.refresh">Recargar</button>
-      <button id="mzp-clear" class="mz-btn link" type="button" data-action="pending.clear">Limpiar</button>
+      <input id="mzt-search" class="mz-inp" placeholder="Buscar por nombre, e-mail o descripción">
+      <button id="mzt-clear" class="mz-btn link" type="button">Limpiar</button>
     </div>
 
     <div class="t-table-wrap">
       <table class="mz-table">
         <thead>
           <tr>
-            <th>Usuario</th>
+            <th>Nombre</th>
             <th>E-mail</th>
-            <th>Fecha</th>
+            <th>WhatsApp</th>
+            <th>Descripción</th>
             <th>Acciones</th>
           </tr>
         </thead>
-        <tbody id="mzp-body"><tr><td colspan="4">—</td></tr></tbody>
+        <tbody id="mzt-body"><tr><td colspan="5">—</td></tr></tbody>
       </table>
     </div>
   </div>

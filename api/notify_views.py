@@ -14,6 +14,7 @@ from rest_framework.decorators import (
     authentication_classes,
 )
 from django.http import HttpResponse
+from .utils_wa import normalize_wa
 
 from django.db import transaction
 from rest_framework.permissions import AllowAny
@@ -21,37 +22,566 @@ from rest_framework.response import Response
 from rest_framework import status
 from openpyxl import load_workbook
 from .models import WaContact, WaInbox
-
+from .models import Curso, Enrol, UserProfile, Horario, PendingRole, LoginPIN, MZSetting
 log = logging.getLogger(__name__)
 
+from datetime import date
+from calendar import monthrange
+from io import BytesIO
+import tempfile
+from pathlib import Path
+
 import re
-import csv
 import os
-import io
-from openpyxl import load_workbook
+from .models import WaContact
+from django.contrib.auth import get_user_model
+from django.core.cache import cache
+
+from django.db.models import Q
+
+def _teacher_profile_by_from(from_wa: str):
+    wa9 = normalize_wa(from_wa)
+    if not wa9:
+        return None
+    return (UserProfile.objects
+            .filter(wa=wa9, user__is_staff=True)   # staff = teacher
+            .select_related("user")
+            .first())
+
+def _teacher_course_codes(tprof: UserProfile) -> list[str]:
+    return list(
+        Enrol.objects
+        .filter(user=tprof.user, role="teacher")
+        .exclude(codigo="")
+        .values_list("codigo", flat=True)
+        .order_by("codigo")
+    )
+
+from datetime import timedelta
+
+def _course_span_from_horario(codigo: str):
+    """
+    Возвращает (start_date, end_date) как MIN/MAX(dia) по Horario (только tipo=curso).
+    """
+    qs = (Horario.objects
+          .filter(curso__codigo=codigo)
+          .filter(Q(tipo="") | Q(tipo__isnull=True) | Q(tipo="curso"))
+          .filter(Q(grupo="") | Q(grupo__isnull=True)))
+
+    start = qs.order_by("dia").values_list("dia", flat=True).first()
+    end   = qs.order_by("dia").values_list("dia", flat=True).last()
+    return start, end
 
 
-def normalize_wa(raw) -> str:
+def _horario_time_key(h: Horario) -> str:
+    hi = h.hora_inicio.strftime("%H:%M") if h.hora_inicio else ""
+    hf = h.hora_fin.strftime("%H:%M") if h.hora_fin else ""
+    return f"{hi}–{hf}" if hi and hf else ""
+
+
+def _course_time_segments(codigo: str) -> list[dict]:
     """
-    Приводим номер к испанскому мобильному:
-    - вытаскиваем только цифры
-    - убираем 0034/34 в начале
-    - берём последние 9 цифр (если длиннее)
+    Делает tramos по времени (как экспорт): склеивает подряд идущие дни
+    с одинаковым временем HH:MM–HH:MM.
+    Возвращает список: [{from:date, to:date, time:"09:00–14:00"}...]
     """
-    s = re.sub(r"\D+", "", str(raw or ""))
+    qs = (Horario.objects
+          .filter(curso__codigo=codigo)
+          .filter(Q(tipo="") | Q(tipo__isnull=True) | Q(tipo="curso"))
+          .filter(Q(grupo="") | Q(grupo__isnull=True))
+          .order_by("dia", "hora_inicio"))
+
+    # строим: dia -> most common time of day (если несколько записей в день)
+    by_day = {}
+    for h in qs.only("dia", "hora_inicio", "hora_fin"):
+        if not h.dia:
+            continue
+        t = _horario_time_key(h)
+        if not t:
+            continue
+        by_day.setdefault(h.dia, []).append(t)
+
+    if not by_day:
+        return []
+
+    # choose most common time per day
+    day_times = []
+    for d in sorted(by_day.keys()):
+        from collections import Counter
+        t = Counter(by_day[d]).most_common(1)[0][0]
+        day_times.append((d, t))
+
+    # merge contiguous days with same time
+    segs = []
+    cur_from, cur_to, cur_t = day_times[0][0], day_times[0][0], day_times[0][1]
+    for d, t in day_times[1:]:
+        if t == cur_t and d == (cur_to + timedelta(days=1)):
+            cur_to = d
+        else:
+            segs.append({"from": cur_from, "to": cur_to, "time": cur_t})
+            cur_from, cur_to, cur_t = d, d, t
+    segs.append({"from": cur_from, "to": cur_to, "time": cur_t})
+    return segs
+
+
+def _teacher_welcome_text(request, tprof: UserProfile, codes: list[str]) -> str:
+    name = (tprof.display_name or tprof.build_display_name() or "profe").strip()
+    link = request.build_absolute_uri("/acceder/?tab=profile")
+
+    if not codes:
+        return (
+            f"Hola {name} 👋\n"
+            "Eres *DOCENTE* en MEATZE.\n"
+            f"Perfil: {link}\n\n"
+            "Ahora mismo no tienes cursos asignados.\n"
+            "Si esto es un error, avisa a administración."
+        )
+
+    lines = [f"Hola {name} 👋",
+             "Eres *DOCENTE* en MEATZE.",
+             f"Perfil: {link}",
+             "",
+             "Tus cursos:"]
+    for c in codes:
+        lines.append(f"• {c}")
+
+    lines += [
+        "",
+        "Pulsa un curso (botón) y te envío calendario por meses + imágenes."
+    ]
+
+    return "\n".join(lines)
+
+def _teacher_course_info_text(request, codigo: str) -> str:
+    c = Curso.objects.filter(codigo=codigo).first()
+    if not c:
+        return f"❌ No encuentro el curso *{codigo}*."
+
+    start, end = _course_span_from_horario(codigo)
+    start_txt = start.isoformat() if start else "—"
+    end_txt   = end.isoformat() if end else "—"
+
+    segs = _course_time_segments(codigo)
+    if segs:
+        # основной "default" — самый частый time по всем сегментам
+        from collections import Counter
+        common = Counter([s["time"] for s in segs]).most_common(1)[0][0]
+        horario_txt = common
+    else:
+        horario_txt = "—"
+
+    out = [
+        f"*{c.codigo}* — {c.titulo}",
+        f"Fechas: {start_txt} → {end_txt}",
+        f"Horario: {horario_txt}",
+        "",
+        "🧩 Cambios (tramos):"
+    ]
+
+    if not segs:
+        out.append("— (sin horario)")
+    else:
+        for s in segs[:12]:
+            out.append(f"• {s['from'].isoformat()} → {s['to'].isoformat()} · {s['time']}")
+
+    out += ["", "📅 Calendario por meses (como export):"]
+    return "\n".join(out)
+
+
+def _course_months_by_horario(codigo: str):
+    qs = (Horario.objects
+          .filter(curso__codigo=codigo)
+          .filter(Q(tipo="") | Q(tipo__isnull=True) | Q(tipo="curso"))
+          .filter(Q(grupo="") | Q(grupo__isnull=True))
+          .order_by("dia"))
+
+    first = qs.values_list("dia", flat=True).first()
+    last  = qs.values_list("dia", flat=True).last()
+    if not first or not last:
+        return []
+
+    y, m = first.year, first.month
+    months = []
+    while (y < last.year) or (y == last.year and m <= last.month):
+        months.append((y, m))
+        m += 1
+        if m == 13:
+            m = 1
+            y += 1
+    return months
+
+def _month_summary_lines(codigo: str, year: int, month: int):
+    first_day = date(year, month, 1)
+    last_day  = date(year, month, monthrange(year, month)[1])
+
+    qs = (Horario.objects
+          .filter(curso__codigo=codigo, dia__gte=first_day, dia__lte=last_day)
+          .filter(Q(tipo="") | Q(tipo__isnull=True) | Q(tipo="curso"))
+          .filter(Q(grupo="") | Q(grupo__isnull=True))
+          .order_by("dia", "hora_inicio"))
+
+    rows = []
+    for h in qs:
+        hi = h.hora_inicio.strftime("%H:%M") if h.hora_inicio else ""
+        hf = h.hora_fin.strftime("%H:%M") if h.hora_fin else ""
+        if hi and hf:
+            rows.append((h.dia.isoformat(), f"{hi}–{hf}"))
+
+    if not rows:
+        return ["— (sin clases este mes)"]
+
+    times = [t for _, t in rows]
+    from collections import Counter
+    default_time, _ = Counter(times).most_common(1)[0]
+
+    # диапазон дат месяца
+    dmin = rows[0][0]
+    dmax = rows[-1][0]
+
+    # исключения (дни с другим временем)
+    exceptions = [(d, t) for d, t in rows if t != default_time]
+    exc_lines = []
+    for d, t in exceptions[:12]:  # лимит, чтобы WA не раздувать
+        exc_lines.append(f"   • {d} → {t}")
+
+    line0 = f"{year}-{month:02d}: {dmin} → {dmax} · {default_time}"
+    if exc_lines:
+        return [line0, "  Cambios de horario:", *exc_lines]
+    return [line0]
+
+
+def short_mod(s: str, n: int = 10) -> str:
+    s = (s or "").strip()
     if not s:
-        return ""
+        return "—"
+    return (s[:n] + "…") if len(s) > n else s
 
-    if s.startswith("0034"):
-        s = s[4:]
-    elif s.startswith("34") and len(s) > 9:
-        s = s[2:]
 
-    if len(s) > 9:
-        s = s[-9:]
+def build_legend_for_month(codigo: str, year: int, month: int) -> str:
+    """
+    Легенда: уникальные модули месяца, сокращённые до 10 символов.
+    Только tipo=curso (без practica).
+    """
+    first_day = date(year, month, 1)
+    last_day = date(year, month, monthrange(year, month)[1])
 
-    return s
+    qs = (Horario.objects
+          .filter(curso__codigo=codigo)
+          .filter(Q(tipo="") | Q(tipo__isnull=True) | Q(tipo="curso"))
+          .filter(Q(grupo="") | Q(grupo__isnull=True))
+          .filter(dia__gte=first_day, dia__lte=last_day)
+          .order_by("dia", "hora_inicio"))
 
+    mods = []
+    seen = set()
+    for h in qs:
+        m = short_mod(h.modulo, 10)
+        if m not in seen and m != "—":
+            seen.add(m)
+            mods.append(m)
+
+    if not mods:
+        return "Leyenda: (sin módulos este mes)"
+    return "Leyenda: " + " · ".join(mods[:20])  # ограничим чтобы не раздувать
+
+def build_month_calendar_html(codigo: str, year: int, month: int) -> str:
+    c = Curso.objects.filter(codigo=codigo).first()
+    title = f"{codigo} — {(c.titulo or '').strip()}" if c else codigo
+
+    first_day = date(year, month, 1)
+    last_day = date(year, month, monthrange(year, month)[1])
+
+    # занятия только curso (без practica)
+    qs = (Horario.objects
+          .filter(curso__codigo=codigo)
+          .filter(Q(tipo="") | Q(tipo__isnull=True) | Q(tipo="curso"))
+          .filter(Q(grupo="") | Q(grupo__isnull=True))
+          .filter(dia__gte=first_day, dia__lte=last_day)
+          .order_by("dia", "hora_inicio"))
+
+    by_day = {}
+    for h in qs:
+        key = h.dia.isoformat()
+        by_day.setdefault(key, []).append(h)
+
+    # понедельник=0..воскресенье=6
+    start_wd = (first_day.weekday())  # Mon=0
+    days_in_month = last_day.day
+
+    month_name = first_day.strftime("%B %Y")  # если хочешь ES — можно руками мапу
+
+    # HTML
+    # ВАЖНО: делаем фиксированную ширину, крупный шрифт, контраст, чтобы PNG было читаемо.
+    html = f"""
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  body {{
+    margin: 0;
+    font-family: Inter, Arial, sans-serif;
+    background: #0b1220;
+    color: #e5e7eb;
+  }}
+  .wrap {{
+    width: 1100px;
+    padding: 28px 28px 22px;
+  }}
+  .top {{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    margin-bottom: 16px;
+  }}
+  .h1 {{
+    font-size: 26px; font-weight: 800; letter-spacing: .02em;
+    margin:0;
+  }}
+  .h2 {{
+    font-size: 16px; opacity: .9; margin: 4px 0 0 0;
+  }}
+  .badge {{
+    font-size: 13px;
+    border: 1px solid rgba(148,163,184,.45);
+    background: rgba(15,23,42,.9);
+    padding: 8px 12px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }}
+  .grid {{
+    display:grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+  }}
+  .dow {{
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    opacity: .75;
+    padding: 6px 10px;
+  }}
+  .cell {{
+    border-radius: 16px;
+    border: 1px solid rgba(148,163,184,.22);
+    background: rgba(15,23,42,.75);
+    padding: 10px 10px 10px;
+    min-height: 120px;
+    position: relative;
+    overflow: hidden;
+  }}
+  .day {{
+    font-size: 13px;
+    opacity: .9;
+    font-weight: 700;
+  }}
+  .items {{
+    margin-top: 8px;
+    display:flex; flex-direction:column; gap:6px;
+  }}
+  .it {{
+    border-radius: 12px;
+    padding: 8px 9px;
+    background: rgba(59,130,246,.16);
+    border: 1px solid rgba(59,130,246,.22);
+    font-size: 12px;
+    line-height: 1.25;
+  }}
+  .it b {{ font-weight: 800; }}
+  .muted {{ opacity:.8; }}
+  .empty {{
+    border: 1px dashed rgba(148,163,184,.22);
+    background: rgba(2,6,23,.28);
+  }}
+  .legend {{
+    margin-top: 14px;
+    font-size: 12px;
+    opacity: .85;
+  }}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <p class="h1">{month_name}</p>
+        <p class="h2">{title}</p>
+      </div>
+      <div class="badge">MEATZE · Docentes</div>
+    </div>
+
+    <div class="grid" style="margin-bottom:10px;">
+      <div class="dow">LUN</div><div class="dow">MAR</div><div class="dow">MIÉ</div><div class="dow">JUE</div><div class="dow">VIE</div><div class="dow">SÁB</div><div class="dow">DOM</div>
+    </div>
+
+    <div class="grid">
+"""
+    # пустые клетки до 1 числа
+    for _ in range(start_wd):
+        html += '<div class="cell empty"></div>'
+
+    # дни месяца
+    for d in range(1, days_in_month + 1):
+        dt = date(year, month, d)
+        key = dt.isoformat()
+        items = by_day.get(key, [])
+
+        html += f'<div class="cell"><div class="day">{d:02d}</div><div class="items">'
+        if not items:
+            html += '<div class="muted" style="margin-top:6px;font-size:12px;">—</div>'
+        else:
+            for h in items[:4]:  # чтобы не забивать клетку
+                mod = short_mod(h.modulo, 10)
+                aula = (h.aula or "—").strip()
+                hh1 = h.hora_inicio.strftime("%H:%M")
+                hh2 = h.hora_fin.strftime("%H:%M")
+                html += f'<div class="it"><b>{hh1}-{hh2}</b> · {aula}<br><span class="muted">{mod}</span></div>'
+        html += '</div></div>'
+
+    # добивка до конца недели
+    total_cells = start_wd + days_in_month
+    tail = (7 - (total_cells % 7)) % 7
+    for _ in range(tail):
+        html += '<div class="cell empty"></div>'
+
+    legend = build_legend_for_month(codigo, year, month)
+    html += f"""
+    </div>
+    <div class="legend">{legend}</div>
+  </div>
+</body>
+</html>
+"""
+    return html
+
+
+def render_html_to_png_bytes(html: str, width: int = 1100, height: int = 0, device_scale: float = 2.0) -> bytes:
+    """
+    Рендерим HTML в PNG через Playwright.
+    device_scale=2.0 даёт "retina" качество.
+    """
+    try:
+        from playwright.sync_api import sync_playwright
+    except Exception as e:
+        raise RuntimeError("Playwright not installed. Install: pip install playwright && playwright install chromium") from e
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(args=["--no-sandbox"])
+        page = browser.new_page(viewport={"width": width, "height": 800}, device_scale_factor=device_scale)
+
+        page.set_content(html, wait_until="networkidle")
+
+        # Если высоту не задаём — делаем full_page
+        png = page.screenshot(type="png", full_page=True)
+        browser.close()
+        return png
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@authentication_classes([])
+def teacher_calendar_media(request):
+    """
+    POST /meatze/v5/notify/teacher-calendar
+    body: { "codigo":"IFCT0309", "year":2026, "month":1 }
+    Возвращает { ok:true, url:"https://.../media/..." , legend:"..." }
+    (Пока без auth — но лучше потом защитить, если надо)
+    """
+    codigo = (request.data.get("codigo") or "").strip().upper()
+    year = int(request.data.get("year") or 0)
+    month = int(request.data.get("month") or 0)
+
+    if not codigo or year < 2000 or month < 1 or month > 12:
+        return Response({"ok": False, "message": "bad_params"}, status=400)
+
+    html = build_month_calendar_html(codigo, year, month)
+    legend = build_legend_for_month(codigo, year, month)
+
+    try:
+        png_bytes = render_html_to_png_bytes(html, width=1100, device_scale=2.0)
+    except Exception as e:
+        log.exception("teacher_calendar_media render failed")
+        return Response({"ok": False, "message": "render_failed", "detail": str(e)}, status=500)
+
+    filename = f"{codigo}_{year}{month:02d}_calendar.png"
+    path = default_storage.save(f"wa_calendar/{filename}", ContentFile(png_bytes))
+    url = request.build_absolute_uri(default_storage.url(path))
+
+    return Response({"ok": True, "url": url, "legend": legend})
+
+
+def _send_teacher_month_calendar(request, to_wa: str, codigo: str, year: int, month: int):
+    html = build_month_calendar_html(codigo, year, month)
+    legend = build_legend_for_month(codigo, year, month)
+    try:
+        png_bytes = render_html_to_png_bytes(html, width=1100, device_scale=2.0)
+
+        filename = f"{codigo}_{year}{month:02d}_calendar.png"
+        path = default_storage.save(f"wa_calendar/{filename}", ContentFile(png_bytes))
+        url = request.build_absolute_uri(default_storage.url(path))
+
+        # caption короткий, легенду отдельным сообщением (надежнее)
+        wa_send_image(to_wa, url, caption=f"{codigo} · {year}-{month:02d}")
+        wa_send_text(to_wa, legend)
+    except Exception as e:
+        log.exception("Calendar render failed: %s", e)
+        wa_send_text(to_wa, "No puedo generar el calendario ahora mismo (render).")
+        wa_send_text(to_wa, legend)  # хотя бы легенду
+        return
+
+
+from collections import Counter
+
+def _course_time_summary(codigo: str):
+    qs = (Horario.objects
+          .filter(curso__codigo=codigo)
+          .filter(Q(tipo="") | Q(tipo__isnull=True) | Q(tipo="curso"))
+          .filter(Q(grupo="") | Q(grupo__isnull=True)))
+
+    pairs = []
+    for h in qs.only("hora_inicio", "hora_fin"):
+        if h.hora_inicio and h.hora_fin:
+            pairs.append((h.hora_inicio.strftime("%H:%M"), h.hora_fin.strftime("%H:%M")))
+
+    if not pairs:
+        return "—"
+
+    # берём наиболее частое “с-по”
+    (a,b), _ = Counter(pairs).most_common(1)[0]
+    return f"{a}–{b}"
+
+
+def sync_teacher_contact(profile: "UserProfile"):
+    wa = normalize_wa(profile.wa)
+    if not wa:
+        return None
+
+    # имя для WaContact
+    name = (profile.display_name or profile.build_display_name() or profile.user.get_full_name() or "").strip()
+
+    # loc можно оставить пустым или брать из Enrol/Curso (если у тебя есть правило)
+    obj, _ = WaContact.objects.update_or_create(
+        wa=wa,
+        defaults={
+            "name": name,
+            "active": True,
+        }
+    )
+    return obj
+    
+
+def find_teacher_by_wa(wa9: str):
+    wa9 = normalize_wa(wa9)
+    if not wa9:
+        return None
+    return (UserProfile.objects
+            .select_related("user")
+            .filter(wa=wa9, user__is_staff=True)
+            .first())
+
+
+def default_reply_text(profile_name: str) -> str:
+    return (
+        "Hola 👋 Gracias por escribir a MEATZE.\n"
+        "Hemos recibido tu mensaje. Te responderemos en breve."
+    )
 
 
 # ========== ADMIN GUARD (аналог mz_admin_ok / mz_admin_guard) ==========
@@ -251,6 +781,26 @@ def wa_send_broadcast_simple(to: str, text: str) -> Dict[str, Any]:
 def wa_send_personal_txt(to: str, name: str, text: str) -> Dict[str, Any]:
     plain = text.strip()
     return wa_send_template(to, "meatze_personal_txt", [name, plain])
+    
+def wa_send_image(to: str, img_url: str, caption: str = "") -> Dict[str, Any]:
+    """
+    Отправка картинки по публичному URL (PNG/JPG).
+    """
+    to_norm = wa_msisdn(to)
+    if not to_norm:
+        return {"ok": False, "err": "bad_msisdn"}
+
+    body = {
+        "messaging_product": "whatsapp",
+        "to": to_norm,
+        "type": "image",
+        "image": {"link": img_url},
+    }
+    if caption:
+        body["image"]["caption"] = caption[:1024]
+
+    phone_id = getattr(settings, "WA_PHONE_ID", "")
+    return wa_api(f"{phone_id}/messages", body)
 
 
 def wa_send_personal_document(to: str, name: str, text: str, doc_url: str, filename: str) -> Dict[str, Any]:
@@ -277,23 +827,18 @@ def wa_send_personal_photo(to: str, name: str, text: str, img_url: str) -> Dict[
     )
 
 
-def store_inbox(wa: str, name: str, msg: str, source: str = "meatze", direction: str = "in"):
-    """
-    Аналог mz_wa_store_inbox, но на Django ORM.
-    """
-    wa_digits = normalize_wa(wa)
-
-    if not wa_digits:
-        return
+def store_inbox(wa, wa_name, txt, source="meatze", direction="in"):
+    wa9 = normalize_wa(wa)
+    name = (wa_name or "").strip()
     WaInbox.objects.create(
-        wa=wa_digits,
-        name=name or "",
-        source=source or "meatze",
-        msg=str(msg),
-        direction="out" if direction == "out" else "in",
+        wa=wa9,
+        name=name,
+        source=source,
+        msg=txt or "",
+        direction=direction,
     )
-
-
+    return wa9
+    
 # ========== SUBSCRIBERS / CONTACTS CRUD ==========
 
 @api_view(["GET"])
@@ -354,6 +899,58 @@ def wa_upsert(request):
     )
 
     return Response({"ok": True, "wa": obj.wa})
+def wa_send_list(to: str, header: str, body: str, button_text: str, rows: list[dict], footer: str = ""):
+    """
+    rows: [{"id":"curso:IFCT0309", "title":"IFCT0309", "description":"Nombre curso"}...]
+    """
+    to_norm = wa_msisdn(to)
+    if not to_norm:
+        return {"ok": False, "err": "bad_msisdn"}
+
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to_norm,
+        "type": "interactive",
+        "interactive": {
+            "type": "list",
+            "header": {"type": "text", "text": header[:60]},
+            "body": {"text": body[:1024]},
+            "action": {
+                "button": button_text[:20],
+                "sections": [
+                    {
+                        "title": "Tus cursos",
+                        "rows": rows[:10],  # WhatsApp лимиты; лучше 10 за раз
+                    }
+                ],
+            },
+        },
+    }
+    if footer:
+        payload["interactive"]["footer"] = {"text": footer[:60]}
+
+    phone_id = getattr(settings, "WA_PHONE_ID", "")
+    return wa_api(f"{phone_id}/messages", payload)
+
+def teacher_courses(profile: UserProfile):
+    qs = (Enrol.objects
+          .filter(user=profile.user, role="teacher")
+          .exclude(codigo="")
+          .values_list("codigo", flat=True))
+    codigos = sorted(set([c.strip().upper() for c in qs if c]))
+    cursos = list(Curso.objects.filter(codigo__in=codigos).order_by("codigo"))
+    return cursos
+def build_course_rows(cursos: list[Curso]) -> list[dict]:
+    rows = []
+    for c in cursos:
+        title = c.codigo
+        desc = (c.titulo or "")[:72]
+        rows.append({
+            "id": f"curso:{c.codigo}",
+            "title": title,
+            "description": desc
+        })
+    return rows
 
 
 @api_view(["POST"])
@@ -708,6 +1305,42 @@ def broadcast(request):
         }
     )
 
+def _send_teacher_course_pack(request, to_wa: str, codigo: str):
+    codigo = (codigo or "").strip().upper()
+    cobj = Curso.objects.filter(codigo=codigo).first()
+    titulo = (cobj.titulo or "").strip() if cobj else ""
+    header = f"*{codigo}*" + (f" — {titulo}" if titulo else "")
+
+    # span из Horario
+    start, end = _course_span_from_horario(codigo)
+    start_txt = start.isoformat() if start else "—"
+    end_txt   = end.isoformat() if end else "—"
+
+    # tramos
+    segs = _course_time_segments(codigo)
+
+    # месяцы только по расписанию
+    months = _course_months_by_horario(codigo)
+    if not months:
+        wa_send_text(to_wa, header + "\n— No hay horario para este curso.")
+        return
+
+    lines = [
+      header,
+      f"Fechas: {start_txt} → {end_txt}",
+      "",
+      "📅 Calendario por meses (como export):",
+      "Leyenda: en cada mes, la hora indica HH:MM–HH:MM y el texto entre [ ] son los primeros 10 caracteres del módulo.",
+      "",
+    ]
+    for (yy, mm) in months:
+        lines += _month_summary_lines(codigo, yy, mm)
+    wa_send_text(to_wa, "\n".join(lines)[:3800])
+
+    # PNG на все месяцы
+    for (yy, mm) in months:
+        _send_teacher_month_calendar(request, to_wa, codigo, yy, mm)
+
 
 # ========== WEBHOOK (входящие + рассылка админу по разным номерам) ==========
 
@@ -732,13 +1365,13 @@ def ws_webhook(request):
     try:
         chg = payload["entry"][0]["changes"][0]["value"]
         msg = chg.get("messages", [None])[0]
-    except Exception:  # структура другая / ничего нет
+    except Exception:
         return Response({"ok": True})
 
     if not msg:
         return Response({"ok": True})
 
-    from_ = msg.get("from") or ""  # "34..."
+    from_ = msg.get("from") or ""
     if not from_:
         return Response({"ok": True})
 
@@ -746,7 +1379,21 @@ def ws_webhook(request):
 
     msg_type = msg.get("type") or ""
     txt = ""
+    selected_id = ""
 
+    # --- interactive ---
+    if msg_type == "interactive":
+        inter = msg.get("interactive") or {}
+        lr = inter.get("list_reply") or {}
+        br = inter.get("button_reply") or {}
+        if lr:
+            selected_id = (lr.get("id") or "").strip()
+            txt = (lr.get("title") or "").strip()
+        elif br:
+            selected_id = (br.get("id") or "").strip()
+            txt = (br.get("title") or "").strip()
+
+    # --- text/media ---
     if msg_type == "text":
         txt = msg.get("text", {}).get("body", "") or ""
     elif msg_type == "image":
@@ -761,12 +1408,56 @@ def ws_webhook(request):
         if caption:
             parts.append("— " + caption)
         txt = " ".join(parts)
+    elif msg_type == "interactive":
+        # txt уже установлен выше
+        pass
     else:
         txt = f"[mensaje de tipo {msg_type or 'desconocido'}]"
+        
+        
+    # ===== TEACHER FAST LANE (НЕ пишем в WaInbox и НЕ пересылаем админу) =====
+    tprof = _teacher_profile_by_from(from_)
+    if tprof:
+        cursos = teacher_courses(tprof)
+        codes = [c.codigo for c in cursos]
 
-    # сохраняем во входящие
-    store_inbox(from_, profile, txt, source="meatze", direction="in")
+        # 1) если нажали курс — обрабатываем ВСЕГДА
+        if selected_id.startswith("curso:"):
+            codigo = selected_id.split(":", 1)[1].strip().upper()
+            if codigo in codes:
+                wa_send_text(from_, _teacher_course_info_text(request, codigo))
+                _send_teacher_course_pack(request, from_, codigo)
+            return Response({"ok": True})
 
+        # 2) если прислали код текстом — обрабатываем ВСЕГДА
+        t = (txt or "").strip().upper()
+        if t and t in codes:
+            wa_send_text(from_, _teacher_course_info_text(request, t))
+            _send_teacher_course_pack(request, from_, t)
+            return Response({"ok": True})
+
+        # 3) иначе — приветствие + список курсов (кешируем, чтобы не спамить)
+        wa9 = normalize_wa(from_)
+        key = f"wa:t:{wa9}:hello"
+        if not cache.get(key):
+            cache.set(key, 1, 30)  # 30с, чтобы не повторять каждое сообщение
+
+            link = request.build_absolute_uri("/acceder/?tab=profile")
+            name = (tprof.display_name or tprof.build_display_name() or "profe").strip()
+            header = "MEATZE · Docentes"
+            body = f"Hola {name} 👋\nPerfil: {link}\n\nTus cursos (elige uno):"
+            rows = build_course_rows(cursos)
+
+            if rows:
+                wa_send_list(from_, header, body, "Cursos", rows, footer="Te envío meses + PNG")
+            else:
+                wa_send_text(from_, _teacher_welcome_text(request, tprof, []))
+
+        return Response({"ok": True})
+
+
+    # ===== NO-TEACHER FLOW =====
+    wa9 = store_inbox(from_, profile, txt, source="meatze", direction="in")
     # определяем loc по WaContact
     from_plain = "".join(ch for ch in str(from_) if ch.isdigit())
     wa_short = from_plain[2:] if from_plain.startswith("34") and len(from_plain) > 9 else from_plain

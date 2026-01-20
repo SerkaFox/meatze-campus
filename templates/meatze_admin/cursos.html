@@ -22,14 +22,27 @@
 
     <!-- Pane: Crear/Editar -->
     <div id="mzc-pane-form">
-      <div class="mz-row cols-2 mz-card" style="grid-template-columns:1fr 1fr; margin:0 0 12px">
-        <label><span class="mz-help">Título del curso *</span>
-          <input id="mzc-cf-titulo" class="mz-inp" placeholder="Ej: Técnico en Redes Locales">
-        </label>
-        <label><span class="mz-help">Código *</span>
-          <input id="mzc-cf-codigo" class="mz-inp" placeholder="Ej: IFCT0209">
-        </label>
-      </div>
+<div class="mz-card mzc-form-row">
+  <label class="mzc-col-50">
+    <span class="mz-help">Título del curso *</span>
+    <input id="mzc-cf-titulo" class="mz-inp" placeholder="Ej: Técnico en Redes Locales">
+  </label>
+
+  <label class="mzc-col-35">
+    <span class="mz-help">Código *</span>
+    <input id="mzc-cf-codigo" class="mz-inp" placeholder="Ej: IFCT0209">
+  </label>
+
+  <label class="mzc-col-15">
+    <span class="mz-help">Tipo formación *</span>
+    <select id="mzc-tipoform" class="mz-sel">
+      <option value="">—</option>
+      <option value="ocupacional">Desempleado</option>
+      <option value="continua">Ocupado</option>
+    </select>
+  </label>
+</div>
+
 
       <label class="mz-help">Módulos (una línea por módulo, termina en “– 86 horas”)</label>
       <textarea id="mzc-cf-modulos" rows="10" class="mz-inp" placeholder="UF0852 Instalación – 86 horas"></textarea>
@@ -56,6 +69,11 @@
 
 <div class="mz-card" style="margin-top:16px">
   <h4 style="margin:0 0 6px">Todos los cursos</h4>
+
+<div class="mz-row" style="margin:8px 0 10px">
+  <input id="mzc-cf-search" class="mz-inp" placeholder="Buscar por código o título…">
+  <div class="mz-help" id="mzc-cf-search-meta" style="margin-top:4px"></div>
+</div>
 
   <div class="mz-table-scroll">
     <table class="mz-table mz-table-cursos">

@@ -17,7 +17,7 @@
   const API_BASE = '/meatze/v5';
   const API_N    = API_BASE + '/notify';
   const tok      = () => sessionStorage.getItem('mz_admin') || '';
-  const qs       = (bust=false)=> (tok()?`?adm=${encodeURIComponent(tok())}`:'') + (bust?(`${tok()?'&':'?'}_=${Date.now()}`):'');
+const qs = (bust=false) => (bust ? `?_=${Date.now()}` : '');
   const auth     = (isPost=false)=> {
     const h={};
     if (tok()) h['X-MZ-Admin'] = tok();

@@ -1,0 +1,216 @@
+<h1>Datos personales</h1>
+<div class="mz-help">Actualiza tu información y contraseña.</div>
+
+<!-- ✅ БАННЕР обязательного профиля -->
+<div id="mz-prof-required" class="mz-prof-required" style="display:none">
+  <div class="mz-prof-required__icon">!</div>
+  <div class="mz-prof-required__text">
+    <div class="mz-prof-required__title">Antes de continuar</div>
+    <div class="mz-prof-required__desc">
+      Necesitamos tu <strong>Nombre</strong> y <strong>1º apellido</strong> para crear tu “Nombre visible” y poder usar el panel.
+      <span class="mz-prof-required__hint">Luego podrás cambiar el nombre visible si quieres.</span>
+    </div>
+  </div>
+</div>
+
+<div id="mz-prof-msg" class="mz-help" style="margin-top:10px"></div>
+
+<div class="mz-grid2" style="margin-top:10px">
+  <div>
+    <label class="mz-label" for="mz-prof-first">Nombre <span class="mz-req">*</span></label>
+    <input id="mz-prof-first" class="mz-inp" autocomplete="given-name" placeholder="Ej.: Ana">
+  </div>
+  <div>
+    <label class="mz-label" for="mz-prof-last1">1º apellido <span class="mz-req">*</span></label>
+    <input id="mz-prof-last1" class="mz-inp" autocomplete="family-name" placeholder="Ej.: García">
+  </div>
+</div>
+
+<div class="mz-grid2" style="margin-top:10px">
+  <div>
+    <label class="mz-label" for="mz-prof-last2">2º apellido</label>
+    <input id="mz-prof-last2" class="mz-inp" placeholder="Opcional">
+  </div>
+  <div>
+    <label class="mz-label" for="mz-prof-display">Nombre visible</label>
+    <input id="mz-prof-display" class="mz-inp" placeholder="Se generará automáticamente si lo dejas vacío">
+    <div class="mz-help" style="margin-top:6px;opacity:.9">
+      Si lo dejas vacío, lo generaremos como: <em>Nombre + apellidos</em>.
+    </div>
+  </div>
+</div>
+
+<label class="mz-label" style="margin-top:10px" for="mz-prof-bio">Bio</label>
+<textarea id="mz-prof-bio" class="mz-inp" rows="3" placeholder="Opcional"></textarea>
+
+<hr style="border:none;border-top:1px solid rgba(255,255,255,.12);margin:14px 0">
+
+<div class="mz-help">Cambiar contraseña (opcional)</div>
+
+<div class="mz-grid2" style="margin-top:10px">
+  <div>
+    <label class="mz-label" for="mz-prof-pass1">Nueva contraseña</label>
+    <input id="mz-prof-pass1" class="mz-inp" type="password" autocomplete="new-password">
+  </div>
+  <div>
+    <label class="mz-label" for="mz-prof-pass2">Repetir contraseña</label>
+    <input id="mz-prof-pass2" class="mz-inp" type="password" autocomplete="new-password">
+  </div>
+</div>
+
+<div id="mz-prof-pass-msg" class="mz-help" style="margin-top:8px"></div>
+
+<div class="mz-actions" style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+  <button id="mz-prof-save" class="mz-btn" type="button">Guardar cambios</button>
+
+  <!-- ✅ “Ir al panel” будет скрываться JS-ом пока профиль не заполнен -->
+  <a id="mz-prof-gopanel" class="mz-btn link"
+     href="/alumno/"
+     style="display:inline-flex;align-items:center;justify-content:center">
+    Ir al panel
+  </a>
+</div>
+
+<style>
+  .mz-req{ opacity:.85; font-weight:800; }
+
+  /* баннер */
+  .mz-prof-required{
+    margin-top:12px;
+    border-radius:18px;
+    border:1px solid rgba(248,113,113,.45);
+    background:
+      radial-gradient(circle at top left, rgba(248,113,113,.18), transparent 55%),
+      linear-gradient(145deg, rgba(15,23,42,.88), rgba(15,23,42,.78));
+    box-shadow: 0 14px 32px rgba(15,23,42,.85);
+    padding:12px 14px;
+    display:flex;
+    gap:12px;
+    align-items:flex-start;
+  }
+  .mz-prof-required__icon{
+    width:28px;height:28px;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:900;
+    color:#0b1120;
+    background: rgba(248,113,113,.95);
+    box-shadow: 0 10px 22px rgba(248,113,113,.25);
+    flex:0 0 auto;
+    line-height:1;
+  }
+  .mz-prof-required__title{
+    font-weight:800;
+    letter-spacing:.02em;
+    margin-bottom:2px;
+  }
+  .mz-prof-required__desc{
+    opacity:.95;
+    line-height:1.35;
+  }
+  .mz-prof-required__hint{
+    display:block;
+    margin-top:6px;
+    opacity:.85;
+  }
+
+  /* подсветка инпутов при обязательности */
+  .mz-inp.mz-mandatory{
+    border-color: rgba(248,113,113,.55) !important;
+    box-shadow: 0 0 0 2px rgba(248,113,113,.12) inset;
+  }
+
+  .mz-btn[disabled]{
+    opacity:.55;
+    cursor:not-allowed;
+    transform:none !important;
+  }
+</style>
+
+<script>
+(function(){
+  // ====== helpers
+  const $ = (id) => document.getElementById(id);
+
+  const banner   = $('mz-prof-required');
+  const msgTop   = $('mz-prof-msg');
+
+  const fFirst   = $('mz-prof-first');
+  const fLast1   = $('mz-prof-last1');
+  const fLast2   = $('mz-prof-last2');
+  const fDisp    = $('mz-prof-display');
+
+  const btnSave  = $('mz-prof-save');
+  const goPanel  = $('mz-prof-gopanel');
+
+  if (!fFirst || !fLast1 || !btnSave) return;
+
+  function clean(s){ return (s || '').trim(); }
+
+  function buildDisplay(){
+    const parts = [clean(fFirst.value), clean(fLast1.value), clean(fLast2?.value)];
+    return parts.filter(Boolean).join(' ');
+  }
+
+  function requiredOk(){
+    return !!(clean(fFirst.value) && clean(fLast1.value));
+  }
+
+  function setMandatoryUI(on){
+    if (banner) banner.style.display = on ? '' : 'none';
+
+    // подсветка обязательных полей
+    fFirst.classList.toggle('mz-mandatory', on && !clean(fFirst.value));
+    fLast1.classList.toggle('mz-mandatory', on && !clean(fLast1.value));
+
+    // блокируем доступ к панели
+    if (goPanel) goPanel.style.display = on ? 'none' : 'inline-flex';
+
+    // сохранить можно всегда, но если хочешь — делаем disabled пока пусто:
+    btnSave.disabled = on; // <- если хочешь разрешить “сохранить” даже пустое, поставь false
+  }
+
+  function refresh(){
+    const need = !requiredOk();
+
+    setMandatoryUI(need);
+
+    // если display пуст и уже есть имя+фамилия — автоподставим в поле (UX)
+    if (!need && fDisp && !clean(fDisp.value)){
+      const gen = buildDisplay();
+      if (gen) fDisp.value = gen;
+    }
+
+    // текст подсказки сверху
+    if (need){
+      if (msgTop) msgTop.textContent = 'Por favor, indica Nombre y 1º apellido para continuar.';
+    } else {
+      // не затираем “Datos guardados.” если оно там уже стоит
+      if (msgTop && /Por favor, indica/.test(msgTop.textContent)) msgTop.textContent = '';
+    }
+  }
+
+  // ====== events: обновлять UI при вводе
+  ['input','change','blur'].forEach(ev => {
+    fFirst.addEventListener(ev, refresh);
+    fLast1.addEventListener(ev, refresh);
+    fLast2 && fLast2.addEventListener(ev, refresh);
+    fDisp  && fDisp.addEventListener(ev, () => {
+      // если пользователь сам начал писать — не трогаем
+    });
+  });
+
+  // ====== включаем кнопку “Guardar” когда обязательные поля заполнены
+  function maybeEnableSave(){
+    btnSave.disabled = !requiredOk();
+  }
+  fFirst.addEventListener('input', maybeEnableSave);
+  fLast1.addEventListener('input', maybeEnableSave);
+
+  // первичная инициализация
+  refresh();
+  maybeEnableSave();
+
+  // OPTIONAL: если страница открылась из "forced redirect", можно подсветить сильнее
+  // (например по ?forced=1) — оставил как идею.
+})();
+</script>

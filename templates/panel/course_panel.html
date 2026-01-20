@@ -12,7 +12,6 @@
     margin-right: calc(50% - 50vw);
     padding: 32px 0 24px;           /* нормальный отступ сверху/снизу */
     overflow: hidden;
-    background: radial-gradient(circle at top, #0b1220 0, #020617 55%, #000 100%);
   }
 
   /* Фон-картинка: замостить (repeat), а не тянуть */
@@ -30,8 +29,8 @@
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(circle at 10% 0, rgba(45,212,191,0.12), transparent 55%),
-      radial-gradient(circle at 90% 100%, rgba(59,130,246,0.18), transparent 55%),
+      radial-gradient(circle at 10% 0, rgba(45,212,191,0.12), transparent 25%),
+      radial-gradient(circle at 90% 100%, rgba(59,130,246,0.18), transparent 25%),
       linear-gradient(to bottom, rgba(15,23,42,0.85), rgba(15,23,42,0.95));
     pointer-events: none;
     z-index: 1;
@@ -48,10 +47,7 @@
   }
 
   #mz-panel .mzc-card {
-    background:
-      radial-gradient(circle at top left, rgba(56,189,248,0.18), transparent 55%),
-      radial-gradient(circle at bottom right, rgba(59,130,246,0.16), transparent 55%),
-      linear-gradient(135deg, rgba(15,23,42,0.78), rgba(15,23,42,0.68));
+
     border-radius: 24px;
     border: 1px solid rgba(148,163,184,0.45);
     box-shadow:
@@ -376,6 +372,23 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+.mz-main-chat-badge{
+  margin-left:8px;
+  display:none;
+  align-items:center;
+  gap:6px;
+  padding:2px 8px;
+  border-radius:999px;
+  background:rgba(185,28,28,.95);
+  color:#fff;
+  font-weight:800;
+  font-size:12px;
+  line-height:1;
+}
+.mz-main-chat-badge .dot{
+  width:6px;height:6px;border-radius:50%;
+  background:#fff;
+}
 
 </style>
 
@@ -405,13 +418,20 @@
 
         <nav class="mz-tabs">
           {% for m in modules_cfg %}
-			<a href="?tab={{ m.slug }}"
-			   class="mzc-btn ghost{% if active_tab == m.slug %} is-act{% endif %}"
-			   data-action="panel.tab"
-			   data-tab="{{ m.slug }}"
-			   data-curso="{{ curso.codigo }}">
-			  <span>{{ m.label }}</span>
-			</a>
+<a href="?tab={{ m.slug }}"
+   class="mzc-btn ghost{% if active_tab == m.slug %} is-act{% endif %}"
+   data-action="panel.tab"
+   data-tab="{{ m.slug }}"
+   data-curso="{{ curso.codigo }}">
+  <span>{{ m.label }}</span>
+
+  {% if m.slug == "chat" %}
+    <span class="mz-main-chat-badge" id="mz-main-chat-badge" style="display:none;">
+      <span class="dot"></span>
+      <span class="txt">0</span>
+    </span>
+  {% endif %}
+</a>
 
           {% endfor %}
         </nav>
@@ -426,6 +446,11 @@
           <div class="mzc-tab-inner">
             {% include "panel/tabs/materiales.html" %}
           </div>
+		  {% elif active_tab == "tareas" %}
+		  <div class="mzc-tab-inner">
+			{% include "panel/tabs/tareas.html" %}
+		  </div>
+
         {% elif active_tab == "calendario" %}
           <div class="mzc-tab-inner">
             {% include "panel/tabs/calendario.html" %}
@@ -447,5 +472,60 @@
     </div>
   </section>
 </div>
+<script>
+(function(){
+  const codigo = "{{ curso.codigo|escapejs }}";
+  const V5 = "{{ V5_API_BASE|default:'/meatze/v5'|escapejs }}";
+  const badge = document.getElementById('mz-main-chat-badge');
+  if (!codigo || !badge) return;
+
+  function setBadge(n){
+    const x = parseInt(n || 0, 10) || 0;
+    const txt = badge.querySelector('.txt');
+    if (txt) txt.textContent = String(x);
+    badge.style.display = x > 0 ? 'inline-flex' : 'none';
+  }
+
+  async function getJson(url){
+    try{
+      const r = await fetch(url, { credentials:'include' });
+      if (!r.ok) return null;
+      return await r.json();
+    }catch(e){ return null; }
+  }
+
+  async function refresh(){
+    // 1) общий чат
+    const a = await getJson(`${V5}/chat/${encodeURIComponent(codigo)}/unread?kind=course`);
+    const courseUnread = a ? (parseInt(a.unread || 0, 10) || 0) : 0;
+
+    // 2) приватные (сумма по всем peer)
+    const b = await getJson(`${V5}/chat/${encodeURIComponent(codigo)}/dm_unread_map`);
+    let dmUnread = 0;
+    if (b && b.map){
+      for (const k in b.map){
+        dmUnread += (parseInt(b.map[k] || 0, 10) || 0);
+      }
+    }
+
+    setBadge(courseUnread + dmUnread);
+  }
+
+  // сразу + периодически (редко, чтобы не грузить)
+  refresh();
+  setInterval(refresh, 25000);
+})();
+</script>
+<script>
+  window.MZ_TRAFFIC = {
+    endpoint: "{% url 'panel:event' %}",   // это твой panel эндпоинт
+    page: "course_panel",
+    curso: "{{ curso.codigo|escapejs }}",
+  };
+</script>
+<script src="{% static 'js/traffic.js' %}?v={% now 'U' %}"></script>
+
+
+
 
 {% endblock %}

@@ -1,0 +1,532 @@
+{# panel/tabs/tareas.html #}
+
+<style>
+  /* ================================
+     MEATZE · TAB TAREAS
+     (в стиле Materiales/Alumnos)
+  ================================= */
+  #mz-tareas-tab .mz-ta-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  #mz-tareas-tab .mz-ta-title{
+    margin:0;
+    font-size:1rem;
+    font-weight:600;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+  }
+  #mz-tareas-tab .mz-ta-sub{
+    margin:2px 0 0;
+    font-size:.82rem;
+    opacity:.85;
+  }
+  #mz-tareas-tab .mz-ta-badge{
+    font-size:.76rem;
+    padding:4px 9px;
+    border-radius:999px;
+    border:1px solid rgba(148,163,184,.7);
+    background:rgba(15,23,42,.9);
+    white-space:nowrap;
+  }
+
+  /* карточка задачи */
+  #mz-tareas-tab .mz-task{
+    border-radius:18px;
+    border:1px solid rgba(148,163,184,.45);
+    background: radial-gradient(circle at top, rgba(15,23,42,0.86), rgba(15,23,42,0.74));
+    box-shadow: 0 16px 40px rgba(15,23,42,.8);
+    padding:14px 14px 12px;
+    margin-top:12px;
+  }
+  #mz-tareas-tab .mz-task-top{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:flex-start;
+    border-bottom:1px solid rgba(148,163,184,.25);
+    padding-bottom:10px;
+    margin-bottom:10px;
+  }
+  #mz-tareas-tab .mz-task-name{
+    margin:0;
+    font-size:1.02rem;
+    font-weight:750;
+    color:#f9fafb;
+  }
+  #mz-tareas-tab .mz-task-desc{
+    margin:6px 0 0;
+    color:#cbd5e1;
+    font-size:.88rem;
+    line-height:1.35;
+    white-space:pre-wrap;
+  }
+  #mz-tareas-tab .mz-task-meta{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:flex-end;
+  }
+
+  /* чип статуса */
+  #mz-tareas-tab .mz-chip{
+    font-size:.76rem;
+    padding:4px 9px;
+    border-radius:999px;
+    border:1px solid rgba(148,163,184,.55);
+    background:rgba(15,23,42,.85);
+    color:#e5e7eb;
+    display:inline-flex;
+    gap:6px;
+    align-items:center;
+    white-space:nowrap;
+  }
+  #mz-tareas-tab .mz-chip.ok{
+    border-color:rgba(34,197,94,.55);
+  }
+  #mz-tareas-tab .mz-chip.warn{
+    border-color:rgba(56,189,248,.55);
+  }
+  #mz-tareas-tab .mz-chip.closed{
+    border-color:rgba(239,68,68,.55);
+  }
+
+  /* кнопки в стиле alumnos */
+  #mz-tareas-tab .mzc-btn{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    padding:6px 16px;
+    font-size:.82rem;
+    font-weight:500;
+    border-radius:999px;
+    border:1px solid rgba(148,163,184,.7);
+    cursor:pointer;
+    user-select:none;
+    text-decoration:none;
+    background: radial-gradient(circle at top, rgba(56,189,248,.22), rgba(15,23,42,.96));
+    color:#e5e7eb;
+    transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease, transform 90ms ease;
+  }
+  #mz-tareas-tab .mzc-btn.ghost{
+    background: radial-gradient(circle at top, rgba(15,23,42,.9), rgba(30,64,175,.85));
+  }
+  #mz-tareas-tab .mzc-btn:disabled{
+    opacity:.55;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
+  }
+  #mz-tareas-tab .mzc-btn:hover:not(:disabled){
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(15,23,42,.9), 0 0 0 1px rgba(15,23,42,1);
+    border-color: rgba(191,219,254,.9);
+  }
+
+  /* форма создания */
+  #mz-tareas-tab .mz-create{
+    margin-top:10px;
+    padding:12px;
+    border-radius:14px;
+    border:1px dashed rgba(148,163,184,.55);
+    background: rgba(15,23,42,.65);
+  }
+  #mz-tareas-tab .mz-grid{
+    display:grid;
+    grid-template-columns: 1.2fr 1.4fr;
+    gap:10px;
+  }
+  #mz-tareas-tab .mz-grid .full{ grid-column:1 / -1; }
+
+  #mz-tareas-tab .mz-inp, #mz-tareas-tab .mz-txt{
+    width:100%;
+    padding:10px 10px;
+    border-radius:12px;
+    border:1px solid rgba(148,163,184,.45);
+    background: rgba(2,6,23,.35);
+    color:#e5e7eb;
+    outline:none;
+    font-size:.88rem;
+  }
+  #mz-tareas-tab .mz-txt{ min-height: 92px; resize: vertical; }
+
+  /* список сдач (teacher) */
+  #mz-tareas-tab .mz-subwrap{
+    margin-top:10px;
+    border-radius:14px;
+    border:1px solid rgba(148,163,184,.35);
+    overflow:auto;
+    background: rgba(15,23,42,.82);
+  }
+  #mz-tareas-tab table.mz-subtbl{
+    width:100%;
+    border-collapse:collapse;
+    font-size:.86rem;
+  }
+  #mz-tareas-tab .mz-subtbl th, #mz-tareas-tab .mz-subtbl td{
+    padding:8px 10px;
+    border-bottom:1px solid rgba(30,64,175,.35);
+    vertical-align:middle;
+  }
+  #mz-tareas-tab .mz-subtbl thead tr{
+    background: rgba(15,23,42,.96);
+  }
+  #mz-tareas-tab .mz-subtbl th{
+    font-size:.78rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    opacity:.85;
+  }
+  #mz-tareas-tab .mz-subtbl tbody tr:nth-child(2n){
+    background: rgba(15,23,42,.9);
+  }
+  #mz-tareas-tab .mz-sub-actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:flex-end;
+  }
+  #mz-tareas-tab .mz-lock{
+    font-size:.78rem;
+    color:#9ca3af;
+  }
+
+  /* студент: блок результата */
+  #mz-tareas-tab .mz-result{
+    margin-top:10px;
+    padding:12px;
+    border-radius:14px;
+    border:1px solid rgba(148,163,184,.35);
+    background: rgba(15,23,42,.7);
+  }
+  #mz-tareas-tab .mz-grade{
+    font-size:1.4rem;
+    font-weight:800;
+    letter-spacing:.02em;
+    color:#e5e7eb;
+  }
+  #mz-tareas-tab .mz-feedback{
+    margin-top:8px;
+    color:#cbd5e1;
+    white-space:pre-wrap;
+    line-height:1.35;
+  }
+
+  @media (max-width: 860px){
+    #mz-tareas-tab .mz-grid{ grid-template-columns:1fr; }
+  }
+  /* collapse */
+#mz-tareas-tab .mz-task-body{ display:block; margin-top:10px; }
+#mz-tareas-tab .mz-task-card.is-collapsed .mz-task-body{ display:none; }
+#mz-tareas-tab .mz-collapse-ico{ font-weight:800; opacity:.9; }
+#mz-tareas-tab .mz-collapse-btn{ padding:6px 12px; }
+/* compact collapsed card */
+#mz-tareas-tab .mz-task-card.is-collapsed{
+  padding:10px 12px;
+}
+
+#mz-tareas-tab .mz-task-card.is-collapsed .mz-task-top{
+  border-bottom:0;
+  padding-bottom:0;
+  margin-bottom:0;
+}
+
+#mz-tareas-tab .mz-task-card.is-collapsed .mz-task-desc{
+  display:none;
+}
+
+#mz-tareas-tab .mz-task-card.is-collapsed .mz-task-name{
+  font-size:.95rem;
+  font-weight:700;
+  margin:0;
+}
+
+</style>
+
+<div id="mz-tareas-tab">
+
+  <div class="mz-ta-head">
+    <div>
+      <h4 class="mz-ta-title">Tareas</h4>
+      <p class="mz-ta-sub">El docente sube un ejercicio, el alumno entrega una vez y recibe nota.</p>
+    </div>
+    {% if tasks %}
+      <div class="mz-ta-badge">{{ tasks|length }} tarea{{ tasks|length|pluralize:"s" }}</div>
+    {% endif %}
+  </div>
+
+  {% if is_teacher %}
+    <div class="mz-create">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="task_create">
+
+        <div class="mz-grid">
+          <div class="full">
+            <input class="mz-inp" name="title" placeholder="Título de la tarea" required>
+          </div>
+
+          <div class="full">
+            <textarea class="mz-txt" name="description"
+              placeholder="Descripción (puedes escribir largo, instrucciones, criterios, etc.)"></textarea>
+          </div>
+
+          <div>
+            <input class="mz-inp" type="file" name="task_file">
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px">
+            <button class="mzc-btn" type="submit">Crear</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  {% endif %}
+
+ {% if tasks %}
+  {% for t in tasks %}
+    <div class="mz-task mz-task-card {% if t.is_closed %}is-collapsed{% endif %}" data-task="{{ t.id }}">
+      <div class="mz-task-top">
+        <div style="min-width:260px;flex:1 1 520px">
+          <p class="mz-task-name">{{ t.title }}</p>
+          {% if t.description %}
+            <div class="mz-task-desc">{{ t.description }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mz-task-meta">
+          {# кнопка сворачивания #}
+          <button type="button"
+                  class="mzc-btn ghost mz-collapse-btn"
+                  aria-expanded="{% if t.is_closed %}false{% else %}true{% endif %}">
+            <span class="mz-collapse-ico">{% if t.is_closed %}▸{% else %}▾{% endif %}</span>
+            <span class="mz-collapse-txt">
+				  {% if t.is_closed %}Ver{% else %}Ocultar{% endif %}
+				</span>
+          </button>
+
+          {% if t.is_closed %}
+            <span class="mz-chip closed">⛔ Cerrada</span>
+          {% else %}
+            <span class="mz-chip warn">📝 Abierta</span>
+          {% endif %}
+
+          {% if t.file %}
+            <a class="mzc-btn ghost" href="{% url 'panel:task_download' curso.codigo t.id %}">
+              Descargar enunciado{% if t.fmt_size %} · {{ t.fmt_size }}{% endif %}
+            </a>
+          {% endif %}
+
+          {% if is_teacher %}
+            <form method="post" style="display:inline">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="task_toggle_close">
+              <input type="hidden" name="task_id" value="{{ t.id }}">
+              {% if t.is_closed %}
+                <button class="mzc-btn ghost" type="submit">Reabrir</button>
+              {% else %}
+                <button class="mzc-btn ghost" type="submit">Cerrar</button>
+              {% endif %}
+            </form>
+			<form method="post" style="display:inline" onsubmit="return confirm('¿Eliminar esta tarea y todas las entregas?');">
+				  {% csrf_token %}
+				  <input type="hidden" name="action" value="task_delete">
+				  <input type="hidden" name="task_id" value="{{ t.id }}">
+				  <button class="mzc-btn ghost" type="submit">Eliminar</button>
+				</form>
+
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="mz-task-body">
+        {% if is_teacher %}
+          <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
+            <span class="mz-chip">📩 Entregas: {{ t.submissions.count }}</span>
+            <span class="mz-lock">La nota se guarda una sola vez y luego se bloquea.</span>
+          </div>
+
+          {% if t.submissions.count %}
+            <div class="mz-subwrap">
+              <table class="mz-subtbl">
+                <thead>
+                  <tr>
+                    <th>Alumno</th>
+                    <th>Estado</th>
+                    <th>Enviado</th>
+                    <th>Entrega</th>
+                    <th style="text-align:right">Calificación</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for s in t.submissions.all %}
+                    <tr>
+                      <td>
+                        <div style="font-weight:700;color:#e5e7eb">
+                          {{ s.alumno.get_full_name|default:s.alumno.email }}
+                        </div>
+                        {% if s.comment %}
+                          <div style="font-size:.8rem;color:#9ca3af;white-space:pre-wrap">{{ s.comment }}</div>
+                        {% endif %}
+                      </td>
+
+                      <td>
+                        {% if s.status == "graded" %}
+                          <span class="mz-chip ok">✅ Calificado</span>
+                        {% else %}
+                          <span class="mz-chip warn">⏳ En revisión</span>
+                        {% endif %}
+                      </td>
+
+                      <td style="color:#cbd5e1;font-size:.82rem">{{ s.submitted_at }}</td>
+
+                      <td>
+                        <div class="mz-sub-actions">
+                          {% if s.file %}
+                            <a class="mzc-btn ghost"
+                               href="{% url 'panel:submission_download' curso.codigo t.id s.id %}">
+                              Descargar{% if s.fmt_size %} · {{ s.fmt_size }}{% endif %}
+                            </a>
+                          {% else %}
+                            <span class="mz-lock">—</span>
+                          {% endif %}
+                        </div>
+                      </td>
+
+                      <td style="text-align:right">
+                        {% if s.status == "graded" %}
+                          <div style="font-weight:800;color:#e5e7eb">{{ s.grade|default:"—" }}</div>
+                          {% if s.teacher_feedback %}
+                            <div style="margin-top:4px;color:#9ca3af;font-size:.8rem;white-space:pre-wrap;text-align:left">
+                              {{ s.teacher_feedback }}
+                            </div>
+                          {% endif %}
+                          <div class="mz-lock" style="margin-top:6px">Bloqueado</div>
+                        {% else %}
+                          <form method="post"
+                                style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;align-items:center">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="task_grade">
+                            <input type="hidden" name="sub_id" value="{{ s.id }}">
+                            <input class="mz-inp" name="grade" placeholder="0-10" style="width:90px">
+                            <input class="mz-inp" name="teacher_feedback" placeholder="Feedback" style="width:min(420px, 52vw)">
+                            <button class="mzc-btn" type="submit">Guardar</button>
+                          </form>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="mz-lock" style="margin-top:10px">Aún no hay entregas.</div>
+          {% endif %}
+
+        {% else %}
+          {# ───────── STUDENT VIEW ───────── #}
+          {% if t.my_sub %}
+            {% if t.my_sub.status == "graded" %}
+              <div class="mz-result">
+                <div class="mz-chip ok" style="margin-bottom:10px">✅ Calificado</div>
+                <div class="mz-grade">Nota: {{ t.my_sub.grade|default:"—" }}</div>
+                {% if t.my_sub.teacher_feedback %}
+                  <div class="mz-feedback">Feedback: {{ t.my_sub.teacher_feedback }}</div>
+                {% endif %}
+              </div>
+            {% else %}
+              <div class="mz-result">
+                <div class="mz-chip warn">⏳ En revisión</div>
+                <div class="mz-lock" style="margin-top:8px">
+                  Ya entregaste. No puedes volver a subir otro archivo.
+                </div>
+              </div>
+            {% endif %}
+          {% else %}
+            {% if t.is_closed %}
+              <div class="mz-result">
+                <div class="mz-chip closed">⛔ Cerrada</div>
+                <div class="mz-lock" style="margin-top:8px">No se aceptan entregas.</div>
+              </div>
+            {% else %}
+              <div class="mz-result">
+                <div class="mz-chip warn">📝 Pendiente</div>
+                <form method="post" enctype="multipart/form-data"
+                      style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="task_submit">
+                  <input type="hidden" name="task_id" value="{{ t.id }}">
+                  <input class="mz-inp" type="file" name="answer_file" required style="min-width:240px">
+                  <input class="mz-inp" type="text" name="comment" placeholder="Comentario (opcional)"
+                         style="min-width:260px;flex:1 1 260px">
+                  <button class="mzc-btn" type="submit">Entregar (1 vez)</button>
+                </form>
+              </div>
+            {% endif %}
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
+{% else %}
+  <div class="mz-lock">No hay tareas todavía.</div>
+{% endif %}
+
+</div><script>
+(function(){
+  const root = document.getElementById('mz-tareas-tab');
+  if(!root) return;
+
+  const KEY = 'mz_tasks_collapsed_v1';
+
+  function loadState(){
+    try { return JSON.parse(localStorage.getItem(KEY) || '{}'); }
+    catch(e){ return {}; }
+  }
+  function saveState(state){
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){}
+  }
+
+  function setCollapsed(card, collapsed){
+    card.classList.toggle('is-collapsed', collapsed);
+    const btn = card.querySelector('.mz-collapse-btn');
+    if(!btn) return;
+    btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    const ico = btn.querySelector('.mz-collapse-ico');
+    const txt = btn.querySelector('.mz-collapse-txt');
+    if(ico) ico.textContent = collapsed ? '▸' : '▾';
+    if(txt) txt.textContent = collapsed ? 'Ver' : 'Ocultar';
+  }
+
+  // apply saved state
+  const state = loadState();
+  root.querySelectorAll('.mz-task-card[data-task]').forEach(card => {
+    const id = card.getAttribute('data-task');
+    if(state[id] !== undefined){
+      setCollapsed(card, !!state[id]);
+    }
+  });
+
+  root.addEventListener('click', (e) => {
+    const btn = e.target.closest('.mz-collapse-btn');
+    if(!btn) return;
+    const card = btn.closest('.mz-task-card');
+    if(!card) return;
+    const id = card.getAttribute('data-task');
+    const collapsed = card.classList.contains('is-collapsed');
+    const next = !collapsed;
+    setCollapsed(card, next);
+    const st = loadState();
+    st[id] = next;
+    saveState(st);
+  });
+})();
+</script>

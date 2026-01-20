@@ -4,19 +4,23 @@
   const API_BASE = ((window.wpApiSettings?.root)||'/').replace(/\/$/,'') + '/meatze/v5';
   const API_A = API_BASE + '/admin';
   const tok = () => sessionStorage.getItem('mz_admin') || '';
-  const qs  = (bust=false)=> (tok()?`?adm=${encodeURIComponent(tok())}`:'') + (bust?(`${tok()?'&':'?'}_=${Date.now()}`):'');
+const qs = (bust=false) => (bust ? `?_=${Date.now()}` : '');
+
   const auth= (isPost=false)=>{const h={}; if(tok()) h['X-MZ-Admin']=tok(); if(isPost) h['Content-Type']='application/json'; return h;};
   async function apiJSON(url, opt={}) {
     const r = await fetch(url, {...opt, cache:'no-store', headers:{...(opt.headers||{}), 'Cache-Control':'no-cache'}});
     const txt = await r.text(); let j=null;
+    try{ j = txt ? JSON.parse(txt) : {}; }catch(_){ throw new Error(`HTTP ${r.status} — ${txt.slice(0,160)}`); }
     try{ j = txt ? JSON.parse(txt) : {}; }catch(_){ throw new Error(`HTTP ${r.status} — ${txt.slice(0,160)}`); }
     if (!r.ok) throw new Error(j?.message || j?.code || `HTTP ${r.status}`);
     return j;
   }
 
   // === panel boot (lazy) ===
-  let cursosReady = false;
-  let editingId = null;
+let cursosReady = false;
+let editingId = null;
+let cloneFromCodigo = null;   // ✅ NEW
+
   async function initCursosOnce(){
   
 	  function toModulesArray(modsRaw){
@@ -59,10 +63,15 @@
     const tituloIn  = $('#mzc-cf-titulo');
     const codigoIn  = $('#mzc-cf-codigo');
     const modulosIn = $('#mzc-cf-modulos');
+	const tipoIn    = $('#mzc-tipoform');
     const totalH    = $('#mzc-cf-total-horas');
     const totalM    = $('#mzc-cf-total-modulos');
     const cfMsg     = $('#mzc-cf-msg');
     const listBody  = $('#mzc-cf-list');
+
+	const searchIn  = $('#mzc-cf-search');
+	const searchMeta= $('#mzc-cf-search-meta');
+	let cursosAll = [];
 
     const caCurso   = $('#mzc-ca-curso');
     const caCodigo  = $('#mzc-ca-codigo');
@@ -187,7 +196,12 @@
 	  const titulo=(tituloIn.value||'').trim();
 	  const codigo=(codigoIn.value||'').trim();
 	  const raw   =(modulosIn.value||'').trim();
-	  if (!titulo || !codigo){ cfMsg.textContent='Título y código obligatorios'; cfMsg.style.color='#b90e2e'; return; }
+
+	  if (!titulo || !codigo){
+		cfMsg.textContent='Título y código obligatorios';
+		cfMsg.style.color='#b90e2e';
+		return;
+	  }
 
 	  const modsParsed = parseModulesBasic(raw);
 	  const modules = modsParsed.map(m => ({ name:m.name, hours:m.hours || 0 }));
@@ -197,34 +211,50 @@
 		cfMsg.style.color = '#b90e2e';
 		return;
 	  }
-		const payload = { codigo, titulo, modules };
-		if (editingId) payload.id = editingId;  
+
+	  const payload = {
+		codigo,
+		titulo,
+		modules,
+		tipo_formacion: (tipoIn?.value || '')   // <-- было #mzc-cf-tipoform
+	  };
+
+	  if (editingId) {
+		  payload.id = editingId;
+		} else if (cloneFromCodigo) {
+		  payload.clone_from = cloneFromCodigo; // ✅ NEW
+		}
+
+
 	  try{
 		await apiJSON(`${API_A}/cursos/upsert${qs()}`, {
 		  method:'POST',
 		  headers:auth(true),
 		  body:JSON.stringify(payload)
 		});
+
 		cfMsg.textContent='Guardado'; cfMsg.style.color='#0b6d22';
+		cloneFromCodigo = null;
 		await loadList();
 		$('#mzc-cf-clear').click();
 		editingId = null;
-
-		document.dispatchEvent(new CustomEvent('mz:cursos-updated', {
-		  detail: { codigo }
-		}));
+		cloneFromCodigo = null;
+		document.dispatchEvent(new CustomEvent('mz:cursos-updated', { detail: { codigo } }));
 	  }catch(e){
 		cfMsg.textContent=e.message||'Error';
 		cfMsg.style.color='#b90e2e';
 	  }
 	};
 
-    $('#mzc-cf-clear').onclick = ()=>{ tituloIn.value='';editingId = null; codigoIn.value=''; modulosIn.value=''; updateCounters(); };
-
-    async function loadList(){
-      try{
-        const j = await apiJSON(`${API_A}/cursos${qs(true)}`, {headers:auth()});
-        const items = j.items || [];
+$('#mzc-cf-clear').onclick = ()=>{
+  if (tipoIn) tipoIn.value = '';   
+  editingId = null;
+  tituloIn.value='';
+  codigoIn.value='';
+  modulosIn.value='';
+  updateCounters();
+};
+function renderCursosTable(items){
         listBody.innerHTML='';
         if (!items.length){ listBody.innerHTML='<tr><td colspan="4">No hay cursos</td></tr>'; return; }
         for (const it of items){
@@ -277,8 +307,10 @@
 // EDITAR
 tr.querySelector('[data-edit]').onclick = ()=>{
   editingId = it.id;
+
   tituloIn.value = it.titulo || '';
   codigoIn.value = it.codigo || '';
+  if (tipoIn) tipoIn.value = it.tipo_formacion || ''; 
 
   const mods = toModulesArray(it.modules);
   modulosIn.value = mods
@@ -297,9 +329,12 @@ const btnDup = tr.querySelector('[data-dup]');
 if (btnDup){
   btnDup.onclick = ()=>{
     editingId = null;
+	cloneFromCodigo = it.codigo; // ✅ NEW
 
     tituloIn.value = it.titulo || '';
+	
     codigoIn.value = '';
+    if (tipoIn) tipoIn.value = it.tipo_formacion || '';  // <-- было #mzc-cf-tipoform
 
     const mods = toModulesArray(it.modules);
     modulosIn.value = mods
@@ -308,6 +343,7 @@ if (btnDup){
 
     updateCounters();
     setTab('form');
+
     cfMsg.textContent = 'Copia creada. Introduce un nuevo código para el curso.';
     cfMsg.style.color = '#0a5b93';
 
@@ -340,8 +376,43 @@ tr.querySelector('[data-delete]').onclick = async ()=>{
 
           listBody.appendChild(tr);
         }
-      }catch(_){ listBody.innerHTML='<tr><td colspan="4">Error</td></tr>'; }
-    }
+      }
+
+function applyCursosFilter(){
+  const q = (searchIn?.value || '').trim().toLowerCase();
+  const filtered = !q ? cursosAll : cursosAll.filter(it => {
+    const codigo = (it.codigo || '').toLowerCase();
+    const titulo = (it.titulo || '').toLowerCase();
+    return codigo.includes(q) || titulo.includes(q);
+  });
+
+  renderCursosTable(filtered);
+
+  if (searchMeta){
+    searchMeta.textContent = !q
+      ? `Mostrando ${cursosAll.length} curso(s).`
+      : `Encontrados ${filtered.length} de ${cursosAll.length}.`;
+  }
+}
+let tSearch = null;
+if (searchIn){
+  searchIn.addEventListener('input', ()=>{
+    clearTimeout(tSearch);
+    tSearch = setTimeout(applyCursosFilter, 80);
+  });
+}
+
+
+async function loadList(){
+  try{
+    const j = await apiJSON(`${API_A}/cursos${qs(true)}`, {headers:auth()});
+    cursosAll = (j.items || []);
+    applyCursosFilter();
+  }catch(_){
+    listBody.innerHTML = '<tr><td colspan="4">Error</td></tr>';
+  }
+}
+
 
     // assign docentes
     function buildTeacherChips(teachers, assignedSet){

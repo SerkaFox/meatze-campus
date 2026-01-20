@@ -190,6 +190,157 @@
     transform: translateY(0);
     box-shadow: 0 2px 8px rgba(15,23,42,0.9);
   }
+/* ===== FIX: ровные колонки в Alumnos ===== */
+#mz-alumnos-tab .mz-alu-tbl{
+  table-layout: fixed;      /* ключевое */
+  width: 100%;
+}
+
+#mz-alumnos-tab .mz-alu-tbl .c-idx  { width: 44px; }
+#mz-alumnos-tab .mz-alu-tbl .c-name { width: 22%; }
+#mz-alumnos-tab .mz-alu-tbl .c-email{ width: 34%; }
+#mz-alumnos-tab .mz-alu-tbl .c-prog { width: 18%; }
+#mz-alumnos-tab .mz-alu-tbl .c-act  { width: 220px; } /* под 2-3 кнопки */
+
+#mz-alumnos-tab .mz-alu-tbl td,
+#mz-alumnos-tab .mz-alu-tbl th{
+  vertical-align: middle;
+}
+
+/* email не раздвигает таблицу */
+#mz-alumnos-tab .mz-alu-tbl td:nth-child(3){
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* прогресс можно переносить */
+#mz-alumnos-tab .mz-alu-tbl td:nth-child(4){
+  white-space: normal;
+}
+
+/* acciones — всегда “колонкой”, без расползания */
+#mz-alumnos-tab .mz-alu-actions{
+  align-items: flex-start;
+  min-width: 0;
+}
+#mz-alumnos-tab .mz-alu-tbl td:nth-child(4) * { min-width: 0; }
+#mz-alumnos-tab .mz-alu-tbl td:nth-child(5) { white-space: nowrap; }
+#mz-alumnos-tab table.mz-alu-tbl col.c-idx  { width: 44px; }
+#mz-alumnos-tab table.mz-alu-tbl col.c-name { width: 22%; }
+#mz-alumnos-tab table.mz-alu-tbl col.c-email{ width: 34%; }
+#mz-alumnos-tab table.mz-alu-tbl col.c-prog { width: 18%; }
+#mz-alumnos-tab table.mz-alu-tbl col.c-act  { width: 220px; }
+/* === Tooltip прогресса === */
+.mz-prog-wrap { position: relative; display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.mz-prog-tip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 9999;
+  width: min(520px, 70vw);
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148,163,184,0.55);
+  background: radial-gradient(circle at top left, rgba(30,64,175,0.22), rgba(15,23,42,0.96));
+  box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+  display: none;
+}
+
+.mz-prog-tip.is-open { display: block; }
+
+.mz-prog-tip h5{
+  margin: 0 0 6px;
+  font-size: .78rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  opacity: .9;
+}
+
+.mz-prog-tip ul{
+  margin: 0;
+  padding-left: 18px;
+  color: #e5e7eb;
+  font-size: .82rem;
+}
+
+.mz-prog-tip li{ margin: 2px 0; }
+
+.mz-prog-tip .muted{ color:#9ca3af; font-size:.8rem; }
+/* ===== Tooltip progreso (fixed, opaque, no layout impact) ===== */
+.mz-tip {
+  position: fixed;
+  z-index: 99999;
+  width: min(360px, 92vw);
+  max-height: min(320px, 70vh);
+  overflow: auto;
+
+  padding: 12px 12px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(191,219,254,0.45);
+
+  /* НЕ прозрачный */
+  background: #0b1220;
+  color: #e5e7eb;
+
+  box-shadow: 0 18px 45px rgba(0,0,0,0.55);
+}
+
+.mz-tip h5 {
+  margin: 0 0 6px;
+  font-size: .78rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .92;
+}
+
+.mz-tip ul {
+  margin: 0 0 10px;
+  padding-left: 16px;
+  font-size: .82rem;
+  color: #e5e7eb;
+}
+
+.mz-tip li { margin: 4px 0; }
+
+.mz-tip .muted {
+  color: #9ca3af;
+  font-size: .8rem;
+}
+/* ===== Presencia (inline in Progreso) ===== */
+#mz-alumnos-tab .mz-prog-row{ display:flex; flex-direction:column; gap:8px; }
+#mz-alumnos-tab .mz-prog-chips{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+
+#mz-alumnos-tab .mz-pres-row{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+#mz-alumnos-tab .mz-pres-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:.78rem;
+  font-weight:700;
+  letter-spacing:.02em;
+  border:1px solid rgba(148,163,184,0.55);
+  background:#0b1220;
+  color:#e5e7eb;
+}
+
+#mz-alumnos-tab .mz-pres-none{ opacity:.6; }
+#mz-alumnos-tab .mz-pres-confirmed{ border-color: rgba(52,211,153,.55); color:#6ee7b7; }
+#mz-alumnos-tab .mz-pres-pending{ border-color: rgba(251,191,36,.55); color:#fde68a; }
+#mz-alumnos-tab .mz-pres-offsite{ border-color: rgba(248,113,113,.55); color:#fecaca; }
+#mz-alumnos-tab .mz-pres-ended{ border-color: rgba(148,163,184,.4); color:#cbd5e1; opacity:.9; }
+
+#mz-alumnos-tab .mz-pres-actions{ display:inline-flex; gap:6px; align-items:center; }
+#mz-alumnos-tab .mz-pres-actions .mzc-btn{ padding:4px 10px; font-size:.78rem; }
 
 </style>
 
@@ -221,30 +372,47 @@
     </div>
 
     <div class="mz-alu-tablewrap">
-      <table class="mz-tbl">
+        <table class="mz-tbl mz-alu-tbl">
+<colgroup>
+  <col class="c-idx" />
+  <col class="c-name" />
+  <col class="c-email" />
+  <col class="c-prog" />
+  <col class="c-act" />
+</colgroup>
+
         <thead>
           <tr>
             <th>#</th>
             <th>Nombre</th>
             <th>Email</th>
-            <th>Alta</th>
+            <th>Progreso</th>
             <th>Acción</th>
           </tr>
         </thead>
         <tbody>
           {% if students %}
             {% for s in students %}
-              <tr>
-                <td>{{ s.idx }}</td>
-                <td><b>{{ s.name }}</b></td>
-                <td class="mzc-note">{{ s.email }}</td>
-                <td>
-                  {% if s.enrol_created_at %}
-                    {{ s.enrol_created_at|date:"d/m/Y H:i" }}
-                  {% else %}
-                    —
-                  {% endif %}
-                </td>
+			<tr>
+			  <td>{{ s.idx }}</td>
+			  <td><b>{{ s.name }}</b></td>
+			  <td>{{ s.email }}</td>
+
+				<td data-role="progress" data-student-id="{{ s.id }}">
+				  <div class="mz-prog-row">
+					<div class="mz-prog-chips">
+					  <span class="mz-chip-mini">📥 {{ s.downloaded_files }}/{{ s.total_files }}</span>
+					  <span class="mz-chip-mini">📦 {{ s.receipts_count }}</span>
+					</div>
+
+					<!-- NEW: presencia chip + actions -->
+					<div class="mz-pres-row" data-pres-row="{{ s.id }}">
+					  <span class="mz-pres-chip mz-pres-none" data-pres-chip="{{ s.id }}">—</span>
+					  <span class="mz-pres-actions" data-pres-actions="{{ s.id }}"></span>
+					</div>
+				  </div>
+				</td>
+
                 <td>
                   <div class="mz-alu-actions">
 
@@ -257,7 +425,7 @@
 								title="Reiniciar clave"
 								data-action="alumno.password.reset"
 								data-alumno-id="{{ s.id }}">
-						  🔑 Reiniciar
+						  🔑 Reiniciar clave
 						</button>
 
                     </form>
@@ -277,19 +445,26 @@
                     </form>
 
                     {# последний выданный пароль (если есть) #}
-                    {% if s.last_pass %}
-                      <div class="mzc-note mz-alu-inline-pass mz-inline-pass"
-                           data-pass="{{ s.last_pass }}">
-                        Nueva clave:
-                        <code>{{ s.last_pass }}</code>
-						<button type="button"
-								class="mzc-btn sm ghost mz-pass-copy"
-								data-action="alumno.password.copy"
-								data-alumno-id="{{ s.id }}">
-						  Copiar
-						</button>
-                      </div>
-                    {% endif %}
+			{% if s.last_pass %}
+			  <div class="mzc-note mz-alu-inline-pass mz-inline-pass" data-pass="{{ s.last_pass }}">
+				Nueva clave:
+				<code>{{ s.last_pass }}</code>
+
+				<button type="button"
+						class="mzc-btn sm ghost mz-pass-copy"
+						data-action="alumno.password.copy"
+						data-alumno-id="{{ s.id }}">
+				  Copiar
+				</button>
+
+				<button type="button"
+						class="mzc-btn sm ghost mz-pass-hide"
+						title="Ocultar">
+				  ✕
+				</button>
+			  </div>
+			{% endif %}
+
                   </div>
                 </td>
               </tr>
@@ -349,21 +524,30 @@
   {# ==== JS: копирование пароля + временные аккаунты ==== #}
   <script>
   // копирование "Nueva clave" в буфер
-  (function(){
-    document.querySelectorAll('.mz-inline-pass').forEach(function(box){
-      const btn  = box.querySelector('.mz-pass-copy');
-      const pass = box.dataset.pass || box.textContent;
-      if (!btn || !pass) return;
-      btn.addEventListener('click', async function(){
+(function(){
+  document.querySelectorAll('.mz-inline-pass').forEach(function(box){
+    const btnCopy = box.querySelector('.mz-pass-copy');
+    const btnHide = box.querySelector('.mz-pass-hide');
+    const pass = box.dataset.pass || box.textContent;
+
+    if (btnCopy && pass){
+      btnCopy.addEventListener('click', async function(){
         try{
           await navigator.clipboard.writeText(pass.trim());
-          const old = btn.textContent;
-          btn.textContent = 'Copiado';
-          setTimeout(function(){ btn.textContent = old; }, 1200);
+          const old = btnCopy.textContent;
+          btnCopy.textContent = 'Copiado';
+          setTimeout(function(){ btnCopy.textContent = old; }, 1200);
         }catch(e){}
       });
-    });
-  })();
+    }
+
+    if (btnHide){
+      btnHide.addEventListener('click', function(){
+        box.remove(); // скрыть блок пароля
+      });
+    }
+  });
+})();
 
   // ==== ACCESOS TEMPORALES (V5 API) — без изменений по логике ====
   (function(){
@@ -600,3 +784,246 @@
 
 {% endif %}
 </div>
+<script>
+(function(){
+  const tab = document.getElementById('mz-alumnos-tab');
+  if (!tab) return;
+
+  const courseCode = (document.querySelector('#mz-temp-root')?.dataset.courseCode) || '';
+  if (!courseCode) return;
+
+  // ✅ ВАЖНО: путь на decide — подставь свой реальный URL если отличается
+const V5 = (window.MEATZE && window.MEATZE.V5) ? window.MEATZE.V5.replace(/\/$/,'') : (location.origin + '/meatze/v5');
+const STATUS_URL = `/alumno/curso/${courseCode}/alumnos/status`; // это ок, это panel
+const DECIDE_URL = `${V5}/teacher/attendance/decide`;
+
+
+
+  // --- tooltip node (lives in body) ---
+  const tip = document.createElement('div');
+  tip.className = 'mz-tip';
+  tip.style.display = 'none';
+  document.body.appendChild(tip);
+
+  let lastData = { total_files: 0, total_phys: 0, items: {}, slot: null, presence: {} };
+
+  function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+  function placeTip(x, y){
+    const pad = 12;
+    const rect = tip.getBoundingClientRect();
+    let left = x + pad;
+    let top  = y + pad;
+    left = clamp(left, 8, window.innerWidth  - rect.width  - 8);
+    top  = clamp(top,  8, window.innerHeight - rect.height - 8);
+    tip.style.left = left + 'px';
+    tip.style.top  = top  + 'px';
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, m => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[m]));
+  }
+
+  function renderTip(studentId){
+    const it = (lastData.items && lastData.items[studentId]) || null;
+    if (!it) { tip.innerHTML = '<div class="muted">Sin datos…</div>'; return; }
+
+    const dl = Array.isArray(it.dl) ? it.dl : [];
+    const rc = Array.isArray(it.rc) ? it.rc : [];
+    const totalFiles = Number(lastData.total_files || 0);
+    const totalPhys  = Number(lastData.total_phys  || 0);
+
+    tip.innerHTML = `
+      <h5>Descargados (${Number(it.d||0)}/${totalFiles})</h5>
+      ${dl.length ? `<ul>${dl.map(x => `<li>${escapeHtml(String(x))}</li>`).join('')}</ul>`
+                  : `<div class="muted">Nada descargado</div>`}
+
+      <h5>Material físico (${Number(it.r||0)}/${totalPhys})</h5>
+      ${rc.length ? `<ul>${rc.map(x => `<li>${escapeHtml(String(x))}</li>`).join('')}</ul>`
+                  : `<div class="muted">Nada confirmado</div>`}
+    `;
+  }
+
+  // hover handlers (delegation)
+  let hoverId = null;
+
+  tab.addEventListener('mousemove', function(e){
+    if (tip.style.display !== 'none') placeTip(e.clientX, e.clientY);
+  });
+
+  tab.addEventListener('mouseenter', function(e){
+    const td = e.target.closest('[data-role="progress"]');
+    if (!td) return;
+    hoverId = td.dataset.studentId;
+    renderTip(hoverId);
+    tip.style.display = 'block';
+  }, true);
+
+  tab.addEventListener('mouseleave', function(e){
+    const td = e.target.closest('[data-role="progress"]');
+    if (!td) return;
+    hoverId = null;
+    tip.style.display = 'none';
+  }, true);
+
+  tab.querySelector('.mz-alu-tablewrap')?.addEventListener('scroll', function(){
+    tip.style.display = 'none';
+  });
+
+  function fmtMin(sec){
+    sec = Number(sec||0);
+    const m = Math.floor(sec/60);
+    return m + 'm';
+  }
+
+function renderPresenceFor(studentId){
+  const p = (lastData.presence || {})[studentId] || null;
+
+  const chip = tab.querySelector(`[data-pres-chip="${studentId}"]`);
+  const act  = tab.querySelector(`[data-pres-actions="${studentId}"]`);
+  if (!chip || !act) return;
+
+  act.innerHTML = '';
+
+  if (!p){
+    chip.className = 'mz-pres-chip mz-pres-none';
+    chip.textContent = '—';
+    return;
+  }
+
+  const status = String(p.status || '');
+  const mins = fmtMin(p.active_sec || 0);
+  const aid = p.id;
+
+  // helper: рисуем кнопки если есть attendance id
+  function drawActions(){
+    if (!aid) return;
+    act.innerHTML = `
+      <button class="mzc-btn sm ghost" type="button" data-decide="confirm" data-aid="${aid}">✅</button>
+      <button class="mzc-btn sm ghost" type="button" data-decide="reject"  data-aid="${aid}">❌</button>
+    `;
+  }
+
+  if (status === 'CONFIRMED'){
+    chip.className = 'mz-pres-chip mz-pres-confirmed';
+    chip.textContent = `🟢 En clase · ${mins}`;
+
+    // ✅ если хочешь разрешить “пере-решить” даже из CONFIRMED — включи:
+    // drawActions();
+    return;
+  }
+
+  if (status === 'PENDING'){
+    chip.className = 'mz-pres-chip mz-pres-pending';
+    chip.textContent = `🟡 Esperando · ${mins}`;
+    drawActions();         // ✅ было и остаётся
+    return;
+  }
+
+  if (status === 'REJECTED'){
+    chip.className = 'mz-pres-chip mz-pres-offsite';
+    chip.textContent = `🔴 Rechazado · ${mins}`;
+    drawActions();         // ✅ ВОТ ЭТОГО НЕ ХВАТАЛО
+    return;
+  }
+
+  if (status === 'OFFSITE'){
+    chip.className = 'mz-pres-chip mz-pres-offsite';
+    chip.textContent = `🔴 Fuera · ${mins}`;
+    // по желанию можно тоже дать кнопки:
+    // drawActions();
+    return;
+  }
+
+  if (status === 'ENDED'){
+    chip.className = 'mz-pres-chip mz-pres-ended';
+    chip.textContent = `⚪ Terminado · ${mins}`;
+    return;
+  }
+
+  chip.className = 'mz-pres-chip mz-pres-none';
+  chip.textContent = status || '—';
+}
+
+
+
+  // decide click (delegation)
+  tab.addEventListener('click', async function(e){
+    const b = e.target.closest('[data-decide]');
+    if (!b) return;
+
+    const decision = b.dataset.decide;
+    const aid = b.dataset.aid;
+
+    try{
+      b.disabled = true;
+      await fetch(DECIDE_URL, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          curso_codigo: courseCode,
+          attendance_id: aid,
+          decision: decision
+        })
+      });
+    }catch(_){
+    }finally{
+      b.disabled = false;
+      // обновим сразу, не ждём интервал
+      refreshProgress();
+    }
+  });
+
+  async function refreshProgress(){
+    try{
+      const resp = await fetch(STATUS_URL, {credentials:'include'});
+      if (!resp.ok) return;
+      const data = await resp.json();
+
+      lastData = {
+        total_files: data.total_files ?? 0,
+        total_phys:  data.total_phys ?? 0,
+        items: data.items || {},
+        slot: data.slot || null,
+        presence: data.presence || {}
+      };
+
+      const total = Number(lastData.total_files || 0);
+      const totalPhys = Number(lastData.total_phys || 0);
+
+      tab.querySelectorAll('[data-role="progress"]').forEach(td => {
+        const id = td.dataset.studentId;
+        const it = lastData.items[id] || {d: 0, r: 0};
+
+        const d = Number(it.d || 0);
+        const r = Number(it.r || 0);
+
+        td.innerHTML = `
+          <div class="mz-prog-row">
+            <div class="mz-prog-chips">
+              <span class="mz-chip-mini">📥 ${d}/${total}</span>
+              <span class="mz-chip-mini">📦 ${r}/${totalPhys} ${totalPhys && r >= totalPhys ? '✔' : ''}</span>
+            </div>
+
+            <div class="mz-pres-row" data-pres-row="${id}">
+              <span class="mz-pres-chip mz-pres-none" data-pres-chip="${id}">—</span>
+              <span class="mz-pres-actions" data-pres-actions="${id}"></span>
+            </div>
+          </div>
+        `;
+
+        renderPresenceFor(id);
+      });
+
+      if (hoverId && tip.style.display !== 'none') renderTip(hoverId);
+
+    }catch(e){}
+  }
+
+  refreshProgress();
+  setInterval(refreshProgress, 8000);
+})();
+</script>

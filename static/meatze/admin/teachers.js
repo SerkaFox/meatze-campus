@@ -5,7 +5,7 @@
   const API_BASE = ((window.wpApiSettings?.root)||'/').replace(/\/$/,'') + '/meatze/v5';
   const API_A = API_BASE + '/admin';
   const tok = () => sessionStorage.getItem('mz_admin') || '';
-  const qs  = (bust=false)=> (tok()?`?adm=${encodeURIComponent(tok())}`:'') + (bust?(`${tok()?'&':'?'}_=${Date.now()}`):'');
+  const qs = (bust=false) => (bust ? `?_=${Date.now()}` : '');
   const auth= (isPost=false)=>{const h={}; if(tok()) h['X-MZ-Admin']=tok(); if(isPost) h['Content-Type']='application/json'; return h;};
   async function apiJSON(url, opt={}) {
     const r = await fetch(url, {...opt, cache:'no-store', headers:{...(opt.headers||{}), 'Cache-Control':'no-cache'}});
@@ -18,6 +18,40 @@
   // === panel init (lazy)
   let teachersReady = false;
   async function initTeachersOnce(){
+// ===== Dropdown manager (one-open-at-a-time) =====
+let openDD = null;
+
+function closeDD(dd){
+  if (!dd) return;
+  dd.dataset.open = 'false';
+  const btn = dd.querySelector('.mz-dd-btn');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+  if (openDD === dd) openDD = null;
+}
+
+function openDDOnly(dd){
+  if (!dd) return;
+  if (openDD && openDD !== dd) closeDD(openDD);
+  dd.dataset.open = 'true';
+  const btn = dd.querySelector('.mz-dd-btn');
+  if (btn) btn.setAttribute('aria-expanded', 'true');
+  openDD = dd;
+}
+
+// глобальное закрытие по клику вне
+document.addEventListener('click', (e)=>{
+  if (!openDD) return;
+  if (openDD.contains(e.target)) return;
+  closeDD(openDD);
+});
+
+// закрытие по ESC
+document.addEventListener('keydown', (e)=>{
+  if (e.key !== 'Escape') return;
+  if (!openDD) return;
+  closeDD(openDD);
+});
+
     if (teachersReady || !tok()) return;  // ждём общий вход
     teachersReady = true;
     const esc = s => (s??'').toString().replace(/[&<>"]/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));
@@ -121,13 +155,13 @@
 
 
     async function refreshList(){
-      list.innerHTML = '<tr><td colspan="4">Cargando…</td></tr>';
+      list.innerHTML = '<tr><td colspan="5">Cargando…</td></tr>';
       try{
         const j = await apiJSON(`${API_A}/teachers${qs(true)}`, {headers:auth()});
         allItems = j.items || [];
         applyFilter();
       }catch(e){
-        list.innerHTML = `<tr><td colspan="4">${esc(e.message||'Error')}</td></tr>`;
+        list.innerHTML = `<tr><td colspan="5">${esc(e.message||'Error')}</td></tr>`;
       }
     }
 
@@ -139,98 +173,77 @@ function rowView(it){
   tr.innerHTML = `
     <td>${esc(name)}</td>
     <td>${esc(it.email||'')}</td>
+    <td>${esc(it.wa || '')}</td>
     <td>${esc(it.bio||'')}</td>
     <td style="white-space:nowrap; text-align:right">
-      <div class="mz-dd" data-dd>
-        <button class="mz-dd-btn" type="button" aria-haspopup="menu" aria-expanded="false">
-          Acciones <span aria-hidden="true">▾</span>
-        </button>
-        <div class="mz-dd-menu" role="menu">
-          <button class="mz-dd-item" type="button" data-edit role="menuitem">✏️ Editar</button>
-          <button class="mz-dd-item danger" type="button" data-del role="menuitem">🗑️ Quitar</button>
-        </div>
+      <div class="t-actions">
+        <button class="t-ico" type="button" title="Editar" aria-label="Editar" data-edit>✏️</button>
+        <button class="t-ico danger" type="button" title="Quitar" aria-label="Quitar" data-del>🗑️</button>
       </div>
     </td>
   `;
 
-  const dd = tr.querySelector('[data-dd]');
-  const btn = dd.querySelector('.mz-dd-btn');
-
-  const open = ()=>{
-    dd.dataset.open = 'true';
-    btn.setAttribute('aria-expanded','true');
-  };
-  const close = ()=>{
-    dd.dataset.open = 'false';
-    btn.setAttribute('aria-expanded','false');
-  };
-  const toggle = ()=>{
-    (dd.dataset.open === 'true') ? close() : open();
-  };
-
-  btn.addEventListener('click', (e)=>{ e.stopPropagation(); toggle(); });
-
-  tr.querySelector('[data-edit]').onclick = (e)=>{ e.stopPropagation(); close(); tr.replaceWith(rowEdit(it)); };
-  tr.querySelector('[data-del]').onclick  = (e)=>{ e.stopPropagation(); close(); doDelete(it.id); };
-
-  // закрытие при клике вне
-  document.addEventListener('click', close, { once:true });
-
-  // закрытие по ESC
-  dd.addEventListener('keydown', (e)=>{
-    if (e.key === 'Escape') close();
-  });
+  tr.querySelector('[data-edit]').onclick = ()=> tr.replaceWith(rowEdit(it));
+  tr.querySelector('[data-del]').onclick  = ()=> doDelete(it.id);
 
   return tr;
 }
 
 
+
 function rowEdit(it){
   const tr = document.createElement('tr');
+  tr.dataset.editing = '1';
+
   tr.innerHTML = `
-    <td><input class="mz-inp" data-first  placeholder="Nombre" value="${escAttr(it.first_name||'')}"></td>
-    <td><input class="mz-inp" data-email  placeholder="E-mail *" value="${escAttr(it.email||'')}"></td>
-    <td><input class="mz-inp" data-bio    placeholder="Descripción" value="${escAttr(it.bio||'')}"></td>
+    <td><input class="mz-inp" data-first placeholder="Nombre" value="${escAttr(it.first_name||'')}"></td>
+    <td><input class="mz-inp" data-email placeholder="E-mail *" value="${escAttr(it.email||'')}"></td>
+    <td><input class="mz-inp" data-wa placeholder="600123123" value="${escAttr(it.wa||'')}"></td>
+    <td><input class="mz-inp" data-bio placeholder="Descripción" value="${escAttr(it.bio||'')}"></td>
     <td style="white-space:nowrap; text-align:right">
-      <div class="mz-dd" data-dd>
-        <button class="mz-dd-btn" type="button" aria-haspopup="menu" aria-expanded="false">
-          Guardar <span aria-hidden="true">▾</span>
-        </button>
-        <div class="mz-dd-menu" role="menu">
-          <button class="mz-dd-item" type="button" data-save role="menuitem">💾 Guardar</button>
-          <button class="mz-dd-item" type="button" data-cancel role="menuitem">↩️ Cancelar</button>
-          <button class="mz-dd-item danger" type="button" data-del role="menuitem">🗑️ Quitar</button>
-        </div>
+      <div class="t-actions">
+        <button class="t-ico ok" type="button" title="Guardar" aria-label="Guardar" data-save>💾</button>
+        <button class="t-ico" type="button" title="Cancelar" aria-label="Cancelar" data-cancel>✖️</button>
+        <button class="t-ico danger" type="button" title="Quitar" aria-label="Quitar" data-del>🗑️</button>
       </div>
     </td>
   `;
-
-  const dd = tr.querySelector('[data-dd]');
-  const btn = tr.querySelector('.mz-dd-btn');
-  const open = ()=>{ dd.dataset.open='true'; btn.setAttribute('aria-expanded','true'); };
-  const close= ()=>{ dd.dataset.open='false'; btn.setAttribute('aria-expanded','false'); };
-  const toggle=()=> (dd.dataset.open==='true') ? close() : open();
-  btn.addEventListener('click', (e)=>{ e.stopPropagation(); toggle(); });
-  document.addEventListener('click', close, { once:true });
+tr.addEventListener('keydown', (e)=>{
+  if (e.key === 'Enter'){
+    e.preventDefault();
+    tr.querySelector('[data-save]')?.click();
+  }
+  if (e.key === 'Escape'){
+    e.preventDefault();
+    tr.querySelector('[data-cancel]')?.click();
+  }
+});
 
   const getBody = ()=>({
+    id: it.id, // важно для update
     email:      tr.querySelector('[data-email]').value.trim().toLowerCase(),
+    wa:         tr.querySelector('[data-wa]').value.trim(),
     first_name: tr.querySelector('[data-first]').value.trim(),
     last_name1: it.last_name1 || '',
     last_name2: it.last_name2 || '',
     bio:        tr.querySelector('[data-bio]').value
   });
 
-  tr.querySelector('[data-cancel]').onclick = (e)=>{ e.stopPropagation(); close(); tr.replaceWith(rowView(it)); };
+  tr.querySelector('[data-cancel]').onclick = ()=> tr.replaceWith(rowView(it));
+  tr.querySelector('[data-del]').onclick    = ()=> doDelete(it.id);
 
-  tr.querySelector('[data-del]').onclick = (e)=>{ e.stopPropagation(); close(); doDelete(it.id); };
-
-  tr.querySelector('[data-save]').onclick = async (e)=>{
-    e.stopPropagation(); close();
+  tr.querySelector('[data-save]').onclick = async ()=>{
     const body = getBody();
+
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)){
       alert('E-mail inválido'); return;
     }
+
+    // опционально: простая валидация WA (если ввели — 9 цифр)
+    if (body.wa && !/^\d{9}$/.test(body.wa)){
+      alert('WhatsApp debe tener 9 dígitos'); return;
+    }
+
     try{
       await apiJSON(`${API_A}/teachers${qs()}`, {
         method:'POST',
@@ -247,6 +260,7 @@ function rowEdit(it){
 }
 
 
+
     async function doDelete(id){
       if (!confirm('¿Quitar acceso docente?')) return;
       try{
@@ -257,7 +271,7 @@ function rowEdit(it){
 
     function drawRows(items){
       list.innerHTML = '';
-      if (!items.length){ list.innerHTML = '<tr><td colspan="4">No hay docentes aún.</td></tr>'; return; }
+      if (!items.length){ list.innerHTML = '<tr><td colspan="5">No hay docentes aún.</td></tr>'; return; }
       for (const it of items) list.appendChild(rowView(it));
     }
 
@@ -265,7 +279,7 @@ function rowEdit(it){
       const q = nrm(searchIn?.value || '');
       if (!q) { drawRows(allItems); return; }
       const filtered = allItems.filter(it=>{
-        const hay = [it.display_name, it.first_name, it.last_name1, it.last_name2, it.email, it.bio].map(nrm).join(' ');
+        const hay = [it.display_name, it.first_name, it.last_name1, it.last_name2, it.email, it.wa, it.bio].map(nrm).join(' ');
         return hay.includes(q);
       });
       drawRows(filtered);
@@ -282,15 +296,21 @@ function rowEdit(it){
         first_name: $('#mzt-first').value.trim(),
         last_name1: $('#mzt-last1').value.trim(),
         last_name2: $('#mzt-last2').value.trim(),
-        bio:        $('#mzt-bio').value
+        bio:        $('#mzt-bio').value,
+		  wa:         $('#mzt-wa').value.trim()
       };
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)){
         msg.innerHTML='<span class="mz-help" style="color:#b90e2e">E-mail inválido</span>'; return;
       }
       try{
         await apiJSON(`${API_A}/teachers${qs()}`, {method:'POST', headers:auth(true), body:JSON.stringify(body)});
-        $('#mzt-email').value = $('#mzt-first').value = $('#mzt-last1').value = $('#mzt-last2').value = '';
-        $('#mzt-bio').value = '';
+		$('#mzt-email').value = '';
+		$('#mzt-wa').value = '';
+		$('#mzt-first').value = '';
+		$('#mzt-last1').value = '';
+		$('#mzt-last2').value = '';
+		$('#mzt-bio').value = '';
+
         msg.innerHTML = '<span class="mz-help" style="color:#0b6d22">Guardado.</span>';
         refreshList();
       }catch(e){

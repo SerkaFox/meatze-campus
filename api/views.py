@@ -1,6 +1,8 @@
+from django.shortcuts import render, redirect
+from django.utils.http import url_has_allowed_host_and_scheme
 from rest_framework.response import Response
 from django.conf import settings
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from django.views.decorators.http import require_http_methods
@@ -10,25 +12,25 @@ import json, io, re, os, requests, subprocess, tempfile, logging, random
 from rest_framework import status
 from pathlib import Path
 from functools import wraps
-from .models import Curso, Enrol, UserProfile, Horario
+from .models import Curso, Enrol, UserProfile, Horario, PendingRole, LoginPIN, MZSetting
 from django.db import transaction
 from django.core.cache import cache
-from datetime import date, time, timedelta 
-from .models import MZSetting
+from django.core.mail import send_mail
+from datetime import date, time, timedelta, datetime
 from django.db import transaction
-from django.http import HttpResponse
 from io import BytesIO
 from docx import Document 
 from docx.shared import Mm, Cm, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from django.core.mail import send_mail
-from .models import PendingRole
-from .models import LoginPIN
-from django.contrib.auth import get_user_model
-from datetime import datetime
+from django.db.models import Q, Count
+from django.shortcuts import get_object_or_404
+from .decorators import require_admin_token 
+from panel.models import (CursoFile, CursoPhysicalConfig, MaterialDownload, MaterialReceipt)
+from panel.views import PHYSICAL_ITEMS  
 logger = logging.getLogger(__name__)
-import requests
-LIBREOFFICE_BIN = getattr(settings, "LIBREOFFICE_PATH", "soffice")
+
+LIBREOFFICE_BIN = getattr(settings, "LIBREOFFICE_PATH", "/usr/bin/soffice")
+
 MEATZE_DOCX_LOGOS = getattr(settings, "MEATZE_DOCX_LOGOS", {})
 
 
@@ -150,11 +152,151 @@ def admin_cursos_list(request):
             "id": c.id,
             "codigo": c.codigo,
             "titulo": c.titulo,
-            "modules": modules_str,   # 👈 фронт ждёт строку
+            "modules": modules_str,
             "horas": c.horas_total or 0,
+            "tipo_formacion": c.tipo_formacion,
         })
 
     return JsonResponse({"items": items})
+
+def _admin_can_access_course(request, curso: Curso) -> bool:
+    """
+    ВАЖНО: тут решаешь политику.
+    Минимальный вариант: любой валидный X-MZ-Admin видит всё.
+    Лучше: проверить, что admin связан с курсом/организацией.
+    """
+    # Вариант A (просто): True
+    return True
+
+    # Вариант B (пример): токен связан с user (если require_admin_token кладет request.admin_user)
+    # u = getattr(request, "admin_user", None)
+    # if not u:
+    #     return False
+    # return Enrol.objects.filter(user=u, codigo=curso.codigo, role__in=["teacher","admin"]).exists()
+
+
+@require_admin_token
+@require_http_methods(["GET"])
+def admin_material_status(request):
+    """
+    Возвращает тот же формат что alumnos_status, но auth по X-MZ-Admin
+    GET /meatze/v5/admin/lanbide/material_status?codigo=IFCT0309
+    """
+    codigo = (request.GET.get("codigo") or "").strip().upper()
+    if not codigo:
+        return JsonResponse({"ok": False, "error": "codigo required"}, status=400)
+
+    curso = get_object_or_404(Curso, codigo=codigo)
+
+    if not _admin_can_access_course(request, curso):
+        return JsonResponse({"ok": False, "error": "forbidden"}, status=403)
+
+    # --- физические предметы курса ---
+    cfg = CursoPhysicalConfig.objects.filter(curso=curso).only("enabled_keys").first()
+    physical_keys = (cfg.enabled_keys if cfg else []) or []
+    total_phys = len(physical_keys)
+
+    # --- файлы, видимые ученикам ---
+    visible_files_qs = (
+        CursoFile.objects.filter(curso=curso)
+        .filter(
+            Q(tipo=CursoFile.TIPO_ALUMNOS) |
+            (Q(share_alumnos=True) & Q(tipo__in=[CursoFile.TIPO_DOCENTES, CursoFile.TIPO_PRIVADO]))
+        )
+        .only("id", "title", "file")
+    )
+
+    visible_ids = list(visible_files_qs.values_list("id", flat=True))
+    total_visible = len(visible_ids)
+
+    # если файлов нет и физики нет — быстрый ответ
+    if total_visible == 0 and total_phys == 0:
+        return JsonResponse({
+            "ok": True,
+            "codigo": curso.codigo,
+            "total_files": 0,
+            "total_phys": 0,
+            "items": {}
+        })
+
+    # --- агрегаты ---
+    dl_counts = dict(
+        MaterialDownload.objects.filter(file_id__in=visible_ids)
+        .values("alumno_id").annotate(c=Count("id"))
+        .values_list("alumno_id", "c")
+    )
+
+    rc_counts = dict(
+        MaterialReceipt.objects.filter(curso=curso, item_key__in=physical_keys)
+        .values("alumno_id").annotate(c=Count("id"))
+        .values_list("alumno_id", "c")
+    )
+
+    # --- мапа file_id -> title/filename ---
+    file_map = {}
+    for f in visible_files_qs:
+        # f.file может быть FileField; у тебя раньше было f.filename, но не всегда есть
+        filename = ""
+        try:
+            filename = getattr(f.file, "name", "") or ""
+            filename = filename.rsplit("/", 1)[-1]
+        except Exception:
+            filename = ""
+        file_map[f.id] = (f.title or filename or f"#{f.id}")
+
+    # --- детали: downloads ---
+    dl_detail = {}
+    dl_rows = (
+        MaterialDownload.objects
+        .filter(file_id__in=visible_ids)
+        .values_list("alumno_id", "file_id")
+    )
+    for aid, fid in dl_rows:
+        dl_detail.setdefault(aid, []).append(file_map.get(fid, f"#{fid}"))
+
+    # --- детали: receipts ---
+    label_by_key = {it["key"]: it["label"] for it in PHYSICAL_ITEMS}
+    rc_detail = {}
+    rc_rows = (
+        MaterialReceipt.objects
+        .filter(curso=curso, item_key__in=physical_keys)
+        .values_list("alumno_id", "item_label", "item_key")
+    )
+    for aid, item_label, item_key in rc_rows:
+        label = (item_label or "").strip() or label_by_key.get(item_key, item_key)
+        rc_detail.setdefault(aid, []).append(label)
+
+    # --- все alumno_id ---
+    all_ids = set(dl_counts) | set(rc_counts) | set(dl_detail) | set(rc_detail)
+
+    # (опционально) чистим дубликаты в деталях, чтобы tooltip был аккуратней
+    def _uniq(seq):
+        seen = set()
+        out = []
+        for x in seq:
+            if x in seen:
+                continue
+            seen.add(x)
+            out.append(x)
+        return out
+
+    items = {}
+    for aid in all_ids:
+        items[str(aid)] = {
+            "d": int(dl_counts.get(aid, 0)),
+            "r": int(rc_counts.get(aid, 0)),
+            "dl": _uniq(dl_detail.get(aid, [])),
+            "rc": _uniq(rc_detail.get(aid, [])),
+        }
+
+    return JsonResponse({
+        "ok": True,
+        "codigo": curso.codigo,
+        "total_files": total_visible,
+        "total_phys": total_phys,
+        "items": items,
+    })
+
 
 
 
@@ -182,14 +324,21 @@ def curso_detail(request):
     }
     return Response({"curso": data})
 
-# ─────────────────────────────
-# ADMIN · DOCENTES
-# ─────────────────────────────
 
-# вверху файла уже должны быть:
-# from django.contrib.auth import get_user_model
-# from .models import Curso, Enrol, UserProfile
-User = get_user_model()
+def acceder(request):
+    tab = (request.GET.get("tab") or "login").strip().lower()
+
+    # ✅ ВАЖНО: если пользователь залогинен и просит профиль — НЕ редиректим
+    if request.user.is_authenticated and tab == "profile":
+        return render(request, "acceder.html", {})
+
+    # (опционально) если залогинен и просто открыл /acceder/ без tab
+    # отправляем в панель
+    if request.user.is_authenticated and tab in ("", "login"):
+        return redirect("/alumno/")
+
+    # не залогинен → показываем страницу входа/регистрации
+    return render(request, "acceder.html", {})
 
 # ─────────────────────────────
 # ADMIN · DOCENTES
@@ -222,7 +371,7 @@ def admin_teachers_list(request):
     items = []
     for u in qs:
         profile = getattr(u, "profile", None)
-
+        wa = (profile.wa if profile else "") or ""
         first_name = (profile.first_name if profile and profile.first_name else u.first_name or "").strip()
         last_name1 = (profile.last_name1 if profile else "") or ""
         last_name2 = (profile.last_name2 if profile else "") or ""
@@ -236,6 +385,7 @@ def admin_teachers_list(request):
         items.append({
             "id": u.id,
             "email": u.email or u.username,
+            "wa": wa,
             "first_name": first_name,
             "last_name1": last_name1,
             "last_name2": last_name2,
@@ -245,28 +395,19 @@ def admin_teachers_list(request):
 
     return JsonResponse({"items": items})
 
-
 @require_admin_token
 @csrf_exempt
 @require_http_methods(["GET", "POST"])
 def admin_teachers_upsert(request):
-    """
-    GET /meatze/v5/admin/teachers   -> вернуть список (делегируем в admin_teachers_list)
-    POST /meatze/v5/admin/teachers  -> создать/обновить преподавателя по email
-    """
     if request.method == "GET":
-        # список для таблицы снизу
         return admin_teachers_list(request)
 
-    # ===== POST: upsert =====
     try:
         data = json.loads(request.body or "{}")
     except json.JSONDecodeError:
         return JsonResponse({"ok": False, "message": "json_invalid"}, status=400)
 
-    print("ADMIN_TEACHERS_UPSERT payload:", repr(data))
-
-
+    user_id = data.get("id")  # ✅ важное
     email = (data.get("email") or "").strip().lower()
     if not email:
         return JsonResponse({"ok": False, "message": "email_required"}, status=400)
@@ -275,42 +416,53 @@ def admin_teachers_upsert(request):
     last1 = (data.get("last_name1") or "").strip()
     last2 = (data.get("last_name2") or "").strip()
     bio = (data.get("bio") or "").strip()
+    wa  = (data.get("wa") or "").strip()  # ✅ важное
     full_last = " ".join(p for p in [last1, last2] if p).strip()
 
-    # пробуем найти пользователя с таким email
-    existing = User.objects.filter(email=email).first()
-
-    # если уже есть docente с таким email — считаем это ошибкой "такая почта уже есть"
-    if existing and existing.is_staff:
-        return JsonResponse(
-            {"ok": False, "message": "email_exists"},
-            status=409
-        )
-
     with transaction.atomic():
-        if existing:
-            user = existing          # был alumno → делаем docente
-        else:
-            user = User.objects.create(email=email, username=email)
+        # 1) если пришёл id — это UPDATE конкретного юзера
+        user = None
+        if user_id:
+            user = User.objects.filter(pk=int(user_id)).first()
+            if not user:
+                return JsonResponse({"ok": False, "message": "not_found"}, status=404)
 
+            # конфликт email только если меняем email на чужой
+            if email and (user.email or "").lower() != email:
+                conflict = User.objects.filter(email=email).exclude(pk=user.pk).first()
+                if conflict:
+                    return JsonResponse({"ok": False, "message": "email_in_use"}, status=409)
+                user.email = email
+                user.username = email  # у тебя username=email
+
+        # 2) иначе — CREATE / PROMOTE
+        if not user:
+            existing = User.objects.filter(email=email).first()
+            if existing:
+                # если уже docente — просто обновим (а не 409)
+                user = existing
+            else:
+                user = User.objects.create(email=email, username=email)
+
+        # делаем docente
         user.first_name = first_name
         user.last_name = full_last
-        user.is_staff = True         # docente = staff
+        user.is_staff = True
         user.save()
 
         profile, _ = UserProfile.objects.get_or_create(user=user)
         profile.first_name = first_name
         profile.last_name1 = last1
         profile.last_name2 = last2
-        profile.display_name = (
-            data.get("display_name")
-            or f"{first_name} {last1}".strip()
-            or email
-        )
         profile.bio = bio
+        profile.wa = wa  # ✅ сохранится + нормализуется в save()
+        # display_name можно не трогать — твой save() сам соберёт если пусто
+        if (data.get("display_name") or "").strip():
+            profile.display_name = (data.get("display_name") or "").strip()
         profile.save()
 
     return JsonResponse({"ok": True, "id": user.id})
+
 
 @require_admin_token
 @csrf_exempt
@@ -331,6 +483,7 @@ def admin_teacher_update(request, user_id: int):
         return JsonResponse({"ok": False, "message": "json_invalid"}, status=400)
 
     email = (data.get("email") or "").strip().lower()
+    wa  = (data.get("wa") or "").strip()
     first_name = (data.get("first_name") or "").strip()
     last1 = (data.get("last_name1") or "").strip()
     last2 = (data.get("last_name2") or "").strip()
@@ -366,6 +519,7 @@ def admin_teacher_update(request, user_id: int):
 
     profile, _ = UserProfile.objects.get_or_create(user=teacher)
     profile.first_name = first_name
+    profile.wa = wa
     profile.last_name1 = last1
     profile.last_name2 = last2
     profile.display_name = (
@@ -425,58 +579,103 @@ def admin_cursos_delete(request, curso_id):
 @csrf_exempt
 @require_http_methods(["POST"])
 def admin_cursos_upsert(request):
-    """
-    POST /meatze/v5/admin/cursos/upsert
-    тело: {codigo, titulo, modules:[{name, hours}], id?}
-
-    МОДЕЛЬ ИСПОЛЬЗУЕТ JSONField → 
-    modules храним как Python list, НЕ как строку!
-    """
     try:
         data = json.loads(request.body or "{}")
     except json.JSONDecodeError:
         return JsonResponse({"message": "json_invalid"}, status=400)
 
-    codigo = (data.get("codigo") or "").strip()
+    codigo = (data.get("codigo") or "").strip().upper()
     titulo = (data.get("titulo") or "").strip()
     modules = data.get("modules") or []
+    tipo_formacion = (data.get("tipo_formacion") or "").strip().lower()
+
+    # ✅ NEW: откуда клонировать материалы
+    clone_from = (data.get("clone_from") or "").strip().upper()
 
     if not codigo or not titulo:
         return JsonResponse({"message": "codigo_titulo_required"}, status=400)
 
     norm_modules = []
     total_horas = 0
-
     for m in modules:
         if not isinstance(m, dict):
             continue
-
         name = (m.get("name") or "").strip()
         if not name:
             continue
-
         hours = int(m.get("hours") or 0)
+        if hours < 0:
+            hours = 0
         total_horas += hours
-
-        norm_modules.append({
-            "name": name,
-            "hours": hours
-        })
+        norm_modules.append({"name": name, "hours": hours})
 
     curso_id = data.get("id")
 
-    if curso_id:
-        curso = Curso.objects.get(id=curso_id)
-    else:
-        curso, _ = Curso.objects.get_or_create(codigo=codigo)
+    # определяем: это создание нового курса или апдейт
+    creating = False
 
-    curso.codigo = codigo
-    curso.titulo = titulo
-    curso.modules = norm_modules   # JSONField → кладём список, НЕ строку!
-    curso.horas_total = total_horas
-    curso.save()
+    with transaction.atomic():
+        if curso_id:
+            # редактирование по id
+            try:
+                curso = Curso.objects.get(id=curso_id)
+            except Curso.DoesNotExist:
+                # если id битый — fallback
+                curso = Curso.objects.filter(codigo=codigo).first()
+                if not curso:
+                    curso = Curso(codigo=codigo)
+                    creating = True
+        else:
+            # если нет id — upsert по коду
+            curso = Curso.objects.filter(codigo=codigo).first()
+            if not curso:
+                curso = Curso(codigo=codigo)
+                creating = True
 
-    return JsonResponse({"ok": True, "id": curso.id, "horas": total_horas})
+        curso.codigo = codigo
+        curso.titulo = titulo
+        curso.modules = norm_modules
+        curso.horas_total = total_horas
+        curso.tipo_formacion = tipo_formacion
+        curso.save()
+
+        # ✅ клонируем материалы ТОЛЬКО при создании нового курса
+        cloned_files = 0
+        if creating and clone_from and clone_from != codigo:
+            src = Curso.objects.filter(codigo=clone_from).first()
+            if src:
+                # переносим записи CursoFile без копирования файла на диск
+                src_qs = (CursoFile.objects
+                          .filter(curso=src)
+                          .only("tipo", "module_key", "title", "file", "size", "ext", "share_alumnos", "uploaded_by"))
+
+                batch = []
+                for f in src_qs:
+                    nf = CursoFile(
+                        curso=curso,
+                        uploaded_by=f.uploaded_by,
+                        tipo=f.tipo,
+                        module_key=f.module_key,
+                        title=f.title,
+                        size=f.size,
+                        ext=f.ext,
+                        share_alumnos=f.share_alumnos,
+                    )
+                    nf.file.name = f.file.name  # ✅ та же ссылка
+                    batch.append(nf)
+
+                if batch:
+                    CursoFile.objects.bulk_create(batch)
+                    cloned_files = len(batch)
+
+    return JsonResponse({
+        "ok": True,
+        "id": curso.id,
+        "horas": total_horas,
+        "tipo_formacion": curso.tipo_formacion,
+        "cloned_files": cloned_files,   # ✅ чтобы фронт мог показать “скопировано N”
+    })
+
 
 
 @require_admin_token
@@ -817,7 +1016,8 @@ def curso_horario(request, codigo):
         qs = Horario.objects.filter(curso=curso).order_by("dia", "hora_inicio")
 
         if tipo == "curso":
-            qs = qs.filter(tipo__in=["", "curso"])   # ← ключевая строка
+            qs = qs.filter(Q(tipo__isnull=True) | Q(tipo="") | Q(tipo="curso"))
+
         elif tipo:
             qs = qs.filter(tipo=tipo)
 
@@ -869,11 +1069,17 @@ def curso_horario(request, codigo):
 
     # Удаляем ТОЛЬКО текущий слой, а не всё расписание курса
     qs = Horario.objects.filter(curso=curso)
-    if current_tipo:
+
+    if current_tipo == "curso" or current_tipo == "":
+        qs = qs.filter(Q(tipo__isnull=True) | Q(tipo="") | Q(tipo="curso"))
+    elif current_tipo:
         qs = qs.filter(tipo=current_tipo)
+
     if current_grupo:
         qs = qs.filter(grupo=current_grupo)
+
     qs.delete()
+
 
     created = 0
     for it in items:
@@ -966,11 +1172,17 @@ def curso_horario_save(request, codigo):
         current_grupo = (items[0].get("grupo") or "").strip()
 
     qs = Horario.objects.filter(curso=curso)
-    if current_tipo:
+
+    if current_tipo == "curso" or current_tipo == "":
+        qs = qs.filter(Q(tipo__isnull=True) | Q(tipo="") | Q(tipo="curso"))
+    elif current_tipo:
         qs = qs.filter(tipo=current_tipo)
+
     if current_grupo:
         qs = qs.filter(grupo=current_grupo)
+
     qs.delete()
+
 
     created = 0
     for it in items:
@@ -1097,13 +1309,17 @@ def curso_horario_bulk_delete(request, codigo):
     tipo = (payload.get("tipo") or "").strip()
     grupo = (payload.get("grupo") or "").strip()
 
-    if tipo:
+    if tipo == "curso" or tipo == "":
+        qs = qs.filter(Q(tipo__isnull=True) | Q(tipo="") | Q(tipo="curso"))
+    elif tipo:
         qs = qs.filter(tipo=tipo)
+
     if grupo:
         qs = qs.filter(grupo=grupo)
 
     deleted, _ = qs.delete()
     return JsonResponse({"ok": True, "deleted": deleted})
+
 
 
 
@@ -1135,76 +1351,425 @@ def curso_alumnos(request, codigo: str):
 
     return JsonResponse({"items": items})
 
-    
-def _inject_headers_footers(docx_path: Path):
-    """
-    Хедер:
-      - слева маленький логотип Lanbide (1/3 ширины)
-      - справа широкий логотип Euskadi (2/3 ширины, содержит 2 логотипа)
+import zipfile
+from lxml import etree
 
-    Футер:
-      - слева текст
-      - справа флаг EU (без текста)
-    """
+W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+NS = {"w": W_NS}
+
+# ===== DOCX markers (module-level) =====
+COURSE_INFO_MARKERS = [
+    "Nombre curso:",
+    "Código curso:",
+    "Año académico:",
+    "Fechas impartición:",
+    "Horario:",
+    "Entidad:",
+    "Tipo formación:",
+]
+
+import zipfile
+from lxml import etree
+from pathlib import Path
+
+W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+NS = {"w": W_NS}
+
+COURSE_INFO_MARKERS = [
+    "Nombre curso:",
+    "Código curso:",
+    "Año académico:",
+    "Fechas impartición:",
+    "Horario:",
+    "Entidad:",
+    "Tipo formación:",
+]
+
+def _patch_courseinfo_fonts_and_borders(
+    docx_path: Path,
+    markers=None,
+    font_name="Trebuchet MS",
+    font_size_pt=11,
+    border_size=8,
+    border_color="000000",
+    bold_labels=True,
+    row_height_cm=0.7,          # ✅ НОВОЕ
+    v_align="center",           # ✅ НОВОЕ: center / top / bottom
+):
+    if markers is None:
+        markers = COURSE_INFO_MARKERS
+
+    half_points = str(int(font_size_pt * 2))
+
+    def cm_to_twips(cm: float) -> str:
+        # 1 inch = 2.54 cm, 1 inch = 1440 twips
+        tw = int(round((cm / 2.54) * 1440))
+        return str(max(tw, 1))
+
+    row_twips = cm_to_twips(row_height_cm)
+
+    def q(tag):
+        return f"{{{W_NS}}}{tag}"
+
+    def ensure(parent, tag, insert0=False):
+        el = parent.find(f"w:{tag}", NS)
+        if el is None:
+            el = etree.Element(q(tag))
+            if insert0 and len(parent):
+                parent.insert(0, el)
+            else:
+                parent.append(el)
+        return el
+
+    def set_run_style(run_el, make_bold=None):
+        rpr = run_el.find("w:rPr", NS)
+        if rpr is None:
+            rpr = etree.Element(q("rPr"))
+            run_el.insert(0, rpr)
+
+        rfonts = rpr.find("w:rFonts", NS)
+        if rfonts is None:
+            rfonts = etree.Element(q("rFonts"))
+            rpr.insert(0, rfonts)
+
+        rfonts.set(q("ascii"), font_name)
+        rfonts.set(q("hAnsi"), font_name)
+        rfonts.set(q("eastAsia"), font_name)
+        rfonts.set(q("cs"), font_name)
+
+        sz = rpr.find("w:sz", NS)
+        if sz is None:
+            sz = etree.Element(q("sz"))
+            rpr.append(sz)
+        sz.set(q("val"), half_points)
+
+        szcs = rpr.find("w:szCs", NS)
+        if szcs is None:
+            szcs = etree.Element(q("szCs"))
+            rpr.append(szcs)
+        szcs.set(q("val"), half_points)
+
+        if make_bold is not None:
+            if make_bold:
+                ensure(rpr, "b")
+            else:
+                b = rpr.find("w:b", NS)
+                if b is not None:
+                    rpr.remove(b)
+
+    def node_text(node):
+        parts = node.xpath(".//w:t/text()", namespaces=NS)
+        return " ".join(" ".join(parts).split()).strip()
+
+    def is_course_table(tbl):
+        found = set()
+        for tr in tbl.xpath("./w:tr", namespaces=NS):
+            tcs = tr.xpath("./w:tc", namespaces=NS)
+            if not tcs:
+                continue
+            left = node_text(tcs[0])
+            for m in markers:
+                if left.startswith(m):
+                    found.add(m)
+        return len(found) >= 3
+
+    def set_table_borders(tbl):
+        tblPr = tbl.find("w:tblPr", NS)
+        if tblPr is None:
+            tblPr = etree.Element(q("tblPr"))
+            tbl.insert(0, tblPr)
+
+        borders = tblPr.find("w:tblBorders", NS)
+        if borders is None:
+            borders = etree.Element(q("tblBorders"))
+            tblPr.append(borders)
+
+        for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
+            el = borders.find(f"w:{edge}", NS)
+            if el is None:
+                el = etree.Element(q(edge))
+                borders.append(el)
+            el.set(q("val"), "single")
+            el.set(q("sz"), str(border_size))
+            el.set(q("space"), "0")
+            el.set(q("color"), border_color)
+
+    def set_row_height(tr):
+        trPr = tr.find("w:trPr", NS)
+        if trPr is None:
+            trPr = etree.Element(q("trPr"))
+            tr.insert(0, trPr)
+
+        trH = trPr.find("w:trHeight", NS)
+        if trH is None:
+            trH = etree.Element(q("trHeight"))
+            trPr.append(trH)
+
+        trH.set(q("val"), row_twips)
+        trH.set(q("hRule"), "exact")   # ✅ именно EXACT
+
+    def set_cell_valign(tc):
+        tcPr = tc.find("w:tcPr", NS)
+        if tcPr is None:
+            tcPr = etree.Element(q("tcPr"))
+            tc.insert(0, tcPr)
+
+        vA = tcPr.find("w:vAlign", NS)
+        if vA is None:
+            vA = etree.Element(q("vAlign"))
+            tcPr.append(vA)
+        vA.set(q("val"), v_align)
+
+        # ✅ Убираем лишние отступы параграфов, чтобы “не прилипало к верху”
+        for p in tc.xpath(".//w:p", namespaces=NS):
+            pPr = p.find("w:pPr", NS)
+            if pPr is None:
+                pPr = etree.Element(q("pPr"))
+                p.insert(0, pPr)
+
+            spacing = pPr.find("w:spacing", NS)
+            if spacing is None:
+                spacing = etree.Element(q("spacing"))
+                pPr.append(spacing)
+            spacing.set(q("before"), "0")
+            spacing.set(q("after"), "0")
+
+    # ---- чтение/запись zip ----
+    with zipfile.ZipFile(docx_path, "r") as zin:
+        files = {name: zin.read(name) for name in zin.namelist()}
+
+    xml = files.get("word/document.xml")
+    if not xml:
+        return 0, 0
+
+    root = etree.fromstring(xml)
+
+    hits_tables = 0
+    hits_paras = 0
+
+    # 1) TABLE курс-инфо: бордеры + шрифт + высота строк + vAlign
+    for tbl in root.xpath(".//w:tbl", namespaces=NS):
+        if not is_course_table(tbl):
+            continue
+
+        hits_tables += 1
+        set_table_borders(tbl)
+
+        for tr in tbl.xpath("./w:tr", namespaces=NS):
+            set_row_height(tr)
+            for tc in tr.xpath("./w:tc", namespaces=NS):
+                set_cell_valign(tc)
+
+        # шрифт всем runs внутри таблицы
+        for r in tbl.xpath(".//w:r", namespaces=NS):
+            set_run_style(r, make_bold=None)
+
+        # жирным лейблы в первой колонке
+        if bold_labels:
+            for tr in tbl.xpath("./w:tr", namespaces=NS):
+                tcs = tr.xpath("./w:tc", namespaces=NS)
+                if not tcs:
+                    continue
+                left_tc = tcs[0]
+                left_txt = node_text(left_tc)
+                if any(left_txt.startswith(m) for m in markers):
+                    for r in left_tc.xpath(".//w:r", namespaces=NS):
+                        set_run_style(r, make_bold=True)
+
+        break
+
+    # 2) Параграфы-строки (если LO не таблицей)
+    for p in root.xpath(".//w:p", namespaces=NS):
+        full = node_text(p)
+        if full and any(full.startswith(m) for m in markers):
+            for r in p.xpath(".//w:r", namespaces=NS):
+                set_run_style(r, make_bold=None)
+            hits_paras += 1
+
+    files["word/document.xml"] = etree.tostring(
+        root, xml_declaration=True, encoding="UTF-8", standalone="yes"
+    )
+
+    with zipfile.ZipFile(docx_path, "w", compression=zipfile.ZIP_DEFLATED) as zout:
+        for name, data in files.items():
+            zout.writestr(name, data)
+
+    return hits_tables, hits_paras
+
+
+def _patch_docx_courseinfo_paragraphs(
+    docx_path: Path,
+    markers=None,
+    font_name="Trebuchet MS",
+    font_size_pt=11,
+    bold_labels=True,   # ✅ ДОБАВИЛИ
+):
+    # ✅ если markers не передали — берём дефолт
+    if markers is None:
+        markers = globals().get("COURSE_INFO_MARKERS") or [
+            "Nombre curso:",
+            "Código curso:",
+            "Año académico:",
+            "Fechas impartición:",
+            "Horario:",
+            "Entidad:",
+            "Tipo formación:",
+        ]
+
+
+    # ✅ на всякий случай нормализуем
+    markers = [str(m).strip() for m in (markers or []) if str(m).strip()]
+
+    half_points = str(int(font_size_pt * 2))
+
+    def ensure_rpr(run_el):
+        rpr = run_el.find("w:rPr", NS)
+        if rpr is None:
+            rpr = etree.Element(f"{{{W_NS}}}rPr")
+            run_el.insert(0, rpr)
+        return rpr
+
+    def set_fonts(rpr):
+        rfonts = rpr.find("w:rFonts", NS)
+        if rfonts is None:
+            rfonts = etree.Element(f"{{{W_NS}}}rFonts")
+            rpr.insert(0, rfonts)
+        rfonts.set(f"{{{W_NS}}}ascii", font_name)
+        rfonts.set(f"{{{W_NS}}}hAnsi", font_name)
+        rfonts.set(f"{{{W_NS}}}eastAsia", font_name)
+        rfonts.set(f"{{{W_NS}}}cs", font_name)
+
+        sz = rpr.find("w:sz", NS)
+        if sz is None:
+            sz = etree.Element(f"{{{W_NS}}}sz")
+            rpr.append(sz)
+        sz.set(f"{{{W_NS}}}val", half_points)
+
+        szcs = rpr.find("w:szCs", NS)
+        if szcs is None:
+            szcs = etree.Element(f"{{{W_NS}}}szCs")
+            rpr.append(szcs)
+        szcs.set(f"{{{W_NS}}}val", half_points)
+
+    def set_bold(rpr, on=True):
+        b = rpr.find("w:b", NS)
+        if b is None:
+            b = etree.Element(f"{{{W_NS}}}b")
+            rpr.append(b)
+        b.set(f"{{{W_NS}}}val", "1" if on else "0")
+
+    hits = 0
+
+    with zipfile.ZipFile(docx_path, "r") as zin:
+        files = {name: zin.read(name) for name in zin.namelist()}
+
+    xml = files.get("word/document.xml")
+    if not xml:
+        logger.warning("DOCX XML: word/document.xml not found")
+        return
+
+    root = etree.fromstring(xml)
+
+    # Ищем все абзацы w:p (они есть и в body и внутри w:txbxContent)
+    for p in root.xpath(".//w:p", namespaces=NS):
+        # склеиваем весь текст абзаца
+        texts = [t.text for t in p.xpath(".//w:t", namespaces=NS) if t.text]
+        full = " ".join(" ".join(texts).split()).strip()
+        if not full:
+            continue
+
+        if any(full.startswith(m) for m in markers):
+            # применяем стиль ко всем runs этого абзаца
+            runs = p.xpath(".//w:r", namespaces=NS)
+            for r in runs:
+                rpr = ensure_rpr(r)
+                set_fonts(rpr)
+
+            # если хочешь: сам маркер сделать bold (аккуратно)
+            # (обычно первый run и есть маркер)
+            if bold_labels and runs:
+                rpr0 = ensure_rpr(runs[0])
+                set_bold(rpr0, True)
+
+            hits += 1
+
+    files["word/document.xml"] = etree.tostring(
+        root, xml_declaration=True, encoding="UTF-8", standalone="yes"
+    )
+
+    with zipfile.ZipFile(docx_path, "w", compression=zipfile.ZIP_DEFLATED) as zout:
+        for name, data in files.items():
+            zout.writestr(name, data)
+
+    logger.warning("DOCX XML: courseinfo paragraphs patched = %s", hits)
+
+
+from docx.shared import Cm, Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+def _inject_headers_footers(docx_path: Path):
     LOGOS = getattr(settings, "MEATZE_DOCX_LOGOS", {})
 
     doc = Document(str(docx_path))
     section = doc.sections[0]
 
+    # Принудительные поля секции (чтобы всё влазило и не было "узко")
+    section.left_margin  = Cm(1.0)
+    section.right_margin = Cm(1.0)
+    section.top_margin   = Cm(1.2)
+    section.bottom_margin= Cm(1.2)
+
     usable_width = section.page_width - section.left_margin - section.right_margin
 
     # ================= HEADER =================
     header = section.header
-
-    # 2 колонки: 1/3 и 2/3
     h_table = header.add_table(rows=1, cols=2, width=usable_width)
-    col_left_width  = int(usable_width * (1/3))
-    col_right_width = int(usable_width * (2/3))
+    col_left_width  = int(usable_width * 0.5)
+    col_right_width = int(usable_width * 0.5)
+
     h_table.columns[0].width = col_left_width
     h_table.columns[1].width = col_right_width
 
     cell_left, cell_right = h_table.rows[0].cells
 
-    # -- Lanbide слева, поменьше
     lanbide = LOGOS.get("lanbide")
     if lanbide and Path(lanbide).exists():
         p_l = cell_left.paragraphs[0]
         p_l.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        r_l = p_l.add_run()
-        # Сделаем маленьким, чтобы не мешал заголовку таблицы
-        r_l.add_picture(lanbide, width=Cm(2.5))
+        p_l.paragraph_format.space_before = Pt(0)
+        p_l.paragraph_format.space_after  = Pt(0)
+        p_l.add_run().add_picture(lanbide, width=Cm(2.5))
 
-    # -- Euskadi справа, крупный, занимает 2/3
     euskadi = LOGOS.get("euskadi")
     if euskadi and Path(euskadi).exists():
         p_r = cell_right.paragraphs[0]
         p_r.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        r_r = p_r.add_run()
-        # Широкий логотип на две трети шапки
-        r_r.add_picture(euskadi, width=Cm(9.5))
+        p_r.paragraph_format.space_before = Pt(0)
+        p_r.paragraph_format.space_after  = Pt(0)
+        p_r.add_run().add_picture(euskadi, width=Cm(9.5))
 
     # ================= FOOTER =================
     footer = section.footer
-
     for p in footer.paragraphs:
         p.text = ""
 
-    # Тоже ВАЖНО: width обязателен
-    f_table = footer.add_table(rows=2, cols=1, width=usable_width)
+    # ✅ Поднять футер (не влияет на ширину таблиц в документе)
+    section.footer_distance = Cm(1.2)  # попробуй 1.0..1.5
+
+    # ✅ ОДНА строка, без "пробела" сверху
+    f_table = footer.add_table(rows=1, cols=1, width=usable_width)
     f_table.autofit = False
 
-    # отступ (первая строка)
-    sp = f_table.rows[0].cells[0].paragraphs[0]
-    sp.add_run(" ")
-
-    # EU-флаг (вторая строка)
     eu = LOGOS.get("eu")
     if eu and Path(eu).exists():
-        p = f_table.rows[1].cells[0].paragraphs[0]
+        p = f_table.rows[0].cells[0].paragraphs[0]
         p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        p.paragraph_format.space_before = Pt(0)
+        p.paragraph_format.space_after  = Pt(0)
         p.add_run().add_picture(eu, width=Cm(3.2))
 
     doc.save(str(docx_path))
+
 
 
 @csrf_exempt
@@ -1268,6 +1833,10 @@ def export_docx_graphic(request):
         html_path = tmpdir_path / "calendario.html"
         html_path.write_text(html, encoding="utf-8")
 
+        if not LIBREOFFICE_BIN or not Path(LIBREOFFICE_BIN).exists():
+            return JsonResponse({"ok": False, "error": "soffice_not_found", "bin": LIBREOFFICE_BIN}, status=503)
+
+
         # 1) HTML -> DOCX через LibreOffice
         cmd = [
             LIBREOFFICE_BIN,
@@ -1276,12 +1845,17 @@ def export_docx_graphic(request):
             "--outdir", str(tmpdir_path),
             str(html_path),
         ]
+        
+        env = os.environ.copy()
+        env["PATH"] = env.get("PATH") or "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
         proc = subprocess.run(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=tmpdir,
             timeout=120,
+            env=env,
         )
         logger.info("LO stdout: %s", proc.stdout.decode(errors="ignore"))
         logger.info("LO stderr: %s", proc.stderr.decode(errors="ignore"))
@@ -1314,9 +1888,19 @@ def export_docx_graphic(request):
         # 3) Добавляем легенду: выходные + vacaciones (неучебные)
         try:
             vacaciones = payload.get("vacaciones") or []
+            try:
+                _patch_docx_courseinfo_paragraphs(docx_path, font_size_pt=11)
+            except Exception as e:
+                logger.exception("DOCX patch failed, continuing without font patch: %s", e)
             doc = Document(str(docx_path))
             _add_legend_nonlective(doc, vacaciones)
             doc.save(str(docx_path))
+            try:
+                t_hits, p_hits = _patch_courseinfo_fonts_and_borders(docx_path, font_size_pt=12, row_height_cm=0.7, v_align="center",)
+                logger.warning("DOCX XML: course table hits=%s; marker paragraphs hits=%s", t_hits, p_hits)
+            except Exception as e:
+                logger.exception("DOCX patch failed, continuing without font/border patch: %s", e)
+
         except Exception as e:
             logger.exception("Failed to add nonlective legend: %s", e)
 

@@ -326,13 +326,10 @@
       </div>
 
       <div class="mz-hero-footer">
-<button class="mz-hero-cta"
-        data-action="auth.open"
-        type="button"
-        onclick="window.mzOpenAuth && window.mzOpenAuth();">
+<a class="mz-hero-cta" href="{% if request.user.is_authenticated %}/alumno/{% else %}/acceder/{% endif %}">
+  Entrar al Campus
+</a>
 
-          Entrar al Campus
-        </button>
         <div class="mz-hero-note">
           ¿Primera vez? Usa el PIN que te llega por e-mail o pide acceso a tu docente.
         </div>
@@ -372,7 +369,7 @@
       </div>
       <div class="mz-ai-foot">
         <span id="mz-ai-footnote">Responde solo sobre MEATZE Campus.</span>
-        <span>Propulsado por IA local (Ollama).</span>
+        <span>Propulsado por IA local.</span>
       </div>
     </section>
   </div>

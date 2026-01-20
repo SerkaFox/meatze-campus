@@ -250,6 +250,319 @@
     border-color: rgba(254,202,202,0.9);
     color: #fef2f2;
   }
+/* === Physical receipt block === */
+.mz-rec-card{
+  margin-top: 14px;
+  padding: 14px 14px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148,163,184,0.55);
+  background: radial-gradient(circle at top left, rgba(16,185,129,0.14), rgba(15,23,42,0.92));
+}
+
+.mz-rec-title{
+  margin: 0 0 4px;
+  font-size: .9rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color:#e5e7eb;
+}
+
+.mz-rec-sub{
+  margin: 0 0 10px;
+  font-size: .78rem;
+  color:#9ca3af;
+}
+
+.mz-rec-grid{
+  display:grid;
+  gap:10px;
+}
+
+.mz-rec-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(30,64,175,0.55);
+  background: rgba(15,23,42,0.55);
+}
+
+.mz-rec-row input[type="checkbox"]{
+  width: 16px;
+  height: 16px;
+}
+
+.mz-rec-row.is-locked{
+  opacity:.82;
+  border-style:dashed;
+}
+
+.mz-rec-row.is-locked .mz-rec-hint{
+  color:#a7f3d0;
+}
+
+.mz-rec-hint{
+  font-size:.75rem;
+  color:#9ca3af;
+  margin-left:auto;
+  white-space:nowrap;
+}
+/* === Modules dropdown (MF → UF) === */
+.mz-mod-dd {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mz-mod-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,0.55);
+  background: rgba(15,23,42,0.85);
+  color: #e5e7eb;
+  cursor: pointer;
+  font-size: .82rem;
+  transition: transform 100ms ease, background 140ms ease, border-color 140ms ease;
+  user-select: none;
+}
+
+.mz-mod-btn:hover {
+  background: rgba(30,64,175,0.9);
+  border-color: rgba(191,219,254,0.8);
+  transform: translateY(-1px);
+}
+
+.mz-mod-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 50;
+
+  /* ширина будет задаваться JS по контенту */
+  min-width: 260px;
+  max-width: none;
+
+  max-height: 320px;
+  overflow: auto;
+  padding: 8px;
+  border-radius: 14px;
+  border: 1px solid rgba(148,163,184,0.75);
+
+  /* ✅ без прозрачных градиентов */
+  background: #0b1220;
+
+  box-shadow: 0 14px 38px rgba(0,0,0,0.55);
+  display: none;
+}
+
+.mz-mod-menu.is-open { display: block; }
+
+/* ✅ более “чистый” скролл */
+.mz-mod-menu::-webkit-scrollbar { width: 10px; }
+.mz-mod-menu::-webkit-scrollbar-thumb {
+  background: rgba(148,163,184,0.35);
+  border-radius: 999px;
+  border: 2px solid #0b1220;
+}
+.mz-mod-menu::-webkit-scrollbar-track { background: transparent; }
+
+
+.mz-mod-group {
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid rgba(30,64,175,0.35);
+  background: rgba(15,23,42,0.55);
+  margin-bottom: 8px;
+}
+
+.mz-mod-group:last-child { margin-bottom: 0; }
+
+.mz-mod-mf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  color: #e5e7eb;
+  font-weight: 700;
+  font-size: .82rem;
+}
+
+.mz-mod-uf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 8px 8px;
+}
+
+.mz-mod-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,0.45);
+  background: rgba(15,23,42,0.75);
+  color: #cbd5f5;
+  text-decoration: none;
+  font-size: .78rem;
+  white-space: nowrap;
+}
+
+.mz-mod-link:hover {
+  background: rgba(30,64,175,0.9);
+  border-color: rgba(191,219,254,0.7);
+  color: #f9fafb;
+}
+
+.mz-mod-link.is-act {
+  background: radial-gradient(circle at top, #22d3ee, #3b82f6);
+  border-color: rgba(248,250,252,0.9);
+  color: #0b1120;
+  box-shadow: 0 0 0 1px rgba(15,23,42,0.95), 0 8px 18px rgba(37,99,235,0.55);
+}
+
+@media (max-width: 720px) {
+  .mz-mod-menu { min-width: 260px; max-width: 92vw; }
+}
+/* hide module select when auto-module is active */
+.mz-upl-row .mz-upl-select.is-hidden { display:none; }
+/* === Drag & Drop upload zone === */
+.mz-drop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px dashed rgba(148,163,184,0.65);
+  background: rgba(15,23,42,0.55);
+  cursor: pointer;
+  user-select: none;
+  transition: transform 120ms ease, background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+  min-width: 260px;
+}
+
+.mz-drop:hover{
+  background: rgba(30,64,175,0.22);
+  border-color: rgba(191,219,254,0.75);
+  transform: translateY(-1px);
+}
+
+.mz-drop.is-over{
+  background: rgba(34,211,238,0.18);
+  border-color: rgba(34,211,238,0.85);
+  box-shadow: 0 0 0 2px rgba(34,211,238,0.15);
+}
+
+.mz-drop-ico{
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border: 1px solid rgba(148,163,184,0.45);
+  background: rgba(15,23,42,0.75);
+  color: #e5e7eb;
+  flex: 0 0 auto;
+}
+
+.mz-drop-txt{
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.mz-drop-title{
+  color:#e5e7eb;
+  font-size: .84rem;
+  font-weight: 700;
+}
+
+.mz-drop-sub{
+  color:#9ca3af;
+  font-size: .74rem;
+  margin-top: 2px;
+}
+
+.mz-drop-count{
+  margin-left:auto;
+  font-size: .72rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,0.45);
+  background: rgba(15,23,42,0.75);
+  color:#e5e7eb;
+  white-space: nowrap;
+}
+/* === file download button look === */
+.mz-file-link{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(148,163,184,0.55);
+  background: rgba(15,23,42,0.75);
+  color:#f9fafb;
+  text-decoration:none;
+  max-width: 100%;
+  box-shadow: 0 0 0 1px rgba(15,23,42,0.6);
+  transition: transform 120ms ease, background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.mz-file-link:hover{
+  background: rgba(30,64,175,0.28);
+  border-color: rgba(191,219,254,0.75);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.35);
+  transform: translateY(-1px);
+}
+
+.mz-file-ico{
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border: 1px solid rgba(148,163,184,0.45);
+  background: rgba(15,23,42,0.85);
+  font-size: 14px;
+  flex: 0 0 auto;
+}
+
+.mz-file-name{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.mz-file-dl{
+  margin-left: 6px;
+  font-size: .72rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(34,211,238,0.55);
+  background: rgba(8,145,178,0.18);
+  color: #a5f3fc;
+  white-space: nowrap;
+}
+
+/* make title line allow button-like link + copy button */
+.mz-mat-title-file{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
 
 </style>
 
@@ -283,31 +596,73 @@
     </div>
   {% endif %}
 
-  {# ---- фильтр по модулю (пилюли) ---- #}
-  <div class="mz-mat-modfilters">
- <a href="?tab=materiales&aud={{ audience }}"
-   class="mz-pill{% if not selected_mod %} is-act{% endif %}"
-   data-action="materials.filter"
-   data-mod="">
-  Todos{% if total_files %} · {{ total_files }}{% endif %}
-    </a>
+{# ---- фильтр по модулю (компактно) ---- #}
+<div class="mz-mat-modfilters" data-selected-mod="{{ selected_mod|default:'' }}">
+  <a href="?tab=materiales&aud={{ audience }}"
+     class="mz-pill{% if not selected_mod %} is-act{% endif %}"
+     data-action="materials.filter"
+     data-mod="">
+    Todos{% if total_files %} · {{ total_files }}{% endif %}
+  </a>
 
-<a href="?tab=materiales&aud={{ audience }}&mod=none"
-   class="mz-pill{% if selected_mod == 'none' %} is-act{% endif %}"
-   data-action="materials.filter"
-   data-mod="none">
-  Sin módulo{% if none_count %} · {{ none_count }}{% endif %}
-    </a>
+  <a href="?tab=materiales&aud={{ audience }}&mod=none"
+     class="mz-pill{% if selected_mod == 'none' %} is-act{% endif %}"
+     data-action="materials.filter"
+     data-mod="none">
+    Sin módulo{% if none_count %} · {{ none_count }}{% endif %}
+  </a>
 
-    {% for m in mods_with_counts %}
-<a href="?tab=materiales&aud={{ audience }}&mod={{ m.name|urlencode }}"
-   class="mz-pill{% if selected_mod == m.name %} is-act{% endif %}"
-   data-action="materials.filter"
-   data-mod="{{ m.name }}">
-  {{ m.name }}{% if m.count %} · {{ m.count }}{% endif %}
-      </a>
-    {% endfor %}
+  {# dropdown MF → UF #}
+  <div class="mz-mod-dd" id="mz-mod-dd">
+    <div class="mz-mod-btn" id="mz-mod-btn" role="button" tabindex="0">
+      <span>Modulos</span>
+      <span style="opacity:.75;font-size:.75rem">
+        {% if selected_mod and selected_mod != 'none' %}· {{ selected_mod }}{% else %}· todos{% endif %}
+      </span>
+      <span style="opacity:.8">▾</span>
+    </div>
+
+    <div class="mz-mod-menu" id="mz-mod-menu">
+      {# fallback: если нет группировки, покажем плоский список #}
+      {% if mod_groups %}
+        {# mod_groups: [{mf:'MF1', items:[{name:'UF1',count:3}, ...]}, ...] #}
+        {% for g in mod_groups %}
+          <div class="mz-mod-group">
+            <div class="mz-mod-mf">
+              <span>{{ g.mf }}</span>
+              <span style="font-size:.74rem;opacity:.75">{{ g.total|default:'' }}</span>
+            </div>
+            <div class="mz-mod-uf">
+              {% for it in g.items %}
+                <a class="mz-mod-link{% if selected_mod == it.name %} is-act{% endif %}"
+                   href="?tab=materiales&aud={{ audience }}&mod={{ it.name|urlencode }}"
+                   data-action="materials.filter"
+                   data-mod="{{ it.name }}">
+                  {{ it.name }}{% if it.count %} · {{ it.count }}{% endif %}
+                </a>
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="mz-mod-group">
+          <div class="mz-mod-mf"><span>Listado</span></div>
+          <div class="mz-mod-uf">
+            {% for m in mods_with_counts %}
+              <a class="mz-mod-link{% if selected_mod == m.name %} is-act{% endif %}"
+                 href="?tab=materiales&aud={{ audience }}&mod={{ m.name|urlencode }}"
+                 data-action="materials.filter"
+                 data-mod="{{ m.name }}">
+                {{ m.name }}{% if m.count %} · {{ m.count }}{% endif %}
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
   </div>
+</div>
+
 
 
 
@@ -325,30 +680,41 @@
 
         <div id="mz-upl-rows" class="mz-upl-rows">
           <div class="mz-upl-row" data-row-idx="1">
-            <input type="file"
-                   name="file_1"
-                   data-role="file"
-                   class="mz-upl-input"
-                   required>
+		<div class="mz-drop" data-role="dropzone" title="Arrastra archivos aquí o haz clic">
+		  <div class="mz-drop-ico">⬆</div>
+<div class="mz-drop-txt">
+  <div class="mz-drop-title" data-role="droplabel">Arrastra y suelta archivos</div>
+  <div class="mz-drop-sub" data-role="dropsub">o haz clic para seleccionarlos (multi)</div>
+</div>
+
+<div class="mz-drop-count" data-role="dropcount">0</div>
+
+<button type="button"
+        class="mz-file-clear"
+        data-role="dropclear"
+        title="Quitar selección"
+        style="margin-left:0">
+  ×
+</button>
+
+		</div>
+
+		<input type="file"
+			   name="file_1"
+			   data-role="file"
+			   class="mz-upl-input"
+			   style="display:none"
+			   multiple>
+
 
             <input type="text"
                    name="title_1"
                    data-role="title"
                    class="mz-upl-input"
                    placeholder="Título (opcional)">
+				   
+<input type="hidden" name="module_key_1" data-role="module_key" value="">
 
-            <select name="module_key_1"
-                    data-role="module_key"
-                    class="mz-upl-select">
-              <option value="">Sin módulo</option>
-              {% for m in mods %}
-                {% with name=m.name %}
-                  {% if name %}
-                    <option value="{{ name|default_if_none:'' }}">{{ name }}</option>
-                  {% endif %}
-                {% endwith %}
-              {% endfor %}
-            </select>
 
 <button type="button"
         class="mz-file-clear mz-upl-remove-row"
@@ -361,12 +727,6 @@
         </div>
 
         <div class="mz-upl-row" style="margin-top:8px">
-<button type="button" class="mzc-btn ghost" id="mz-upl-add"
-        data-action="materials.upload.row.add">
-  Añadir otro archivo
-</button>
-
-
 <button type="submit" class="mzc-btn" id="mzf-send"
         data-action="materials.upload.submit">
   Subir
@@ -384,13 +744,28 @@
       {% for f in files %}
         <li class="mz-mat-item">
           <div class="mz-mat-main">
-            <p class="mz-mat-title-file">
-              <a href="{{ f.file.url }}" target="_blank" rel="noopener"
-				   data-action="materials.open"
-				   data-file-id="{{ f.id }}">
-                {{ f.title|default:f.filename }}
-              </a>
-            </p>
+           <p class="mz-mat-title-file">
+  <a class="mz-file-link"
+     href="{% url 'panel:material_download' f.id %}"
+     target="_blank" rel="noopener"
+     data-action="materials.open"
+     data-file-id="{{ f.id }}"
+     title="Descargar archivo">
+    <span class="mz-file-ico">⬇</span>
+    <span class="mz-file-name">{{ f.title|default:f.filename }}</span>
+    <span class="mz-file-dl">Descargar</span>
+  </a>
+
+  {% if is_teacher %}
+    <button class="mzc-btn ghost"
+            type="button"
+            data-action="materials.copy_public_link"
+            data-share-url="{% url 'panel:material_share_link_create' f.id %}">
+      Copiar enlace
+    </button>
+  {% endif %}
+</p>
+
 
             <div class="mz-mat-meta">
               <span>{{ f.ext|upper }}</span>
@@ -398,6 +773,15 @@
               <span>{{ f.fmt_size }}</span>
               <span class="mz-mat-dot"></span>
               <span>{{ f.uploaded_by.get_full_name|default:f.uploaded_by.email }}</span>
+{% if not is_teacher %}
+  {% if f.is_downloaded %}
+    <div class="mz-chip-mini">Descargado</div>
+  {% else %}
+    <div class="mz-chip-mini" style="border-color:rgba(148,163,184,0.6);background:rgba(15,23,42,0.5);color:#e5e7eb">
+      No descargado
+    </div>
+  {% endif %}
+{% endif %}
 
               {% if f.module_key %}
                 <span class="mz-mat-dot"></span>
@@ -423,16 +807,17 @@
 
           {% if is_teacher %}
             <div class="mz-mat-actions">
-              <form method="post" style="margin:0">
-                {% csrf_token %}
-                <input type="hidden" name="share_id" value="{{ f.id }}">
-                <button class="mzc-btn ghost" type="submit"
-        data-action="materials.share.toggle"
-        data-file-id="{{ f.id }}">
-                  {% if f.share_alumnos %}Ocultar de alumnos{% else %}Mostrar a alumnos{% endif %}
-                </button>
-              </form>
-
+{% if audience != 'alumnos' %}
+  <form method="post" style="margin:0">
+    {% csrf_token %}
+    <input type="hidden" name="share_id" value="{{ f.id }}">
+    <button class="mzc-btn ghost" type="submit"
+            data-action="materials.share.toggle"
+            data-file-id="{{ f.id }}">
+      {% if f.share_alumnos %}Ocultar de alumnos{% else %}Mostrar a alumnos{% endif %}
+    </button>
+  </form>
+{% endif %}
               {% if f.tipo == "docentes" %}
                 <form method="post" style="margin:0">
                   {% csrf_token %}
@@ -453,6 +838,7 @@
                 <button class="mzc-btn ghost" type="submit">
                   Eliminar
                 </button>
+				
               </form>
             </div>
           {% endif %}
@@ -462,37 +848,182 @@
       <li class="mzc-note">No hay materiales aún.</li>
     {% endif %}
   </ul>
+  
+  {% if is_teacher %}
+  <div class="mz-rec-card" style="border-color:rgba(191,219,254,0.35);background:radial-gradient(circle at top left, rgba(59,130,246,0.18), rgba(15,23,42,0.92));">
+    <h4 class="mz-rec-title">Así lo ven los alumnos</h4>
+    <p class="mz-rec-sub">Lista rápida de materiales visibles para alumnos (sin cambiar de pestañas).</p>
+
+    {% if student_visible_files %}
+      <ul class="mz-mat-list" style="margin-top:10px">
+        {% for f in student_visible_files %}
+          <li class="mz-mat-item" style="border-color:rgba(34,211,238,0.35)">
+            <div class="mz-mat-main">
+              <p class="mz-mat-title-file" style="margin-bottom:4px">
+                <a href="{% url 'panel:material_download' f.id %}" target="_blank" rel="noopener">
+                  {{ f.title|default:f.filename }}
+                </a>
+              </p>
+              <div class="mz-mat-meta">
+                <span>{{ f.ext|upper }}</span>
+                <span class="mz-mat-dot"></span>
+                <span>{{ f.fmt_size }}</span>
+                <span class="mz-mat-dot"></span>
+                {% if f.module_key %}
+                  <span class="mz-mat-tag">{{ f.module_key }}</span>
+                {% else %}
+                  <span class="mz-mat-tag muted">Sin módulo</span>
+                {% endif %}
+              </div>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="mzc-note">Ahora mismo no hay archivos visibles para alumnos.</div>
+    {% endif %}
+  </div>
+{% endif %}
+
+  {% if is_teacher %}
+  <div class="mz-rec-card">
+    <h4 class="mz-rec-title">Material físico del curso</h4>
+    <p class="mz-rec-sub">Selecciona qué elementos se reparten en este curso. Los alumnos solo verán estos.</p>
+
+    <form method="post" style="margin:0">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="physical_config_save">
+
+      <div class="mz-rec-grid">
+        {% for item in physical_items %}
+          <label class="mz-rec-row">
+            <input type="checkbox"
+                   name="phys_{{ item.key }}"
+                   {% if item.key in physical_enabled_keys %}checked{% endif %}>
+            <div style="min-width:0">
+              <div style="color:#e5e7eb;font-size:.86rem">{{ item.label }}</div>
+              <div class="mz-rec-hint">Visible para alumnos</div>
+            </div>
+          </label>
+        {% endfor %}
+      </div>
+
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="mzc-btn" type="submit">Guardar</button>
+      </div>
+    </form>
+  </div>
+{% endif %}
+
+  
+{% if not is_teacher and physical_items_enabled and not receipt_all_done %}
+  <div class="mz-rec-card">
+    <h4 class="mz-rec-title">Material físico recibido</h4>
+    <p class="mz-rec-sub">Confirma solo una vez. Después queda bloqueado para la trazabilidad (Lanbide).</p>
+
+    <form method="post" style="margin:0">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="receipt_save">
+
+      <div class="mz-rec-grid">
+  {% for item in physical_items_enabled %}
+          <label class="mz-rec-row{% if item.key in receipt_locked_keys %} is-locked{% endif %}">
+            <input type="checkbox"
+                   name="receipt_{{ item.key }}"
+                   {% if item.key in receipt_keys %}checked{% endif %}
+                   {% if item.key in receipt_locked_keys %}disabled{% endif %}>
+
+            <div style="min-width:0">
+              <div style="color:#e5e7eb;font-size:.86rem">{{ item.label }}</div>
+
+              {% if item.key in receipt_locked_keys %}
+                <div class="mz-rec-hint">Confirmado · bloqueado</div>
+              {% else %}
+                <div class="mz-rec-hint">Pendiente</div>
+              {% endif %}
+            </div>
+
+            {% if item.key in receipt_keys %}
+              <span class="mz-chip-mini">Confirmado</span>
+            {% endif %}
+          </label>
+        {% endfor %}
+      </div>
+
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="mzc-btn" type="submit">Confirmar</button>
+      </div>
+    </form>
+  </div>
+{% endif %}
+
 </div>
 <script>
-(function() {
-  const input = document.getElementById('mz-file-input');
-  if (!input) return;
+(function(){
+  const dd = document.getElementById('mz-mod-dd');
+  const btn = document.getElementById('mz-mod-btn');
+  const menu = document.getElementById('mz-mod-menu');
+  if (!dd || !btn || !menu) return;
 
-  const labelSpan = document.getElementById('mz-file-label');
-  const clearBtn  = document.getElementById('mz-file-clear');
-
-  function resetFile() {
-    input.value = '';
-    labelSpan.textContent = 'Seleccionar archivo…';
-    clearBtn.style.display = 'none';
+function calcMenuWidth(){
+  // временно показываем, чтобы можно было измерить
+  const wasOpen = menu.classList.contains('is-open');
+  if (!wasOpen) {
+    menu.style.visibility = 'hidden';
+    menu.classList.add('is-open');
   }
 
-  input.addEventListener('change', function() {
-    if (input.files && input.files.length > 0) {
-      labelSpan.textContent = input.files[0].name;
-      clearBtn.style.display = 'inline-flex';
-    } else {
-      resetFile();
-    }
+  // измеряем самую широкую ссылку
+  let maxW = 0;
+  menu.querySelectorAll('a').forEach(a => {
+    maxW = Math.max(maxW, a.scrollWidth);
   });
 
-  clearBtn.addEventListener('click', function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    resetFile();
+  // + паддинги + небольшой запас
+  const padding = 32; // запас под padding/границы
+  const target = Math.ceil(maxW + padding);
+
+  // не уже кнопки
+  const btnW = btn.getBoundingClientRect().width;
+  const finalW = Math.max(target, Math.ceil(btnW), 260);
+
+  menu.style.width = finalW + 'px';
+
+  if (!wasOpen) {
+    menu.classList.remove('is-open');
+    menu.style.visibility = '';
+  }
+}
+
+function open(){
+  calcMenuWidth();
+  menu.classList.add('is-open');
+}
+function close(){ menu.classList.remove('is-open'); }
+function toggle(){
+  if (menu.classList.contains('is-open')) close();
+  else open();
+}
+
+
+  btn.addEventListener('click', function(e){ e.preventDefault(); toggle(); });
+  btn.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    if (e.key === 'Escape') close();
+  });
+
+  document.addEventListener('click', function(e){
+    if (!dd.contains(e.target)) close();
+  });
+
+  // close after selecting a module
+  menu.addEventListener('click', function(e){
+    const a = e.target.closest('a[data-mod]');
+    if (a) close();
   });
 })();
 </script>
+
 <script>
 (function() {
   const rowsContainer = document.getElementById('mz-upl-rows');
@@ -521,29 +1052,38 @@
     }
   }
 
-  function addRow() {
-    const template = rowsContainer.children[0];
-    if (!template) return;
+	function addRow() {
+	  const template = rowsContainer.children[0];
+	  if (!template) return;
 
-    idx += 1;
-    const clone = template.cloneNode(true);
-    clone.setAttribute('data-row-idx', String(idx));
+	  idx += 1;
+	  const clone = template.cloneNode(true);
+	  // убираем drag&drop из клонов — он должен быть только в первой строке
+		const dz = clone.querySelector('[data-role="dropzone"]');
+		if (dz) dz.remove();
+const fileInput = clone.querySelector('[data-role="file"]');
+if (fileInput) fileInput.style.display = ''; // показываем input в строках без drop-zone
 
-    clone.querySelectorAll('[data-role]').forEach(function(el) {
-      const role = el.getAttribute('data-role');
-      if (!role) return;
-      el.name = role + '_' + idx;
-      if (role === 'file' || role === 'title') {
-        el.value = '';
-      }
-      if (role === 'module_key') {
-        el.value = '';
-      }
-    });
+	  clone.setAttribute('data-row-idx', String(idx));
 
-    rowsContainer.appendChild(clone);
-    bindRow(clone);
-  }
+	  clone.querySelectorAll('[data-role]').forEach(function(el) {
+		const role = el.getAttribute('data-role');
+		if (!role) return;
+
+		el.name = role + '_' + idx;
+
+		if (role === 'file') {
+		  el.value = '';
+		  el.removeAttribute('multiple'); // ✅ вот это добавь
+		}
+		if (role === 'title') el.value = '';
+		if (role === 'module_key') el.value = '';
+	  });
+
+	  rowsContainer.appendChild(clone);
+	  bindRow(clone);
+	}
+
 
   // инициализируем первую строку
   Array.from(rowsContainer.children).forEach(bindRow);
@@ -554,3 +1094,325 @@
   });
 })();
 </script>
+<script>
+(function(){
+  const filters = document.querySelector('.mz-mat-modfilters[data-selected-mod]');
+  if (!filters) return;
+
+  const selected = (filters.getAttribute('data-selected-mod') || '').trim();
+
+  // если модуль не выбран или выбрано "none" → оставляем пусто (= "Sin módulo")
+  if (!selected || selected === 'none') return;
+
+  const rowsContainer = document.getElementById('mz-upl-rows');
+  if (!rowsContainer) return;
+
+  function applyToRow(row){
+    const mk = row.querySelector('[data-role="module_key"]');
+    if (!mk) return;
+    mk.value = selected; // hidden input
+  }
+
+  function applyAll(){
+    rowsContainer.querySelectorAll('.mz-upl-row').forEach(applyToRow);
+  }
+
+  applyAll();
+
+  const mo = new MutationObserver(function(muts){
+    for (const m of muts) {
+      if (m.type === 'childList' && m.addedNodes && m.addedNodes.length) {
+        applyAll();
+        break;
+      }
+    }
+  });
+  mo.observe(rowsContainer, { childList:true });
+})();
+</script>
+<script>
+(function() {
+  const rowsContainer = document.getElementById('mz-upl-rows');
+  if (!rowsContainer) return;
+
+  function setSingleFile(input, file){
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+  }
+
+  function clearFileInput(input){
+    try { input.value = ''; } catch(e) {}
+    // на всякий — сбросим через DataTransfer
+    const dt = new DataTransfer();
+    input.files = dt.files;
+  }
+
+  function addRowFromTemplate(){
+    const template = rowsContainer.children[0];
+    if (!template) return null;
+
+    const idx = rowsContainer.children.length + 1;
+    const clone = template.cloneNode(true);
+
+    // убрать dropzone из клонов
+    const dz = clone.querySelector('[data-role="dropzone"]');
+    if (dz) dz.remove();
+
+    // показать file input (в шаблоне он hidden)
+    const fileInput = clone.querySelector('[data-role="file"]');
+    if (fileInput) fileInput.style.display = '';
+
+    clone.setAttribute('data-row-idx', String(idx));
+
+    clone.querySelectorAll('[data-role]').forEach(function(el) {
+      const role = el.getAttribute('data-role');
+      if (!role) return;
+      el.name = role + '_' + idx;
+
+      if (role === 'file') {
+        el.value = '';
+        el.removeAttribute('multiple');
+      }
+      if (role === 'title') el.value = '';
+      if (role === 'module_key') el.value = '';
+    });
+
+    rowsContainer.appendChild(clone);
+
+    // кнопка удаления
+    const removeBtn = clone.querySelector('.mz-upl-remove-row');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        clone.remove();
+      });
+    }
+
+    return clone;
+  }
+
+  const firstRow = rowsContainer.querySelector('.mz-upl-row');
+  if (!firstRow) return;
+
+  const firstFileInput = firstRow.querySelector('[data-role="file"]');
+  if (!firstFileInput) return;
+
+  const dropLabel = firstRow.querySelector('[data-role="droplabel"]');
+  const dropSub   = firstRow.querySelector('[data-role="dropsub"]');
+  const countEl   = firstRow.querySelector('[data-role="dropcount"]');
+  const clearBtn  = firstRow.querySelector('[data-role="dropclear"]');
+
+  function resetDropUI(){
+    if (dropLabel) dropLabel.textContent = 'Arrastra y suelta archivos';
+    if (dropSub) dropSub.textContent = 'o haz clic para seleccionarlos (multi)';
+    if (countEl) countEl.textContent = '0';
+  }
+
+  // ❗️ПЕРЕНОСИМ ВСЕ файлы из drop input в строки (включая первый)
+  function moveFilesToRows(files){
+    if (!files || !files.length) return;
+
+    // создаём строки под каждый файл
+    for (let i = 0; i < files.length; i++) {
+      const row = addRowFromTemplate();
+      if (!row) break;
+      const inp = row.querySelector('[data-role="file"]');
+      if (inp) setSingleFile(inp, files[i]);
+    }
+
+    // очищаем drop input, чтобы он не "держал" первый файл
+    clearFileInput(firstFileInput);
+    resetDropUI();
+  }
+
+  firstFileInput.addEventListener('change', function(){
+    const files = Array.from(firstFileInput.files || []);
+    if (!files.length) { resetDropUI(); return; }
+
+    // обновим UI на секунду (если хочешь видеть имя перед переносом)
+    if (countEl) countEl.textContent = String(files.length);
+    if (dropLabel) dropLabel.textContent = files.length === 1 ? files[0].name : `${files.length} archivos`;
+    if (dropSub) dropSub.textContent = files.length > 1 ? 'Se repartirán en filas abajo' : 'Se añadirá una fila abajo';
+
+    // переносим ВСЕ файлы в обычные строки
+    moveFilesToRows(files);
+  });
+
+  // кнопка очистки (на случай если что-то осталось)
+  if (clearBtn){
+    clearBtn.addEventListener('click', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      clearFileInput(firstFileInput);
+      resetDropUI();
+    });
+  }
+
+  // стартовый вид
+  resetDropUI();
+})();
+</script>
+
+<script>
+(function(){
+  const rowsContainer = document.getElementById('mz-upl-rows');
+  if (!rowsContainer) return;
+
+  const firstRow = rowsContainer.querySelector('.mz-upl-row');
+  if (!firstRow) return;
+
+  const drop = firstRow.querySelector('[data-role="dropzone"]');
+  const countEl = firstRow.querySelector('[data-role="dropcount"]');
+  const input = firstRow.querySelector('[data-role="file"]');
+
+  if (!drop || !input) return;
+
+  // клик по зоне -> открыть диалог выбора
+  drop.addEventListener('click', function(){
+    input.click();
+  });
+
+  function setCount(n){
+    if (countEl) countEl.textContent = String(n || 0);
+  }
+
+  // если выбрали через диалог — обновим бейдж
+  input.addEventListener('change', function(){
+    setCount((input.files && input.files.length) || 0);
+  });
+
+  // drag events
+  const stop = (e) => { e.preventDefault(); e.stopPropagation(); };
+
+  ['dragenter','dragover'].forEach(evt=>{
+    drop.addEventListener(evt, function(e){
+      stop(e);
+      drop.classList.add('is-over');
+    });
+  });
+
+  ['dragleave','dragend','drop'].forEach(evt=>{
+    drop.addEventListener(evt, function(e){
+      stop(e);
+      drop.classList.remove('is-over');
+    });
+  });
+
+  drop.addEventListener('drop', function(e){
+    stop(e);
+    const files = e.dataTransfer && e.dataTransfer.files ? e.dataTransfer.files : null;
+    if (!files || !files.length) return;
+
+    // кладём FileList в input через DataTransfer
+    const dt = new DataTransfer();
+    for (const f of files) dt.items.add(f);
+    input.files = dt.files;
+
+    setCount(dt.files.length);
+
+    // важно: триггерим change -> твой скрипт разложит по строкам
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+})();
+</script>
+<script>
+(function(){
+  const form = document.querySelector('form.mz-upl');
+  if (!form) return;
+
+  const rows = document.getElementById('mz-upl-rows');
+  if (!rows) return;
+
+  const firstRow = rows.querySelector('.mz-upl-row');
+  const drop = firstRow ? firstRow.querySelector('[data-role="dropzone"]') : null;
+
+  function anyFileSelected(){
+    const inputs = rows.querySelectorAll('input[type="file"][data-role="file"]');
+    for (const inp of inputs){
+      if (inp.files && inp.files.length) return true;
+    }
+    return false;
+  }
+
+  form.addEventListener('submit', function(e){
+    if (anyFileSelected()) return;
+
+    e.preventDefault();
+
+    // визуальный сигнал
+    if (drop){
+      drop.classList.add('is-over');
+      setTimeout(()=>drop.classList.remove('is-over'), 350);
+    }
+
+    alert('Selecciona al menos un archivo.');
+  });
+})();
+</script>
+<script>
+(function(){
+  async function copyToClipboard(text){
+    try{
+      await navigator.clipboard.writeText(text);
+      return true;
+    }catch(e){
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch(_){}
+      document.body.removeChild(ta);
+      return true;
+    }
+  }
+
+  async function postJSON(url){
+    if (url && !url.endsWith('/')) url += '/'; // ✅ APPEND_SLASH safe
+    const r = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'X-Requested-With':'XMLHttpRequest' }
+    });
+    const txt = await r.text();
+    let j = {};
+    try { j = txt ? JSON.parse(txt) : {}; } catch(_){}
+    if (!r.ok) throw new Error(j.error || j.message || ('HTTP ' + r.status));
+    return j;
+  }
+
+  document.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('[data-action="materials.copy_public_link"]');
+    if (!btn) return;
+
+    const shareUrl = btn.getAttribute('data-share-url'); // ✅ берём URL из кнопки
+    if (!shareUrl) {
+      alert('Falta data-share-url en el botón');
+      return;
+    }
+
+    btn.disabled = true;
+    const old = btn.textContent;
+    btn.textContent = 'Generando...';
+
+    try{
+      const j = await postJSON(shareUrl);
+      const publicUrl = j.url;
+      if (!publicUrl) throw new Error('Respuesta sin url');
+
+      await copyToClipboard(publicUrl);
+
+      btn.textContent = 'Copiado ✓';
+      setTimeout(()=>{ btn.textContent = old; btn.disabled = false; }, 900);
+    }catch(err){
+      btn.textContent = 'Error';
+      console.error(err);
+      setTimeout(()=>{ btn.textContent = old; btn.disabled = false; }, 1200);
+      alert('No se pudo generar el enlace: ' + (err.message || err));
+    }
+  });
+})();
+</script>
+

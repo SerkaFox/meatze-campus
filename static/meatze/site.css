@@ -1,0 +1,2355 @@
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+
+
+  /* ГЛОБАЛЬНЫЙ ФОН САЙТА */
+  background-image: url("/static/files/fon.webp");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+    a{color:inherit;text-decoration:none}
+
+    /* ====== TOP BAR ====== */
+    #mz-top{
+      position:sticky; top:0; z-index:1000;
+      background:linear-gradient(90deg,#0e73b8,#0c5284);
+      color:#fff;
+      box-shadow:0 2px 8px rgba(15,23,42,.35);
+    }
+    .mz-top-inner{
+      max-width:1080px;
+      margin:0 auto;
+      padding:10px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+    }
+    .mz-brand{
+      display:flex;align-items:center;gap:8px;
+      font-weight:800;font-size:20px;letter-spacing:.03em;
+    }
+    .mz-brand-badge{
+      font-size:11px;font-weight:700;
+      padding:2px 6px;border-radius:999px;
+      background:rgba(15,23,42,.25);
+      border:1px solid rgba(226,232,240,.3);
+    }
+    .mz-top-right{
+      display:flex;align-items:center;gap:12px;
+    }
+
+    .mz-top-cta{
+      display:inline-flex;align-items:center;gap:6px;
+      font-size:14px;opacity:.9;
+    }
+    .mz-top-cta span{
+      padding:2px 8px;
+      border-radius:999px;
+      background:rgba(15,23,42,.25);
+      border:1px solid rgba(226,232,240,.25);
+    }
+
+    /* Кнопка входа/кнопки в шапке */
+    .mz-btn-top{
+      display:inline-flex;align-items:center;justify-content:center;gap:6px;
+      padding:8px 12px;border-radius:999px;
+      border:1px solid rgba(191,219,254,.9);
+      font-size:14px;font-weight:700;
+      cursor:pointer;
+      box-shadow:0 1px 3px rgba(15,23,42,.25);
+    }
+    .mz-btn-top svg{
+      width:16px;height:16px;
+    }
+    .mz-btn-top:hover{
+      filter:brightness(.97);
+    }
+
+    /* ====== АККАУНТ В ШАПКЕ ====== */
+    .mz-acc{
+      position:relative;
+    }
+    #mz-acc-user{
+      display:flex;align-items:center;gap:8px;
+      padding:4px 8px 4px 4px;
+      border-radius:999px;
+      border:1px solid rgba(191,219,254,.4);
+      background:rgba(15,23,42,.15);
+      color:#e5f3ff;
+      cursor:pointer;
+      font-size:14px;
+    }
+    .mz-acc-avatar{
+      width:28px;height:28px;border-radius:999px;
+      background:#e5f3ff;
+      color:#0e73b8;
+      display:flex;align-items:center;justify-content:center;
+      font-weight:800;font-size:14px;
+      box-shadow:0 0 0 2px rgba(15,23,42,.25);
+    }
+    .mz-acc-name{
+      max-width:160px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .mz-acc-arrow{
+      opacity:.7;font-size:10px;
+    }
+
+    #mz-acc-menu{
+      position:absolute;right:0;top:110%;
+      min-width:200px;
+      border-radius:14px;
+      border:1px solid #e5e7eb;
+      box-shadow:0 18px 40px rgba(15,23,42,.35);
+      padding:6px;
+      display:none;
+    }
+    #mz-acc-menu.show{display:block}
+    .mz-acc-item{
+      width:100%;
+      text-align:left;
+      border:0;
+      background:transparent;
+      padding:8px 10px;
+      border-radius:10px;
+      font-size:14px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      cursor:pointer;
+    }
+    .mz-acc-item:hover{
+      background:#eff6ff;
+    }
+    .mz-acc-item span.icon{
+      font-size:14px;
+      width:18px;text-align:center;
+    }
+
+    /* ====== LAYOUT CONTENT ====== */
+    .mz-page{
+      max-width:1080px;
+      margin:16px auto 32px;
+      padding:0 16px;
+    }
+	   /* ===== PROFILE MODAL (misma línea visual que el login) ===== */
+  #mz-prof-ov{
+    position:fixed;
+    inset:0;
+    background:rgba(15,33,51,.45);
+    display:none;
+    z-index:2147483640;
+  }
+  #mz-prof-ov.show{display:block}
+
+  #mz-prof{
+    --mz-prof-font:16px;
+    --mz-prof-label:#0f1b2d;
+    --mz-prof-help:#4b5563;
+    --mz-prof-border:#b7d6ec;
+    --mz-prof-focus:#0e73b8;
+
+    position:fixed;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    width:540px;
+    max-width:94vw;
+    max-height:calc(100vh - 24px);
+    display:none;
+    overflow:auto;
+
+    border-radius:18px;
+    border:1px solid #cfe6f8;
+    box-shadow:0 22px 60px rgba(15,23,42,.35);
+    z-index:2147483641;
+    font-size:var(--mz-prof-font);
+  }
+  #mz-prof.show{display:block}
+
+  /* Шапка модалки */
+  #mz-prof .mz-prof-h{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:12px 16px;
+    border-bottom:1px solid #e5e7eb;
+    background:linear-gradient(90deg,#0e73b8,#0c5284);
+    color:#e5f3ff;
+  }
+  #mz-prof .mz-prof-title{
+    margin:0;
+    font-size:19px;
+    font-weight:800;
+    letter-spacing:.02em;
+  }
+
+  #mz-prof .mz-x{
+    width:34px;
+    height:34px;
+    border-radius:10px;
+    border:1px solid rgba(191,219,254,.9);
+    background:#ffffff;
+    color:#0e73b8;
+    font-weight:800;
+    cursor:pointer;
+    box-shadow:0 1px 3px rgba(15,23,42,.25);
+  }
+  #mz-prof .mz-x:hover{
+    filter:brightness(.97);
+  }
+
+  /* Тело */
+  #mz-prof .mz-prof-b{
+    padding:18px 16px 16px;
+    display:grid;
+    gap:12px;
+  }
+
+  #mz-prof .mz-label{
+    font-size:18px;
+    font-weight:600;
+  }
+  #mz-prof .mz-help{
+    font-size:14px;
+    color:var(--mz-prof-help);
+  }
+
+  #mz-prof .mz-inp,
+  #mz-prof textarea{
+    width:100%;
+    min-height:40px;
+    padding:10px 12px;
+    border-radius:12px;
+    border:1.5px solid var(--mz-prof-border);
+    font-size:15px;
+  }
+  #mz-prof textarea{
+    min-height:80px;
+    resize:vertical;
+  }
+  #mz-prof .mz-inp:focus,
+  #mz-prof textarea:focus{
+    outline:none;
+    border-color:var(--mz-prof-focus);
+    box-shadow:0 0 0 3px rgba(14,115,184,.18);
+  }
+
+  #mz-prof .mz-grid2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+
+  /* Кнопки внутри модалки (локально, чтобы не трогать глобальные .mz-btn) */
+  #mz-prof .mz-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:40px;
+    padding:8px 12px;
+    border-radius:10px;
+    border:1px solid #cfe6f8;
+    font-weight:700;
+    font-size:15px;
+    cursor:pointer;
+    background:#0e73b8;
+    color:#ffffff;
+    box-shadow:0 1px 3px rgba(15,23,42,.25);
+    transition:filter .15s ease, transform .04s ease;
+  }
+  #mz-prof .mz-btn:hover{
+    filter:brightness(.97);
+    transform:translateY(0.5px);
+  }
+  #mz-prof .mz-btn.link{
+    color:#0e73b8;
+    border-color:transparent;
+    box-shadow:none;
+  }
+  #mz-prof .mz-btn.link:hover{
+    background:#ecf5ff;
+  }
+
+  #mz-prof .mz-ok{
+    background:#e8f7ee;
+    color:#0b6d22;
+    border:1px solid #bfe7c7;
+    border-radius:10px;
+    padding:6px 8px;
+    font-size:14px;
+    font-weight:600;
+  }
+  #mz-prof .mz-err{
+    color:#b91c1c;
+    font-size:14px;
+    font-weight:600;
+  }
+
+  @media (max-width:640px){
+    #mz-prof{
+      width:100%;
+      max-width:100vw;
+      border-radius:0;
+      top:0; left:0;
+      transform:none;
+      max-height:100vh;
+    }
+    #mz-prof .mz-prof-h{
+      border-radius:0;
+    }
+  }
+  /* =========================
+   GLOBAL: no overflow on mobile
+   ========================= */
+html, body { max-width: 100%; overflow-x: hidden; }
+*, *::before, *::after { box-sizing: border-box; }
+
+/* фон fixed на мобиле часто “ломает” рендер */
+@media (max-width: 860px){
+  body{ background-attachment: scroll; }
+}
+
+/* =========================
+   TOP BAR: always readable, no прозрачность
+   ========================= */
+#mz-top{
+  background: linear-gradient(90deg,#0e73b8,#0c5284) !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* если где-то поверх шапки идут свои стили/прозрачность */
+#mz-top, #mz-top *{ opacity: 1 !important; }
+
+/* на узких экранах шапка должна переноситься и не давить */
+.mz-top-inner{
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 640px){
+  .mz-top-inner{
+    padding: 10px 12px;
+  }
+  .mz-brand{
+    font-size: 18px;
+  }
+  /* “Formación subvencionada” можно спрятать/упростить */
+  .mz-top-cta{
+    display:none;
+  }
+  .mz-top-right{
+    width:100%;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .mz-acc-name{ max-width: 42vw; } /* чтобы имя не ломало */
+}
+
+/* =========================
+   PAGE: cards / panels never exceed screen
+   ========================= */
+.mz-page{
+  width: 100%;
+  max-width: 1080px;
+}
+
+/* все формы/контролы внутри панели — 100% и без вылезаний */
+.mz-inp, .mz-sel, textarea, button{
+  max-width: 100%;
+}
+
+/* типовая “панель управления”: если где-то используешь flex-row */
+.mz-toolbar{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap: wrap;
+}
+.mz-toolbar > *{ min-width: 0; }
+
+/* если у тебя в админке есть гриды — на мобиле в 1 колонку */
+@media (max-width: 860px){
+  .mz-grid2{ grid-template-columns: 1fr !important; }
+}
+
+/* =========================
+   Sticky header + safe area (iPhone)
+   ========================= */
+#mz-top{
+  padding-top: env(safe-area-inset-top);
+}
+/* =========================
+   Glass menu: account + profile
+   ========================= */
+
+#mz-acc-menu,
+#mz-prof{
+  background: rgba(15, 23, 42, .88);   /* тёмное стекло */
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 16px;
+  box-shadow:
+    0 20px 40px rgba(0,0,0,.35),
+    inset 0 1px 0 rgba(255,255,255,.06);
+
+  color: rgba(255,255,255,.92);
+}
+
+/* чтобы внутренности не “липли” к краям */
+#mz-acc-menu{ padding: 8px; }
+#mz-prof{ padding: 14px; }
+
+/* =========================
+   Links / buttons inside menus
+   ========================= */
+
+#mz-acc-menu a,
+#mz-acc-menu button,
+#mz-prof a,
+#mz-prof button{
+  color: rgba(255,255,255,.92);
+  background: transparent;
+  border: 0;
+  text-decoration: none;
+}
+
+/* пункты меню */
+#mz-acc-menu .mz-acc-item,
+#mz-acc-menu a,
+#mz-acc-menu button{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  width:100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* hover */
+#mz-acc-menu a:hover,
+#mz-acc-menu button:hover{
+  background: rgba(255,255,255,.10);
+}
+
+/* иконки/emoji внутри */
+#mz-acc-menu i,
+#mz-acc-menu svg,
+#mz-prof i,
+#mz-prof svg{
+  color: rgba(255,255,255,.90);
+  fill: currentColor;
+}
+
+/* =========================
+   Text hierarchy inside profile
+   ========================= */
+
+#mz-prof .mz-prof-title{
+  font-weight: 950;
+  font-size: 16px;
+  color: #ffffff;
+}
+
+#mz-prof .mz-prof-sub,
+#mz-prof .mz-help{
+  color: rgba(255,255,255,.70);
+  font-weight: 700;
+}
+
+/* разделители */
+#mz-acc-menu .sep,
+#mz-prof .sep{
+  height: 1px;
+  background: rgba(255,255,255,.12);
+  margin: 6px 8px;
+}
+
+/* =========================
+   Profile modal: titles & labels readable on dark glass
+   ========================= */
+
+/* Заголовок модалки / титульник */
+#mz-prof h1, #mz-prof h2, #mz-prof h3,
+#mz-prof .mz-title, #mz-prof .mz-modal-title{
+  color: #fff !important;
+  font-weight: 950;
+  letter-spacing: .01em;
+}
+
+/* Подзаголовки / лейблы / подсказки */
+#mz-prof label,
+#mz-prof .mz-help,
+#mz-prof .mz-lbl,
+#mz-prof .mz-sub{
+  color: rgba(255,255,255,.82) !important;
+  font-weight: 800;
+}
+
+/* Очень вторичный текст */
+#mz-prof small,
+#mz-prof .muted,
+#mz-prof .mz-muted{
+  color: rgba(255,255,255,.65) !important;
+  font-weight: 700;
+}
+
+/* Inputs на тёмном фоне */
+#mz-prof .mz-inp,
+#mz-prof .mz-sel,
+#mz-prof textarea,
+#mz-prof input[type="text"],
+#mz-prof input[type="email"],
+#mz-prof input[type="password"]{
+  background: rgba(255,255,255,.92) !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(15,23,42,.12) !important;
+  border-radius: 14px;
+}
+
+/* Placeholder */
+#mz-prof input::placeholder,
+#mz-prof textarea::placeholder{
+  color: rgba(15,23,42,.45) !important;
+  font-weight: 700;
+}
+
+/* Разделители/плашки внутри */
+#mz-prof hr,
+#mz-prof .sep{
+  border: 0;
+  height: 1px;
+  background: rgba(255,255,255,.12) !important;
+}
+
+/* Кнопка закрытия (крестик) */
+#mz-prof .mz-btn.link,
+#mz-prof button.mz-btn.link{
+  color: rgba(255,255,255,.92) !important;
+  border-color: rgba(255,255,255,.18) !important;
+  background: rgba(255,255,255,.06) !important;
+}
+#mz-prof .mz-btn.link:hover{
+  background: rgba(255,255,255,.12) !important;
+}
+/* =========================
+   AUTH MODAL — MOBILE FIX
+   ========================= */
+
+@media (max-width: 640px){
+  #mz-auth .mz-auth-b > div > div[style*="display:flex"]{
+    flex-direction: column !important;
+  }
+
+  #mz-auth .mz-btn{
+    width: 100%;
+  }
+}
+/* ===== AUTH MODAL — DESKTOP (зафиксировать поведение) ===== */
+#mz-auth{
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ===== AUTH MODAL — MOBILE (fullscreen) ===== */
+@media (max-width: 640px){
+  #mz-auth,
+  #mz-auth.show{
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+
+    left: 0 !important;
+    top: 0 !important;
+
+    transform: none !important;   /* ВАЖНО: именно для .show тоже */
+    border-radius: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+@media (max-width: 640px){
+  #mz-prof #mzp-bio,
+  #mz-prof textarea[name="bio"],
+  #mz-prof .mz-bio-row{
+    display: none !important;
+  }
+}
+
+ /* Портал поверх всего */
+  #mz-auth-portal{
+    position:fixed;
+    inset:0;
+    z-index:2147483643;
+    display:none;
+  }
+  #mz-auth-portal.show{display:block}
+
+  /* Блокируем фон, когда модалка открыта */
+  body.mz-no-scroll{
+    overflow:hidden;
+	height: 100%;
+    overscroll-behavior:none;
+  }
+
+  /* Оверлей */
+  #mz-auth-ov{
+    position:fixed;
+    inset:0;
+    background:radial-gradient(circle at top,#0b1120aa 0,#020617ee 45%,#000 100%);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    display:none;
+    z-index:2147483642;
+  }
+  #mz-auth-ov.show{display:block}
+
+  /* Коробка модалки + темы */
+  #mz-auth{
+    --mz-base-font: 16px;
+    --mz-label:#e5e7eb;
+    --mz-help:#9ca3af;
+    --mz-border:#1e293b;
+    --mz-border-strong:#38bdf8;
+    --mz-focus:#38bdf8;
+    width:480px;
+    max-width:94vw;
+    max-height:calc(100vh - 32px);
+    display:none;
+    overflow:auto;
+
+    background:
+      radial-gradient(circle at top left, rgba(56,189,248,.18) 0, transparent 55%),
+      radial-gradient(circle at bottom right, rgba(59,130,246,.24) 0, transparent 60%),
+      linear-gradient(135deg,#020617,#020617 40%,#020b1f);
+    border-radius:22px;
+    border:1px solid rgba(148,163,184,.6);
+    box-shadow:
+      0 30px 80px rgba(15,23,42,.85),
+      0 0 0 1px rgba(15,23,42,.8);
+    z-index:2147483643;
+    font-size:var(--mz-base-font);
+    color:#e5e7eb;
+  }
+  #mz-auth.show{display:block}
+
+  /* Шапка модалки */
+  #mz-auth .mz-auth-h{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    padding:12px 16px;
+    border-bottom:1px solid rgba(15,23,42,.9);
+    background:
+      linear-gradient(90deg,rgba(15,23,42,.95),rgba(15,23,42,.9)),
+      radial-gradient(circle at top,#38bdf822 0,transparent 55%);
+    border-radius:22px 22px 0 0;
+  }
+  #mz-auth .mz-auth-title{
+    margin:0;
+    font-weight:800;
+    font-size:19px;
+    letter-spacing:.03em;
+    color:#f9fafb;
+  }
+  #mz-auth .mz-auth-actions{
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+
+  /* Кнопка-таба "Crea una cuenta..." */
+  #mz-auth .mz-btn.is-act{
+    background:linear-gradient(135deg,#38bdf8,#2563eb);
+    color:#0b1120;
+    outline:1px solid rgba(191,219,254,.9);
+    box-shadow:0 0 0 1px rgba(15,23,42,.8),0 12px 30px rgba(15,23,42,.6);
+  }
+
+  /* Close */
+  #mz-auth .mz-x{
+    width:32px;
+    height:32px;
+    border-radius:999px;
+    border:1px solid rgba(148,163,184,.9);
+    background:#020617;
+    color:#e5e7eb;
+    font-weight:800;
+    cursor:pointer;
+    box-shadow:0 1px 4px rgba(15,23,42,.7);
+  }
+  #mz-auth .mz-x:hover,
+  #mz-auth .mz-x:focus-visible{
+    background:#0b1120;
+  }
+
+  /* Тело */
+  #mz-auth .mz-auth-b{
+    padding:18px 16px 16px;
+    display:grid;
+    gap:14px;
+  }
+
+  /* Тексты и поля */
+  #mz-auth .mz-label{
+    font-size:15px;
+    color:var(--mz-label);
+    font-weight:600;
+  }
+  #mz-auth .mz-help{
+    font-size:14px;
+    color:var(--mz-help);
+  }
+
+  #mz-auth .mz-inp{
+    width:100%;
+    min-height:44px;
+    padding:10px 14px;
+    font-size:15px;
+    border-radius:14px;
+    border:1px solid var(--mz-border);
+    background:rgba(15,23,42,.92);
+    color:#e5e7eb;
+  }
+  #mz-auth .mz-inp::placeholder{
+    color:#6b7280;
+  }
+  #mz-auth .mz-inp:focus{
+    outline:none;
+    border-color:var(--mz-border-strong);
+    box-shadow:0 0 0 2px rgba(56,189,248,.35);
+  }
+
+  #mz-auth .mz-field{
+    position:relative;
+  }
+
+  /* Глазик пароля */
+  #mz-auth .mz-reveal{
+    position:absolute;
+    right:6px;
+    top:50%;
+    transform:translateY(-50%);
+    width:40px;
+    height:40px;
+    border-radius:999px;
+    cursor:pointer;
+    border:1px solid var(--mz-border);
+    background:rgba(15,23,42,.95);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 0 0 1px rgba(15,23,42,.8);
+    line-height:0;
+    font-size:0;
+  }
+  #mz-auth .mz-reveal svg{
+    width:20px;
+    height:20px;
+    stroke:#e5e7eb;
+  }
+  #mz-auth .mz-reveal:hover{
+    background:#020617;
+    border-color:var(--mz-border-strong);
+  }
+  #mz-auth .mz-reveal[aria-pressed="true"]{
+    background:#020617;
+  }
+  #mz-auth .mz-field .mz-inp{
+    padding-right:52px;
+  }
+
+  /* Кнопки в модалке */
+  #mz-auth .mz-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:44px;
+    padding:10px 16px;
+    font-size:15px;
+    font-weight:700;
+    border-radius:999px;
+    border:1px solid rgba(56,189,248,.9);
+    background:linear-gradient(135deg,#0ea5e9,#2563eb);
+    color:#f9fafb;
+    cursor:pointer;
+    box-shadow:0 12px 30px rgba(15,23,42,.8);
+    transition:transform .05s ease, box-shadow .1s ease, filter .15s ease;
+  }
+  #mz-auth .mz-btn:hover{
+    filter:brightness(1.03);
+    transform:translateY(0.5px);
+    box-shadow:0 18px 40px rgba(15,23,42,.9);
+  }
+  #mz-auth .mz-btn:active{
+    transform:translateY(1px);
+    box-shadow:0 8px 20px rgba(15,23,42,.9);
+  }
+
+  /* Варианты */
+  #mz-auth .mz-btn.link{
+    background:transparent;
+    color:#e5e7eb;
+    border-color:rgba(148,163,184,.7);
+    box-shadow:none;
+  }
+  #mz-auth .mz-btn.link:hover{
+    background:rgba(15,23,42,.9);
+  }
+  #mz-auth .mz-btn.ghost{
+    background:rgba(15,23,42,.95);
+    color:#e5e7eb;
+    border-color:rgba(148,163,184,.7);
+    box-shadow:none;
+  }
+  #mz-auth .mz-btn.sm{
+    min-height:36px;
+    padding:8px 12px;
+    font-size:14px;
+  }
+
+  /* Инфо / ошибки */
+  #mz-auth .mz-ok{
+    background:rgba(22,163,74,.18);
+    color:#bbf7d0;
+    border:1px solid rgba(34,197,94,.7);
+    border-radius:12px;
+    padding:8px 10px;
+    font-weight:600;
+    font-size:14px;
+  }
+  #mz-auth .mz-help.error{
+    color:#fecaca;
+    font-size:14px;
+    font-weight:700;
+  }
+  @keyframes mz-blink-border{
+    0%{border-color:#f87171; box-shadow:0 0 0 2px rgba(248,113,113,.25)}
+    50%{border-color:var(--mz-border); box-shadow:none}
+    100%{border-color:#f87171; box-shadow:0 0 0 2px rgba(248,113,113,.25)}
+  }
+  #mz-auth .mz-inp.error{
+    animation:mz-blink-border .5s ease-in-out 3;
+  }
+
+/* ==== POLISH: auth modal (scroll, pin width, animation) ==== */
+
+/* чтобы ничего не вылезало за пределы и не было горизонтального скролла */
+#mz-auth,
+#mz-auth *{
+  box-sizing:border-box;
+}
+
+/* чуть больше “воздуха” внутри */
+#mz-auth .mz-auth-b{
+  padding:18px 18px 16px;
+}
+
+/* аккуратный PIN и код профа: компактно, по центру, без огромной ширины */
+#mz-auth #auth-pin,
+#mz-auth #temp-code{
+  max-width:160px;
+  text-align:center;
+  letter-spacing:.18em;
+}
+
+/* а вот обычные select-ы для временного доступа пусть будут широкие */
+#mz-auth #temp-course,
+#mz-auth #temp-name{
+  max-width:100%;
+}
+
+/* чуть больше отступов вокруг блока PIN */
+#mz-auth #pin-wrap{
+  margin-top:12px;
+}
+
+/* анимация смены “панелей” внутри (email / temp / finish / setpass) */
+#mz-auth #step-email,
+#mz-auth #step-temp,
+#mz-auth #step-temp-finish,
+#mz-auth #step-setpass{
+  animation:mz-step-fade .18s ease-out;
+}
+@keyframes mz-step-fade{
+  from{
+    opacity:0;
+    transform:translateY(8px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+
+
+  /* ГЛОБАЛЬНЫЙ ФОН САЙТА */
+  background-image: url("/static/files/fon.webp");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+    a{color:inherit;text-decoration:none}
+
+    /* ====== TOP BAR ====== */
+    #mz-top{
+      position:sticky; top:0; z-index:1000;
+      background:linear-gradient(90deg,#0e73b8,#0c5284);
+      color:#fff;
+      box-shadow:0 2px 8px rgba(15,23,42,.35);
+    }
+    .mz-top-inner{
+      max-width:1080px;
+      margin:0 auto;
+      padding:10px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+    }
+    .mz-brand{
+      display:flex;align-items:center;gap:8px;
+      font-weight:800;font-size:20px;letter-spacing:.03em;
+    }
+    .mz-brand-badge{
+      font-size:11px;font-weight:700;
+      padding:2px 6px;border-radius:999px;
+      background:rgba(15,23,42,.25);
+      border:1px solid rgba(226,232,240,.3);
+    }
+    .mz-top-right{
+      display:flex;align-items:center;gap:12px;
+    }
+
+    .mz-top-cta{
+      display:inline-flex;align-items:center;gap:6px;
+      font-size:14px;opacity:.9;
+    }
+    .mz-top-cta span{
+      padding:2px 8px;
+      border-radius:999px;
+      background:rgba(15,23,42,.25);
+      border:1px solid rgba(226,232,240,.25);
+    }
+
+    /* Кнопка входа/кнопки в шапке */
+    .mz-btn-top{
+      display:inline-flex;align-items:center;justify-content:center;gap:6px;
+      padding:8px 12px;border-radius:999px;
+      border:1px solid rgba(191,219,254,.9);
+      color:#0e73b8;
+      font-size:14px;font-weight:700;
+      cursor:pointer;
+      box-shadow:0 1px 3px rgba(15,23,42,.25);
+    }
+    .mz-btn-top svg{
+      width:16px;height:16px;
+    }
+    .mz-btn-top:hover{
+      filter:brightness(.97);
+    }
+
+    /* ====== АККАУНТ В ШАПКЕ ====== */
+    .mz-acc{
+      position:relative;
+    }
+    #mz-acc-user{
+      display:flex;align-items:center;gap:8px;
+      padding:4px 8px 4px 4px;
+      border-radius:999px;
+      border:1px solid rgba(191,219,254,.4);
+      background:rgba(15,23,42,.15);
+      color:#e5f3ff;
+      cursor:pointer;
+      font-size:14px;
+    }
+    .mz-acc-avatar{
+      width:28px;height:28px;border-radius:999px;
+      background:#e5f3ff;
+      color:#0e73b8;
+      display:flex;align-items:center;justify-content:center;
+      font-weight:800;font-size:14px;
+      box-shadow:0 0 0 2px rgba(15,23,42,.25);
+    }
+    .mz-acc-name{
+      max-width:160px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .mz-acc-arrow{
+      opacity:.7;font-size:10px;
+    }
+
+    #mz-acc-menu{
+      position:absolute;right:0;top:110%;
+      min-width:200px;
+      border-radius:14px;
+      border:1px solid #e5e7eb;
+      box-shadow:0 18px 40px rgba(15,23,42,.35);
+      padding:6px;
+      display:none;
+    }
+    #mz-acc-menu.show{display:block}
+    .mz-acc-item{
+      width:100%;
+      text-align:left;
+      border:0;
+      background:transparent;
+      padding:8px 10px;
+      border-radius:10px;
+      font-size:14px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      cursor:pointer;
+    }
+    .mz-acc-item:hover{
+      background:#eff6ff;
+    }
+    .mz-acc-item span.icon{
+      font-size:14px;
+      width:18px;text-align:center;
+    }
+
+    /* ====== LAYOUT CONTENT ====== */
+    .mz-page{
+      max-width:1080px;
+      margin:16px auto 32px;
+      padding:0 16px;
+    }
+	   /* ===== PROFILE MODAL (misma línea visual que el login) ===== */
+  #mz-prof-ov{
+    position:fixed;
+    inset:0;
+    background:rgba(15,33,51,.45);
+    display:none;
+    z-index:2147483640;
+  }
+  #mz-prof-ov.show{display:block}
+
+  #mz-prof{
+    --mz-prof-font:16px;
+    --mz-prof-label:#0f1b2d;
+    --mz-prof-help:#4b5563;
+    --mz-prof-border:#b7d6ec;
+    --mz-prof-focus:#0e73b8;
+
+    position:fixed;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    width:540px;
+    max-width:94vw;
+    max-height:calc(100vh - 24px);
+    display:none;
+    overflow:auto;
+
+    border-radius:18px;
+    border:1px solid #cfe6f8;
+    box-shadow:0 22px 60px rgba(15,23,42,.35);
+    z-index:2147483641;
+    font-size:var(--mz-prof-font);
+  }
+  #mz-prof.show{display:block}
+
+  /* Шапка модалки */
+  #mz-prof .mz-prof-h{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:12px 16px;
+    border-bottom:1px solid #e5e7eb;
+    background:linear-gradient(90deg,#0e73b8,#0c5284);
+    color:#e5f3ff;
+  }
+  #mz-prof .mz-prof-title{
+    margin:0;
+    font-size:19px;
+    font-weight:800;
+    letter-spacing:.02em;
+  }
+
+  #mz-prof .mz-x{
+    width:34px;
+    height:34px;
+    border-radius:10px;
+    border:1px solid rgba(191,219,254,.9);
+    background:#ffffff;
+    color:#0e73b8;
+    font-weight:800;
+    cursor:pointer;
+    box-shadow:0 1px 3px rgba(15,23,42,.25);
+  }
+  #mz-prof .mz-x:hover{
+    filter:brightness(.97);
+  }
+
+  /* Тело */
+  #mz-prof .mz-prof-b{
+    padding:18px 16px 16px;
+    display:grid;
+    gap:12px;
+  }
+
+  #mz-prof .mz-label{
+    font-size:18px;
+    font-weight:600;
+  }
+  #mz-prof .mz-help{
+    font-size:14px;
+    color:var(--mz-prof-help);
+  }
+
+  #mz-prof .mz-inp,
+  #mz-prof textarea{
+    width:100%;
+    min-height:40px;
+    padding:10px 12px;
+    border-radius:12px;
+    border:1.5px solid var(--mz-prof-border);
+    font-size:15px;
+  }
+  #mz-prof textarea{
+    min-height:80px;
+    resize:vertical;
+  }
+  #mz-prof .mz-inp:focus,
+  #mz-prof textarea:focus{
+    outline:none;
+    border-color:var(--mz-prof-focus);
+    box-shadow:0 0 0 3px rgba(14,115,184,.18);
+  }
+
+  #mz-prof .mz-grid2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+
+  /* Кнопки внутри модалки (локально, чтобы не трогать глобальные .mz-btn) */
+  #mz-prof .mz-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:40px;
+    padding:8px 12px;
+    border-radius:10px;
+    border:1px solid #cfe6f8;
+    font-weight:700;
+    font-size:15px;
+    cursor:pointer;
+    background:#0e73b8;
+    color:#ffffff;
+    box-shadow:0 1px 3px rgba(15,23,42,.25);
+    transition:filter .15s ease, transform .04s ease;
+  }
+  #mz-prof .mz-btn:hover{
+    filter:brightness(.97);
+    transform:translateY(0.5px);
+  }
+  #mz-prof .mz-btn.link{
+    color:#0e73b8;
+    border-color:transparent;
+    box-shadow:none;
+  }
+  #mz-prof .mz-btn.link:hover{
+    background:#ecf5ff;
+  }
+
+  #mz-prof .mz-ok{
+    background:#e8f7ee;
+    color:#0b6d22;
+    border:1px solid #bfe7c7;
+    border-radius:10px;
+    padding:6px 8px;
+    font-size:14px;
+    font-weight:600;
+  }
+  #mz-prof .mz-err{
+    color:#b91c1c;
+    font-size:14px;
+    font-weight:600;
+  }
+
+  @media (max-width:640px){
+    #mz-prof{
+      width:100%;
+      max-width:100vw;
+      border-radius:0;
+      top:0; left:0;
+      transform:none;
+      max-height:100vh;
+    }
+    #mz-prof .mz-prof-h{
+      border-radius:0;
+    }
+  }
+  /* =========================
+   GLOBAL: no overflow on mobile
+   ========================= */
+html, body { max-width: 100%; overflow-x: hidden; }
+*, *::before, *::after { box-sizing: border-box; }
+
+/* фон fixed на мобиле часто “ломает” рендер */
+@media (max-width: 860px){
+  body{ background-attachment: scroll; }
+}
+
+/* =========================
+   TOP BAR: always readable, no прозрачность
+   ========================= */
+#mz-top{
+  background: linear-gradient(90deg,#0e73b8,#0c5284) !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* если где-то поверх шапки идут свои стили/прозрачность */
+#mz-top, #mz-top *{ opacity: 1 !important; }
+
+/* на узких экранах шапка должна переноситься и не давить */
+.mz-top-inner{
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 640px){
+  .mz-top-inner{
+    padding: 10px 12px;
+  }
+  .mz-brand{
+    font-size: 18px;
+  }
+  /* “Formación subvencionada” можно спрятать/упростить */
+  .mz-top-cta{
+    display:none;
+  }
+  .mz-top-right{
+    width:100%;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .mz-acc-name{ max-width: 42vw; } /* чтобы имя не ломало */
+}
+
+/* =========================
+   PAGE: cards / panels never exceed screen
+   ========================= */
+.mz-page{
+  width: 100%;
+  max-width: 1080px;
+}
+
+/* все формы/контролы внутри панели — 100% и без вылезаний */
+.mz-inp, .mz-sel, textarea, button{
+  max-width: 100%;
+}
+
+/* типовая “панель управления”: если где-то используешь flex-row */
+.mz-toolbar{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap: wrap;
+}
+.mz-toolbar > *{ min-width: 0; }
+
+/* если у тебя в админке есть гриды — на мобиле в 1 колонку */
+@media (max-width: 860px){
+  .mz-grid2{ grid-template-columns: 1fr !important; }
+}
+
+/* =========================
+   Sticky header + safe area (iPhone)
+   ========================= */
+#mz-top{
+  padding-top: env(safe-area-inset-top);
+}
+/* =========================
+   Glass menu: account + profile
+   ========================= */
+
+#mz-acc-menu,
+#mz-prof{
+  background: rgba(15, 23, 42, .88);   /* тёмное стекло */
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 16px;
+  box-shadow:
+    0 20px 40px rgba(0,0,0,.35),
+    inset 0 1px 0 rgba(255,255,255,.06);
+
+  color: rgba(255,255,255,.92);
+}
+
+/* чтобы внутренности не “липли” к краям */
+#mz-acc-menu{ padding: 8px; }
+#mz-prof{ padding: 14px; }
+
+/* =========================
+   Links / buttons inside menus
+   ========================= */
+
+#mz-acc-menu a,
+#mz-acc-menu button,
+#mz-prof a,
+#mz-prof button{
+  color: rgba(255,255,255,.92);
+  background: transparent;
+  border: 0;
+  text-decoration: none;
+}
+
+/* пункты меню */
+#mz-acc-menu .mz-acc-item,
+#mz-acc-menu a,
+#mz-acc-menu button{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  width:100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* hover */
+#mz-acc-menu a:hover,
+#mz-acc-menu button:hover{
+  background: rgba(255,255,255,.10);
+}
+
+/* иконки/emoji внутри */
+#mz-acc-menu i,
+#mz-acc-menu svg,
+#mz-prof i,
+#mz-prof svg{
+  color: rgba(255,255,255,.90);
+  fill: currentColor;
+}
+
+/* =========================
+   Text hierarchy inside profile
+   ========================= */
+
+#mz-prof .mz-prof-title{
+  font-weight: 950;
+  font-size: 16px;
+  color: #ffffff;
+}
+
+#mz-prof .mz-prof-sub,
+#mz-prof .mz-help{
+  color: rgba(255,255,255,.70);
+  font-weight: 700;
+}
+
+/* разделители */
+#mz-acc-menu .sep,
+#mz-prof .sep{
+  height: 1px;
+  background: rgba(255,255,255,.12);
+  margin: 6px 8px;
+}
+
+/* =========================
+   Profile modal: titles & labels readable on dark glass
+   ========================= */
+
+/* Заголовок модалки / титульник */
+#mz-prof h1, #mz-prof h2, #mz-prof h3,
+#mz-prof .mz-title, #mz-prof .mz-modal-title{
+  color: #fff !important;
+  font-weight: 950;
+  letter-spacing: .01em;
+}
+
+/* Подзаголовки / лейблы / подсказки */
+#mz-prof label,
+#mz-prof .mz-help,
+#mz-prof .mz-lbl,
+#mz-prof .mz-sub{
+  color: rgba(255,255,255,.82) !important;
+  font-weight: 800;
+}
+
+/* Очень вторичный текст */
+#mz-prof small,
+#mz-prof .muted,
+#mz-prof .mz-muted{
+  color: rgba(255,255,255,.65) !important;
+  font-weight: 700;
+}
+
+/* Inputs на тёмном фоне */
+#mz-prof .mz-inp,
+#mz-prof .mz-sel,
+#mz-prof textarea,
+#mz-prof input[type="text"],
+#mz-prof input[type="email"],
+#mz-prof input[type="password"]{
+  background: rgba(255,255,255,.92) !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(15,23,42,.12) !important;
+  border-radius: 14px;
+}
+
+/* Placeholder */
+#mz-prof input::placeholder,
+#mz-prof textarea::placeholder{
+  color: rgba(15,23,42,.45) !important;
+  font-weight: 700;
+}
+
+/* Разделители/плашки внутри */
+#mz-prof hr,
+#mz-prof .sep{
+  border: 0;
+  height: 1px;
+  background: rgba(255,255,255,.12) !important;
+}
+
+/* Кнопка закрытия (крестик) */
+#mz-prof .mz-btn.link,
+#mz-prof button.mz-btn.link{
+  color: rgba(255,255,255,.92) !important;
+  border-color: rgba(255,255,255,.18) !important;
+  background: rgba(255,255,255,.06) !important;
+}
+#mz-prof .mz-btn.link:hover{
+  background: rgba(255,255,255,.12) !important;
+}
+/* =========================
+   AUTH MODAL — MOBILE FIX
+   ========================= */
+
+@media (max-width: 640px){
+  #mz-auth .mz-auth-b > div > div[style*="display:flex"]{
+    flex-direction: column !important;
+  }
+
+  #mz-auth .mz-btn{
+    width: 100%;
+  }
+}
+/* ===== AUTH MODAL — DESKTOP (зафиксировать поведение) ===== */
+#mz-auth{
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ===== AUTH MODAL — MOBILE (fullscreen) ===== */
+@media (max-width: 640px){
+  #mz-auth,
+  #mz-auth.show{
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+
+    left: 0 !important;
+    top: 0 !important;
+
+    transform: none !important;   /* ВАЖНО: именно для .show тоже */
+    border-radius: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+@media (max-width: 640px){
+  #mz-prof #mzp-bio,
+  #mz-prof textarea[name="bio"],
+  #mz-prof .mz-bio-row{
+    display: none !important;
+  }
+}
+
+ /* Портал поверх всего */
+  #mz-auth-portal{
+    position:fixed;
+    inset:0;
+    z-index:2147483643;
+    display:none;
+  }
+  #mz-auth-portal.show{display:block}
+
+  /* Блокируем фон, когда модалка открыта */
+  body.mz-no-scroll{
+    overflow:hidden;
+	height: 100%;
+    overscroll-behavior:none;
+  }
+
+  /* Оверлей */
+  #mz-auth-ov{
+    position:fixed;
+    inset:0;
+    background:radial-gradient(circle at top,#0b1120aa 0,#020617ee 45%,#000 100%);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    display:none;
+    z-index:2147483642;
+  }
+  #mz-auth-ov.show{display:block}
+
+  /* Коробка модалки + темы */
+  #mz-auth{
+    --mz-base-font: 16px;
+    --mz-label:#e5e7eb;
+    --mz-help:#9ca3af;
+    --mz-border:#1e293b;
+    --mz-border-strong:#38bdf8;
+    --mz-focus:#38bdf8;
+    width:480px;
+    max-width:94vw;
+    max-height:calc(100vh - 32px);
+    display:none;
+    overflow:auto;
+
+    background:
+      radial-gradient(circle at top left, rgba(56,189,248,.18) 0, transparent 55%),
+      radial-gradient(circle at bottom right, rgba(59,130,246,.24) 0, transparent 60%),
+      linear-gradient(135deg,#020617,#020617 40%,#020b1f);
+    border-radius:22px;
+    border:1px solid rgba(148,163,184,.6);
+    box-shadow:
+      0 30px 80px rgba(15,23,42,.85),
+      0 0 0 1px rgba(15,23,42,.8);
+    z-index:2147483643;
+    font-size:var(--mz-base-font);
+    color:#e5e7eb;
+  }
+  #mz-auth.show{display:block}
+
+  /* Шапка модалки */
+  #mz-auth .mz-auth-h{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    padding:12px 16px;
+    border-bottom:1px solid rgba(15,23,42,.9);
+    background:
+      linear-gradient(90deg,rgba(15,23,42,.95),rgba(15,23,42,.9)),
+      radial-gradient(circle at top,#38bdf822 0,transparent 55%);
+    border-radius:22px 22px 0 0;
+  }
+  #mz-auth .mz-auth-title{
+    margin:0;
+    font-weight:800;
+    font-size:19px;
+    letter-spacing:.03em;
+    color:#f9fafb;
+  }
+  #mz-auth .mz-auth-actions{
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+
+  /* Кнопка-таба "Crea una cuenta..." */
+  #mz-auth .mz-btn.is-act{
+    background:linear-gradient(135deg,#38bdf8,#2563eb);
+    color:#0b1120;
+    outline:1px solid rgba(191,219,254,.9);
+    box-shadow:0 0 0 1px rgba(15,23,42,.8),0 12px 30px rgba(15,23,42,.6);
+  }
+
+  /* Close */
+  #mz-auth .mz-x{
+    width:32px;
+    height:32px;
+    border-radius:999px;
+    border:1px solid rgba(148,163,184,.9);
+    background:#020617;
+    color:#e5e7eb;
+    font-weight:800;
+    cursor:pointer;
+    box-shadow:0 1px 4px rgba(15,23,42,.7);
+  }
+  #mz-auth .mz-x:hover,
+  #mz-auth .mz-x:focus-visible{
+    background:#0b1120;
+  }
+
+  /* Тело */
+  #mz-auth .mz-auth-b{
+    padding:18px 16px 16px;
+    display:grid;
+    gap:14px;
+  }
+
+  /* Тексты и поля */
+  #mz-auth .mz-label{
+    font-size:15px;
+    color:var(--mz-label);
+    font-weight:600;
+  }
+  #mz-auth .mz-help{
+    font-size:14px;
+    color:var(--mz-help);
+  }
+
+  #mz-auth .mz-inp{
+    width:100%;
+    min-height:44px;
+    padding:10px 14px;
+    font-size:15px;
+    border-radius:14px;
+    border:1px solid var(--mz-border);
+    background:rgba(15,23,42,.92);
+    color:#e5e7eb;
+  }
+  #mz-auth .mz-inp::placeholder{
+    color:#6b7280;
+  }
+  #mz-auth .mz-inp:focus{
+    outline:none;
+    border-color:var(--mz-border-strong);
+    box-shadow:0 0 0 2px rgba(56,189,248,.35);
+  }
+
+  #mz-auth .mz-field{
+    position:relative;
+  }
+
+  /* Глазик пароля */
+  #mz-auth .mz-reveal{
+    position:absolute;
+    right:6px;
+    top:50%;
+    transform:translateY(-50%);
+    width:40px;
+    height:40px;
+    border-radius:999px;
+    cursor:pointer;
+    border:1px solid var(--mz-border);
+    background:rgba(15,23,42,.95);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 0 0 1px rgba(15,23,42,.8);
+    line-height:0;
+    font-size:0;
+  }
+  #mz-auth .mz-reveal svg{
+    width:20px;
+    height:20px;
+    stroke:#e5e7eb;
+  }
+  #mz-auth .mz-reveal:hover{
+    background:#020617;
+    border-color:var(--mz-border-strong);
+  }
+  #mz-auth .mz-reveal[aria-pressed="true"]{
+    background:#020617;
+  }
+  #mz-auth .mz-field .mz-inp{
+    padding-right:52px;
+  }
+
+  /* Кнопки в модалке */
+  #mz-auth .mz-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:44px;
+    padding:10px 16px;
+    font-size:15px;
+    font-weight:700;
+    border-radius:999px;
+    border:1px solid rgba(56,189,248,.9);
+    background:linear-gradient(135deg,#0ea5e9,#2563eb);
+    color:#f9fafb;
+    cursor:pointer;
+    box-shadow:0 12px 30px rgba(15,23,42,.8);
+    transition:transform .05s ease, box-shadow .1s ease, filter .15s ease;
+  }
+  #mz-auth .mz-btn:hover{
+    filter:brightness(1.03);
+    transform:translateY(0.5px);
+    box-shadow:0 18px 40px rgba(15,23,42,.9);
+  }
+  #mz-auth .mz-btn:active{
+    transform:translateY(1px);
+    box-shadow:0 8px 20px rgba(15,23,42,.9);
+  }
+
+  /* Варианты */
+  #mz-auth .mz-btn.link{
+    background:transparent;
+    color:#e5e7eb;
+    border-color:rgba(148,163,184,.7);
+    box-shadow:none;
+  }
+  #mz-auth .mz-btn.link:hover{
+    background:rgba(15,23,42,.9);
+  }
+  #mz-auth .mz-btn.ghost{
+    background:rgba(15,23,42,.95);
+    color:#e5e7eb;
+    border-color:rgba(148,163,184,.7);
+    box-shadow:none;
+  }
+  #mz-auth .mz-btn.sm{
+    min-height:36px;
+    padding:8px 12px;
+    font-size:14px;
+  }
+
+  /* Инфо / ошибки */
+  #mz-auth .mz-ok{
+    background:rgba(22,163,74,.18);
+    color:#bbf7d0;
+    border:1px solid rgba(34,197,94,.7);
+    border-radius:12px;
+    padding:8px 10px;
+    font-weight:600;
+    font-size:14px;
+  }
+  #mz-auth .mz-help.error{
+    color:#fecaca;
+    font-size:14px;
+    font-weight:700;
+  }
+  @keyframes mz-blink-border{
+    0%{border-color:#f87171; box-shadow:0 0 0 2px rgba(248,113,113,.25)}
+    50%{border-color:var(--mz-border); box-shadow:none}
+    100%{border-color:#f87171; box-shadow:0 0 0 2px rgba(248,113,113,.25)}
+  }
+  #mz-auth .mz-inp.error{
+    animation:mz-blink-border .5s ease-in-out 3;
+  }
+
+/* ==== POLISH: auth modal (scroll, pin width, animation) ==== */
+
+/* чтобы ничего не вылезало за пределы и не было горизонтального скролла */
+#mz-auth,
+#mz-auth *{
+  box-sizing:border-box;
+}
+
+/* чуть больше “воздуха” внутри */
+#mz-auth .mz-auth-b{
+  padding:18px 18px 16px;
+}
+
+/* аккуратный PIN и код профа: компактно, по центру, без огромной ширины */
+#mz-auth #auth-pin,
+#mz-auth #temp-code{
+  max-width:160px;
+  text-align:center;
+  letter-spacing:.18em;
+}
+
+/* а вот обычные select-ы для временного доступа пусть будут широкие */
+#mz-auth #temp-course,
+#mz-auth #temp-name{
+  max-width:100%;
+}
+
+/* чуть больше отступов вокруг блока PIN */
+#mz-auth #pin-wrap{
+  margin-top:12px;
+}
+
+/* анимация смены “панелей” внутри (email / temp / finish / setpass) */
+#mz-auth #step-email,
+#mz-auth #step-temp,
+#mz-auth #step-temp-finish,
+#mz-auth #step-setpass{
+  animation:mz-step-fade .18s ease-out;
+}
+@keyframes mz-step-fade{
+  from{
+    opacity:0;
+    transform:translateY(8px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+/* =========================
+   ACCEDER / PROFILE PAGE
+   ========================= */
+
+.mz-auth-page{
+  padding: 28px 12px;
+}
+
+.mz-auth-card{
+  background: rgba(255,255,255,.88);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,.55);
+  box-shadow: 0 24px 70px rgba(2,6,23,.22);
+  border-radius: 22px;
+  overflow: hidden;
+}
+
+.mz-auth-h{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding: 18px 18px 14px;
+  background: linear-gradient(180deg, rgba(15,23,42,.06), rgba(15,23,42,0));
+  border-bottom: 1px solid rgba(2,6,23,.08);
+}
+
+.mz-auth-title{
+  margin:0;
+  font-weight: 900;
+  letter-spacing: .2px;
+  font-size: 18px;
+  color:#0b1220;
+}
+
+.mz-auth-actions{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.mz-auth-b{
+  padding: 16px 18px 18px;
+}
+
+/* messages */
+.mz-ok{
+  background: rgba(34,197,94,.10);
+  border: 1px solid rgba(34,197,94,.24);
+  color: #064e2b;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-weight: 700;
+}
+
+.mz-bad{
+  background: rgba(239,68,68,.10);
+  border: 1px solid rgba(239,68,68,.22);
+  color: #7f1d1d;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-weight: 700;
+}
+
+.mz-help{
+  font-size: 13px;
+  color: rgba(2,6,23,.72);
+  margin: 8px 0;
+  line-height: 1.35;
+}
+
+.mz-label{
+  display:block;
+  margin: 10px 0 6px;
+  font-weight: 800;
+  font-size: 13px;
+  color: rgba(2,6,23,.85);
+}
+
+/* inputs */
+.mz-inp{
+  width:100%;
+  border-radius: 14px;
+  border: 1px solid rgba(2,6,23,.14);
+  background: rgba(255,255,255,.96);
+  padding: 12px 12px;
+  outline: none;
+  font-size: 14px;
+  color:#0b1220;
+  box-shadow: 0 1px 0 rgba(255,255,255,.6) inset;
+  transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease;
+}
+
+.mz-inp:focus{
+  border-color: rgba(59,130,246,.55);
+  box-shadow: 0 0 0 4px rgba(59,130,246,.15);
+}
+
+.mz-inp.error{
+  border-color: rgba(239,68,68,.55);
+  box-shadow: 0 0 0 4px rgba(239,68,68,.12);
+}
+
+/* field with reveal button */
+.mz-field{
+  position: relative;
+}
+
+.mz-reveal{
+  position:absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: rgba(2,6,23,.06);
+  border: 1px solid rgba(2,6,23,.10);
+  border-radius: 12px;
+  width: 38px;
+  height: 38px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition: transform .08s ease, background .12s ease;
+}
+
+.mz-reveal:hover{ background: rgba(2,6,23,.10); }
+.mz-reveal:active{ transform: translateY(-50%) scale(.98); }
+
+.mz-reveal svg{
+  width:18px; height:18px;
+  opacity:.8;
+}
+
+/* buttons */
+.mz-btn{
+  border: 0;
+  cursor:pointer;
+  border-radius: 14px;
+  padding: 11px 14px;
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: .2px;
+  background: linear-gradient(180deg, #0b5cff, #0547c4);
+  color: #fff;
+  box-shadow: 0 12px 26px rgba(2,85,255,.26);
+  transition: transform .08s ease, box-shadow .12s ease, filter .12s ease;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  justify-content:center;
+}
+
+.mz-btn:hover{ filter: brightness(1.03); }
+.mz-btn:active{ transform: translateY(1px); box-shadow: 0 10px 22px rgba(2,85,255,.22); }
+.mz-btn:disabled{ opacity:.55; cursor:not-allowed; filter:none; box-shadow:none; }
+
+.mz-btn.ghost{
+  background: rgba(2,6,23,.06);
+  color: rgba(2,6,23,.86);
+  box-shadow: none;
+  border: 1px solid rgba(2,6,23,.12);
+}
+
+.mz-btn.link{
+  background: transparent;
+  color: #0b5cff;
+  box-shadow: none;
+  padding: 10px 8px;
+}
+
+.mz-btn.sm{ padding: 9px 12px; border-radius: 12px; font-weight: 900; }
+
+/* close */
+.mz-x{
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border: 1px solid rgba(2,6,23,.12);
+  background: rgba(255,255,255,.8);
+  color: rgba(2,6,23,.78);
+  text-decoration:none;
+  transition: transform .08s ease, background .12s ease;
+}
+.mz-x:hover{ background:#fff; }
+.mz-x:active{ transform: scale(.98); }
+
+/* layout helpers */
+.mz-grid2{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.sep{
+  border:none;
+  border-top: 1px solid rgba(2,6,23,.10);
+  margin: 14px 0;
+}
+
+@media (max-width: 720px){
+  .mz-auth-b{ padding: 14px 14px 16px; }
+  .mz-auth-h{ padding: 16px 14px 12px; }
+  .mz-grid2{ grid-template-columns: 1fr; }
+  .mz-btn{ width: 100%; }
+  .mz-auth-actions .mz-btn.link,
+  .mz-auth-actions .mz-btn.ghost{ width:auto; }
+}
+/* =========================
+   FX PACK: GLASS / METAL / MOTION
+   ========================= */
+
+/* 1) Фоновое “свечение” вокруг карточки */
+.mz-auth-page{
+  position: relative;
+}
+.mz-auth-page::before{
+  content:"";
+  position:absolute;
+  inset: -40px -20px auto -20px;
+  height: 280px;
+  pointer-events:none;
+  background:
+    radial-gradient(closest-side, rgba(80,170,255,.35), rgba(80,170,255,0) 70%),
+    radial-gradient(closest-side, rgba(255,255,255,.35), rgba(255,255,255,0) 65%);
+  filter: blur(10px);
+  opacity: .9;
+}
+
+/* 2) Карточка: стекло + “металлическая” кромка */
+.mz-auth-card{
+  position: relative;
+  transform-style: preserve-3d;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.78));
+  border: 1px solid rgba(255,255,255,.55);
+  box-shadow:
+    0 30px 90px rgba(2,6,23,.28),
+    0 1px 0 rgba(255,255,255,.65) inset;
+}
+
+/* металлический кант (тонкая “хром” линия) */
+.mz-auth-card::before{
+  content:"";
+  position:absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg,
+    rgba(255,255,255,.9),
+    rgba(255,255,255,.05),
+    rgba(255,255,255,.65)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events:none;
+  opacity:.75;
+}
+
+/* 3) Блик-скан по стеклу */
+.mz-auth-card::after{
+  content:"";
+  position:absolute;
+  inset: -40% -30%;
+  background: linear-gradient(110deg,
+    rgba(255,255,255,0) 35%,
+    rgba(255,255,255,.35) 50%,
+    rgba(255,255,255,0) 65%
+  );
+  transform: translateX(-30%) rotate(8deg);
+  opacity: .55;
+  pointer-events:none;
+  mix-blend-mode: soft-light;
+}
+
+/* 4) Появление карточки (мягкое) */
+@keyframes mzPopIn{
+  from{ opacity:0; transform: translateY(10px) scale(.985); filter: blur(4px); }
+  to  { opacity:1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+.mz-auth-card{
+  animation: mzPopIn .42s cubic-bezier(.2,.9,.2,1) both;
+}
+
+/* 5) 3D hover (очень аккуратно) */
+.mz-auth-card:hover{
+  transform: translateY(-2px);
+  box-shadow:
+    0 38px 110px rgba(2,6,23,.32),
+    0 1px 0 rgba(255,255,255,.7) inset;
+}
+
+/* 6) Заголовок с “металлической” лёгкой заливкой */
+.mz-auth-title{
+  background: linear-gradient(180deg, rgba(2,6,23,.92), rgba(2,6,23,.55));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* 7) Поля: микро-движение и стеклянный фокус */
+.mz-inp{
+  background: rgba(255,255,255,.92);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.7) inset,
+    0 10px 24px rgba(2,6,23,.06);
+}
+.mz-inp:focus{
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 0 4px rgba(59,130,246,.16),
+    0 16px 34px rgba(2,6,23,.10);
+}
+
+/* 8) Кнопки: “пружина” и свечение */
+.mz-btn{
+  position: relative;
+  overflow: hidden;
+}
+.mz-btn::after{
+  content:"";
+  position:absolute;
+  inset:-40% -30%;
+  background: linear-gradient(110deg,
+    rgba(255,255,255,0) 35%,
+    rgba(255,255,255,.30) 50%,
+    rgba(255,255,255,0) 65%
+  );
+  transform: translateX(-60%) rotate(8deg);
+  opacity:.0;
+  transition: opacity .18s ease, transform .35s ease;
+  pointer-events:none;
+  mix-blend-mode: soft-light;
+}
+.mz-btn:hover::after{
+  opacity:.9;
+  transform: translateX(10%) rotate(8deg);
+}
+.mz-btn:hover{
+  transform: translateY(-1px);
+}
+.mz-btn:active{
+  transform: translateY(1px) scale(.99);
+}
+
+/* 9) Иконка reveal — чуть “стекляннее” */
+.mz-reveal{
+  backdrop-filter: blur(6px);
+  background: rgba(255,255,255,.55);
+}
+.mz-reveal:hover{ background: rgba(255,255,255,.72); }
+
+/* 10) Разделитель “металлик” */
+.sep{
+  border-top: 1px solid rgba(2,6,23,.10);
+  position: relative;
+}
+.sep::after{
+  content:"";
+  position:absolute;
+  left:0; right:0; top:-1px;
+  height:1px;
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0),
+    rgba(255,255,255,.8),
+    rgba(255,255,255,0)
+  );
+  opacity:.65;
+}
+
+/* 11) Микро-анимация смены таба (когда показываешь/скрываешь блоки) */
+[data-auth-tab]{
+  animation: mzFadeUp .28s ease both;
+}
+@keyframes mzFadeUp{
+  from{ opacity:0; transform: translateY(6px); }
+  to{ opacity:1; transform: translateY(0); }
+}
+
+/* 12) Доступность: если пользователь отключил анимации — выключаем */
+@media (prefers-reduced-motion: reduce){
+  .mz-auth-card,
+  [data-auth-tab]{
+    animation: none !important;
+  }
+  .mz-btn,
+  .mz-inp{
+    transition: none !important;
+  }
+  .mz-auth-card:hover{
+    transform: none !important;
+  }
+}
+/* =========================
+   ACCEDER / PROFILE — PORTAL THEME
+   ========================= */
+
+/* Фон страницы */
+.mz-auth-page{
+  background: transparent;
+}
+
+/* Карточка входа / datos */
+.mz-auth-card{
+  background:
+    radial-gradient(circle at top left, rgba(56,189,248,.12), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(14,115,184,.18), transparent 60%),
+    linear-gradient(135deg,#020617,#020617 45%,#020b1f);
+  border:1px solid rgba(148,163,184,.35);
+  box-shadow:
+    0 30px 80px rgba(2,6,23,.85),
+    inset 0 1px 0 rgba(255,255,255,.05);
+  color:#e5e7eb;
+}
+
+/* Шапка */
+.mz-auth-h{
+  background:
+    linear-gradient(90deg,rgba(15,23,42,.95),rgba(15,23,42,.9)),
+    radial-gradient(circle at top,#38bdf822 0,transparent 55%);
+  border-bottom:1px solid rgba(15,23,42,.9);
+}
+
+/* Заголовок */
+.mz-auth-title{
+  color:#f9fafb !important;
+  background:none;
+}
+
+/* Подсказки */
+.mz-help{
+  color:#9ca3af;
+}
+
+/* Лейблы */
+.mz-label{
+  color:#e5e7eb;
+}
+
+/* Inputs */
+.mz-inp{
+  background:rgba(15,23,42,.92) !important;
+  color:#e5e7eb !important;
+  border:1px solid #1e293b !important;
+}
+.mz-inp::placeholder{
+  color:#6b7280;
+}
+.mz-inp:focus{
+  border-color:#38bdf8 !important;
+  box-shadow:0 0 0 2px rgba(56,189,248,.35);
+}
+
+/* Кнопки */
+.mz-btn{
+  background:linear-gradient(135deg,#0ea5e9,#2563eb);
+  color:#f9fafb;
+  border:1px solid rgba(56,189,248,.9);
+  box-shadow:0 12px 30px rgba(15,23,42,.8);
+}
+.mz-btn.ghost{
+  background:rgba(15,23,42,.95);
+  color:#e5e7eb;
+  border-color:rgba(148,163,184,.6);
+  box-shadow:none;
+}
+.mz-btn.link{
+  background:transparent;
+  color:#38bdf8;
+  border:none;
+}
+
+/* Сообщения */
+.mz-ok{
+  background:rgba(22,163,74,.18);
+  color:#bbf7d0;
+  border:1px solid rgba(34,197,94,.7);
+}
+.mz-bad{
+  background:rgba(239,68,68,.18);
+  color:#fecaca;
+  border:1px solid rgba(239,68,68,.6);
+}
+
+/* Крестик */
+.mz-x{
+  background:#020617;
+  color:#e5e7eb;
+  border:1px solid rgba(148,163,184,.7);
+}
+.mz-x:hover{
+  background:#0b1120;
+}
+
+/* Разделитель */
+.sep{
+  border-top:1px solid rgba(255,255,255,.12);
+}
+/* ===== MEATZE · Top login button (Acceder) ===== */
+#mz-btn-login.mz-btn-top,
+.mz-btn-top#mz-btn-login{
+  color: #ffffff !important;          /* текст */
+  text-decoration: none;
+  opacity: 1 !important;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 14px;
+  border-radius: 12px;
+
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.55);
+}
+
+#mz-btn-login.mz-btn-top:visited{
+  color: #ffffff !important;          /* чтобы не становился "visited purple/gray" */
+}
+
+#mz-btn-login.mz-btn-top svg{
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;              /* у тебя уже так, но пусть будет явно */
+}
+
+#mz-btn-login.mz-btn-top:hover{
+  background: rgba(15, 23, 42, 1);
+  border-color: rgba(148, 163, 184, 0.8);
+  transform: translateY(-1px);
+}
+
+#mz-btn-login.mz-btn-top:focus-visible{
+  outline: 2px solid rgba(56, 189, 248, 0.9);
+  outline-offset: 2px;
+}

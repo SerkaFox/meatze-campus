@@ -1,0 +1,99 @@
+<section id="ui-lanbide" class="mz-pane" data-active="false">
+  <div class="mz-card">
+    <h3 style="margin-top:0">Lanbide · Actividad de alumnos</h3>
+
+    <div class="mz-help" style="margin-bottom:10px">
+      Resumen por alumno: nº eventos, tiempo activo estimado, última actividad. Exportable a CSV.
+    </div>
+
+    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div class="mz-help">Código del curso</div>
+        <select id="lz-codigo" class="mz-sel" style="width:320px">
+  <option value="">— Selecciona curso —</option>
+</select>
+
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div class="mz-help">Desde</div>
+        <input id="lz-from" class="mz-inp" style="width:160px" type="date">
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div class="mz-help">Hasta</div>
+        <input id="lz-to" class="mz-inp" style="width:160px" type="date">
+      </div>
+	  <select id="lz-mode" class="mz-sel" style="max-width:170px">
+  <option value="summary">Resumen</option>
+  <option value="daily">Por día</option>
+</select>
+
+	  <select id="lz-role" class="mz-sel" style="max-width:180px">
+  <option value="">Todos</option>
+  <option value="student">Alumnos</option>
+  <option value="teacher">Docentes</option>
+</select>
+
+
+      <button id="lz-load" class="mz-btn" data-action="lanbide.load">Cargar</button>
+      <button id="lz-export" class="mz-btn link" data-action="lanbide.export" disabled>Exportar CSV</button>
+
+      <span id="lz-msg" class="mz-help" style="margin-left:6px"></span>
+    </div>
+
+    <div style="
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+      align-items:stretch;
+    ">
+      <div id="lz-summary" style="
+        display:flex;
+        gap:12px;
+        flex-wrap:wrap;
+        align-items:center;
+        padding:10px;
+        border:1px solid #e5e7eb;
+        border-radius:10px;
+        background:#f9fafb;
+      ">
+        <div class="mz-help">Total eventos: <b id="lz-sum-events">—</b></div>
+        <div class="mz-help">Tiempo activo total: <b id="lz-sum-active">—</b></div>
+        <div class="mz-help">Rango: <b id="lz-sum-range">—</b></div>
+      </div>
+
+      <div style="
+        border:1px solid #e5e7eb;
+        border-radius:10px;
+        overflow:hidden;
+        background:#fff;
+      ">
+        <div style="padding:10px;border-bottom:1px solid #e5e7eb;background:#f3f4f6">
+          <div class="mz-help">Alumnos</div>
+        </div>
+
+        <div style="max-height:420px;overflow:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead style="position:sticky;top:0;background:#fff;z-index:1">
+<tr style="border-bottom:1px solid #e5e7eb">
+  <th style="text-align:left;padding:8px 10px">Persona</th>
+  <th style="text-align:right;padding:8px 10px">Eventos</th>
+  <th style="text-align:right;padding:8px 10px">Activo</th>
+  <th style="text-align:right;padding:8px 10px">Descargas</th>
+  <th style="text-align:right;padding:8px 10px">Físico</th>
+  <th style="text-align:left;padding:8px 10px">Última actividad</th>
+</tr>
+
+
+            </thead>
+            <tbody id="lz-tbody">
+              <tr><td colspan="6" style="padding:10px" class="mz-help">Introduce un código de curso y pulsa “Cargar”.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>

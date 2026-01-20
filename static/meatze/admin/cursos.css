@@ -141,3 +141,32 @@
 
 /* на всякий случай: контейнер не должен резать содержимое */
 #ui-cursos .mz-card{ overflow: visible; }
+#ui-cursos #mzc-cf-search{
+  max-width: 420px;
+}
+/* ===== FIX: acciones SIEMPRE en fila ===== */
+#ui-cursos .mz-actions{
+  display:flex !important;
+  flex-direction:row !important;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+
+#ui-cursos .mz-actions > *{
+  display:inline-flex !important;
+}
+/* ===== Curso form: Título / Código / Tipo ===== */
+#ui-cursos .mzc-form-row{
+  display:grid;
+  grid-template-columns: 50% 35% 15%;
+  gap:10px;
+  margin:0 0 12px;
+}
+
+/* на мобильном — в столбик */
+@media (max-width: 760px){
+  #ui-cursos .mzc-form-row{
+    grid-template-columns:1fr;
+  }
+}

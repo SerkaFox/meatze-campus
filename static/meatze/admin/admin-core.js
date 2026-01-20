@@ -7,10 +7,35 @@
   const API_BASE = '/meatze/v5';
   const API_A    = API_BASE + '/admin';
 
-  const tok    = () => sessionStorage.getItem('mz_admin') || '';
-  const setTok = t => sessionStorage.setItem('mz_admin', t);
-  const qs     = (bust=false)=> (tok()?`?adm=${encodeURIComponent(tok())}`:'') +
-                               (bust?(`${tok()?'&':'?'}_=${Date.now()}`):'');
+const KEY = 'mz_admin';
+const KEY_REM = 'mz_admin_remember';
+
+const rememberEl = () => document.getElementById('adm-remember');
+const wantRemember = () => !!rememberEl()?.checked;
+
+const tok = () =>
+  sessionStorage.getItem(KEY) ||
+  localStorage.getItem(KEY) ||
+  '';
+
+const setTok = (t) => {
+  // всегда кладём в session (совместимость со старыми модулями)
+  sessionStorage.setItem(KEY, t);
+
+  // если "запомнить" — кладём ещё и в local
+  localStorage.setItem(KEY_REM, wantRemember() ? '1' : '0');
+  if (wantRemember()) localStorage.setItem(KEY, t);
+  else localStorage.removeItem(KEY);
+};
+
+const clearTok = () => {
+  sessionStorage.removeItem(KEY);
+  localStorage.removeItem(KEY);
+  localStorage.removeItem(KEY_REM);
+};
+
+const qs = (bust=false) => (bust ? `?_=${Date.now()}` : '');
+
   const auth   = (isPost=false)=>{
     const h={};
     if (tok()) h['X-MZ-Admin'] = tok();
@@ -65,7 +90,7 @@ document.getElementById('adm-shell')?.classList.remove('is-locked');
       document.dispatchEvent(new CustomEvent('mz:admin-auth', {detail:{ok:true}}));
       return true;
     }catch(_){
-      sessionStorage.removeItem('mz_admin');
+      clearTok();
       return false;
     }
   }
@@ -89,19 +114,25 @@ document.getElementById('adm-shell')?.classList.remove('is-locked');
     }
   });
 
-  // авто-вход, если токен уже есть
-  if (tok()){
-    tryTokenShared(tok());
-  }
+	// восстановим чекбокс "Recordarme"
+	const remEl = rememberEl();
+	if (remEl) remEl.checked = (localStorage.getItem(KEY_REM) === '1');
+
+	// авто-вход, если токен уже есть (в нужном storage)
+	if (tok()){
+	  tryTokenShared(tok());
+	}
 
   // === PANELS MAP ===
-  const map = {
-    teachers: 'ui-teachers',
-    cursos:   'ui-cursos',
-    horarios: 'ui-horarios',
-    subs:     'ui-subs',
-    wa:       'ui-wa',
-  };
+const map = {
+  teachers:'ui-teachers',
+  cursos:'ui-cursos',
+  horarios:'ui-horarios',
+  subs:'ui-subs',
+  wa:'ui-wa',
+  lanbide:'ui-lanbide',
+};
+
 
   function showPanel(mod){
   if (!pills) return;
@@ -187,5 +218,11 @@ document.addEventListener('click', (e)=>{
     document.addEventListener('DOMContentLoaded', initPanelsOnce);
   } else {
     initPanelsOnce();
+  }
+    const rem = localStorage.getItem(KEY_REM) === '1';
+  if (rememberEl()) rememberEl().checked = rem;
+
+  if (!sessionStorage.getItem(KEY) && rem && localStorage.getItem(KEY)) {
+    sessionStorage.setItem(KEY, localStorage.getItem(KEY));
   }
 })();

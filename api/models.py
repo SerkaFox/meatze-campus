@@ -2,7 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from .chat_models import ChatMessage, ChatRead, ChatReaction
-
+from .utils_wa import normalize_wa
 User = get_user_model()
 
 class MZSetting(models.Model):
@@ -131,6 +131,18 @@ class Curso(models.Model):
     # новые поля для админ-панели
     modules = models.JSONField(default=list, blank=True)
     horas_total = models.PositiveIntegerField(default=0)
+    TIPO_FORMACION_CHOICES = [
+        ("ocupacional", "Ocupacional"),
+        ("continua", "Continua"),
+    ]
+
+    tipo_formacion = models.CharField(
+        max_length=20,
+        choices=TIPO_FORMACION_CHOICES,
+        blank=True,
+        default="",
+    )
+
 
     def __str__(self):
         return f"{self.codigo} – {self.titulo}"
@@ -190,20 +202,65 @@ class Horario(models.Model):
 # (для модалки "Datos personales" + флаг docente)
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="profile",
-    )
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
 
-    first_name = models.CharField(max_length=150, blank=True)
-    last_name1 = models.CharField(max_length=150, blank=True)
-    last_name2 = models.CharField(max_length=150, blank=True)
+    first_name   = models.CharField(max_length=150, blank=True)
+    last_name1   = models.CharField(max_length=150, blank=True)
+    last_name2   = models.CharField(max_length=150, blank=True)
     display_name = models.CharField(max_length=190, blank=True)
-    bio = models.TextField(blank=True)
+    bio          = models.TextField(blank=True)
+    wa = models.CharField(max_length=32, blank=True, default="", db_index=True)
 
-    # сюда же перенесём флажок преподавателя
-    is_teacher = models.BooleanField(default=False)
+    is_teacher   = models.BooleanField(default=False)
+
+    def build_display_name(self) -> str:
+        parts = [(self.first_name or "").strip(), (self.last_name1 or "").strip(), (self.last_name2 or "").strip()]
+        parts = [p for p in parts if p]
+        return " ".join(parts)
+
+    def is_complete(self) -> bool:
+        return bool((self.first_name or "").strip() and (self.last_name1 or "").strip())
+
+    def save(self, *args, **kwargs):
+        # ✅ если display_name пустой, но имя/апеллидо есть — генерим
+        if not (self.display_name or "").strip():
+            gen = self.build_display_name()
+            if gen:
+                self.display_name = gen
+        self.wa = normalize_wa(self.wa) if (self.wa or "").strip() else ""
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.display_name or self.user.get_full_name() or self.user.username
+
+from django.db import models
+from django.conf import settings
+
+class LearningEvent(models.Model):
+    curso_codigo = models.CharField(max_length=32, db_index=True, blank=True, default="")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="learning_events")
+
+    session_id = models.CharField(max_length=64, db_index=True, blank=True, default="")  # фронт UUID
+    seq = models.PositiveIntegerField(default=0)  # порядковый номер события в сессии
+
+    event = models.CharField(max_length=50, db_index=True)  # click, view, login, open_file, quiz_start...
+    object_type = models.CharField(max_length=50, blank=True, default="")
+    object_id = models.CharField(max_length=64, blank=True, default="")
+
+    page = models.CharField(max_length=200, blank=True, default="")      # /alumno/curso/IFCT0209/...
+    ref = models.CharField(max_length=200, blank=True, default="")       # document.referrer
+    meta = models.JSONField(default=dict, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    client_ts = models.DateTimeField(null=True, blank=True)              # ts от клиента (опционально)
+    delta_sec = models.PositiveIntegerField(default=0)                    # !!! "tiempos entre cada clicado"
+
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=255, blank=True, default="")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["curso_codigo", "user", "-created_at"]),
+            models.Index(fields=["session_id", "user", "-created_at"]),
+            models.Index(fields=["event", "-created_at"]),
+        ]

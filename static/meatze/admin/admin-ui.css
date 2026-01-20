@@ -462,3 +462,88 @@
   transition: left .22s ease, top .22s ease, width .22s ease; /* ✅ добавили top */
   pointer-events:none;
 }
+/* ==========================================================
+   ADMIN · Custom checkbox (isolated, safe)
+   ========================================================== */
+
+.mz-admin-scope .mz-check{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  cursor:pointer;
+  user-select:none;
+  color:var(--mz-ink);
+  font-size:13.5px;
+}
+
+/* прячем нативный checkbox, но оставляем доступным */
+.mz-admin-scope .mz-check input{
+  position:absolute;
+  opacity:0;
+  pointer-events:none;
+}
+
+/* визуальный чекбокс */
+.mz-admin-scope .mz-check-ui{
+  width:18px;
+  height:18px;
+  border-radius:5px;
+  border:2px solid var(--mz-border);
+  background:#fff;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  transition:
+    background .15s ease,
+    border-color .15s ease,
+    box-shadow .15s ease,
+    transform .12s ease;
+  box-shadow:
+    inset 0 1px 2px rgba(15,23,42,.12),
+    0 1px 0 rgba(255,255,255,.9);
+}
+
+/* галочка */
+.mz-admin-scope .mz-check-ui::after{
+  content:"";
+  width:6px;
+  height:10px;
+  border-right:2px solid #fff;
+  border-bottom:2px solid #fff;
+  transform: rotate(45deg) scale(0);
+  transition: transform .12s ease;
+}
+
+/* checked */
+.mz-admin-scope .mz-check input:checked + .mz-check-ui{
+  background:linear-gradient(
+    135deg,
+    var(--mz-primary),
+    var(--mz-primary-600)
+  );
+  border-color:var(--mz-primary);
+  box-shadow:
+    inset 0 1px 1px rgba(255,255,255,.35),
+    0 3px 10px rgba(14,115,184,.35);
+}
+
+.mz-admin-scope .mz-check input:checked + .mz-check-ui::after{
+  transform: rotate(45deg) scale(1);
+}
+
+/* hover */
+.mz-admin-scope .mz-check:hover .mz-check-ui{
+  transform: translateY(-1px);
+}
+
+/* focus (keyboard) */
+.mz-admin-scope .mz-check input:focus + .mz-check-ui{
+  box-shadow:
+    var(--mz-focus),
+    inset 0 1px 2px rgba(15,23,42,.12);
+}
+
+/* текст */
+.mz-admin-scope .mz-check-label{
+  line-height:1.2;
+}

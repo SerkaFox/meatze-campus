@@ -4,6 +4,16 @@
   <div style="padding:24px">
     <h1>Panel del alumno</h1>
     <p>Has iniciado sesión como <strong>{{ request.user.get_username }}</strong>.</p>
-    <p>Aquí irá потом весь личный кабинет Meatze (cursos, horarios, IA...).</p>
+    <p>Aquí irá  Meatze (cursos, horarios, IA...).</p>
   </div>
 {% endblock %}
+<script>
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('a[data-action="course.open"][href]');
+  if (!a) return;
+  const href = a.getAttribute('href') || '';
+  if (/^\/alumno\/curso\/[^\/]+\/$/.test(href)) {
+    try { localStorage.setItem('mz_last_course', href); } catch(_) {}
+  }
+});
+</script>

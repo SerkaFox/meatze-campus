@@ -11,12 +11,5 @@ urlpatterns = [
     path("auth/verify_pin", views.verify_pin),
     path("auth/set_password", views.set_password),
     path("auth/logout", views.logout),
-
-    # ← НОВОЕ:
     path("admin/ping", views.admin_ping, name="admin_ping"),
-
-    
-    
-    
-
 ]

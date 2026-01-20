@@ -17,7 +17,8 @@ const escapeHtml = (s) => (s ?? "").toString().replace(/[&<>"']/g, (m) => ({
   const API_A = API_BASE + '/admin';
   const H = code => `/curso/${encodeURIComponent(code)}/horario`;
   const tok = () => sessionStorage.getItem('mz_admin') || '';
-  const qs  = (bust=false)=> (tok()?`?adm=${encodeURIComponent(tok())}`:'') + (bust?(`${tok()?'&':'?'}_=${Date.now()}`):'');
+const qs = (bust=false) => (bust ? `?_=${Date.now()}` : '');
+
   const auth= (isPost=false)=>{const h={}; if(tok()) h['X-MZ-Admin']=tok(); if(isPost) h['Content-Type']='application/json'; return h;};
 async function apiJSON(url, opt={}) {
   const m = (opt.method || 'GET').toUpperCase();
@@ -700,30 +701,28 @@ function updateStudentCard(){
 
 
   // === Удаление многих дат одним запросом к /horario/bulk-delete
-  async function deleteFechasBulk(codigo, fechas){
-    if (!codigo || !fechas || !fechas.length) return {deleted:0};
+async function deleteFechasBulk(codigo, fechas){
+  if (!codigo || !fechas || !fechas.length) return {deleted:0};
 
-	const tipo = (selTipo.value === 'practica') ? 'practica' : 'curso';
-	const alumnoId  = (selAlumno && selAlumno.value)
-	  ? selAlumno.value.trim()
-	  : '';
+  const isPractica = (selTipo.value === 'practica');
 
-		const payload = { fechas, tipo };
+  const payload = { fechas };
 
-		if (tipo === 'practica') {
-		  const grupoKey = getAlumnoGroupKey();
-		  if (grupoKey) {
-			payload.grupo = grupoKey;
-		  }
-		}
-
-
-    return apiJSON(API_BASE + H(codigo) + '/bulk-delete' + qs(), {
-      method: 'POST',
-      headers: { ...auth(true) },
-      body: JSON.stringify(payload)
-    });
+  if (isPractica){
+    payload.tipo = 'practica';
+    const grupoKey = getAlumnoGroupKey();
+    if (grupoKey) payload.grupo = grupoKey;
   }
+  // ⚠️ ВАЖНО: для "curso" не шлём tipo вообще,
+  // чтобы backend удалил и старые записи с tipo NULL/"".
+
+  return apiJSON(API_BASE + H(codigo) + '/bulk-delete' + qs(), {
+    method: 'POST',
+    headers: { ...auth(true) },
+    body: JSON.stringify(payload)
+  });
+}
+
 
   function clearGrid(){ grid.innerHTML=''; legend.innerHTML=''; gTitle.textContent='—'; }
 
@@ -2224,6 +2223,15 @@ await apiJSON(API_BASE + H(codigo) + qp(), {
         vacacionesSegs = buildVacacionesSegments(holMap, fixedSet, cursoStart, cursoEnd);
       }
 
+async function getPngSize(dataUrl){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    img.onload = ()=> resolve({w: img.naturalWidth || img.width, h: img.naturalHeight || img.height});
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+}
+
       const groupedAll = getModulesGrouped(cursoMeta);
       const horasMF    = horasByMF(cursoMeta);
       const mfByModuleKey = new Map();
@@ -2244,6 +2252,9 @@ await apiJSON(API_BASE + H(codigo) + qp(), {
       // horas por UF y horas de cada MF calculadas SOLO por sus UF hijas
       const horasPorUF = new Map();
       const horasMFDesdeUF = new Map();
+const hasMF = groupedAll.some(m => m.type === 'MF');
+const hasUF = groupedAll.some(m => m.type === 'UF');
+const usePlainModulesLegend = !hasMF && !hasUF; // ✅ fallback режим
 
       modsAll.forEach(m => {
         const h = Number(m.horas || 0) || 0;
@@ -2430,21 +2441,36 @@ await apiJSON(API_BASE + H(codigo) + qp(), {
         const detMonth = new Map();
         det.forEach((items, d)=>{ if (d.startsWith(ym)) detMonth.set(d, items); });
         const svg = buildMonthSVG(ym, detMonth, colorForKey);
-        const png = await svgToRasterDataUrl(svg, {scale:0.6, mime:'image/png'});
+        const png = await svgToRasterDataUrl(svg, {scale:2.0, mime:'image/png'});
         monthImgs.push({ ym, png });
         busy.pct(10 + Math.round((i+1)/Math.max(1,months.length)*40));
       }
-      function renderMonthsTable(cells){
-        let rows = '';
-        for(let i = 0; i < cells.length; i += 2){
-          const a = cells[i], b = cells[i+1];
-          rows += `<tr>
-            <td>${a ? `<img class="month" alt="${a.ym}" src="${a.png}">` : ''}</td>
-            <td>${b ? `<img class="month" alt="${b.ym}" src="${b.png}">` : ''}</td>
-          </tr>`;
-        }
-        return `<table class="months">${rows}</table>`;
-      }
+function renderMonthsTable(cells){
+  let rows = '';
+  for(let i = 0; i < cells.length; i += 2){
+    const a = cells[i], b = cells[i+1];
+    rows += `<tr>
+      <td class="mcell">
+        ${a ? `<img class="month" alt="${a.ym}" width="370" src="${a.png}">` : ''}
+      </td>
+      <td class="mcell">
+        ${b ? `<img class="month" alt="${b.ym}" width="370" src="${b.png}">` : ''}
+      </td>
+    </tr>`;
+  }
+
+  return `
+<table class="months" width="100%" cellspacing="0" cellpadding="0"
+       style="width:100%;border-collapse:collapse;table-layout:fixed;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+  <colgroup>
+    <col style="width:98mm">
+    <col style="width:98mm">
+  </colgroup>
+  ${rows}
+</table>`;
+}
+
+
       const monthsTableHtml = renderMonthsTable(monthImgs);
 
       const mfPresent = new Set();
@@ -2460,149 +2486,310 @@ await apiJSON(API_BASE + H(codigo) + qp(), {
         });
       });
 
-      const orderedMF = groupedAll
-        .filter(x=>x.type==='MF')
-        .map(x=>x.key)
-        .filter(k=>mfPresent.has(k));
+		let orderedMF = [];
+		let orderedPlainMods = [];
 
-      function legendHTML(){
-        let html = '<div class="legend-mfs">';
+		if (!usePlainModulesLegend) {
+		  // === как было: MF-легенда ===
+		  orderedMF = groupedAll
+			.filter(x=>x.type==='MF')
+			.map(x=>x.key)
+			.filter(k=>mfPresent.has(k));
+		} else {
+		  // === fallback: легенда по обычным модулям ===
+		  orderedPlainMods = modsAll
+			.filter(m => m.type === 'OTRO')          // можно и без фильтра, но так чище
+			.filter(m => mfPresent.has(m.key));      // реально встречаются в расписании
+		}
 
-				orderedMF.forEach(mfKey=>{
-				  const mfMeta   = modsAll.find(m=>m.key===mfKey) || {label: mfKey, horas:0};
-				  const color    = colorForKey(mfKey);
-				  const rMF      = moduleDateRangeMF.get(mfKey);
-				  const horasFromUFs = horasMFDesdeUF.get(mfKey) || 0;
-				  const horasMFProp  = Number(mfMeta.horas || 0) || 0;
-				  let horasMFShow    = 0;
 
-				  if (horasFromUFs > 0) {
-					horasMFShow = horasFromUFs;
-				  } else if (horasMFProp > 0) {
-					horasMFShow = horasMFProp;
-				  } else {
-					horasMFShow = horasMF.get(mfKey) || 0;
-				  }
+function legendHTML(){
+  let html = '<div class="legend-mfs">';
 
-				  const mfLabelRaw = String(mfMeta.label || '').trim();
-				  let mfTitleCore  = mfLabelRaw || mfKey;
+  // =========================
+  // ✅ FALLBACK: НЕТ MF/UF → рисуем по обычным модулям (OTRO / Module 1/2/3...)
+  // =========================
+  if (usePlainModulesLegend) {
 
-				  // в конец названия добавляем "(XX horas)"
-				  if (horasMFShow > 0) {
-					mfTitleCore += ` (${horasMFShow} horas)`;
-				  }
+    orderedPlainMods.forEach(mod=>{
+      const color = colorForKey(mod.key);
+      const rMOD  = moduleDateRangeMod.get(mod.key);
+      const ti    = moduleTimeInfoMod.get(mod.key);
 
-				  const rangoMF = rMF
-					? `Del ${esDateDMY(rMF.start)} al ${esDateDMY(rMF.end)}`
-					: '';
+      const labelRaw = String(mod.label || '').trim();
+      let titleCore  = labelRaw || mod.key;
 
-				// вместо headerLine
-				const tituloMFHtml = esc(mfTitleCore);
-				const rangoMFHtml  = rangoMF ? esc(rangoMF) : '';
+      const horasMOD = Number(mod.horas || 0) || 0;
+      if (horasMOD > 0) titleCore += ` (${horasMOD} horas)`;
 
-				html += `
-				  <table width="100%" cellspacing="0" cellpadding="6"
-						 style="margin-bottom:6mm;border:1px solid #ccc;border-collapse:collapse;"
-						 bgcolor="${color}">
-					<tr bgcolor="${color}">
-					  <td bgcolor="${color}" style="font-weight:bold;font-size:11pt;">
-						<div>${tituloMFHtml}</div>
-						${rangoMFHtml ? `<div style="font-weight:normal;">${rangoMFHtml}</div>` : ''}
-					  </td>
-					</tr>
-					<tr bgcolor="${color}">
-					  <td bgcolor="${color}" style="font-size:10pt;">
-						<!-- тут остаётся блок с UFs как у тебя было -->
-				`;
+      const rangoMOD = rMOD ? `Del ${esDateDMY(rMOD.start)} al ${esDateDMY(rMOD.end)}` : '';
 
-				  const ufs = modsAll.filter(m=>m.type==='UF' && m.group===mfKey);
+      html += `
+        <table width="100%" cellspacing="0" cellpadding="6"
+               style="margin-bottom:6mm;border:1px solid #ccc;border-collapse:collapse;"
+               bgcolor="${color}">
+          <tr bgcolor="${color}">
+            <td bgcolor="${color}" style="font-weight:bold;font-size:11pt;">
+              <div>${esc(titleCore)}</div>
+              ${rangoMOD ? `<div style="font-weight:normal;">${esc(rangoMOD)}</div>` : ''}
+            </td>
+          </tr>
+          <tr bgcolor="${color}">
+            <td bgcolor="${color}" style="font-size:10pt;">
+      `;
 
-				  ufs.forEach(uf=>{
-					const rUF = moduleDateRangeMod.get(uf.key);
-					const ti  = moduleTimeInfoMod.get(uf.key);
+      // “Неполные дни” (как у UF): выводим только если день НЕ равен fullDayMin
+      if (ti && ti.spansByDate && ti.spansByDate.size){
+        let fullDayMin = 0;
+        ti.spansByDate.forEach(spans=>{
+          let mm = 0;
+          (spans||[]).forEach(([a,b])=>{ mm += minutesBetween(a,b); });
+          if (mm > fullDayMin) fullDayMin = mm;
+        });
 
-					const ufLabelRaw = String(uf.label || '').trim();
-					const horasUF    = Number(uf.horas || 0) || 0;
+        const fechas = Array.from(ti.spansByDate.keys()).sort();
+        const first  = fechas[0];
+        const last   = fechas[fechas.length - 1];
 
-					let ufTitleCore  = ufLabelRaw || uf.key;
-					if (horasUF > 0) {
-					  ufTitleCore += ` (${horasUF} horas)`;
-					}
+        function dayLine(d){
+          const spans = ti.spansByDate.get(d) || [];
+          if (!spans.length) return '';
 
-					html += `
-			  <div style="margin:4px 0;font-size:10pt;">
-				<b>${esc(ufTitleCore)}</b><br>
-				${rUF ? `Del ${esDateDMY(rUF.start)} al ${esDateDMY(rUF.end)}` : ''}
-			  </div>
-		`;
+          let mins = 0;
+          spans.forEach(([a,b])=>{ mins += minutesBetween(a,b); });
 
-					if (ti && ti.spansByDate && ti.spansByDate.size){
-					  let fullDayMin = 0;
-					  ti.spansByDate.forEach(spans=>{
-						let mm = 0;
-						(spans||[]).forEach(([a,b])=>{ mm += minutesBetween(a,b); });
-						if (mm > fullDayMin) fullDayMin = mm;
-					  });
+          if (fullDayMin && mins === fullDayMin) return '';
 
-					  const fechas = Array.from(ti.spansByDate.keys()).sort();
-					  const first  = fechas[0];
-					  const last   = fechas[fechas.length - 1];
+          const horas = (mins/60).toFixed(1).replace('.',',');
+          const intervalos = spans.map(([a,b]) => `de ${a} a ${b}`).join(' y ');
 
-					  function dayLine(d){
-						const spans = ti.spansByDate.get(d)||[];
-						if (!spans.length) return '';
+          return `
+            <div style="margin-left:12px;font-size:9.5pt;">
+              El ${esDateDMY(d)} el horario será de ${horas} horas (${intervalos})
+            </div>`;
+        }
 
-						let mins = 0;
-						spans.forEach(([a,b])=>{ mins += minutesBetween(a,b); });
+        let extraHTML = '';
+        extraHTML += dayLine(first);
+        if (last !== first) extraHTML += dayLine(last);
 
-						if (fullDayMin && mins === fullDayMin) return '';
+        if (extraHTML.trim()){
+          html += extraHTML;
+        }
+      }
 
-						const horas = (mins/60).toFixed(1).replace('.',',');
+      html += `
+            </td>
+          </tr>
+        </table>
+      `;
+    });
 
-						const intervalos = spans
-						  .map(([a,b]) => `de ${a} a ${b}`)
-						  .join(' y ');
+    html += '</div>';
+    return html;
+  }
 
-						return `
-				<div style="margin-left:12px;font-size:9.5pt;">
-				  El ${esDateDMY(d)} el horario será de ${horas} horas (${intervalos})
-				</div>`;
-					  }
+  // =========================
+  // ✅ NORMAL: MF -> UF (как у тебя)
+  // =========================
+  orderedMF.forEach(mfKey=>{
+    const mfMeta   = modsAll.find(m=>m.key===mfKey) || {label: mfKey, horas:0};
+    const color    = colorForKey(mfKey);
+    const rMF      = moduleDateRangeMF.get(mfKey);
+    const horasFromUFs = horasMFDesdeUF.get(mfKey) || 0;
+    const horasMFProp  = Number(mfMeta.horas || 0) || 0;
+    let horasMFShow    = 0;
 
-					  let extraHTML = '';
-					  extraHTML += dayLine(first);
-					  if (last !== first) extraHTML += dayLine(last);
+    if (horasFromUFs > 0) {
+      horasMFShow = horasFromUFs;
+    } else if (horasMFProp > 0) {
+      horasMFShow = horasMFProp;
+    } else {
+      horasMFShow = horasMF.get(mfKey) || 0;
+    }
 
-					  if (extraHTML.trim()){
-						html += extraHTML;
-					  }
-					}
-				  });
+    const mfLabelRaw = String(mfMeta.label || '').trim();
+    let mfTitleCore  = mfLabelRaw || mfKey;
 
-				  html += `
-			</td>
-		  </tr>
-		</table>
-		`;
-				});
+    if (horasMFShow > 0) {
+      mfTitleCore += ` (${horasMFShow} horas)`;
+    }
 
-				html += '</div>';
-				return html;
-			  }
+    const rangoMF = rMF
+      ? `Del ${esDateDMY(rMF.start)} al ${esDateDMY(rMF.end)}`
+      : '';
+
+    const tituloMFHtml = esc(mfTitleCore);
+    const rangoMFHtml  = rangoMF ? esc(rangoMF) : '';
+
+    html += `
+      <table width="100%" cellspacing="0" cellpadding="6"
+             style="margin-bottom:6mm;border:1px solid #ccc;border-collapse:collapse;"
+             bgcolor="${color}">
+        <tr bgcolor="${color}">
+          <td bgcolor="${color}" style="font-weight:bold;font-size:11pt;">
+            <div>${tituloMFHtml}</div>
+            ${rangoMFHtml ? `<div style="font-weight:normal;">${rangoMFHtml}</div>` : ''}
+          </td>
+        </tr>
+        <tr bgcolor="${color}">
+          <td bgcolor="${color}" style="font-size:10pt;">
+    `;
+
+    const ufs = modsAll.filter(m => m.type === 'UF' && m.group === mfKey);
+    const hasUFs = ufs.length > 0;
+
+    // ✅ MF "неполные дни" показываем ТОЛЬКО если нет UF-ов
+    if (!hasUFs) {
+      const tiMF = moduleTimeInfoMF.get(mfKey);
+      if (tiMF && tiMF.spansByDate && tiMF.spansByDate.size){
+        const fechasMF = Array.from(tiMF.spansByDate.keys()).sort();
+
+        let freq = new Map();
+        let fullDayMinMF = 0;
+        let maxCountMF = 0;
+
+        fechasMF.forEach(d => {
+          const spans = tiMF.spansByDate.get(d) || [];
+          if (!spans.length) return;
+          let mm = 0;
+          spans.forEach(([a,b]) => { mm += minutesBetween(a,b); });
+
+          const now = (freq.get(mm) || 0) + 1;
+          freq.set(mm, now);
+          if (now > maxCountMF){ maxCountMF = now; fullDayMinMF = mm; }
+        });
+
+        if (!fullDayMinMF && freq.size){
+          fullDayMinMF = Array.from(freq.keys()).sort((a,b)=>b-a)[0];
+        }
+
+        function mfDayLine(d){
+          const spans = tiMF.spansByDate.get(d) || [];
+          if (!spans.length) return '';
+
+          let mins = 0;
+          spans.forEach(([a,b]) => { mins += minutesBetween(a,b); });
+          if (fullDayMinMF && mins === fullDayMinMF) return '';
+
+          const horas = (mins/60).toFixed(1).replace('.',',');
+          const intervalos = spans.map(([a,b]) => `de ${a} a ${b}`).join(' y ');
+
+          return `
+            <div style="margin-left:12px;font-size:9.5pt;">
+              El ${esDateDMY(d)} el horario será de ${horas} horas (${intervalos})
+            </div>`;
+        }
+
+        const firstMF = fechasMF[0];
+        const lastMF  = fechasMF[fechasMF.length - 1];
+
+        let mfExtra = '';
+        mfExtra += mfDayLine(firstMF);
+        if (lastMF !== firstMF) mfExtra += mfDayLine(lastMF);
+
+        if (mfExtra.trim()){
+          html += mfExtra;
+        }
+      }
+    }
+
+    // UFs
+    ufs.forEach(uf=>{
+      const rUF = moduleDateRangeMod.get(uf.key);
+      const ti  = moduleTimeInfoMod.get(uf.key);
+
+      const ufLabelRaw = String(uf.label || '').trim();
+      const horasUF    = Number(uf.horas || 0) || 0;
+
+      let ufTitleCore  = ufLabelRaw || uf.key;
+      if (horasUF > 0) {
+        ufTitleCore += ` (${horasUF} horas)`;
+      }
+
+      html += `
+        <div style="margin:4px 0;font-size:10pt;">
+          <b>${esc(ufTitleCore)}</b><br>
+          ${rUF ? `Del ${esDateDMY(rUF.start)} al ${esDateDMY(rUF.end)}` : ''}
+        </div>
+      `;
+
+      if (ti && ti.spansByDate && ti.spansByDate.size){
+        let fullDayMin = 0;
+        ti.spansByDate.forEach(spans=>{
+          let mm = 0;
+          (spans||[]).forEach(([a,b])=>{ mm += minutesBetween(a,b); });
+          if (mm > fullDayMin) fullDayMin = mm;
+        });
+
+        const fechas = Array.from(ti.spansByDate.keys()).sort();
+        const first  = fechas[0];
+        const last   = fechas[fechas.length - 1];
+
+        function dayLine(d){
+          const spans = ti.spansByDate.get(d)||[];
+          if (!spans.length) return '';
+
+          let mins = 0;
+          spans.forEach(([a,b])=>{ mins += minutesBetween(a,b); });
+          if (fullDayMin && mins === fullDayMin) return '';
+
+          const horas = (mins/60).toFixed(1).replace('.',',');
+          const intervalos = spans
+            .map(([a,b]) => `de ${a} a ${b}`)
+            .join(' y ');
+
+          return `
+            <div style="margin-left:12px;font-size:9.5pt;">
+              El ${esDateDMY(d)} el horario será de ${horas} horas (${intervalos})
+            </div>`;
+        }
+
+        let extraHTML = '';
+        extraHTML += dayLine(first);
+        if (last !== first) extraHTML += dayLine(last);
+
+        if (extraHTML.trim()){
+          html += extraHTML;
+        }
+      }
+    });
+
+    html += `
+          </td>
+        </tr>
+      </table>
+    `;
+  });
+
+  html += '</div>';
+  return html;
+}
+
 
 
       const totalHoras = Math.round(totalCourseMinutes(cursoMeta)/60)
         || Number(cursoMeta?.horas||cursoMeta?.total_horas||0) || 0;
 
-      const entidad   = cursoMeta?.entidad || '';
-      const tipoForm  = cursoMeta?.tipo_formacion || '';
+      const entidad = 'Lanbide';
+	function tipoFormLabel(v){
+	  v = String(v || '').trim();
+	  const map = {
+		ocupacional: 'Ocupacional',
+		continua: 'Continua'
+	  };
+	  return map[v] || '';
+	}
+const tipoForm = tipoFormLabel(cursoMeta?.tipo_formacion);
+
+
       const anoAcad   = (()=>{
         if (!cursoStart) return '';
         const y1 = new Date(cursoStart+'T00:00:00').getFullYear();
         const y2 = cursoEnd
           ? new Date(cursoEnd+'T00:00:00').getFullYear()
           : y1;
-        return `${y1}-${y2}`;
+        return (y1 === y2) ? String(y1) : `${y1}-${y2}`;
       })();
       const fechaIni  = esDateDMY(cursoStart);
       const fechaFin  = esDateDMY(cursoEnd);
@@ -2621,33 +2808,65 @@ await apiJSON(API_BASE + H(codigo) + qp(), {
       });
 
       const cursoTxt = (cursosByCode.get(codigo)?.titulo || '—').toString().toUpperCase();
+const headerTableHtml = `
+<table width="100%" cellspacing="0" cellpadding="0" style="width:100%; border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+  <tr>
+    <td style="padding:0; margin:0;">
 
-      const headerTableHtml = `
-<table class="hdr-table">
-  <tr>
-    <td class="hdr-label">Nombre curso:</td>
-    <td colspan="4" class="hdr-val">${esc(cursoTxt)}</td>
+      <table class="hdr-table" width="100%" cellspacing="0" cellpadding="0"
+             style="width:100%; border-collapse:collapse; table-layout:fixed; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+        <colgroup>
+          <col width="22%">
+          <col width="28%">
+          <col width="22%">
+          <col width="28%">
+        </colgroup>
+
+        <tr>
+          <td class="hdr-label">Nombre curso:</td>
+          <td class="hdr-val" colspan="3">${esc(cursoTxt)}</td>
+        </tr>
+
+        <tr>
+          <td class="hdr-label">Código curso:</td>
+          <td class="hdr-val nowrap">${esc(codigo||'')}</td>
+          <td class="hdr-label">Entidad:</td>
+          <td class="hdr-val">${esc(entidad || ' ')}</td>
+        </tr>
+
+        <tr>
+          <td class="hdr-label">Año académico:</td>
+          <td class="hdr-val nowrap">${esc(anoAcad)}</td>
+          <td class="hdr-label">Tipo formación:</td>
+          <td class="hdr-val">${esc(tipoForm || ' ')}</td>
+        </tr>
+
+        <tr>
+          <td class="hdr-label">Fechas impartición:</td>
+          <td class="hdr-val nowrap" colspan="3">
+            ${esc(fechaIni)} <span class="hdr-a">a</span> ${esc(fechaFin)}
+          </td>
+        </tr>
+
+	${mergedSegs.map((s,idx)=>`
+	  <tr>
+		<td class="hdr-label">${idx===0?'Horario:':''}</td>
+		<td class="hdr-val" colspan="3">
+		  <span class="h-left">Del ${esDateDMY(s.from)} al ${esDateDMY(s.to)}</span>
+		  <span class="h-right">${(s.desde||'')} – ${(s.hasta||'')}</span>
+		</td>
+	  </tr>
+	`).join('')}
+
+
+      </table>
+
+    </td>
   </tr>
-  <tr>
-    <td class="hdr-label">Código curso:</td>
-    <td class="hdr-val">${esc(codigo||'')}</td>
-    <td class="hdr-label">Entidad:</td>
-    <td colspan="2" class="hdr-val">${esc(entidad || ' ')}</td>
-  </tr>
-  <tr>
-    <td class="hdr-label">Año académico:</td>
-    <td class="hdr-val">${esc(anoAcad)}</td>
-    <td class="hdr-label">Tipo formación:</td>
-    <td colspan="2" class="hdr-val">${esc(tipoForm || ' ')}</td>
-  </tr>
-  <tr>
-    <td class="hdr-label">Fechas impartición:</td>
-    <td class="hdr-val">${esc(fechaIni)}</td>
-    <td class="hdr-label center">a</td>
-    <td colspan="2" class="hdr-val">${esc(fechaFin)}</td>
-  </tr>
-  ${horarioRows}
 </table>`;
+
+
+
 
       busy.pct(70);
 
@@ -2707,18 +2926,68 @@ body{
   mso-page-orientation:portrait;
 }
 div.WordSection1{page:WordSection1;}
-.hdr-table{width:100%;border-collapse:collapse;font-size:10pt;margin-bottom:8mm}
-.hdr-table td{border:1px solid #d1d9e6;padding:3pt 5pt}
-.hdr-label{background:#eef2f9;font-weight:700;white-space:nowrap}
-.hdr-val{background:#ffffff}
-.hdr-time{text-align:center}
-.hdr-label.center{text-align:center}
-table.months{width:100%;border-collapse:collapse;table-layout:fixed;margin:0}
-table.months td{width:50%;padding:0;vertical-align:top}
-img.month{width:100%;height:auto;display:block;margin:0}
+.hdr-table{
+  width:100% !important;
+  border-collapse:collapse;
+  table-layout:fixed;
+  mso-table-lspace:0pt;
+  mso-table-rspace:0pt;
+  font-size:10pt;
+  margin-bottom:8mm;
+}
+.hdr-table td{
+  border:1px solid #d1d9e6;
+  padding:4pt 6pt;
+  vertical-align:top;
+
+  /* ❌ убираем разрыв “где угодно” */
+  word-break:normal;
+  overflow-wrap:normal;
+}
+.hdr-label{
+  background:#eef2f9;
+  font-weight:700;
+  white-space:nowrap;
+}
+.hdr-val{
+  background:#fff;
+  white-space:normal;
+}
+.nowrap{ white-space:nowrap; }
+.hdr-time{ text-align:center; }
+.hdr-a{
+  display:inline-block;
+  padding:0 6pt;
+  font-weight:700;
+  background:#eef2f9;
+  border:1px solid #d1d9e6;
+  border-radius:6pt;
+}
+.h-left{ display:inline-block; }
+.h-right{ float:right; white-space:nowrap; }
+
+
 .legend-page-title{font-size:13pt;font-weight:700;margin:0 0 2mm}
 .legend-page-sub{font-size:11pt;font-weight:600;margin:0 0 6mm}
 .legend-mfs{display:flex;flex-direction:column;gap:4mm}
+.page{ padding-left:0; padding-right:0; box-sizing:border-box; }
+
+table.months{ width:100% !important; border-collapse:collapse !important; table-layout:fixed !important; }
+td.mcell{ padding:0 !important; vertical-align:top !important; line-height:0 !important; }
+
+img.month{
+  display:block !important;
+  width:98mm !important;     /* только ширина */
+  max-width:98mm !important;
+  height:auto !important;    /* пропорции */
+}
+
+.pb{
+  page-break-before:always;
+  break-before:page;
+}
+
+
 
 /* Скрыть полностью ручной редактор из UI */
 .mz-editor-card{
@@ -2730,15 +2999,18 @@ img.month{width:100%;height:auto;display:block;margin:0}
 <body>
   <div class="doc WordSection1">
     <div class="page">
-      ${headerTableHtml}
-      ${monthsTableHtml || '<p>No hay datos.</p>'}
-    </div>
+	  ${headerTableHtml}
+	  ${monthsTableHtml || '<p>No hay datos.</p>'}
+	</div>
 
-    <div class="page">
-      <div class="legend-page-title">${esc(cursoTxt)}</div>
-      <div class="legend-page-sub">(${totalHoras} horas)</div>
-      ${legendHTML()}
-    </div>
+	<br clear="all" style="page-break-before:always;mso-break-type:page-break"/>
+
+	<div class="page">
+	  <div class="legend-page-title">${esc(cursoTxt)}</div>
+	  <div class="legend-page-sub">(${totalHoras} horas)</div>
+	  ${legendHTML()}
+	</div>
+
   </div>
 </body>
 </html>`;
@@ -2866,6 +3138,9 @@ img.month{width:100%;height:auto;display:block;margin:0}
           ufs
         };
       });
+	  
+	  
+	  
       const amb = (selTipo.value === 'practica') ? 'practica' : 'curso';
       let grp = '';
       if (amb === 'practica' && selAlumno && selAlumno.value) {

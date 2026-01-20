@@ -36,6 +36,8 @@ CSRF_TRUSTED_ORIGINS = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") i
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
+TIME_ZONE = "Europe/Madrid"
+USE_TZ = True
 
 # Application definition
 
@@ -138,7 +140,9 @@ SESSION_COOKIE_SECURE = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "static"
+
 
 import os
 
@@ -169,14 +173,35 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 MEDIA_ROOT = BASE_DIR / "files"
 MEDIA_URL = "/files/"
-STATIC_URL = '/static/'
 
+STATIC_URL = "/static/"
+
+# Куда collectstatic складывает "собранные" файлы (должна быть отдельная папка)
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Где лежат исходные статические файлы проекта (твои /static)
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+
 
 WA_TOKEN = os.getenv("WA_TOKEN", "")
 WA_PHONE_ID = os.getenv("WA_PHONE_ID", "")
 WA_VERIFY_TOKEN = os.getenv("WA_VERIFY_TOKEN", "")
 WA_ADMIN_BILBAO = os.getenv("WA_ADMIN_BILBAO", "")
 WA_ADMIN_BARAKALDO = os.getenv("WA_ADMIN_BARAKALDO", "")
+
+# LAN школы (подставь свои сети)
+MZ_SCHOOL_LAN_CIDRS = [
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16",
+    "192.168.2.0/16",
+    # если у тебя бывает 100.64.0.0/10 (CGNAT) внутри — можно добавить:
+    # "100.64.0.0/10",
+]
+
+
+MZ_ATTENDANCE_HB_SEC = 90   
+
+PLAYWRIGHT_BIN = "/usr/bin/chromium"  # или оставь пустым, если playwright сам

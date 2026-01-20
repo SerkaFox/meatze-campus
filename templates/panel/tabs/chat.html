@@ -587,6 +587,94 @@
   #mz-chat-root #mz-attach{ grid-area: att; }
   #mz-chat-root #mz-send{ grid-area: send; }
 }
+/* ===== Tabs (Curso / Docente) ===== */
+#mz-chat-root .mz-chat-tabs{
+  display:inline-flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+#mz-chat-root .mz-chat-tab{
+  border:1px solid rgba(148,163,184,.55);
+  background:rgba(255,255,255,.08);
+  color:#e5e7eb;
+  border-radius:999px;
+  padding:6px 10px;
+  font-weight:800;
+  font-size:12px;
+  cursor:pointer;
+  box-shadow:0 10px 24px rgba(15,23,42,.45);
+}
+
+#mz-chat-root .mz-chat-tab.is-active{
+  background:linear-gradient(135deg,#22c55e,#16a34a);
+  border-color:rgba(34,197,94,.9);
+  color:#ecfdf5;
+}
+
+#mz-chat-root .mz-chat-teacher{
+  display:none;
+  max-width:260px;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(148,163,184,.55);
+  color:#e5e7eb;
+  border-radius:14px;
+  padding:6px 10px;
+}
+/* Select (Privado) — читаемый на тёмном фоне */
+#mz-chat-root .mz-chat-teacher{
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(2,6,23,.92) !important;
+  color: #e5e7eb !important;
+  border: 1px solid rgba(148,163,184,.65) !important;
+  box-shadow: 0 10px 24px rgba(15,23,42,.45);
+}
+
+/* Выпадающий список: где браузер разрешит */
+#mz-chat-root .mz-chat-teacher option{
+  background: #0b1220;
+  color: #e5e7eb;
+}
+
+/* Подсказка браузеру про тёмные контролы */
+#mz-chat-root .mz-chat-teacher{ color-scheme: dark; }
+/* === FORCE: select/dropdown dark === */
+#mz-chat-root #mz-chat-teacher.mz-chat-teacher{
+  background-color:#0b1220 !important;
+  color:#e5e7eb !important;
+  border-color:rgba(148,163,184,.65) !important;
+  color-scheme: dark;
+  -webkit-text-fill-color:#e5e7eb; /* Safari/Chrome иногда надо */
+}
+
+#mz-chat-root #mz-chat-teacher.mz-chat-teacher:focus{
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(56,189,248,.35), 0 10px 24px rgba(15,23,42,.45);
+}
+
+/* option — работает НЕ всегда (некоторые ОС игнорят), но стоит оставить */
+#mz-chat-root #mz-chat-teacher.mz-chat-teacher option{
+  background-color:#0b1220 !important;
+  color:#e5e7eb !important;
+}
+
+#mz-chat-root .mz-pill-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:18px;
+  height:18px;
+  padding:0 6px;
+  margin-left:6px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:800;
+  color:#fff;
+  background:#b91c1c;
+  box-shadow:0 6px 18px rgba(185,28,28,.55);
+}
 
 </style>
 
@@ -616,48 +704,67 @@
   };
 
   // --- 2. api() с CSRF ---
-  async function api(url, options = {}) {
-    const opts = { credentials: 'include', ...options };
-    const method = (opts.method || 'GET').toUpperCase();
+async function api(url, options = {}) {
+  // quiet=true → не бросаем ошибку, возвращаем null при не-OK
+  const quiet = !!options.quiet;
 
-    // тело → JSON, если не FormData
-    if (opts.body && !(opts.body instanceof FormData)) {
-      opts.headers = {
-        'Content-Type': 'application/json',
-        ...(opts.headers || {})
-      };
-      opts.body = JSON.stringify(opts.body);
-    } else {
-      opts.headers = {
-        ...(opts.headers || {})
-      };
-    }
+  // не даём quiet попасть в fetch
+  const opts = { credentials: 'include', ...options };
+  delete opts.quiet;
 
-    // CSRF для небезопасных методов
-    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-      const csrftoken = getCookie('csrftoken');
-      if (csrftoken) {
-        opts.headers['X-CSRFToken'] = csrftoken;
-      }
-      // не обязательно, но удобно:
-      opts.headers['X-Requested-With'] = 'XMLHttpRequest';
-    }
+  const method = (opts.method || 'GET').toUpperCase();
 
-    const res = await fetch(url, opts);
-    if (!res.ok) {
-      let msg;
-      try {
-        const j = await res.json();
-        msg = j.error || j.message || j.detail;
-      } catch(_) {}
-      throw new Error(msg || `HTTP ${res.status}`);
-    }
-    try { return await res.json(); } catch { return {}; }
+  // тело → JSON, если не FormData
+  if (opts.body && !(opts.body instanceof FormData)) {
+    opts.headers = {
+      'Content-Type': 'application/json',
+      ...(opts.headers || {}),
+    };
+    opts.body = JSON.stringify(opts.body);
+  } else {
+    opts.headers = { ...(opts.headers || {}) };
   }
+
+  // CSRF для небезопасных методов
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    const csrftoken = getCookie('csrftoken');
+    if (csrftoken) opts.headers['X-CSRFToken'] = csrftoken;
+    opts.headers['X-Requested-With'] = 'XMLHttpRequest';
+  }
+
+  let res;
+  try {
+    res = await fetch(url, opts);
+  } catch (e) {
+    if (quiet) return null;
+    throw e;
+  }
+
+  if (!res.ok) {
+    if (quiet) return null;
+
+    let msg;
+    try {
+      const j = await res.json();
+      msg = j.error || j.message || j.detail;
+    } catch (_) {}
+    throw new Error(msg || `HTTP ${res.status}`);
+  }
+
+  try { return await res.json(); }
+  catch { return {}; }
+}
+
 
     if (!code){ root.innerHTML = '<div class="mzc-note">Selecciona un curso.</div>'; return; }
 
     let lastId = 0, loading = false, stopPoll = false, firstPaint = true;
+			// ===== Chat scopes: course vs dm =====
+	let chatKind = 'course';   // 'course' | 'dm'
+	let peerId = null;         // собеседник в DM (teacher для ученика / alumno для учителя)
+	let peers = null;          // cache списка собеседников
+
+
     let burstUntil = 0;
 	let lastDeletedTs = 0;
     const me = mzAuth?.me || {};
@@ -714,13 +821,29 @@
 	  root.innerHTML = `
 		<div class="mz-chat-shell">
 		  <div class="mz-chat">
-			<div class="mz-chat-head">
-			  <div class="mz-chat-title">
-				<h4 class="mzc-title">Chat del curso</h4>
-				<div class="mzc-note">Código: <b>${code}</b></div>
-			  </div>
-			  <span id="mzcu-unread" class="mz-chat-unread"></span>
-			</div>
+		<div class="mz-chat-head">
+		  <div class="mz-chat-title">
+			<h4 class="mzc-title" id="mz-chat-title">Chat del curso</h4>
+
+<div class="mz-chat-tabs" style="margin-top:6px">
+  <button type="button" class="mz-chat-tab is-active" data-chat-kind="course">
+    Curso
+  </button>
+
+  <button type="button" class="mz-chat-tab" data-chat-kind="dm">
+    Privado <span id="mz-dm-total" class="mz-pill-badge" style="display:none"></span>
+  </button>
+
+  <select id="mz-chat-teacher" class="mz-chat-teacher"></select>
+</div>
+
+
+			<div class="mzc-note">Código: <b>${code}</b></div>
+		  </div>
+
+		  <span id="mzcu-unread" class="mz-chat-unread"></span>
+		</div>
+
 
 			<div id="mzcl" class="mz-chat-list"></div>
 
@@ -753,6 +876,12 @@
     const $file = root.querySelector('#mzf');
     const $emo  = root.querySelector('#mz-emoji');
     const $unr  = root.querySelector('#mzcu-unread');
+	const $title = root.querySelector('#mz-chat-title');
+const $tabs = root.querySelectorAll('[data-chat-kind]');
+const $tsel = root.querySelector('#mz-chat-teacher');
+const $dmTotal = root.querySelector('#mz-dm-total');
+
+
 
     const fmtTime = (ts)=>{ const d=new Date(ts*1000); return d.toLocaleString([], {hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'}); };
     const hashColor = (s='?')=>{ let h=0; for(let i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; } const hue=h%360; return `hsl(${hue} 70% 52%)`; };
@@ -932,11 +1061,183 @@ const renderMsg = (m)=>{
       firstPaint = false;
     };
 
+function scopeQS(extra = '') {
+  const base = (chatKind === 'dm')
+    ? `kind=dm&peer_id=${encodeURIComponent(peerId || '')}`
+    : `kind=course`;
+
+  if (!extra) return `?${base}`;
+  return `?${base}&${extra}`;
+}
+
+
+async function ensurePeers() {
+  if (peers) return peers;
+  const r = await api(`${V5_API}/chat/${encodeURIComponent(code)}/dm_peers`);
+  peers = Array.isArray(r?.peers) ? r.peers : [];
+  window.__dmMode = r?.mode || null; // "teacher" | "student"
+  return peers;
+}
+
+function resetFeed() {
+  lastId = 0;
+  firstPaint = true;
+  $list.innerHTML = '';
+}
+
+function fillTeacherSelect(list) {
+  if (!$tsel) return;
+  $tsel.innerHTML = '';
+  for (const t of list) {
+    const opt = document.createElement('option');
+    opt.value = String(t.id);
+
+    const base = t.name || t.email || (`Usuario #${t.id}`);
+    opt.textContent = base;
+    opt.setAttribute('data-base', base);
+
+    $tsel.appendChild(opt);
+  }
+}
+
+function updateTeacherSelectUnread(mp){
+  if (!$tsel) return;
+
+  const selected = $tsel.value;
+
+  // 1) обновляем тексты option
+  for (const opt of Array.from($tsel.options)){
+    const id = String(opt.value || '');
+    const base = opt.getAttribute('data-base') || opt.textContent || '';
+    const n = parseInt((mp && mp[id]) || 0, 10) || 0;
+
+    if (n > 0) opt.textContent = `• ${base} (${n})`;
+    else       opt.textContent = base;
+
+    opt.setAttribute('data-unread', String(n));
+  }
+
+  // 2) сортировка: непрочитанные наверх, затем по имени
+  const opts = Array.from($tsel.options);
+  opts.sort((a,b)=>{
+    const na = parseInt(a.getAttribute('data-unread') || '0', 10) || 0;
+    const nb = parseInt(b.getAttribute('data-unread') || '0', 10) || 0;
+    if (nb !== na) return nb - na;
+
+    const an = (a.getAttribute('data-base') || a.textContent || '').replace(/^•\s*/,'');
+    const bn = (b.getAttribute('data-base') || b.textContent || '').replace(/^•\s*/,'');
+    return an.localeCompare(bn, 'es', { sensitivity:'base' });
+  });
+
+  $tsel.innerHTML = '';
+  for (const o of opts) $tsel.appendChild(o);
+
+  // вернуть выбранного обратно
+  if (selected) $tsel.value = selected;
+}
+
+
+async function refreshPeersUnread(){
+  // если список собеседников ещё не загружен — пробуем загрузить
+  if (!peers) {
+    try { await ensurePeers(); } catch(e) {}
+  }
+  if (!peers || !peers.length) {
+    // нечего показывать
+    const $dmTotal = root.querySelector('#mz-dm-total');
+    if ($dmTotal){ $dmTotal.textContent=''; $dmTotal.style.display='none'; }
+    return 0;
+  }
+
+  const r = await api(`${V5_API}/chat/${encodeURIComponent(code)}/dm_unread_map`, { quiet:true });
+  if (!r) return 0; // ← 503/404/сеть
+
+const mp = r.map || {};
+let total = 0;
+
+for (const p of peers){
+  const n = parseInt(mp[String(p.id)] || 0, 10) || 0;
+  total += n;
+}
+updateTeacherSelectUnread(mp);
+
+
+  const $dmTotal = root.querySelector('#mz-dm-total');
+  if ($dmTotal){
+    if (total > 0){ $dmTotal.textContent = String(total); $dmTotal.style.display = ''; }
+    else { $dmTotal.textContent=''; $dmTotal.style.display='none'; }
+  }
+
+  return total;
+}
+
+async function refreshTopBadges(){
+  const dmTotal = await refreshPeersUnread();
+
+  const rCourse = await api(`${V5_API}/chat/${encodeURIComponent(code)}/unread?kind=course`, { quiet:true });
+  const courseTotal = rCourse ? (parseInt(rCourse.unread || 0,10) || 0) : 0;
+
+  setMainChatBadge(dmTotal + courseTotal);
+}
+
+
+
+
+async function setChatKind(kind) {
+  chatKind = (kind === 'dm') ? 'dm' : 'course';
+  $tabs.forEach(b => b.classList.toggle('is-active', b.dataset.chatKind === chatKind));
+
+  if (chatKind === 'dm') {
+    const list = await ensurePeers();
+    fillTeacherSelect(list);
+
+    if (!list.length) {
+      chatKind = 'course';
+      $tabs.forEach(b => b.classList.toggle('is-active', b.dataset.chatKind === chatKind));
+      peerId = null;
+      if ($tsel) $tsel.style.display = 'none';
+      if ($title) $title.textContent = 'Chat del curso';
+      resetFeed();
+      await fetchMore();
+      await updateUnreadBadge();
+      await refreshTopBadges();
+      return;
+    }
+
+    peerId = peerId || list[0].id;
+
+    if ($tsel) {
+      $tsel.style.display = 'inline-block';
+      $tsel.value = String(peerId);
+    }
+
+    const mode = window.__dmMode;
+    if ($title) $title.textContent = (mode === 'teacher') ? 'Chat con alumno' : 'Chat con docente';
+
+    await refreshPeersUnread();
+  } else {
+    peerId = null;
+    if ($tsel) $tsel.style.display = 'none';
+    if ($title) $title.textContent = 'Chat del curso';
+  }
+
+  resetFeed();
+  await fetchMore();
+  await refreshReactions();
+  await refreshDeleted();
+  await refreshPeersUnread();
+  await updateUnreadBadge();
+  await refreshTopBadges();
+  markRead();
+}
+
+
 
     const fetchMore = async ()=>{
       if (loading) return; loading = true;
       try{
-        const r = await api(`${V5_API}/chat/${encodeURIComponent(code)}/messages?after_id=${lastId}&limit=50`);
+        const r = await api(`${V5_API}/chat/${encodeURIComponent(code)}/messages${scopeQS(`after_id=${lastId}&limit=50`)}`);
+
         const items = Array.isArray(r?.items) ? r.items : [];
         if (items.length){
           appendMessages(items);
@@ -947,29 +1248,31 @@ const renderMsg = (m)=>{
       finally{ loading = false; }
     };
 
-    const updateUnreadBadge = async ()=>{
-      try{
-        const r = await api(`${V5_API}/chat/${encodeURIComponent(code)}/unread`);
-        const n = parseInt(r?.unread || 0,10);
-        $unr.textContent = n>0 ? `${n} nuevos` : '';
-        $unr.style.display = n>0 ? '' : 'none';
-        const btn = document.querySelector(`#mzp-tabs .mzc-btn[data-tab="chat"]`);
-        if (btn){
-          if (!btn.querySelector('.mz-tab-badge')) {
-            const t = btn.textContent.trim();
-            btn.innerHTML = `<span class="mz-tab-badge"><span class="mz-tab-dot"></span><span>${t}</span></span>`;
-          }
-          btn.querySelector('.mz-tab-badge').setAttribute('data-has', n>0 ? '1' : '0');
-        }
-      }catch(e){}
-    };
+const updateUnreadBadge = async ()=>{
+  try{
+    if (chatKind === 'dm' && !peerId) return;
+    const r = await api(`${V5_API}/chat/${encodeURIComponent(code)}/unread${scopeQS()}`);
+    const n = parseInt(r?.unread || 0,10);
 
-    const markRead = async ()=>{
-      if (!lastId) return;
-      try{ await api(`${V5_API}/chat/${encodeURIComponent(code)}/read`, {method:'POST', body:{last_id:lastId}}); }
-      catch(e){}
-      updateUnreadBadge();
-    };
+    $unr.textContent = n>0 ? `${n} nuevos` : '';
+    $unr.style.display = n>0 ? '' : 'none';
+  }catch(e){}
+};
+
+
+const markRead = async ()=>{
+  if (!lastId) return;
+  if (chatKind === 'dm' && !peerId) return;
+  try{
+    const body = { last_id: lastId, kind: chatKind };
+    if (chatKind === 'dm') body.peer_id = peerId;
+    await api(`${V5_API}/chat/${encodeURIComponent(code)}/read`, { method:'POST', body });
+  }catch(e){}
+  updateUnreadBadge();
+  await refreshPeersUnread();
+
+};
+
     const maybeMarkRead = ()=>{ const atBottom = $list.scrollTop + $list.clientHeight >= ($list.scrollHeight - 10); if (atBottom) markRead(); };
 
     // ==== Picker de reacciones (tipo WhatsApp) ====
@@ -1140,8 +1443,26 @@ if (msgNode && msgNode.classList.contains('me')){
       }
     });
 
+
+$tabs.forEach(btn => btn.addEventListener('click', () => setChatKind(btn.dataset.chatKind)));
+
+if ($tsel) {
+  $tsel.addEventListener('change', async () => {
+    peerId = parseInt($tsel.value || '0', 10) || null;
+    resetFeed();
+    await fetchMore();
+    await refreshReactions();
+    await refreshDeleted();
+    await updateUnreadBadge();
+    markRead();
+	await refreshTopBadges();
+
+  });
+}
+
+
     // ===== Envío =====
-  const MAX_FILE_MB = 5;  // подстрой под свой лимит сервера
+  const MAX_FILE_MB = 50;  // подстрой под свой лимит сервера
 
   $send.onclick = async ()=>{
     const text = $in.value.trim();
@@ -1180,21 +1501,31 @@ if (msgNode && msgNode.classList.contains('me')){
     }
 
     try{
-      if (hasFile){
-        const fd = new FormData();
-        if (text) fd.append('body', text);
-        fd.append('file', $file.files[0]);
-        await api(`${V5_API}/chat/${encodeURIComponent(code)}/messages`, {
-          method:'POST',
-          body: fd
-        });
-      } else {
-        await api(`${V5_API}/chat/${encodeURIComponent(code)}/messages`, {
-          method:'POST',
-          body:{ body: text }
-        });
-      }
+if (hasFile){
+  const fd = new FormData();
+  if (text) fd.append('body', text);
+  fd.append('file', $file.files[0]);
 
+  fd.append('kind', chatKind);
+  if (chatKind === 'dm') fd.append('peer_id', String(peerId || ''));
+
+  await api(`${V5_API}/chat/${encodeURIComponent(code)}/messages`, {
+    method:'POST',
+    body: fd
+  });
+} else {
+  if (chatKind === 'dm' && !peerId){
+    alert('Selecciona un usuario.');
+    return;
+  }
+  await api(`${V5_API}/chat/${encodeURIComponent(code)}/messages`, {
+    method:'POST',
+    body: (chatKind === 'dm')
+      ? { body: text, kind: 'dm', peer_id: peerId }
+      : { body: text, kind: 'course' }
+  });
+}
+ 
       $in.value = '';
       $file.value = '';
 
@@ -1290,6 +1621,24 @@ if (msgNode && msgNode.classList.contains('me')){
       el.setSelectionRange(newPos, newPos);
     }
     
+function setMainChatBadge(n){
+  const tab = document.querySelector('a[data-tab="chat"]');
+  if (!tab) return;
+
+  const b = tab.querySelector('.mz-main-chat-badge');
+  if (!b) return;
+
+  const txt = b.querySelector('.txt');
+  if (n > 0){
+    txt.textContent = String(n);
+    b.style.display = 'inline-flex';
+  } else {
+    b.style.display = 'none';
+  }
+}
+
+
+	
     // Переключатель пикера на кнопке 🙂
     $emo.addEventListener('click', (ev)=>{
       ev.stopPropagation();
@@ -1302,18 +1651,29 @@ if (msgNode && msgNode.classList.contains('me')){
     $in.addEventListener('keydown', (e)=>{ if ((e.ctrlKey || e.metaKey) && e.key==='Enter'){ e.preventDefault(); $send.click(); } });
 
     // Boot y polling
-    await fetchMore(); 
-	await refreshReactions();  
+	await fetchMore();
+	await refreshReactions();
 	await refreshDeleted();
-	await updateUnreadBadge(); 
-	markRead();
+
+	// бейджи — ДО markRead, иначе ты их сам обнуляешь
+	await refreshTopBadges();
+
+	// внутренний красный справа (для текущего scope)
+	await updateUnreadBadge();
+
+	// markRead после того как UI успел показать непрочитанное
+	setTimeout(() => { markRead(); }, 250);
+
 
     function burst(){ burstUntil = Date.now() + 10000; }
     const ticker = async ()=>{
       if (stopPoll) return;
       await fetchMore();
+	  await refreshTopBadges();
 	  await refreshReactions();
 	  await refreshDeleted();
+	  await refreshPeersUnread();
+
 	  await updateUnreadBadge();
       const now = Date.now();
       setTimeout(ticker, (now < burstUntil) ? (1200 + Math.floor(Math.random()*400))
