@@ -153,8 +153,254 @@ menu.addEventListener('click', async function(e){
 <!-- ====== ЧАТ: как в оригинале ====== -->
 {% include "includes/chat_widget.html" %}
 <script src="{% static 'meatze/chat_widget/chat-widget.js' %}"></script>
+<style>
+  #mz-checklist{
+    position: fixed;
+    top: 84px;          /* отступ от верхнего бара */
+    right: 16px;        /* ✅ справа */
+    left: auto;
+    z-index: 99999;
 
+    width: 320px;
+    max-width: 92vw;
+
+    border-radius: 16px;
+    border: 1px solid rgba(148,163,184,0.45);
+    background: #0b1220;
+    color: #e5e7eb;
+    box-shadow: 0 18px 45px rgba(0,0,0,.55);
+    overflow: hidden;
+  }
+
+  #mz-checklist .hd{
+    padding: 10px 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    border-bottom: 1px solid rgba(148,163,184,0.25);
+  }
+  #mz-checklist .ttl{
+    font-weight: 900;
+    letter-spacing:.04em;
+    font-size: .86rem;
+    text-transform: uppercase;
+    opacity: .95;
+  }
+  #mz-checklist .btn{
+    border: 1px solid rgba(148,163,184,0.35);
+    background: rgba(15,23,42,0.9);
+    color:#e5e7eb;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-weight: 800;
+    cursor:pointer;
+  }
+
+  /* ✅ высота “по содержимому”, но ограничиваем чтобы не перекрывал всё */
+  #mz-checklist .body{
+    padding: 10px 12px 12px;
+    max-height: 180px;
+    overflow: auto;
+  }
+  #mz-checklist.is-hidden .body{ display:none; }
+
+  #mz-checklist ul{ margin:0; padding-left: 18px; }
+  #mz-checklist li{ margin: 6px 0; font-size: .86rem; line-height: 1.25; }
+
+  #mz-checklist .warn{ color:#fde68a; }
+  #mz-checklist .danger{ color:#fecaca; }
+    #mz-checklist li{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+  }
+  #mz-checklist .go{
+    flex: 0 0 auto;
+    border: 1px solid rgba(148,163,184,0.35);
+    background: rgba(15,23,42,0.9);
+    color:#e5e7eb;
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-weight: 800;
+    font-size: 12px;
+    text-decoration:none;
+    white-space:nowrap;
+  }
+</style>
+
+<div id="mz-checklist" style="display:none">
+  <div class="hd">
+    <div class="ttl">Checklist</div>
+    <button class="btn" type="button" data-cl-toggle>—</button>
+  </div>
+  <div class="body">
+    <ul data-cl-list></ul>
+  </div>
+</div>
 
 {% block extra_js %}{% endblock %}
 </body>
 </html>
+<script>
+(function(){
+  if (window.__MZ_CHECKLIST__) return;
+  window.__MZ_CHECKLIST__ = true;
+
+  const POLL_MS = 12000;
+
+  const box = document.getElementById('mz-checklist');
+  if (!box) return;
+
+  const btn = box.querySelector('[data-cl-toggle]');
+  const ul  = box.querySelector('[data-cl-list]');
+
+  btn?.addEventListener('click', () => box.classList.toggle('is-hidden'));
+
+  function getCourseCode(){
+    if (window.MEATZE?.COURSE_CODE) return String(window.MEATZE.COURSE_CODE || '').trim();
+    const m = location.pathname.match(/\/curso\/([^\/]+)\//);
+    return m ? m[1] : '';
+  }
+
+  function setItems(items){
+    const todo = (items || []).filter(x => !x.done);
+
+    if (!todo.length){
+      box.style.display = 'none';
+      ul.innerHTML = '';
+      return;
+    }
+
+    box.style.display = 'block';
+    ul.innerHTML = todo.map(x => {
+      const cls = x.level === 'danger' ? 'danger' : (x.level === 'warn' ? 'warn' : '');
+      const href = x.href || '#';
+      return `
+        <li class="${cls}">
+          <span>${x.text}</span>
+          <a class="go" href="${href}">Ir</a>
+        </li>
+      `;
+    }).join('');
+  }
+
+  function computeStudentItems(st, courseCode){
+    const totalFiles = Number(st.total_files || 0);
+    const totalPhys  = Number(st.total_phys  || 0);
+
+    const myD = Number(st.my_d || 0);
+    const myR = Number(st.my_r || 0);
+
+    const base = `/alumno/curso/${courseCode}/`;
+    const items = [];
+
+    if (totalPhys > 0 && myR < totalPhys){
+      items.push({
+        done:false,
+        level: (totalPhys - myR) >= 2 ? 'danger' : 'warn',
+        text: `Te falta confirmar <b>material físico</b>: ${myR}/${totalPhys}.`,
+        href: `${base}?tab=materiales&focus=receipts`
+      });
+    }
+
+    if (totalFiles > 0 && myD < totalFiles){
+      items.push({
+        done:false,
+        level: (totalFiles - myD) >= 2 ? 'danger' : 'warn',
+        text: `Te falta <b>descargar documentos</b>: ${myD}/${totalFiles}.`,
+        href: `${base}?tab=materiales&focus=download`
+      });
+    }
+
+    return items;
+  }
+
+  function computeTeacherItems(st, courseCode){
+    const totalFiles = Number(st.total_files || 0);
+    const totalPhys  = Number(st.total_phys  || 0);
+    const studentsTotal = Number(st.students_total || 0);
+
+    const rows = st.items || {};
+    const ids = Object.keys(rows);
+    const missing = Math.max(0, studentsTotal - ids.length);
+
+    const presence = st.presence || {};
+    let pendingAttendance = 0;
+    for (const sid in presence){
+      if ((presence[sid]?.status || '') === 'PENDING') pendingAttendance++;
+    }
+
+    let physPendingActive = 0;
+    let filesPendingActive = 0;
+
+    for (const sid of ids){
+      const r = Number(rows[sid]?.r || 0);
+      const d = Number(rows[sid]?.d || 0);
+
+      if (totalPhys  > 0 && r < totalPhys)  physPendingActive++;
+      if (totalFiles > 0 && d < totalFiles) filesPendingActive++;
+    }
+
+    const physPendingStudents  = (totalPhys  > 0) ? (physPendingActive  + missing) : 0;
+    const filesPendingStudents = (totalFiles > 0) ? (filesPendingActive + missing) : 0;
+
+    const base = `/alumno/curso/${courseCode}/`;
+    const items = [];
+
+    if (pendingAttendance > 0){
+      items.push({
+        done:false,
+        level: pendingAttendance >= 3 ? 'danger' : 'warn',
+        text: `Asistencia: <b>${pendingAttendance}</b> alumno(s) en <b>PENDIENTE</b> (✅/❌).`,
+        href: `${base}?tab=alumnos&focus=attendance`
+      });
+    }
+
+	if (physPendingStudents > 0){
+	  items.push({
+		done:false,
+		level: physPendingStudents >= 3 ? 'danger' : 'warn',
+		text: `Material físico pendiente: <b>${physPendingStudents}</b> alumno(s) sin confirmar todo.`,
+		href: `${base}?tab=alumnos&focus=attendance`  // учитель: физика -> materiales
+	  });
+	}
+
+	if (filesPendingStudents > 0){
+	  items.push({
+		done:false,
+		level: filesPendingStudents >= 3 ? 'danger' : 'warn',
+		text: `Descargas pendientes: <b>${filesPendingStudents}</b> alumno(s) no han descargado todo.`,
+		href: `${base}?tab=alumnos&focus=attendance`  // ✅ учитель: файлы -> alumnos
+	  });
+	}
+
+
+    return items;
+  }
+
+  async function tick(){
+    const courseCode = getCourseCode();
+    if (!courseCode) return;
+
+    const url = `/alumno/curso/${encodeURIComponent(courseCode)}/alumnos/status`;
+    const r = await fetch(url, { credentials:'include', cache:'no-store' });
+    if (!r.ok) return;
+
+    const st = await r.json();
+
+    // student mode — ТОЛЬКО если бэк реально отдаёт role/my_d/my_r
+    const isStudent = (st.role === 'student') || ('my_d' in st) || ('my_r' in st);
+
+    const items = isStudent
+      ? computeStudentItems(st, courseCode)
+      : computeTeacherItems(st, courseCode);
+
+    setItems(items);
+  }
+
+  tick().catch(()=>{});
+  setInterval(() => tick().catch(()=>{}), POLL_MS);
+})();
+</script>

@@ -1,6 +1,29 @@
 {# panel/tabs/tareas.html #}
 
 <style>
+#mz-preview.is-hidden{ display:none; }
+#mz-preview{ position:fixed; inset:0; z-index:9999; }
+#mz-preview .mz-prev-backdrop{ position:absolute; inset:0; background:rgba(2,6,23,.75); }
+#mz-preview .mz-prev-card{
+  position:relative;
+  width:min(1100px, 92vw);
+  height:min(86vh, 900px);
+  margin:6vh auto;
+  border-radius:18px;
+  border:1px solid rgba(148,163,184,.35);
+  background:rgba(15,23,42,.96);
+  box-shadow:0 24px 80px rgba(0,0,0,.55);
+  display:flex; flex-direction:column;
+}
+#mz-preview .mz-prev-head{
+  display:flex; justify-content:space-between; align-items:center; gap:10px;
+  padding:10px 12px; border-bottom:1px solid rgba(148,163,184,.25);
+}
+#mz-preview .mz-prev-title{ font-weight:750; color:#e5e7eb; font-size:.95rem; }
+#mz-preview .mz-prev-body{ flex:1; overflow:hidden; background:rgba(2,6,23,.35); }
+#mz-preview iframe{ width:100%; height:100%; border:0; }
+#mz-preview img{ max-width:100%; max-height:100%; display:block; margin:auto; }
+
   /* ================================
      MEATZE · TAB TAREAS
      (в стиле Materiales/Alumnos)
@@ -256,7 +279,8 @@
   <div class="mz-ta-head">
     <div>
       <h4 class="mz-ta-title">Tareas</h4>
-      <p class="mz-ta-sub">El docente sube un ejercicio, el alumno entrega una vez y recibe nota.</p>
+      <p class="mz-ta-sub">El docente sube un ejercicio, el alumno puede enviar varias veces (intentos) y recibe nota.</p>
+
     </div>
     {% if tasks %}
       <div class="mz-ta-badge">{{ tasks|length }} tarea{{ tasks|length|pluralize:"s" }}</div>
@@ -319,11 +343,20 @@
             <span class="mz-chip warn">📝 Abierta</span>
           {% endif %}
 
-          {% if t.file %}
-            <a class="mzc-btn ghost" href="{% url 'panel:task_download' curso.codigo t.id %}">
-              Descargar enunciado{% if t.fmt_size %} · {{ t.fmt_size }}{% endif %}
-            </a>
-          {% endif %}
+{% if t.file %}
+  <a class="mzc-btn ghost"
+     href="{% url 'panel:task_download' curso.codigo t.id %}">
+    Descargar enunciado{% if t.fmt_size %} · {{ t.fmt_size }}{% endif %}
+  </a>
+
+  <a class="mzc-btn ghost"
+     data-preview
+     data-name="Enunciado · {{ t.title|escape }}"
+     href="{% url 'panel:task_download' curso.codigo t.id %}?inline=1">
+    Ver
+  </a>
+{% endif %}
+
 
           {% if is_teacher %}
             <form method="post" style="display:inline">
@@ -391,10 +424,18 @@
                       <td>
                         <div class="mz-sub-actions">
                           {% if s.file %}
-                            <a class="mzc-btn ghost"
-                               href="{% url 'panel:submission_download' curso.codigo t.id s.id %}">
-                              Descargar{% if s.fmt_size %} · {{ s.fmt_size }}{% endif %}
-                            </a>
+							<a class="mzc-btn ghost"
+							   href="{% url 'panel:submission_download' curso.codigo t.id s.id %}">
+							  Descargar{% if s.fmt_size %} · {{ s.fmt_size }}{% endif %}
+							</a>
+
+							<a class="mzc-btn ghost"
+							   data-preview
+							   data-name="Entrega · {{ s.alumno.get_full_name|default:s.alumno.email|escape }}"
+							   href="{% url 'panel:submission_download' curso.codigo t.id s.id %}?inline=1">
+							  Ver
+							</a>
+
                           {% else %}
                             <span class="mz-lock">—</span>
                           {% endif %}
@@ -432,46 +473,69 @@
           {% endif %}
 
         {% else %}
-          {# ───────── STUDENT VIEW ───────── #}
-          {% if t.my_sub %}
-            {% if t.my_sub.status == "graded" %}
-              <div class="mz-result">
-                <div class="mz-chip ok" style="margin-bottom:10px">✅ Calificado</div>
-                <div class="mz-grade">Nota: {{ t.my_sub.grade|default:"—" }}</div>
-                {% if t.my_sub.teacher_feedback %}
-                  <div class="mz-feedback">Feedback: {{ t.my_sub.teacher_feedback }}</div>
-                {% endif %}
-              </div>
-            {% else %}
-              <div class="mz-result">
-                <div class="mz-chip warn">⏳ En revisión</div>
-                <div class="mz-lock" style="margin-top:8px">
-                  Ya entregaste. No puedes volver a subir otro archivo.
-                </div>
-              </div>
-            {% endif %}
-          {% else %}
-            {% if t.is_closed %}
-              <div class="mz-result">
-                <div class="mz-chip closed">⛔ Cerrada</div>
-                <div class="mz-lock" style="margin-top:8px">No se aceptan entregas.</div>
-              </div>
-            {% else %}
-              <div class="mz-result">
-                <div class="mz-chip warn">📝 Pendiente</div>
-                <form method="post" enctype="multipart/form-data"
-                      style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-                  {% csrf_token %}
-                  <input type="hidden" name="action" value="task_submit">
-                  <input type="hidden" name="task_id" value="{{ t.id }}">
-                  <input class="mz-inp" type="file" name="answer_file" required style="min-width:240px">
-                  <input class="mz-inp" type="text" name="comment" placeholder="Comentario (opcional)"
-                         style="min-width:260px;flex:1 1 260px">
-                  <button class="mzc-btn" type="submit">Entregar (1 vez)</button>
-                </form>
-              </div>
-            {% endif %}
-          {% endif %}
+			{# ───────── STUDENT VIEW ───────── #}
+
+			{# статус последней попытки (если есть) #}
+			{% if t.my_sub %}
+			  {% if t.my_sub.status == "graded" %}
+				<div class="mz-result">
+				  <div class="mz-chip ok" style="margin-bottom:10px">✅ Calificado (último intento)</div>
+				  <div class="mz-grade">Nota: {{ t.my_sub.grade|default:"—" }}</div>
+				  {% if t.my_sub.teacher_feedback %}
+					<div class="mz-feedback">Feedback: {{ t.my_sub.teacher_feedback }}</div>
+				  {% endif %}
+				</div>
+			  {% else %}
+				<div class="mz-result">
+				  <div class="mz-chip warn">⏳ En revisión (último intento)</div>
+				  <div class="mz-lock" style="margin-top:8px">
+					Puedes volver a subir un archivo si lo has corregido.
+				  </div>
+				</div>
+			  {% endif %}
+			{% endif %}
+
+			{# форма сдачи: разрешаем несколько раз, пока не закрыта #}
+			{% if t.is_closed %}
+  <div class="mz-result">
+    <div class="mz-chip closed">⛔ Cerrada</div>
+    <div class="mz-lock" style="margin-top:8px">No se aceptan entregas.</div>
+  </div>
+
+{% elif t.my_sub and t.my_sub.status == "graded" %}
+  <div class="mz-result">
+    <div class="mz-chip ok">✅ Calificado</div>
+    <div class="mz-lock" style="margin-top:8px">
+      Ya está calificado. No puedes enviar más intentos.
+    </div>
+  </div>
+
+{% else %}
+  <div class="mz-result">
+    <div class="mz-chip warn">📝 Enviar entrega</div>
+
+    {% if t.my_sub %}
+      <div class="mz-lock" style="margin-top:6px">
+        Puedes enviar otro intento mientras el docente no haya calificado.
+      </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data"
+          style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="task_submit">
+      <input type="hidden" name="task_id" value="{{ t.id }}">
+      <input class="mz-inp" type="file" name="answer_file" required style="min-width:240px">
+      <input class="mz-inp" type="text" name="comment" placeholder="Comentario (opcional)"
+             style="min-width:260px;flex:1 1 260px">
+      <button class="mzc-btn" type="submit">
+        {% if t.my_sub %}Enviar otro intento{% else %}Enviar{% endif %}
+      </button>
+    </form>
+  </div>
+{% endif %}
+
+
         {% endif %}
       </div>
     </div>
@@ -480,7 +544,27 @@
   <div class="mz-lock">No hay tareas todavía.</div>
 {% endif %}
 
-</div><script>
+</div>
+
+<div id="mz-preview" class="mz-prev is-hidden" aria-hidden="true">
+  <div class="mz-prev-backdrop" data-close></div>
+  <div class="mz-prev-card" role="dialog" aria-modal="true">
+    <div class="mz-prev-head">
+      <div class="mz-prev-title" id="mz-prev-title">Vista previa</div>
+      <div class="mz-prev-actions">
+        <a class="mzc-btn ghost" id="mz-prev-open" target="_blank" rel="noopener">Abrir</a>
+        <button class="mzc-btn ghost" type="button" data-close>Cerrar</button>
+      </div>
+    </div>
+
+    <div class="mz-prev-body" id="mz-prev-body">
+      <!-- сюда подставим iframe или img -->
+    </div>
+  </div>
+</div>
+
+
+<script>
 (function(){
   const root = document.getElementById('mz-tareas-tab');
   if(!root) return;
@@ -527,6 +611,76 @@
     const st = loadState();
     st[id] = next;
     saveState(st);
+  });
+})();
+</script>
+<script>
+(function(){
+  const modal = document.getElementById('mz-preview');
+  const body  = document.getElementById('mz-prev-body');
+  const title = document.getElementById('mz-prev-title');
+  const openA = document.getElementById('mz-prev-open');
+  const closeBtn = modal ? modal.querySelector('button[data-close]') : null;
+  if(!modal || !body || !title || !openA) return;
+
+  let lastFocus = null;
+
+  function openPreview(url, name){
+    lastFocus = document.activeElement; // ✅ запомнили
+    title.textContent = name || 'Vista previa';
+    openA.href = url;
+
+    body.innerHTML = '';
+    const u = (url || '').toLowerCase();
+
+    // ✅ у тебя теперь inline=1 — считаем это pdf (или добавь data-ext как мы обсуждали)
+    const isPdf = u.includes('.pdf') || u.includes('inline=1');
+    const isImg = u.match(/\.(png|jpg|jpeg|webp|gif)(\?|$)/);
+
+    if(isPdf){
+      const ifr = document.createElement('iframe');
+      ifr.src = url;
+      body.appendChild(ifr);
+    } else if(isImg){
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = title.textContent;
+      body.appendChild(img);
+    } else {
+      body.innerHTML = '<div style="padding:14px;color:#cbd5e1">No hay vista previa para este tipo. Usa “Abrir/Descargar”.</div>';
+    }
+
+    modal.classList.remove('is-hidden');
+    modal.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+
+    // ✅ переводим фокус внутрь модалки
+    (closeBtn || openA).focus();
+  }
+
+  function closePreview(){
+    // ✅ сначала верни фокус назад, потом прячь
+    if(lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
+    lastFocus = null;
+
+    modal.classList.add('is-hidden');
+    modal.setAttribute('aria-hidden','true');
+    body.innerHTML = '';
+    document.body.style.overflow = '';
+  }
+
+  modal.addEventListener('click', (e)=>{
+    if(e.target.matches('[data-close]') || e.target.closest('[data-close]')) closePreview();
+  });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape' && !modal.classList.contains('is-hidden')) closePreview();
+  });
+
+  document.addEventListener('click', (e)=>{
+    const a = e.target.closest('a[data-preview]');
+    if(!a) return;
+    e.preventDefault();
+    openPreview(a.getAttribute('href'), a.getAttribute('data-name') || a.textContent.trim());
   });
 })();
 </script>

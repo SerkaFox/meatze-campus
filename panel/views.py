@@ -2,8 +2,9 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count, Prefetch
 from django.utils.crypto import get_random_string
+from django.conf import settings
 from api.models import Curso, Enrol, Horario
-from .models import CursoFile, MaterialDownload, MaterialReceipt, CursoPhysicalConfig, AttendanceSession, CourseTask, TaskSubmission, PublicShareLink
+from .models import CursoFile, MaterialDownload, MaterialReceipt, CursoPhysicalConfig, AttendanceSession, CourseTask, TaskSubmission, PublicShareLink, CursoPhysicalItem
 from django.contrib.auth import get_user_model
 import random
 from django.db import models
@@ -15,12 +16,28 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from datetime import timedelta
 from django.db.models import F
+from django.utils.text import slugify
+
+from datetime import date as _date
+from tempfile import TemporaryDirectory
+from pathlib import Path
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404
+from django.views.decorators.http import require_http_methods
+from django.utils import timezone
+from docx import Document
+from docx.shared import Cm, Pt, Emu, Twips
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
+from django.db import IntegrityError, transaction
+
 
 try:
     from api.models import UserProfile
 except ImportError:
     UserProfile = None
-
+import logging
+logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
@@ -49,18 +66,17 @@ PHYSICAL_ITEMS = [
     {"key": "usb", "label": "Memoria USB"},
 ]
 
-
 @login_required
 def alumnos_status(request, codigo: str):
     curso = get_object_or_404(Curso, codigo=codigo)
 
     is_teacher = Enrol.objects.filter(user=request.user, codigo=curso.codigo, role="teacher").exists()
-    if not is_teacher:
-        return JsonResponse({"message": "Docente requerido"}, status=403)
 
     # ✅ реальный список физ. предметов из конфигурации курса
-    cfg = CursoPhysicalConfig.objects.filter(curso=curso).first()
-    physical_keys = (cfg.enabled_keys if cfg else []) or []
+    physical_keys = list(
+        CursoPhysicalItem.objects.filter(curso=curso, is_enabled=True)
+        .values_list("key", flat=True)
+    )
 
     # какие файлы видны ученикам
     visible_files_qs = CursoFile.objects.filter(curso=curso).filter(
@@ -70,6 +86,26 @@ def alumnos_status(request, codigo: str):
 
     visible_ids = list(visible_files_qs.values_list("id", flat=True))
     total_visible = len(visible_ids)
+
+    # ✅ STUDENT MODE (без нового эндпоинта)
+    if not is_teacher:
+        # проверим доступ к курсу (ученик должен быть зачислен)
+        is_student = Enrol.objects.filter(user=request.user, codigo=curso.codigo).exclude(role="teacher").exists()
+        if not is_student:
+            return JsonResponse({"message": "Acceso denegado"}, status=403)
+
+        my_d = MaterialDownload.objects.filter(alumno=request.user, file_id__in=visible_ids).count()
+        my_r = MaterialReceipt.objects.filter(curso=curso, alumno=request.user, item_key__in=physical_keys).count()
+
+        return JsonResponse({
+            "role": "student",
+            "curso_codigo": curso.codigo,
+            "total_files": total_visible,
+            "total_phys": len(physical_keys),
+            "my_d": int(my_d),
+            "my_r": int(my_r),
+        })
+
 
     # ----- агрегаты (счетчики) -----
     dl_counts = dict(
@@ -106,7 +142,11 @@ def alumnos_status(request, codigo: str):
         .values("alumno_id", "item_label", "item_key")
     )
     # fallback label по ключу
-    label_by_key = {it["key"]: it["label"] for it in PHYSICAL_ITEMS}
+    label_by_key = dict(
+    CursoPhysicalItem.objects.filter(curso=curso)
+    .values_list("key", "label")
+    )
+
     rc_detail = {}
     for row in rc_rows:
         aid = row["alumno_id"]
@@ -144,11 +184,14 @@ def alumnos_status(request, codigo: str):
                 "started": r["started_at"].isoformat() if r["started_at"] else None,
             }
 
+    students_total = Enrol.objects.filter(codigo=curso.codigo, role="student").count()
 
 
     return JsonResponse({
         "total_files": total_visible,
         "total_phys": len(physical_keys),
+        "students_total": students_total,
+
         "items": {
             str(aid): {
                 "d": int(dl_counts.get(aid, 0)),
@@ -319,48 +362,83 @@ def course_panel(request, codigo):
             return f"{n} B"
 
         # ===== Physical config (teacher chooses what exists) =====
-        cfg, _ = CursoPhysicalConfig.objects.get_or_create(curso=curso)
-        physical_enabled_keys = list(cfg.enabled_keys or [])
-        physical_items_enabled = [it for it in PHYSICAL_ITEMS if it["key"] in physical_enabled_keys]
+        items_qs = CursoPhysicalItem.objects.filter(curso=curso).order_by("label", "id")
+        physical_items_all = list(items_qs)
+        physical_items_enabled = [x for x in physical_items_all if x.is_enabled]
 
         context.update({
-            "physical_items": PHYSICAL_ITEMS,                 # для teacher формы
-            "physical_enabled_keys": physical_enabled_keys,   # для teacher формы
-            "physical_items_enabled": physical_items_enabled, # для student блока
+            "physical_items_all": physical_items_all,         # teacher list
+            "physical_items_enabled": physical_items_enabled, # student list
         })
 
         # ===== Teacher: save physical config =====
-        if request.method == "POST" and is_teacher and request.POST.get("action") == "physical_config_save":
-            enabled = []
-            # важно: сохраняем от PHYSICAL_ITEMS (а не enabled), иначе нельзя включить новые
-            for it in PHYSICAL_ITEMS:
-                k = it["key"]
-                if request.POST.get(f"phys_{k}") == "on":
-                    enabled.append(k)
-            cfg.enabled_keys = enabled
-            cfg.save(update_fields=["enabled_keys", "updated_at"])
+        if request.method == "POST" and is_teacher and request.POST.get("action") == "physical_item_add":
+            label = (request.POST.get("label") or "").strip()
+            if label:
+                base = slugify(label)[:40] or "item"
+                key = base
+                n = 2
+                while CursoPhysicalItem.objects.filter(curso=curso, key=key).exists():
+                    key = f"{base}-{n}"
+                    n += 1
+
+                CursoPhysicalItem.objects.create(
+                    curso=curso,
+                    key=key,
+                    label=label,
+                    is_enabled=True,
+                    order=0
+                )
             return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}")
 
-        # ===== Student: receipt save (only enabled items) =====
+
+        if request.method == "POST" and is_teacher and request.POST.get("action") == "physical_item_update":
+            item_id = request.POST.get("item_id")
+            it = CursoPhysicalItem.objects.filter(pk=item_id, curso=curso).first()
+            if it:
+                it.label = (request.POST.get("label") or it.label).strip()
+                it.is_enabled = (request.POST.get("is_enabled") == "on")
+                it.save()
+            return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}")
+
+        if request.method == "POST" and is_teacher and request.POST.get("action") == "physical_item_delete":
+            item_id = request.POST.get("item_id")
+            CursoPhysicalItem.objects.filter(pk=item_id, curso=curso).delete()
+            return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}")
+
         if request.method == "POST" and (not is_teacher) and request.POST.get("action") == "receipt_save":
+            enabled_items = list(
+                CursoPhysicalItem.objects.filter(curso=curso, is_enabled=True)
+                .values("key", "label")
+            )
+
             existing = set(
                 MaterialReceipt.objects.filter(curso=curso, alumno=user)
                 .values_list("item_key", flat=True)
             )
 
-            for it in physical_items_enabled:
-                key = it["key"]
-                if key in existing:
+            for it in enabled_items:
+                k = it["key"]
+                if k in existing:
                     continue
-                if request.POST.get(f"receipt_{key}") == "on":
+                if request.POST.get(f"receipt_{k}") == "on":
                     MaterialReceipt.objects.create(
                         curso=curso,
                         alumno=user,
-                        item_key=key,
+                        item_key=k,
                         item_label=it["label"],
                     )
 
             return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}")
+        if not is_teacher:
+            receipt_keys = set(MaterialReceipt.objects.filter(curso=curso, alumno=user).values_list("item_key", flat=True))
+            enabled_keys = set(CursoPhysicalItem.objects.filter(curso=curso, is_enabled=True).values_list("key", flat=True))
+            context.update({
+                "receipt_keys": receipt_keys,
+                "receipt_locked_keys": set(receipt_keys),
+                "receipt_all_done": (len(enabled_keys) > 0 and receipt_keys.issuperset(enabled_keys)),
+            })
+
 
         # ===== “Así lo ven los alumnos” (teacher preview) =====
         if is_teacher:
@@ -551,7 +629,7 @@ def course_panel(request, codigo):
             qs = MaterialReceipt.objects.filter(curso=curso, alumno=user)
             receipt_keys = set(qs.values_list("item_key", flat=True))
             receipt_locked_keys = set(receipt_keys)
-            keys_all = {it["key"] for it in physical_items_enabled}
+            keys_all = {it.key for it in physical_items_enabled}
 
             context.update({
                 "receipt_keys": receipt_keys,
@@ -629,20 +707,39 @@ def course_panel(request, codigo):
             return redirect(f"{request.path}?tab=tareas")
 
 
-        # ── STUDENT: отправить работу (ТОЛЬКО 1 РАЗ)
+        # ── STUDENT: отправить работу (можно несколько раз)
+        # ── STUDENT: отправить работу (много попыток ДО оценки)
         if request.method == "POST" and (not is_teacher) and request.POST.get("action") == "task_submit":
             task_id = request.POST.get("task_id")
             f = request.FILES.get("answer_file")
             comment = (request.POST.get("comment") or "").strip()
 
-            task = CourseTask.objects.filter(
-                pk=task_id, curso=curso, is_published=True
-            ).first()
+            task = CourseTask.objects.filter(pk=task_id, curso=curso, is_published=True).first()
 
             if task and (not task.is_closed) and f:
-                # ✅ 1 сдача на задачу
-                exists = TaskSubmission.objects.filter(task=task, alumno=user).exists()
-                if not exists:
+                sub = TaskSubmission.objects.filter(task=task, alumno=user).first()
+
+                # ✅ если уже оценено — блокируем любые новые попытки
+                if sub and sub.status == TaskSubmission.STATUS_GRADED:
+                    return redirect(f"{request.path}?tab=tareas")
+
+                # иначе: обновляем существующую сдачу или создаём новую
+                if sub:
+                    if sub.file:
+                        try:
+                            sub.file.delete(save=False)
+                        except Exception:
+                            pass
+
+                    sub.file = f
+                    sub.file_name = f.name
+                    sub.file_size = f.size
+                    sub.ext = (f.name.rsplit(".", 1)[-1].lower() if "." in f.name else "")
+                    sub.comment = comment
+                    sub.status = TaskSubmission.STATUS_SUBMITTED
+                    sub.submitted_at = timezone.now()
+                    sub.save()
+                else:
                     TaskSubmission.objects.create(
                         task=task,
                         alumno=user,
@@ -656,6 +753,8 @@ def course_panel(request, codigo):
                     )
 
             return redirect(f"{request.path}?tab=tareas")
+
+
 
         # ── TEACHER: поставить оценку (ТОЛЬКО 1 РАЗ, потом блок)
         if request.method == "POST" and is_teacher and request.POST.get("action") == "task_grade":
@@ -713,12 +812,18 @@ def course_panel(request, codigo):
             )
 
             # ✅ его сдачи (нужно для t.my_sub в шаблоне)
-            my_subs = {
-                s.task_id: s
-                for s in TaskSubmission.objects.filter(alumno=user, task__in=tasks)
+            subs_qs = (
+                TaskSubmission.objects
+                .filter(alumno=user, task__in=tasks)
                 .select_related("task")
-                .order_by("-submitted_at")
-            }
+                .order_by("task_id", "-submitted_at", "-id")
+            )
+
+            my_subs = {}
+            for s in subs_qs:
+                if s.task_id not in my_subs:  # ✅ берём только самую свежую по каждой задаче
+                    my_subs[s.task_id] = s
+
 
             for t in tasks:
                 t.fmt_size = _fmt_size(getattr(t, "file_size", 0))
@@ -737,8 +842,11 @@ def course_panel(request, codigo):
             .order_by("dia", "hora_inicio")
         )
 
-        cfg = CursoPhysicalConfig.objects.filter(curso=curso).first()
-        PHYSICAL_KEYS = (cfg.enabled_keys if cfg else []) or []
+        PHYSICAL_KEYS = list(
+            CursoPhysicalItem.objects.filter(curso=curso, is_enabled=True)
+            .values_list("key", flat=True)
+        )
+
 
 
         # какие файлы видимы ученикам в этом курсе
@@ -804,6 +912,7 @@ def course_panel(request, codigo):
             # обработка POST: reset / remove
             if request.method == "POST":
                 # удалить ученика с курса
+                # удалить ученика с курса (и при необходимости удалить user целиком)
                 if "remove_id" in request.POST:
                     uid = request.POST.get("remove_id")
                     try:
@@ -812,16 +921,35 @@ def course_panel(request, codigo):
                         uid_int = None
 
                     if uid_int:
+                        # 1) снимаем с курса
                         Enrol.objects.filter(
                             user_id=uid_int,
                             codigo=curso.codigo,
                             role="student",
                         ).delete()
+
+                        # 2) если у юзера больше нет enrol-ов вообще — удаляем полностью
+                        other_enrols = Enrol.objects.filter(user_id=uid_int).exists()
+                        if not other_enrols:
+                            # чистим связанные данные (на всякий случай, даже если FK CASCADE)
+                            MaterialDownload.objects.filter(alumno_id=uid_int).delete()
+                            MaterialReceipt.objects.filter(alumno_id=uid_int).delete()
+                            TaskSubmission.objects.filter(alumno_id=uid_int).delete()
+                            AttendanceSession.objects.filter(user_id=uid_int).delete()
+
+                            # профиль (если есть)
+                            if UserProfile is not None:
+                                UserProfile.objects.filter(user_id=uid_int).delete()
+
+                            # сам пользователь
+                            User.objects.filter(id=uid_int).delete()
+
                         # уберём и из кэша паролей
                         last_passes.pop(str(uid_int), None)
 
                     request.session["panel_last_passes"] = last_passes
                     return redirect(f"{request.path}?tab=alumnos")
+
 
                 # сбросить пароль ученику
                 if "reset_id" in request.POST:
@@ -860,13 +988,15 @@ def course_panel(request, codigo):
                 u = enr.user
 
                 # пробуем достать профиль
-                profile = None
-                if UserProfile is not None:
-                    # сначала через related_name, если настроен (user.userprofile)
-                    profile = getattr(u, "userprofile", None)
-                    # запасной вариант — прямой поиск
-                    if profile is None:
-                        profile = UserProfile.objects.filter(user=u).first()
+                profile = getattr(u, "profile", None)  # если related_name="profile"
+                apellidos = " ".join([
+                    (getattr(profile, "last_name1", "") or "").strip(),
+                    (getattr(profile, "last_name2", "") or "").strip(),
+                ]).strip()
+                nombre = (getattr(profile, "first_name", "") or u.first_name or "").strip()
+
+                display = f"{apellidos}, {nombre}".strip(", ").strip() or (u.get_full_name() or u.email or u.username or "")
+
 
                 if profile and getattr(profile, "display_name", ""):
                     display_name = profile.display_name.strip()
@@ -892,8 +1022,11 @@ def course_panel(request, codigo):
                 "students": students,
             })
 
-            cfg = CursoPhysicalConfig.objects.filter(curso=curso).first()
-            PHYSICAL_KEYS = (cfg.enabled_keys if cfg else []) or []
+            PHYSICAL_KEYS = list(
+                CursoPhysicalItem.objects.filter(curso=curso, is_enabled=True)
+                .values_list("key", flat=True)
+            )
+
             visible_files_qs = CursoFile.objects.filter(curso=curso).filter(
                 Q(tipo=CursoFile.TIPO_ALUMNOS) |
                 (Q(share_alumnos=True) & Q(tipo__in=[CursoFile.TIPO_DOCENTES, CursoFile.TIPO_PRIVADO]))
@@ -979,39 +1112,12 @@ def user_can_access_course(user, curso: Curso) -> bool:
         return True
     return False
 
+
+from django.views.decorators.clickjacking import xframe_options_sameorigin
+import mimetypes
+
 @login_required
-def material_download(request, file_id: int):
-    f = CursoFile.objects.select_related("curso", "uploaded_by").filter(id=file_id).first()
-    if not f:
-        raise Http404
-
-    curso = f.curso
-
-    # доступ к курсу
-    if not user_can_access_course(request.user, curso):
-        raise Http404
-
-    # определяем роль (как у тебя в course_panel)
-    is_teacher = Enrol.objects.filter(user=request.user, codigo=curso.codigo, role="teacher").exists()
-
-    # доступ к самому файлу (важно для alumnos)
-    if not f.can_see(request.user, is_teacher=is_teacher):
-        raise Http404
-
-    # логируем ТОЛЬКО для учеников (для отчётности)
-    if not is_teacher:
-        MaterialDownload.objects.get_or_create(
-            file=f,
-            alumno=request.user,
-            defaults={
-                "ip": get_client_ip(request),
-                "user_agent": (request.META.get("HTTP_USER_AGENT") or "")[:255],
-            },
-        )
-
-    return FileResponse(f.file.open("rb"), as_attachment=True, filename=f.filename or None)
-    
-@login_required
+@xframe_options_sameorigin
 def task_download(request, codigo: str, task_id: int):
     curso = get_object_or_404(Curso, codigo=codigo)
     if not user_can_access_course(request.user, curso):
@@ -1021,10 +1127,26 @@ def task_download(request, codigo: str, task_id: int):
     if not task or not task.file:
         raise Http404
 
-    return FileResponse(task.file.open("rb"), as_attachment=True, filename=task.filename or None)
+    inline = request.GET.get("inline") == "1"
+    ctype, _ = mimetypes.guess_type(task.filename or "")
+    ctype = ctype or "application/octet-stream"
 
+    resp = FileResponse(task.file.open("rb"), content_type=ctype)
+    filename = task.filename or "task"
+
+    resp["Content-Disposition"] = (
+        f'inline; filename="{filename}"' if inline
+        else f'attachment; filename="{filename}"'
+    )
+    return resp
+
+
+from django.views.decorators.clickjacking import xframe_options_sameorigin
+import mimetypes
+from django.http import FileResponse, Http404
 
 @login_required
+@xframe_options_sameorigin
 def submission_download(request, codigo: str, task_id: int, sub_id: int):
     curso = get_object_or_404(Curso, codigo=codigo)
     if not user_can_access_course(request.user, curso):
@@ -1032,7 +1154,10 @@ def submission_download(request, codigo: str, task_id: int, sub_id: int):
 
     is_teacher = Enrol.objects.filter(user=request.user, codigo=curso.codigo, role="teacher").exists()
 
-    sub = TaskSubmission.objects.select_related("task").filter(pk=sub_id, task_id=task_id, task__curso=curso).first()
+    sub = (TaskSubmission.objects
+           .select_related("task")
+           .filter(pk=sub_id, task_id=task_id, task__curso=curso)
+           .first())
     if not sub or not sub.file:
         raise Http404
 
@@ -1040,7 +1165,19 @@ def submission_download(request, codigo: str, task_id: int, sub_id: int):
     if (not is_teacher) and (sub.alumno_id != request.user.id):
         raise Http404
 
-    return FileResponse(sub.file.open("rb"), as_attachment=True, filename=sub.filename or None)
+    inline = request.GET.get("inline") == "1"
+    ctype, _ = mimetypes.guess_type(sub.filename or "")
+    ctype = ctype or "application/octet-stream"
+
+    resp = FileResponse(sub.file.open("rb"), content_type=ctype)
+    filename = sub.filename or "submission"
+
+    resp["Content-Disposition"] = (
+        f'inline; filename="{filename}"' if inline
+        else f'attachment; filename="{filename}"'
+    )
+    return resp
+
 
 # api/views_me.py (примерно)
 from rest_framework.decorators import api_view, permission_classes
@@ -1173,3 +1310,456 @@ def public_share_download(request, token: str):
     filename = cf.filename or "material"
     resp["Content-Disposition"] = f'attachment; filename="{filename}"'
     return resp
+
+
+from django.http import FileResponse, Http404
+from django.views.decorators.clickjacking import xframe_options_sameorigin
+import mimetypes
+
+from django.db import IntegrityError
+
+@login_required
+@xframe_options_sameorigin
+def material_download(request, file_id: int):
+    f = CursoFile.objects.select_related("curso").filter(id=file_id).first()
+    if not f:
+        raise Http404
+
+    curso = f.curso
+    if not user_can_access_course(request.user, curso):
+        raise Http404
+
+    is_teacher = Enrol.objects.filter(user=request.user, codigo=curso.codigo, role="teacher").exists()
+    if not f.can_see(request.user, is_teacher=is_teacher):
+        raise Http404
+
+    inline = request.GET.get("inline") == "1"
+
+    # content-type + отдача
+    ctype, _ = mimetypes.guess_type(f.filename or "")
+    ctype = ctype or "application/octet-stream"
+
+    resp = FileResponse(f.file.open("rb"), content_type=ctype)
+    filename = f.filename or "file"
+    resp["Content-Disposition"] = (
+        f'inline; filename="{filename}"' if inline
+        else f'attachment; filename="{filename}"'
+    )
+        # ✅ ЛОГ СКАЧИВАНИЯ: только для ученика, только при attachment (не inline preview)
+    if (not is_teacher) and (not inline):
+        try:
+            MaterialDownload.objects.get_or_create(
+                file=f,
+                alumno=request.user,
+                defaults={
+                    "ip": get_client_ip(request),
+                    "user_agent": (request.META.get("HTTP_USER_AGENT") or "")[:255],
+                }
+            )
+        except Exception:
+            # никогда не ломаем выдачу файла из-за логов
+            pass
+    return resp
+
+
+# ============================================================
+# DOCX: Acta entrega material físico (simple, no duplicates)
+# ============================================================
+from pathlib import Path
+from datetime import date as _date
+
+from django.conf import settings
+
+from docx import Document
+from docx.shared import Cm, Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL, WD_ROW_HEIGHT_RULE
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+
+
+def _clear_container(container):
+    # удаляем таблицы и параграфы из header/footer
+    for t in list(container.tables):
+        t._tbl.getparent().remove(t._tbl)
+    for p in list(container.paragraphs):
+        p._p.getparent().remove(p._p)
+
+def _set_table_width_twips(table, tw: int):
+    """
+    Жёстко задаём общую ширину таблицы (tblW) в twips.
+    """
+    tblPr = table._tbl.tblPr
+    if tblPr is None:
+        tblPr = OxmlElement("w:tblPr")
+        table._tbl.insert(0, tblPr)
+
+    # remove existing tblW
+    for el in tblPr.findall(qn("w:tblW")):
+        tblPr.remove(el)
+
+    tblW = OxmlElement("w:tblW")
+    tblW.set(qn("w:type"), "dxa")
+    tblW.set(qn("w:w"), str(int(tw)))
+    tblPr.append(tblW)
+
+
+def _apply_col_widths_to_all_rows(table, widths_twips: list[int]):
+    """
+    Word любит "забывать" ширины колонок на добавленных строках.
+    Поэтому ставим width каждой ячейке в каждой строке.
+    """
+    # columns
+    for i, w in enumerate(widths_twips):
+        try:
+            table.columns[i].width = Twips(int(w))
+        except Exception:
+            pass
+
+    # every row / cell
+    for row in table.rows:
+        for i, w in enumerate(widths_twips):
+            row.cells[i].width = Twips(int(w))
+
+def _set_table_layout_fixed(table):
+    tblPr = table._tbl.tblPr
+    if tblPr is None:
+        tblPr = OxmlElement("w:tblPr")
+        table._tbl.insert(0, tblPr)
+
+    # remove existing
+    for el in tblPr.findall(qn("w:tblLayout")):
+        tblPr.remove(el)
+
+    layout = OxmlElement("w:tblLayout")
+    layout.set(qn("w:type"), "fixed")
+    tblPr.append(layout)
+
+
+def _set_table_indent_zero(table):
+    tblPr = table._tbl.tblPr
+    if tblPr is None:
+        tblPr = OxmlElement("w:tblPr")
+        table._tbl.insert(0, tblPr)
+
+    for el in tblPr.findall(qn("w:tblInd")):
+        tblPr.remove(el)
+
+    tblInd = OxmlElement("w:tblInd")
+    tblInd.set(qn("w:w"), "0")
+    tblInd.set(qn("w:type"), "dxa")
+    tblPr.append(tblInd)
+
+
+def inject_headers_footers_original(docx_path: Path):
+    """
+    ОРИГИНАЛЬНАЯ шапка как у тебя:
+    - Header: слева Lanbide (2.5cm), справа Euskadi (9.5cm)
+    - Footer: справа EU (3.2cm)
+    """
+    LOGOS = getattr(settings, "MEATZE_DOCX_LOGOS", {}) or {}
+    doc = Document(str(docx_path))
+    section = doc.sections[0]
+
+    # поля секции как у тебя
+    section.left_margin  = Cm(1.0)
+    section.right_margin = Cm(1.0)
+    section.top_margin   = Cm(1.2)
+    section.bottom_margin= Cm(1.2)
+
+    usable_width = section.page_width - section.left_margin - section.right_margin
+    tw = _to_twips(usable_width) 
+
+    # ===== HEADER =====
+    header = section.header
+    _clear_container(header)
+
+    h_table = header.add_table(rows=1, cols=2, width=usable_width)
+    h_table.autofit = False
+    h_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    _set_table_indent_zero(h_table)
+    _set_table_layout_fixed(h_table)
+
+    # ✅ правильные ширины: 50/50
+    h_table.columns[0].width = int(tw * 0.5)
+    h_table.columns[1].width = int(tw * 0.5)
+
+    cell_left, cell_right = h_table.rows[0].cells
+
+    # lanbide left
+    lanbide = (LOGOS.get("lanbide") or "").strip()
+    if lanbide and Path(lanbide).exists():
+        p_l = cell_left.paragraphs[0]
+        p_l.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        p_l.paragraph_format.space_before = Pt(0)
+        p_l.paragraph_format.space_after  = Pt(0)
+        p_l.add_run().add_picture(lanbide, width=Cm(2.5))
+
+    # euskadi right
+    euskadi = (LOGOS.get("euskadi") or "").strip()
+    if euskadi and Path(euskadi).exists():
+        p_r = cell_right.paragraphs[0]
+        p_r.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        p_r.paragraph_format.space_before = Pt(0)
+        p_r.paragraph_format.space_after  = Pt(0)
+        p_r.add_run().add_picture(euskadi, width=Cm(9.5))
+
+    # ===== FOOTER =====
+    footer = section.footer
+    _clear_container(footer)
+
+    section.footer_distance = Cm(1.2)
+
+    f_table = footer.add_table(rows=1, cols=1, width=usable_width)
+    f_table.autofit = False
+    _set_table_indent_zero(f_table)
+    _set_table_layout_fixed(f_table)
+
+    eu = (LOGOS.get("eu") or "").strip()
+    if eu and Path(eu).exists():
+        p = f_table.rows[0].cells[0].paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        p.paragraph_format.space_before = Pt(0)
+        p.paragraph_format.space_after  = Pt(0)
+        p.add_run().add_picture(eu, width=Cm(3.2))
+
+    doc.save(str(docx_path))
+from pathlib import Path
+from datetime import date as _date
+
+from docx import Document
+from docx.shared import Cm, Pt, Twips  # ✅ FIX: добавили Twips
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ROW_HEIGHT_RULE
+from docx.enum.table import WD_ALIGN_VERTICAL  # если у тебя не импортирован
+
+# ------------------------------------------------------------------
+
+def _to_twips(x) -> int:
+    """
+    python-docx Length -> twips.
+
+    ВАЖНО:
+    - В некоторых версиях python-docx (и в некоторых сборках) section.page_width/margins
+      могут приходить как int (EMU). Тогда надо переводить EMU -> twips.
+    """
+    if x is None:
+        return 0
+
+    # Length objects
+    if hasattr(x, "twips"):
+        return int(x.twips)
+    if hasattr(x, "emu"):
+        return int(x.emu // 635)  # 1 twip = 635 EMU
+
+    # Raw numbers: почти всегда это EMU (если число большое)
+    if isinstance(x, (int, float)):
+        n = int(x)
+        # эвристика: twips для A4 usable width ~ 9000-11000,
+        # EMU обычно миллионы
+        if n > 200000:   # значит это EMU
+            return int(n // 635)
+        return n  # если вдруг реально twips (малое число)
+
+    return int(x)
+
+
+def _zwsp_wrap_email(email: str) -> str:
+    s = (email or "").strip()
+    if not s:
+        return ""
+    zwsp = "\u200b"
+    return s.replace("@", "@"+zwsp).replace(".", "."+zwsp)
+
+def _apply_cell_style(cell, *, font_pt=10, bold=False, align=None):
+    cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    p = cell.paragraphs[0]
+    if align is not None:
+        p.alignment = align
+    pf = p.paragraph_format
+    pf.space_before = Pt(0)
+    pf.space_after = Pt(0)
+    for r in p.runs:
+        r.font.size = Pt(font_pt)
+        if bold:
+            r.bold = True
+
+# ------------------------------------------------------------------
+
+def build_physical_report_docx(curso, item_label: str, alumnos_rows, fecha: _date, out_path: Path):
+    doc = Document()
+    section = doc.sections[0]
+
+    section.left_margin = Cm(1.0)
+    section.right_margin = Cm(1.0)
+    section.top_margin = Cm(1.2)
+    section.bottom_margin = Cm(1.2)
+
+    usable_width = section.page_width - section.left_margin - section.right_margin
+    tw = _to_twips(usable_width)  # ✅ FIX: twips всегда int
+
+    # ========= Карточка курса (2 колонки) =========
+    t = doc.add_table(rows=4, cols=2)
+    t.style = "Table Grid"
+    t.autofit = False
+    t.alignment = WD_TABLE_ALIGNMENT.CENTER
+    _set_table_indent_zero(t)
+    _set_table_layout_fixed(t)
+
+    # ✅ FIX: ширины ставим через Twips(...)
+    t.columns[0].width = Twips(int(tw * 0.26))
+    t.columns[1].width = Twips(int(tw * 0.74))
+
+    rows = [
+        ("NOMBRE DEL CURSO", (getattr(curso, "titulo", "") or "").strip(), 9),
+        ("CÓDIGO DEL CURSO", (getattr(curso, "codigo", "") or "").strip(), 10),
+        ("MATERIAL ENTREGADO", (item_label or "").strip(), 10),
+        ("FECHA DE ENTREGA", fecha.strftime("%d/%m/%Y"), 10),
+    ]
+
+    for i, (left, right, right_pt) in enumerate(rows):
+        c0, c1 = t.rows[i].cells
+        c0.text = left
+        c1.text = right
+        _apply_cell_style(c0, font_pt=10, bold=True, align=WD_ALIGN_PARAGRAPH.LEFT)
+        _apply_cell_style(c1, font_pt=right_pt, bold=False, align=WD_ALIGN_PARAGRAPH.LEFT)
+
+        t.rows[i].height = Cm(0.7)
+        t.rows[i].height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+
+    doc.add_paragraph("")
+
+    # ========= Таблица учеников =========
+    tbl = doc.add_table(rows=1, cols=4)
+    tbl.style = "Table Grid"
+    tbl.autofit = False
+
+    # ✅ ВАЖНО: лучше LEFT, иначе Word может "выталкивать" таблицу за край
+    tbl.alignment = WD_TABLE_ALIGNMENT.LEFT
+
+    _set_table_indent_zero(tbl)
+    _set_table_layout_fixed(tbl)
+
+    # ✅ задаём общую ширину таблицы (иначе Word может масштабировать как хочет)
+    _set_table_width_twips(tbl, tw)
+
+    # ✅ считаем ширины колонок (twips)
+    w0 = int(tw * 0.07)
+    w1 = int(tw * 0.55)
+    w2 = int(tw * 0.30)
+    w3 = int(tw * 0.08)
+
+    # ✅ применяем ширины к колонкам и всем строкам (включая новые)
+    _apply_col_widths_to_all_rows(tbl, [w0, w1, w2, w3])
+
+
+    hdr = tbl.rows[0].cells
+    hdr[0].text = "Nº"
+    hdr[1].text = "APELLIDOS Y NOMBRE DEL ALUMN@"
+    hdr[2].text = "EMAIL"
+    hdr[3].text = "RECIBIDO"
+
+    for c in hdr:
+        _apply_cell_style(c, font_pt=10, bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+
+    tbl.rows[0].height = Cm(0.7)
+    tbl.rows[0].height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+
+    for i, a in enumerate(alumnos_rows, start=1):
+        r = tbl.add_row()
+        # ✅ Word иногда сбрасывает widths на новых строках
+        _apply_col_widths_to_all_rows(tbl, [w0, w1, w2, w3])
+
+        r.height = Cm(0.7)
+        r.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+
+        c0, c1, c2, c3 = r.cells
+        c0.text = f"{i}."
+        c1.text = (a.get("nombre") or "").strip().upper()
+        c2.text = _zwsp_wrap_email(a.get("email") or "")
+        c3.text = "Sí" if bool(a.get("received")) else "☐"
+
+        _apply_cell_style(c0, font_pt=10, bold=False, align=WD_ALIGN_PARAGRAPH.CENTER)
+        _apply_cell_style(c1, font_pt=10, bold=False, align=WD_ALIGN_PARAGRAPH.LEFT)
+        _apply_cell_style(c2, font_pt=10, bold=False, align=WD_ALIGN_PARAGRAPH.LEFT)
+        _apply_cell_style(c3, font_pt=10, bold=False, align=WD_ALIGN_PARAGRAPH.CENTER)
+
+    doc.save(str(out_path))
+
+# ------------------------------------------------------------------
+# teacher_physical_report_doc — как было, тут менять не обязательно
+# ------------------------------------------------------------------
+from django.http import FileResponse, Http404
+from datetime import date as _date
+from pathlib import Path
+
+@login_required
+def teacher_physical_report_doc(request, codigo: str):
+    curso = get_object_or_404(Curso, codigo=codigo)
+
+    # доступ только teacher этого курса
+    is_teacher = Enrol.objects.filter(user=request.user, codigo=curso.codigo, role="teacher").exists()
+    if not is_teacher:
+        raise Http404
+
+    # какой предмет печатаем
+    item_key = (request.GET.get("item_key") or request.GET.get("item") or "").strip()
+    if not item_key:
+        item_key = "material"  # fallback
+
+    it = CursoPhysicalItem.objects.filter(curso=curso, key=item_key).first()
+    item_label = (it.label if it else item_key)
+
+    fecha = _date.today()
+
+    # --- берём студентов курса ---
+    enrols = (
+        Enrol.objects
+        .filter(codigo=curso.codigo, role="student")
+        .select_related("user")
+        .order_by("created_at", "id")
+    )
+
+    user_ids = [e.user_id for e in enrols]
+
+    # --- кто уже подтвердил получение этого предмета ---
+    received_ids = set(
+        MaterialReceipt.objects
+        .filter(curso=curso, item_key=item_key, alumno_id__in=user_ids)
+        .values_list("alumno_id", flat=True)
+    )
+
+    # --- строим alumnos_rows для DOCX ---
+    alumnos_rows = []
+    for e in enrols:
+        u = e.user
+
+        # если есть UserProfile — берём фамилии оттуда
+        profile = getattr(u, "profile", None)
+        last1 = (getattr(profile, "last_name1", "") or "").strip()
+        last2 = (getattr(profile, "last_name2", "") or "").strip()
+        first = (getattr(profile, "first_name", "") or u.first_name or "").strip()
+
+        apellidos = " ".join([x for x in [last1, last2] if x]).strip()
+        nombre = f"{apellidos}, {first}".strip().strip(",")
+        if not nombre:
+            nombre = (u.get_full_name() or u.username or u.email or f"ID {u.pk}").strip()
+
+        alumnos_rows.append({
+            "nombre": nombre,
+            "email": (u.email or "").strip(),
+            "received": (u.pk in received_ids),
+        })
+
+    # куда сохраняем
+    out_dir = Path(getattr(settings, "MEDIA_ROOT", "/tmp")) / "tmp_docs"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # чтобы не затиралось и было понятно что за предмет
+    safe_key = "".join(ch for ch in item_key if ch.isalnum() or ch in ("-", "_"))[:40] or "item"
+    out_path = out_dir / f"acta_material_{curso.codigo}_{safe_key}.docx"
+
+    build_physical_report_docx(curso, item_label, alumnos_rows, fecha, out_path)
+    inject_headers_footers_original(out_path)
+
+    return FileResponse(open(out_path, "rb"), as_attachment=True, filename=out_path.name)

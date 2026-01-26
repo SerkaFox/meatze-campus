@@ -52,6 +52,66 @@
       const title= d => d.toLocaleString('es-ES',{month:'long',year:'numeric'}).replace(/^./,s=>s.toUpperCase());
       const hashStr=str=>{ let h=2166136261>>>0; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=(h>>>0)*16777619>>>0; } return h>>>0; };
       const GOLD = 137.508; // golden angle
+// ===== palette: next color maximally different from previous =====
+const hueSeq = (i) => (i * GOLD) % 360;
+
+// порядок индексов: 0, n/2, n/4, 3n/4, n/8, 5n/8 ... (соседи максимально далеко)
+function maxSepOrder(n){
+  const out = [];
+  const used = new Array(n).fill(false);
+
+  function push(i){
+    i = ((i % n) + n) % n;
+    if (!used[i]){
+      used[i] = true;
+      out.push(i);
+    }
+  }
+
+  push(0);
+  let step = Math.floor(n/2);
+
+  while (out.length < n && step > 0){
+    for (let k = step; k < n; k += step*2){
+      push(k);
+      if (out.length >= n) break;
+    }
+    step = Math.floor(step/2);
+  }
+
+  // на всякий случай добьём остатки
+  for (let i=0;i<n;i++) push(i);
+
+  return out;
+}
+
+// строим мапу: key -> color
+function buildColorMap(keys){
+  const list = [...keys]
+    .map(k => String(k).trim())
+    .filter(Boolean)
+    .sort((a,b)=> a.localeCompare(b,'es',{numeric:true,sensitivity:'base'}));
+
+  const n = list.length || 1;
+  const order = maxSepOrder(n);
+
+  const map = new Map();
+  for (let pos=0; pos<n; pos++){
+    const idx = order[pos];
+    const key = list[pos]; // ключи идут по списку, а оттенки берем "разнесённо"
+    const h = hueSeq(idx);
+
+    // поярче и контрастнее, чем твои 78/78
+    const s = 92;
+    const l = 58;
+
+    map.set(key, `hsl(${h} ${s}% ${l}%)`);
+  }
+  return map;
+}
+
+
+
 const colorForKey = (key) => {
   const h = (hashStr(String(key)) * GOLD) % 360;
   const s = 78;  // не слишком кислотно
@@ -143,6 +203,9 @@ async function loadCalendar(scope={tipo:'curso',grupo:''}){
       let month = null;
 
       function render(root, state){
+let colorMap = buildColorMap(state.keys);
+const colorForKey = (k) => colorMap.get(String(k).trim()) || 'hsl(210 90% 55%)';
+
         root.innerHTML = `
           <div class="mzc-card" id="mzt-cal">
             <div class="mzc-cal">
@@ -350,6 +413,8 @@ async function loadCalendar(scope={tipo:'curso',grupo:''}){
 
           const st = await loadCalendar(merged);
           state = st;
+colorMap = buildColorMap(state.keys);
+
 
           const m0 = firstMonthFromState(state);
           if (m0) month = m0;

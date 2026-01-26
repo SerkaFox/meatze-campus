@@ -351,3 +351,19 @@ class AttendanceSession(models.Model):
     def is_alive(self, hb_sec: int = 90) -> bool:
         t = self.last_heartbeat_at or self.confirmed_at or self.started_at
         return (timezone.now() - t).total_seconds() <= hb_sec
+
+class CursoPhysicalItem(models.Model):
+    curso = models.ForeignKey("api.Curso", on_delete=models.CASCADE, related_name="physical_items")
+    key = models.SlugField(max_length=60)          # "usb", "cuaderno-a4", ...
+    label = models.CharField(max_length=120)       # "Memoria USB"
+    is_enabled = models.BooleanField(default=True) # показывать ученику
+    order = models.PositiveIntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (("curso", "key"),)
+        ordering = ("order", "id")
+
+    def __str__(self):
+        return f"{self.curso.codigo}: {self.label}"

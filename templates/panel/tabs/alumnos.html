@@ -344,7 +344,7 @@
 
 </style>
 
-<div id="mz-alumnos-tab">
+<div id="mz-alumnos-tab" data-focus="alumnos_tab">
 
 {% if not is_teacher %}
   <div class="mzc-card">
@@ -371,7 +371,7 @@
       </div>
     </div>
 
-    <div class="mz-alu-tablewrap">
+    <div class="mz-alu-tablewrap" data-focus="attendance">
         <table class="mz-tbl mz-alu-tbl">
 <colgroup>
   <col class="c-idx" />
@@ -400,7 +400,7 @@
 
 				<td data-role="progress" data-student-id="{{ s.id }}">
 				  <div class="mz-prog-row">
-					<div class="mz-prog-chips">
+					<div class="mz-prog-chips" data-focus="physical">
 					  <span class="mz-chip-mini">📥 {{ s.downloaded_files }}/{{ s.total_files }}</span>
 					  <span class="mz-chip-mini">📦 {{ s.receipts_count }}</span>
 					</div>
@@ -494,7 +494,7 @@
       </div>
     </div>
 
-    <div class="mz-temp-bar">
+    <div class="mz-temp-bar" data-focus="add_students">
       <label class="mzc-note">Cantidad</label>
       <input id="mz-temp-count"
              class="mzc-inp mz-temp-input"
@@ -508,7 +508,7 @@
       </button>
     </div>
 
-    <div class="mz-temp-bar">
+    <div class="mz-temp-bar" data-focus="add_students">
       <span class="mzc-note">Rotar clave para:</span>
       <select id="mz-temp-sel"
               class="mzc-inp mz-temp-select"></select>
@@ -806,6 +806,23 @@ const DECIDE_URL = `${V5}/teacher/attendance/decide`;
   document.body.appendChild(tip);
 
   let lastData = { total_files: 0, total_phys: 0, items: {}, slot: null, presence: {} };
+// --- publish pending count for global checklist ---
+(function publishAttendance(){
+  try{
+    const pres = lastData.presence || {};
+    let pending = 0;
+    for (const sid in pres){
+      if (String(pres[sid]?.status || '') === 'PENDING') pending++;
+    }
+    window.MEATZE = window.MEATZE || {};
+    window.MEATZE.ATTENDANCE = {
+      pending_count: pending,
+      presence: pres,
+      courseCode: courseCode
+    };
+    window.dispatchEvent(new CustomEvent('meatze:attendance', { detail: window.MEATZE.ATTENDANCE }));
+  }catch(e){}
+})();
 
   function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
 

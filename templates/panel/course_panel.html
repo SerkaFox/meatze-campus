@@ -524,6 +524,11 @@
   };
 </script>
 <script src="{% static 'js/traffic.js' %}?v={% now 'U' %}"></script>
+<script>
+  window.MEATZE = window.MEATZE || {};
+  window.MEATZE.COURSE_CODE = "{{ curso.codigo }}";
+  window.MEATZE.IS_TEACHER = {{ is_teacher|yesno:"true,false" }};
+</script>
 
 
 
