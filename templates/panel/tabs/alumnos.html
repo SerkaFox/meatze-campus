@@ -401,17 +401,26 @@
 				<td data-role="progress" data-student-id="{{ s.id }}">
 				  <div class="mz-prog-row">
 					<div class="mz-prog-chips" data-focus="physical">
-					  <span class="mz-chip-mini">📥 {{ s.downloaded_files }}/{{ s.total_files }}</span>
-					  <span class="mz-chip-mini">📦 {{ s.receipts_count }}</span>
+					  <span class="mz-chip-mini" data-p-dl="{{ s.id }}">📥 {{ s.downloaded_files }}/{{ s.total_files }}</span>
+					  <span class="mz-chip-mini" data-p-rc="{{ s.id }}">📦 {{ s.receipts_count }}</span>
+
+					  <span class="mz-chip-mini" data-p-grade="{{ s.id }}">
+						🎓
+						{% if s.avg_grade is not None %}
+						  {{ s.avg_grade }}{% if s.graded_tasks %} ({{ s.graded_tasks }}){% endif %}
+						{% else %}
+						  —
+						{% endif %}
+					  </span>
 					</div>
 
-					<!-- NEW: presencia chip + actions -->
 					<div class="mz-pres-row" data-pres-row="{{ s.id }}">
 					  <span class="mz-pres-chip mz-pres-none" data-pres-chip="{{ s.id }}">—</span>
 					  <span class="mz-pres-actions" data-pres-actions="{{ s.id }}"></span>
 					</div>
 				  </div>
 				</td>
+
 
                 <td>
                   <div class="mz-alu-actions">
@@ -1011,29 +1020,27 @@ function renderPresenceFor(studentId){
       const total = Number(lastData.total_files || 0);
       const totalPhys = Number(lastData.total_phys || 0);
 
-      tab.querySelectorAll('[data-role="progress"]').forEach(td => {
-        const id = td.dataset.studentId;
-        const it = lastData.items[id] || {d: 0, r: 0};
+		tab.querySelectorAll('[data-role="progress"]').forEach(td => {
+		  const id = td.dataset.studentId;
+		  const it = lastData.items?.[id] || { d: 0, r: 0 };
 
-        const d = Number(it.d || 0);
-        const r = Number(it.r || 0);
+		  const total = Number(lastData.total_files || 0);
+		  const totalPhys = Number(lastData.total_phys || 0);
 
-        td.innerHTML = `
-          <div class="mz-prog-row">
-            <div class="mz-prog-chips">
-              <span class="mz-chip-mini">📥 ${d}/${total}</span>
-              <span class="mz-chip-mini">📦 ${r}/${totalPhys} ${totalPhys && r >= totalPhys ? '✔' : ''}</span>
-            </div>
+		  const d = Number(it.d || 0);
+		  const r = Number(it.r || 0);
 
-            <div class="mz-pres-row" data-pres-row="${id}">
-              <span class="mz-pres-chip mz-pres-none" data-pres-chip="${id}">—</span>
-              <span class="mz-pres-actions" data-pres-actions="${id}"></span>
-            </div>
-          </div>
-        `;
+		  // обновляем только нужные куски, не ломая разметку
+		  const dlEl = tab.querySelector(`[data-p-dl="${id}"]`);
+		  if (dlEl) dlEl.textContent = `📥 ${d}/${total}`;
 
-        renderPresenceFor(id);
-      });
+		  const rcEl = tab.querySelector(`[data-p-rc="${id}"]`);
+		  if (rcEl) rcEl.textContent = `📦 ${r}/${totalPhys}${(totalPhys && r >= totalPhys) ? " ✔" : ""}`;
+
+		  // 🎓 оставляем как есть (серверное) — или обновляй, если добавишь это в endpoint
+		  renderPresenceFor(id);
+		});
+
 
       if (hoverId && tip.style.display !== 'none') renderTip(hoverId);
 

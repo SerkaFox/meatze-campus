@@ -1,6 +1,7 @@
 # panel/urls.py
 from django.urls import path
 from . import views
+from . import reports
 from panel.views_events import log_learning_event_panel
 from .views_attendance import (
     attendance_request,
@@ -8,6 +9,8 @@ from .views_attendance import (
     teacher_attendance_pending,
     teacher_attendance_decide,
 )
+from .AnexoVI import anexo_vi_doc
+
 app_name = "panel"
 
 urlpatterns = [
@@ -24,9 +27,9 @@ urlpatterns = [
     path("meatze/v5/attendance/request", attendance_request),
     path("meatze/v5/attendance/heartbeat", attendance_heartbeat),
     path("curso/<str:codigo>/physical_report_doc/", views.teacher_physical_report_doc, name="physical_report_doc"),
-
-
+    path("curso/<str:codigo>/tareas/anexo-vi.docx", reports.teacher_anexo_vi_report_doc, name="anexo_vi_docx"),
     path("meatze/v5/teacher/attendance/pending", teacher_attendance_pending),
     path("meatze/v5/teacher/attendance/decide", teacher_attendance_decide),
-
+    path("anexo_vi/<str:codigo>/<int:alumno_id>/", anexo_vi_doc, name="anexo_vi"),
 ]
+

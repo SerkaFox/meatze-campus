@@ -287,21 +287,75 @@
     {% endif %}
   </div>
 
-  {% if is_teacher %}
-    <div class="mz-create">
-      <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="task_create">
+{% if is_teacher %}
+  <div class="mz-create">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="task_create">
 
-        <div class="mz-grid">
-          <div class="full">
-            <input class="mz-inp" name="title" placeholder="Título de la tarea" required>
-          </div>
+      <div class="mz-grid">
+        <div class="full">
+          <select class="mz-inp" name="module_key" required>
+            <option value="" selected disabled>— Selecciona módulo —</option>
+            {% for k, label in module_choices %}
+              <option value="{{ k }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
 
-          <div class="full">
-            <textarea class="mz-txt" name="description"
-              placeholder="Descripción (puedes escribir largo, instrucciones, criterios, etc.)"></textarea>
-          </div>
+<div class="full" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+
+  <label class="mz-chip" style="cursor:pointer">
+    <input type="checkbox" name="is_final_exam" id="mz-is-final-exam"
+           style="transform:translateY(1px);margin-right:8px">
+    Examen final (ANEXO VI)
+  </label>
+
+  <select class="mz-inp" name="convocatoria" id="mz-convocatoria"
+          style="max-width:220px" disabled>
+    <option value="">Auto</option>
+    <option value="1">1ª</option>
+    <option value="2">2ª</option>
+  </select>
+
+  {# ✅ скачать все модули #}
+  <a class="mzc-btn ghost mz-collapse-btn"
+     href="{% url 'panel:anexo_vi_docx' curso.codigo %}">
+    Descargar ANEXO VI (Todos)
+  </a>
+
+  {# ✅ скачать выбранный модуль (если фильтр включен) #}
+  {% if selected_mod and selected_mod != "none" %}
+    <a class="mzc-btn ghost"
+       href="{% url 'panel:anexo_vi_docx' curso.codigo %}?mod={{ selected_mod|urlencode }}">
+      Descargar ANEXO VI (Este módulo)
+    </a>
+  {% endif %}
+
+
+
+</div>
+
+
+
+<script>
+(function(){
+  const cb = document.getElementById('mz-is-final-exam');
+  const sel = document.getElementById('mz-convocatoria');
+  if(!cb || !sel) return;
+
+  function sync(){
+    sel.disabled = !cb.checked;
+    if(!cb.checked) sel.value = "";
+  }
+  cb.addEventListener('change', sync);
+  sync();
+})();
+</script>
+
+        <div class="full">
+          <input class="mz-inp" name="title" placeholder="Título de la tarea" required>
+        </div>
 
           <div>
             <input class="mz-inp" type="file" name="task_file">
@@ -313,6 +367,31 @@
         </div>
       </form>
     </div>
+	<div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+  <span class="mz-chip">Filtrar por módulo</span>
+
+  <select class="mz-inp" style="max-width:420px"
+          onchange="location = this.value">
+    <option value="?tab=tareas" {% if not selected_mod %}selected{% endif %}>Todos</option>
+
+    {% if has_none_mod %}
+      <option value="?tab=tareas&mod=none" {% if selected_mod == "none" %}selected{% endif %}>
+        Sin módulo
+      </option>
+    {% endif %}
+
+    {% for k, label in module_choices %}
+      <option value="?tab=tareas&mod={{ k|urlencode }}" {% if selected_mod == k %}selected{% endif %}>
+        {{ label }}
+      </option>
+    {% endfor %}
+  </select>
+
+  {% if selected_mod %}
+    <a class="mzc-btn ghost" href="?tab=tareas">Quitar filtro</a>
+  {% endif %}
+</div>
+
   {% endif %}
 
  {% if tasks %}
@@ -321,6 +400,25 @@
       <div class="mz-task-top">
         <div style="min-width:260px;flex:1 1 520px">
           <p class="mz-task-name">{{ t.title }}</p>
+
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+  {% if t.module_label %}
+    <span class="mz-chip">📦 {{ t.module_label }}</span>
+  {% elif t.module_key %}
+    <span class="mz-chip">📦 {{ t.module_key }}</span>
+  {% endif %}
+
+  {% if t.is_final_exam %}
+    <span class="mz-chip ok">
+      🏁 Final
+      {% if t.convocatoria == 1 %} · 1ª
+      {% elif t.convocatoria == 2 %} · 2ª
+      {% else %} · Auto
+      {% endif %}
+    </span>
+  {% endif %}
+</div>
+
           {% if t.description %}
             <div class="mz-task-desc">{{ t.description }}</div>
           {% endif %}
@@ -556,11 +654,11 @@
         <button class="mzc-btn ghost" type="button" data-close>Cerrar</button>
       </div>
     </div>
-
     <div class="mz-prev-body" id="mz-prev-body">
       <!-- сюда подставим iframe или img -->
     </div>
   </div>
+
 </div>
 
 

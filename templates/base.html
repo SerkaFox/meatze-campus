@@ -153,98 +153,20 @@ menu.addEventListener('click', async function(e){
 <!-- ====== ЧАТ: как в оригинале ====== -->
 {% include "includes/chat_widget.html" %}
 <script src="{% static 'meatze/chat_widget/chat-widget.js' %}"></script>
-<style>
-  #mz-checklist{
-    position: fixed;
-    top: 84px;          /* отступ от верхнего бара */
-    right: 16px;        /* ✅ справа */
-    left: auto;
-    z-index: 99999;
 
-    width: 320px;
-    max-width: 92vw;
-
-    border-radius: 16px;
-    border: 1px solid rgba(148,163,184,0.45);
-    background: #0b1220;
-    color: #e5e7eb;
-    box-shadow: 0 18px 45px rgba(0,0,0,.55);
-    overflow: hidden;
-  }
-
-  #mz-checklist .hd{
-    padding: 10px 12px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    border-bottom: 1px solid rgba(148,163,184,0.25);
-  }
-  #mz-checklist .ttl{
-    font-weight: 900;
-    letter-spacing:.04em;
-    font-size: .86rem;
-    text-transform: uppercase;
-    opacity: .95;
-  }
-  #mz-checklist .btn{
-    border: 1px solid rgba(148,163,184,0.35);
-    background: rgba(15,23,42,0.9);
-    color:#e5e7eb;
-    border-radius: 999px;
-    padding: 4px 10px;
-    font-weight: 800;
-    cursor:pointer;
-  }
-
-  /* ✅ высота “по содержимому”, но ограничиваем чтобы не перекрывал всё */
-  #mz-checklist .body{
-    padding: 10px 12px 12px;
-    max-height: 180px;
-    overflow: auto;
-  }
-  #mz-checklist.is-hidden .body{ display:none; }
-
-  #mz-checklist ul{ margin:0; padding-left: 18px; }
-  #mz-checklist li{ margin: 6px 0; font-size: .86rem; line-height: 1.25; }
-
-  #mz-checklist .warn{ color:#fde68a; }
-  #mz-checklist .danger{ color:#fecaca; }
-    #mz-checklist li{
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    gap:10px;
-  }
-  #mz-checklist .go{
-    flex: 0 0 auto;
-    border: 1px solid rgba(148,163,184,0.35);
-    background: rgba(15,23,42,0.9);
-    color:#e5e7eb;
-    border-radius: 999px;
-    padding: 3px 10px;
-    font-weight: 800;
-    font-size: 12px;
-    text-decoration:none;
-    white-space:nowrap;
-  }
-</style>
-
-<div id="mz-checklist" style="display:none">
-  <div class="hd">
-    <div class="ttl">Checklist</div>
-    <button class="btn" type="button" data-cl-toggle>—</button>
-  </div>
-  <div class="body">
-    <ul data-cl-list></ul>
-  </div>
-</div>
 
 {% block extra_js %}{% endblock %}
 </body>
 </html>
 <script>
+  // ===== CHECKLIST PANEL: OFF =====
+  window.MEATZE = window.MEATZE || {};
+  window.MEATZE.CHECKLIST_ENABLED = false; // <-- включишь потом true
+</script>
+
+<script>
 (function(){
+  if (window.MEATZE && window.MEATZE.CHECKLIST_ENABLED === false) return;
   if (window.__MZ_CHECKLIST__) return;
   window.__MZ_CHECKLIST__ = true;
 

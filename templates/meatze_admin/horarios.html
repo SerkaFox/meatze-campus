@@ -223,4 +223,49 @@ Se admiten rangos: <b>01/08-31/08</b>, <b>10-20/09</b>.
   </div>
 </div>
 
+<!-- === Modal: Editar día === -->
+<div id="mzh-daymodal" class="mz-modal" aria-hidden="true">
+  <div class="mz-modal-backdrop" data-close="1"></div>
+
+  <div class="mz-modal-card" role="dialog" aria-modal="true" aria-labelledby="mzh-daymodal-title">
+    <div class="mz-modal-head">
+      <div>
+        <div id="mzh-daymodal-title" class="mz-modal-title">Editar día</div>
+        <div class="mz-help" id="mzh-daymodal-sub">—</div>
+      </div>
+
+      <button type="button" class="mz-btn link" data-close="1" aria-label="Cerrar">✕</button>
+    </div>
+
+    <div class="mz-modal-body">
+      <div class="mz-row" style="grid-template-columns:1fr 1fr;gap:10px;align-items:end">
+        <div>
+          <div class="mz-help">Duración del día</div>
+          <div class="mz-daystat"><b id="mzh-day-mins">0</b> min</div>
+        </div>
+        <div style="text-align:right">
+          <button id="mzh-day-add" type="button" class="mz-btn">+ Tramo</button>
+        </div>
+      </div>
+
+      <div class="mz-daylist" id="mzh-daylist"></div>
+
+      <div class="mz-help" id="mzh-dayerr" style="color:#8a1233;margin-top:8px;display:none"></div>
+    </div>
+
+    <div class="mz-modal-foot">
+      <div class="mz-help" id="mzh-daylayerinfo">—</div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+        <button id="mzh-day-delete" type="button" class="mz-btn link" style="color:#8a1233">
+          Eliminar día
+        </button>
+        <button id="mzh-day-cancel" type="button" class="mz-btn">Cancelar</button>
+        <button id="mzh-day-save" type="button" class="mz-btn primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 </section>

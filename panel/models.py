@@ -61,7 +61,7 @@ class CursoFile(models.Model):
         on_delete=models.CASCADE,
         related_name="curso_files",
     )
-
+    folder_path = models.CharField(max_length=500, blank=True, default="", db_index=True)
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES, default=TIPO_ALUMNOS)
 
     # модуль (MF/UF или slug), как в старом фронте: module_key
@@ -117,6 +117,21 @@ STUDENT_MODULES = [
     {"slug": "calendario", "label": "Calendario"},
     {"slug": "chat",       "label": "Chat"},
 ]
+
+# panel/models.py
+class CursoFolder(models.Model):
+    curso = models.ForeignKey("api.Curso", on_delete=models.CASCADE, related_name="folders")
+    path = models.CharField(max_length=500, db_index=True)   # уникальный путь внутри курса
+    title = models.CharField(max_length=200, blank=True, default="")
+
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+    is_locked = models.BooleanField(default=False)   # модули = True
+    is_deleted = models.BooleanField(default=False)  # мягкое удаление (удобно)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("curso", "path")
+
 
 class MaterialDownload(models.Model):
     file = models.ForeignKey(
@@ -202,9 +217,17 @@ class CourseTask(models.Model):
     curso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name="tasks")
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="created_tasks")
 
+    # ✅ модуль курса (MF/UF/slug) — как в CursoFile
+    module_key = models.CharField(max_length=255, blank=True, db_index=True)
+    module_label = models.CharField(max_length=190, blank=True, default="")  # опционально
+
     title = models.CharField(max_length=220)
     description = models.TextField(blank=True)
-
+    is_final_exam = models.BooleanField(default=False, db_index=True)
+    convocatoria = models.PositiveSmallIntegerField(
+        null=True, blank=True, db_index=True,
+        choices=[(1, "1ª"), (2, "2ª")]
+    )
     file = models.FileField(upload_to=task_upload_path, blank=True, null=True)
     file_name = models.CharField(max_length=255, blank=True, default="")
     file_size = models.BigIntegerField(default=0)

@@ -143,9 +143,6 @@ SESSION_COOKIE_SECURE = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "static"
 
-
-import os
-
 # MEATZE admin panel password
 MEATZE_ADMIN_PASS = os.getenv("MEATZE_ADMIN_PASS", "")
 
@@ -168,7 +165,6 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "1") == "1"
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "MEATZE Admin <noreply@example.com>")
 
-from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 MEDIA_ROOT = BASE_DIR / "files"
@@ -204,6 +200,8 @@ MZ_SCHOOL_LAN_CIDRS = [
     # "100.64.0.0/10",
 ]
 
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024      # 10MB (можно меньше/больше)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024 * 1024 # 6GB общий лимит тела запроса (пример)
 
 MZ_ATTENDANCE_HB_SEC = 90   
 

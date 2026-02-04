@@ -13,6 +13,7 @@ from api import notify_views
 from api.views_ai import ai_ask, ai_warmup, ai_help
 from api.views_events import log_learning_event, admin_lanbide_activity, admin_lanbide_daily
 
+from api.views_horario_day import horario_day, horario_slot_delete, horario_day_delete
 
 
 urlpatterns = [
@@ -135,3 +136,8 @@ urlpatterns += [
     path("meatze/v5/teacher/attendance/decide", teacher_attendance_decide),
 ]
 
+urlpatterns += [
+    path("meatze/v5/admin/curso/<str:codigo>/horario/day", horario_day, name="mz_horario_day"),
+    path("meatze/v5/admin/curso/<str:codigo>/horario/day/delete", horario_day_delete, name="mz_horario_day_delete"),
+    path("meatze/v5/admin/curso/<str:codigo>/horario/slot/<int:slot_id>/delete", horario_slot_delete, name="mz_horario_slot_delete"),
+]

@@ -684,10 +684,12 @@
 }
 
 .mz-upload-cta{
-  position: absolute;
-  right: 26px;
-  top: 165px;
-  z-index: 20;
+  position: sticky;
+  top: 10px;          /* держится вверху при прокрутке карточки */
+  margin-left: auto;  /* уедет вправо */
+  z-index: 5;
+
+  display: inline-flex;
 
   padding: 12px 18px;
   border-radius: 14px;
@@ -732,6 +734,23 @@
     margin-top: 10px;
   }
 }
+.mz-fold-bc{ margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.mz-bc{ color:#e5e7eb; text-decoration:none; font-size:.82rem; padding:4px 10px; border-radius:999px;
+  border:1px solid rgba(148,163,184,.45); background:rgba(15,23,42,.75); }
+.mz-bc:hover{ background:rgba(30,64,175,.35); border-color:rgba(191,219,254,.65); }
+.mz-bc-sep{ opacity:.5; color:#9ca3af; }
+.mz-mat-item[draggable="true"]{ cursor: grab; }
+.mz-mat-item.is-dragging{ opacity:.55; transform: scale(.995); }
+
+.mz-fold-item.is-drop-ok{
+  outline: 2px solid rgba(34,211,238,.65);
+  box-shadow: 0 0 0 3px rgba(34,211,238,.12);
+}
+.mz-fold-item.is-drop-bad{
+  outline: 2px solid rgba(248,113,113,.65);
+  box-shadow: 0 0 0 3px rgba(248,113,113,.12);
+}
+.mz-fold-item.is-locked{ opacity:.75; }
 
 </style>
 
@@ -755,7 +774,11 @@
     <div class="mz-mat-audience">
       <div class="mz-seg">
         {% for key,label in audience_options %}
-			<a href="?tab=materiales&aud={{ key }}"
+			<a href="?tab=materiales
+				&aud={{ key }}
+				&p={{ current_path|urlencode }}
+				&mod={{ selected_mod|default:''|urlencode }}
+			&sort={{ sort|default:'new'|urlencode }}"
 			   class="mzc-btn ghost{% if audience == key %} is-act{% endif %}"
 			   data-action="materials.audience"
 			   data-aud="{{ key }}">
@@ -769,14 +792,14 @@
 
 {# ---- фильтр по модулю (компактно) ---- #}
 <div class="mz-mat-modfilters" data-selected-mod="{{ selected_mod|default:'' }}">
-  <a href="?tab=materiales&aud={{ audience }}"
+  <a href="?tab=materiales&aud={{ audience }}&p={{ current_path|urlencode }}&sort={{ sort }}"
      class="mz-pill{% if not selected_mod %} is-act{% endif %}"
      data-action="materials.filter"
      data-mod="">
     Todos{% if total_files %} · {{ total_files }}{% endif %}
   </a>
 
-  <a href="?tab=materiales&aud={{ audience }}&mod=none"
+<a href="?tab=materiales&aud={{ audience }}&p={{ current_path|urlencode }}&mod=none&sort={{ sort }}"
      class="mz-pill{% if selected_mod == 'none' %} is-act{% endif %}"
      data-action="materials.filter"
      data-mod="none">
@@ -806,7 +829,7 @@
             <div class="mz-mod-uf">
               {% for it in g.items %}
                 <a class="mz-mod-link{% if selected_mod == it.name %} is-act{% endif %}"
-                   href="?tab=materiales&aud={{ audience }}&mod={{ it.name|urlencode }}"
+                   href="?tab=materiales&aud={{ audience }}&p={{ current_path|urlencode }}&mod={{ it.name|urlencode }}&sort={{ sort }}"
                    data-action="materials.filter"
                    data-mod="{{ it.name }}">
                   {{ it.name }}{% if it.count %} · {{ it.count }}{% endif %}
@@ -842,85 +865,187 @@
   {% if is_teacher %}
 
     <div class="mz-upl-wrap"  data-focus="upload">
+<form id="mz-upload-form" method="post" enctype="multipart/form-data" class="mz-upl">
+  {% csrf_token %}
+  <input type="hidden" name="upload" value="1">
+  <input type="hidden" name="folder_path" value="{{ current_path }}">
+  <input type="hidden" name="tipo"
+         value="{% if audience == 'docentes' %}docentes{% elif audience == 'mis' %}privado{% else %}alumnos{% endif %}">
 
-<form id="mz-upload-form" method="post" enctype="multipart/form-data" class="mz-upl"
-      data-action="materials.upload.form">
+  <!-- ===== СЕКЦИЯ 1: Локальные файлы ===== -->
+  <div class="mz-upl-section" data-upl="files">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <div style="font-weight:800;color:#e5e7eb">📎 Subir archivos</div>
+      <div style="font-size:.78rem;color:#9ca3af">Arrastra/suelta o selecciona varios</div>
+    </div>
 
+    <div id="mz-upl-rows" class="mz-upl-rows">
+      <div class="mz-upl-row" data-row-idx="1">
 
-        {% csrf_token %}
-        <input type="hidden" name="upload" value="1">
-        <input type="hidden" name="tipo"
-               value="{% if audience == 'docentes' %}docentes{% elif audience == 'mis' %}privado{% else %}alumnos{% endif %}">
-
-        <div id="mz-upl-rows" class="mz-upl-rows">
-
-		
-          <div class="mz-upl-row" data-row-idx="1">
-		<div class="mz-drop" data-role="dropzone" title="Arrastra archivos aquí o haz clic">
-		  <div class="mz-drop-ico">⬆</div>
-<div class="mz-drop-txt">
-  <div class="mz-drop-title" data-role="droplabel">Arrastra y suelta archivos</div>
-  <div class="mz-drop-sub" data-role="dropsub">o haz clic para seleccionarlos (multi)</div>
-</div>
-
-<div class="mz-drop-count" data-role="dropcount">0</div>
-
-<button type="button"
-        class="mz-file-clear"
-        data-role="dropclear"
-        title="Quitar selección"
-        style="margin-left:0">
-  ×
-</button>
-
-		</div>
-
-		<input type="file"
-			   name="file_1"
-			   data-role="file"
-			   class="mz-upl-input"
-			   style="display:none"
-			   multiple>
-
-
-            <input type="text"
-                   name="title_1"
-                   data-role="title"
-                   class="mz-upl-input"
-                   placeholder="Título (opcional)">
-				   
-<input type="hidden" name="module_key_1" data-role="module_key" value="">
-
-
-<button type="button"
-        class="mz-file-clear mz-upl-remove-row"
-        title="Quitar fila"
-        data-action="materials.upload.row.remove">
-  ×
-</button>
-
+        <div class="mz-drop" data-role="dropzone" title="Arrastra archivos aquí o haz clic">
+          <div class="mz-drop-ico">⬆</div>
+          <div class="mz-drop-txt">
+            <div class="mz-drop-title" data-role="droplabel">Arrastra y suelta archivos</div>
+            <div class="mz-drop-sub" data-role="dropsub">o haz clic para seleccionarlos (multi)</div>
           </div>
+          <div class="mz-drop-count" data-role="dropcount">0</div>
+
+          <button type="button"
+                  class="mz-file-clear"
+                  data-role="dropclear"
+                  title="Quitar selección"
+                  style="margin-left:0">×</button>
         </div>
-      </form>
-	  		  		{% if is_teacher %}
+
+        <input type="file"
+               name="file_1"
+               data-role="file"
+               class="mz-upl-input"
+               style="display:none"
+               multiple>
+
+        <input type="text"
+               name="title_1"
+               data-role="title"
+               class="mz-upl-input"
+               placeholder="Título (opcional)">
+
+        <input type="hidden" name="module_key_1" data-role="module_key" value="">
+
+        <button type="button"
+                class="mz-file-clear mz-upl-remove-row"
+                title="Quitar fila"
+                data-action="materials.upload.row.remove">×</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Разделитель ===== -->
+  <div style="margin:12px 0;display:flex;align-items:center;gap:10px">
+    <div style="height:1px;flex:1;background:rgba(148,163,184,.25)"></div>
+    <div style="font-size:.78rem;color:#9ca3af;white-space:nowrap">o</div>
+    <div style="height:1px;flex:1;background:rgba(148,163,184,.25)"></div>
+  </div>
+
+  <!-- ===== СЕКЦИЯ 2: По ссылке ===== -->
+  <div class="mz-upl-section" data-upl="url">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <div style="font-weight:800;color:#e5e7eb">🔗 Subir por URL</div>
+      <div style="font-size:.78rem;color:#9ca3af">Enlace directo a un archivo</div>
+    </div>
+
+    <div class="mz-upl-row" style="width:100%">
+      <input type="url"
+             name="url_1"
+             data-role="url"
+             class="mz-upl-input"
+             placeholder="https://..."
+             style="flex:1;min-width:320px">
+
+      <input type="text"
+             name="url_title_1"
+             data-role="url_title"
+             class="mz-upl-input"
+             placeholder="Título (opcional)"
+             style="min-width:220px">
+
+      <input type="hidden" name="url_module_key_1" data-role="url_module_key" value="">
+    </div>
+  </div>
+</form>
+
+<!-- Кнопка сабмита лучше держать сразу под секциями (не внизу страницы) -->
 <button type="submit"
         form="mz-upload-form"
         id="mzf-send"
-        class="mz-upload-cta"
-        data-action="materials.upload.submit">
-  ⬆ Subir archivos
+        class="mz-upload-cta">
+  ⬆ Subir
 </button>
 
-{% endif %}
     </div>
   {% endif %}
 
+<div class="mz-mat-sort" style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+  <span style="font-size:.78rem; color:#9ca3af; margin-right:6px;">Orden:</span>
+
+  <a href="?tab=materiales&aud={{ audience }}&p={{ current_path|urlencode }}&mod={{ selected_mod|default:''|urlencode }}&sort=new"
+     class="mz-pill{% if sort == 'new' %} is-act{% endif %}">Nuevos</a>
+
+  <a href="?tab=materiales&aud={{ audience }}&p={{ current_path|urlencode }}&mod={{ selected_mod|default:''|urlencode }}&sort=old"
+     class="mz-pill{% if sort == 'old' %} is-act{% endif %}">Antiguos</a>
+
+  <a href="?tab=materiales&aud={{ audience }}&p={{ current_path|urlencode }}&mod={{ selected_mod|default:''|urlencode }}&sort=az"
+     class="mz-pill{% if sort == 'az' %} is-act{% endif %}">A–Z</a>
+
+  <a href="?tab=materiales&aud={{ audience }}&p={{ current_path|urlencode }}&mod={{ selected_mod|default:''|urlencode }}&sort=za"
+     class="mz-pill{% if sort == 'za' %} is-act{% endif %}">Z–A</a>
+</div>
+{% if current_path %}
+  <div class="mz-fold-bc" id="mz-fold-bc"
+       data-path="{{ current_path|escape }}"
+       data-aud="{{ audience }}"
+       data-mod="{{ selected_mod|default:''|escape }}"
+       data-sort="{{ sort|default:'new'|escape }}">
+    <a class="mz-bc" href="?tab=materiales&aud={{ audience }}&p=&mod={{ selected_mod|default:''|urlencode }}&sort={{ sort }}">🏠 Inicio</a>
+  </div>
+{% endif %}
+
+{% if folders %}
+  <div class="mz-fold-grid">
+  {% if is_teacher %}
+  <div class="mz-fold-item" data-drop-folder="">
+    <a class="mz-fold-link"
+       href="?tab=materiales&aud={{ audience }}&p=&mod={{ selected_mod|default:''|urlencode }}&sort={{ sort }}">
+      🏠 Raíz (sin carpeta)
+    </a>
+  </div>
+{% endif %}
+    {% for fld in folders %}
+      <div class="mz-fold-item{% if fld.is_locked %} is-locked{% endif %}"
+     {% if is_teacher %}
+       data-drop-folder="{{ fld.path }}"
+     {% endif %}
+>
+
+        <a class="mz-fold-link"
+           href="?tab=materiales&aud={{ audience }}&p={{ fld.path|urlencode }}&mod={{ selected_mod|default:''|urlencode }}&sort={{ sort }}">
+          📁 {{ fld.name }}
+          {% if fld.is_locked %}<span class="mz-chip-mini">Módulo</span>{% endif %}
+        </a>
+
+        {% if is_teacher and not fld.is_locked %}
+          <form method="post" style="margin:0" onsubmit="return confirm('¿Eliminar carpeta?');">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="folder_delete">
+            <input type="hidden" name="path" value="{{ fld.path }}">
+            <button class="mzc-btn ghost" type="submit">Eliminar</button>
+          </form>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="mzc-note">No hay carpetas aquí.</div>
+{% endif %}
+{% if is_teacher %}
+  <form method="post" class="mz-fold-create" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="folder_create">
+    <input class="mz-upl-input" name="folder_name" placeholder="Nueva carpeta" style="min-width:220px">
+    <button class="mzc-btn" type="submit">Crear</button>
+  </form>
+{% endif %}
 
   {# ---- список файлов ---- #}
   <ul class="mz-mat-list">
     {% if files %}
       {% for f in files %}
-        <li class="mz-mat-item{% if not is_teacher %} has-file-chip{% endif %}">
+        <li class="mz-mat-item{% if not is_teacher %} has-file-chip{% endif %}"
+    {% if is_teacher %}
+      draggable="true"
+      data-drag-file="{{ f.id }}"
+    {% endif %}
+>
   {% if not is_teacher %}
     {% if f.is_downloaded %}
       <div class="mz-chip-mini mz-file-chip">Descargado</div>
@@ -1487,38 +1612,40 @@ function toggle(){
 </script>
 <script>
 (function(){
-  const form = document.querySelector('form.mz-upl');
+  const form = document.getElementById('mz-upload-form');
   if (!form) return;
 
   const rows = document.getElementById('mz-upl-rows');
-  if (!rows) return;
+  const urlInp = form.querySelector('input[data-role="url"]');
 
-  const firstRow = rows.querySelector('.mz-upl-row');
+  const firstRow = rows ? rows.querySelector('.mz-upl-row') : null;
   const drop = firstRow ? firstRow.querySelector('[data-role="dropzone"]') : null;
 
   function anyFileSelected(){
-    const inputs = rows.querySelectorAll('input[type="file"][data-role="file"]');
+    const inputs = form.querySelectorAll('input[type="file"][data-role="file"]');
     for (const inp of inputs){
       if (inp.files && inp.files.length) return true;
     }
     return false;
   }
 
+  function hasUrl(){
+    return !!(urlInp && urlInp.value && urlInp.value.trim().length);
+  }
+
   form.addEventListener('submit', function(e){
-    if (anyFileSelected()) return;
+    if (anyFileSelected() || hasUrl()) return;
 
     e.preventDefault();
-
-    // визуальный сигнал
     if (drop){
       drop.classList.add('is-over');
       setTimeout(()=>drop.classList.remove('is-over'), 350);
     }
-
-    alert('Selecciona al menos un archivo.');
+    alert('Sube un archivo o pega una URL.');
   });
 })();
 </script>
+
 <script>
 (function(){
   async function copyToClipboard(text){
@@ -1701,4 +1828,201 @@ document.addEventListener('click', (e) => {
 
   mzDownloadPhysicalActa(codigo, itemKey);
 });
+</script>
+<script>
+(function(){
+  const form = document.getElementById('mz-upload-form');
+  if(!form) return;
+
+  const urlInp = form.querySelector('input[data-role="url"]');
+  const dropRow = form.querySelector('.mz-upl-row[data-row-idx="1"]');
+  const drop = dropRow ? dropRow.querySelector('[data-role="dropzone"]') : null;
+
+  function anyFileSelected(){
+    const inputs = form.querySelectorAll('input[type="file"][data-role="file"]');
+    for (const inp of inputs){
+      if (inp.files && inp.files.length) return true;
+    }
+    return false;
+  }
+  function hasUrl(){
+    return !!(urlInp && urlInp.value && urlInp.value.trim().length);
+  }
+
+  form.addEventListener('submit', function(e){
+    if (anyFileSelected() || hasUrl()) return;
+
+    e.preventDefault();
+    if (drop){
+      drop.classList.add('is-over');
+      setTimeout(()=>drop.classList.remove('is-over'), 350);
+    }
+    alert('Sube un archivo o pega una URL.');
+  });
+})();
+</script>
+<script>
+(function(){
+  const filters = document.querySelector('.mz-mat-modfilters[data-selected-mod]');
+  if (!filters) return;
+
+  const selected = (filters.getAttribute('data-selected-mod') || '').trim();
+  if (!selected || selected === 'none') return;
+
+  // 1) файловые строки как было
+  const rowsContainer = document.getElementById('mz-upl-rows');
+  if (rowsContainer) {
+    rowsContainer.querySelectorAll('.mz-upl-row').forEach(row=>{
+      const mk = row.querySelector('[data-role="module_key"]');
+      if (mk) mk.value = selected;
+    });
+  }
+
+  // 2) URL секция
+  const urlMk = document.querySelector('#mz-upload-form [data-role="url_module_key"]');
+  if (urlMk) urlMk.value = selected;
+})();
+</script>
+<script>
+(function(){
+  const bc = document.getElementById('mz-fold-bc');
+  if(!bc) return;
+
+  const path = (bc.getAttribute('data-path') || '').trim();
+  if(!path) return;
+
+  const aud  = encodeURIComponent(bc.getAttribute('data-aud') || 'alumnos');
+  const mod  = encodeURIComponent(bc.getAttribute('data-mod') || '');
+  const sort = encodeURIComponent(bc.getAttribute('data-sort') || 'new');
+
+  const parts = path.split('/').filter(Boolean);
+  let acc = '';
+
+  parts.forEach((p, idx)=>{
+    acc = acc ? (acc + '/' + p) : p;
+
+    const sep = document.createElement('span');
+    sep.className = 'mz-bc-sep';
+    sep.textContent = '›';
+    bc.appendChild(sep);
+
+    const a = document.createElement('a');
+    a.className = 'mz-bc';
+    a.textContent = p;
+    a.href = `?tab=materiales&aud=${aud}&p=${encodeURIComponent(acc)}&mod=${mod}&sort=${sort}`;
+    bc.appendChild(a);
+  });
+})();
+</script>
+<script>
+(function(){
+  const isTeacher = !!document.querySelector('[data-drop-folder]');
+  if(!isTeacher) return;
+
+  // CSRF из cookie (универсально)
+  function getCookie(name){
+    const v = document.cookie.split(';').map(s=>s.trim()).find(s=>s.startsWith(name+'='));
+    return v ? decodeURIComponent(v.split('=')[1]) : '';
+  }
+  const csrftoken = getCookie('csrftoken');
+
+  let dragFileId = null;
+  let dragEl = null;
+
+  // --- DRAG START/END on files ---
+  document.addEventListener('dragstart', (e)=>{
+    const it = e.target.closest('[data-drag-file]');
+    if(!it) return;
+    dragEl = it;
+    dragFileId = it.getAttribute('data-drag-file');
+    it.classList.add('is-dragging');
+
+    // dataTransfer обязателен для Firefox
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', dragFileId);
+  });
+
+  document.addEventListener('dragend', ()=>{
+    if(dragEl) dragEl.classList.remove('is-dragging');
+    dragEl = null;
+    dragFileId = null;
+    document.querySelectorAll('.mz-fold-item.is-drop-ok,.mz-fold-item.is-drop-bad')
+      .forEach(x=>x.classList.remove('is-drop-ok','is-drop-bad'));
+  });
+
+function canDrop(folderEl){
+  // запрещаем только если ты реально хочешь блокировать перенос
+  // а "is-locked" пусть означает "нельзя удалить/переименовать", но перенос можно
+  return true;
+}
+
+
+  // --- DROP on folders ---
+  document.querySelectorAll('[data-drop-folder]').forEach(folderEl=>{
+    folderEl.addEventListener('dragenter', (e)=>{
+      e.preventDefault();
+      if(!dragFileId) return;
+      folderEl.classList.add('is-drop-ok'); 
+    });
+    folderEl.addEventListener('dragover', (e)=>{
+      e.preventDefault();
+      if(!dragFileId) return;
+      e.dataTransfer.dropEffect = canDrop(folderEl) ? 'move' : 'none';
+    });
+    folderEl.addEventListener('dragleave', ()=>{
+      folderEl.classList.remove('is-drop-ok','is-drop-bad');
+    });
+
+    folderEl.addEventListener('drop', async (e)=>{
+      e.preventDefault();
+      folderEl.classList.remove('is-drop-ok','is-drop-bad');
+
+      const fileId = dragFileId || e.dataTransfer.getData('text/plain');
+      if(!fileId) return;
+
+      if(!canDrop(folderEl)){
+        alert('Esta carpeta está bloqueada.');
+        return;
+      }
+
+      const targetPath = folderEl.getAttribute('data-drop-folder') || '';
+
+      // POST на текущую страницу (тот же URL вкладки)
+      const form = new FormData();
+      form.append('action', 'file_move');
+      form.append('file_id', fileId);
+      form.append('target_path', targetPath);
+
+try{
+  const r = await fetch(window.location.pathname + window.location.search, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'X-CSRFToken': csrftoken,
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+    body: form
+  });
+
+  const ct = (r.headers.get('content-type') || '');
+  const raw = await r.text();
+  console.log('MOVE resp status=', r.status, 'ct=', ct, 'raw head=', raw.slice(0, 200));
+
+  let j = {};
+  try { j = raw ? JSON.parse(raw) : {}; } catch(_) {}
+
+  if(!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+
+  // UX: убрать элемент
+  const fileEl = document.querySelector(`[data-drag-file="${CSS.escape(String(fileId))}"]`);
+  if(fileEl) fileEl.remove();
+
+}catch(err){
+  console.error(err);
+  alert('No se pudo mover el archivo: ' + (err.message || err));
+}
+
+    });
+  });
+})();
 </script>

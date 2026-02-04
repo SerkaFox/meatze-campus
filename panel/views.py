@@ -1,36 +1,31 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from django.db.models import Q, Count, Prefetch
-from django.utils.crypto import get_random_string
-from django.conf import settings
-from api.models import Curso, Enrol, Horario
-from .models import CursoFile, MaterialDownload, MaterialReceipt, CursoPhysicalConfig, AttendanceSession, CourseTask, TaskSubmission, PublicShareLink, CursoPhysicalItem
-from django.contrib.auth import get_user_model
-import random
-from django.db import models
 from .decorators import require_profile_complete
+from .models import CursoFile, CursoFolder, MaterialDownload, MaterialReceipt, CursoPhysicalConfig, AttendanceSession, CourseTask, TaskSubmission, PublicShareLink, CursoPhysicalItem
+from .utils import curso_modules_choices, curso_module_label, extract_convocatoria, resolve_convocatoria 
 from .views_attendance import _current_slot
-from django.utils import timezone
-from django.http import JsonResponse, HttpResponse, Http404
-from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
-from datetime import timedelta
-from django.db.models import F
-from django.utils.text import slugify
-
+from api.models import Curso, Enrol, Horario
 from datetime import date as _date
-from tempfile import TemporaryDirectory
-from pathlib import Path
-from django.http import HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404
-from django.views.decorators.http import require_http_methods
+from datetime import timedelta
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_required
+from django.core.files.base import ContentFile
+from django.db import IntegrityError, transaction, models
+from django.db.models import Q, Count, Prefetch, F, Avg
+from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest, Http404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
+from django.utils.crypto import get_random_string
+from django.utils.text import slugify
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 from docx import Document
-from docx.shared import Cm, Pt, Emu, Twips
-from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
-from django.db import IntegrityError, transaction
-
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Cm, Pt, Emu, Twips
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from urllib.parse import urlparse
+import random, re, requests
 
 try:
     from api.models import UserProfile
@@ -65,6 +60,73 @@ PHYSICAL_ITEMS = [
     {"key": "printed_docs", "label": "Documentación impresa"},
     {"key": "usb", "label": "Memoria USB"},
 ]
+
+MAX_URL_SIZE = 25 * 1024 * 1024  # 25MB
+URL_TIMEOUT = (5, 25)            # connect/read
+
+def _safe_filename(name: str) -> str:
+    name = (name or "file").strip()
+    name = re.sub(r'[^A-Za-z0-9._-]+', '_', name).strip("._")
+    return (name[:140] or "file")
+
+def _filename_from_url(url: str) -> str:
+    p = urlparse(url)
+    base = (p.path or "").split("/")[-1]
+    return _safe_filename(base or "file")
+
+
+def _normalize_path(p: str) -> str:
+    p = (p or "").strip().replace("\\", "/").strip("/")
+    p = re.sub(r"/{2,}", "/", p)
+    return p
+
+def _ensure_module_folders(curso, tmp_mods, user):
+    """
+    tmp_mods — это твой tmp (MF/UF структура)
+    Создаём папки только для MF/UF имён (как у тебя в фильтрах mod_groups).
+    """
+    wanted = []
+    for m in tmp_mods:
+        name = (m.get("name") or "").strip()
+        if not name:
+            continue
+        # MF и UF делаем папками (можно ограничить MF-only — но ты просил по названию модулей)
+        wanted.append(_normalize_path(name))
+
+    for path in wanted:
+        if not path:
+            continue
+        CursoFolder.objects.get_or_create(
+            curso=curso,
+            path=path,
+            defaults={"title": path.split("/")[-1], "created_by": user, "is_locked": True}
+        )
+
+
+def _download_url(url: str):
+    p = urlparse(url)
+    if p.scheme not in ("http", "https"):
+        raise ValueError("URL debe empezar por http(s)://")
+
+    r = requests.get(url, stream=True, timeout=URL_TIMEOUT, allow_redirects=True)
+    r.raise_for_status()
+
+    cd = r.headers.get("Content-Disposition", "") or ""
+    m = re.search(r'filename\*?=(?:UTF-8\'\')?"?([^";]+)"?', cd, re.IGNORECASE)
+    filename = _safe_filename(m.group(1)) if m else _filename_from_url(r.url)
+
+    total = 0
+    chunks = []
+    for chunk in r.iter_content(chunk_size=1024 * 128):
+        if not chunk:
+            continue
+        total += len(chunk)
+        if total > MAX_URL_SIZE:
+            raise ValueError("Archivo demasiado grande")
+        chunks.append(chunk)
+
+    return filename, b"".join(chunks)
+
 
 @login_required
 def alumnos_status(request, codigo: str):
@@ -343,6 +405,39 @@ def course_panel(request, codigo):
     if active_tab == "materiales":
         audience = request.GET.get("aud", "alumnos")  # alumnos/docentes/mis
         selected_mod = request.GET.get("mod") or ""   # ""=все, "none"=без модуля
+        
+        sort = (request.GET.get("sort") or "new").strip()  # new/old/az/za
+        if sort not in {"new", "old", "az", "za"}:
+            sort = "new"
+        context["sort"] = sort
+        if is_teacher:
+            _ensure_module_folders(curso, tmp, request.user)
+
+        current_path = _normalize_path(request.GET.get("p") or "")
+        context["current_path"] = current_path
+        folders_qs = CursoFolder.objects.filter(curso=curso, is_deleted=False)
+
+        # показываем только “детей” текущей папки:
+        prefix = current_path + "/" if current_path else ""
+        level = prefix.count("/") + (1 if prefix else 0)
+
+        # простой способ: фильтруем по startswith и берём только следующий уровень
+        cand = folders_qs.filter(path__startswith=prefix).values_list("path", "title", "is_locked")
+        children = []
+        seen = set()
+        for pth, title, locked in cand:
+            rest = pth[len(prefix):]
+            if not rest:
+                continue
+            first = rest.split("/", 1)[0]
+            child_path = (prefix + first) if prefix else first
+            if child_path in seen:
+                continue
+            seen.add(child_path)
+            children.append({"path": child_path, "name": first, "is_locked": locked})
+
+        context["folders"] = sorted(children, key=lambda x: (0 if x["is_locked"] else 1, x["name"].lower()))
+
 
         if not is_teacher:
             audience = "alumnos"
@@ -389,7 +484,7 @@ def course_panel(request, codigo):
                     is_enabled=True,
                     order=0
                 )
-            return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}")
+            return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}&sort={sort}")
 
 
         if request.method == "POST" and is_teacher and request.POST.get("action") == "physical_item_update":
@@ -399,12 +494,12 @@ def course_panel(request, codigo):
                 it.label = (request.POST.get("label") or it.label).strip()
                 it.is_enabled = (request.POST.get("is_enabled") == "on")
                 it.save()
-            return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}")
+            return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}&sort={sort}")
 
         if request.method == "POST" and is_teacher and request.POST.get("action") == "physical_item_delete":
             item_id = request.POST.get("item_id")
             CursoPhysicalItem.objects.filter(pk=item_id, curso=curso).delete()
-            return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}")
+            return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}&sort={sort}")
 
         if request.method == "POST" and (not is_teacher) and request.POST.get("action") == "receipt_save":
             enabled_items = list(
@@ -429,7 +524,7 @@ def course_panel(request, codigo):
                         item_label=it["label"],
                     )
 
-            return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}")
+            return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}&sort={sort}")
         if not is_teacher:
             receipt_keys = set(MaterialReceipt.objects.filter(curso=curso, alumno=user).values_list("item_key", flat=True))
             enabled_keys = set(CursoPhysicalItem.objects.filter(curso=curso, is_enabled=True).values_list("key", flat=True))
@@ -454,6 +549,44 @@ def course_panel(request, codigo):
 
             context["student_visible_files"] = student_visible_files
 
+        if request.method == "POST" and is_teacher and request.POST.get("action") == "folder_create":
+            name = (request.POST.get("folder_name") or "").strip()
+            base = _normalize_path(name)
+            if not base:
+                return redirect(f"{request.path}?tab=materiales&aud={audience}&p={current_path}")
+
+
+            # если создаём внутри текущей папки:
+            full = _normalize_path((current_path + "/" + base) if current_path else base)
+
+            # запретим создание “поверх” locked-папок (не обязательно, но разумно):
+            obj, created = CursoFolder.objects.get_or_create(
+                curso=curso,
+                path=full,
+                defaults={"title": base, "created_by": user, "is_locked": False}
+            )
+            # если было удалено раньше — оживим
+            if not created and obj.is_deleted:
+                obj.is_deleted = False
+                obj.save(update_fields=["is_deleted"])
+
+            return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}&sort={sort}&p={full}")
+
+        if request.method == "POST" and is_teacher and request.POST.get("action") == "folder_delete":
+            path = _normalize_path(request.POST.get("path") or "")
+            f = CursoFolder.objects.filter(curso=curso, path=path, is_deleted=False).first()
+            if not f or f.is_locked:
+                return HttpResponseBadRequest("folder_locked_or_missing")
+
+            # проверим, что папка пустая (нет файлов в ней и нет подпапок)
+            has_files = CursoFile.objects.filter(curso=curso, folder_path=path).exists()
+            has_sub = CursoFolder.objects.filter(curso=curso, is_deleted=False, path__startswith=(path + "/")).exists()
+            if has_files or has_sub:
+                return HttpResponseBadRequest("folder_not_empty")
+
+            f.is_deleted = True
+            f.save(update_fields=["is_deleted"])
+            return redirect(f"{request.path}?tab=materiales&aud={audience}&p={current_path}")
 
         # ===== base queryset for this audience =====
         files_qs = CursoFile.objects.filter(curso=curso)
@@ -463,6 +596,7 @@ def course_panel(request, codigo):
                 files_qs = files_qs.filter(tipo=CursoFile.TIPO_ALUMNOS)
             elif audience == "docentes":
                 files_qs = files_qs.filter(tipo=CursoFile.TIPO_DOCENTES)
+
             elif audience == "mis":
                 files_qs = files_qs.filter(tipo=CursoFile.TIPO_PRIVADO, uploaded_by=user)
         else:
@@ -470,9 +604,34 @@ def course_panel(request, codigo):
                 Q(tipo=CursoFile.TIPO_ALUMNOS) |
                 Q(tipo__in=[CursoFile.TIPO_DOCENTES, CursoFile.TIPO_PRIVADO], share_alumnos=True)
             )
+        files_qs = files_qs.filter(folder_path=current_path)
 
         # --- teacher POST ops (upload/delete/share/copy) ---
         if request.method == "POST" and is_teacher:
+            action = (request.POST.get("action") or "").strip()
+
+            if action == "file_move":
+                fid = request.POST.get("file_id")
+                target = _normalize_path(request.POST.get("target_path") or "")
+
+                cf = CursoFile.objects.filter(pk=fid, curso=curso).first()
+                if not cf:
+                    return JsonResponse({"ok": False, "error": "file_not_found"}, status=404)
+
+                # target="" = корень — всегда ок
+                if target:
+                    folder = CursoFolder.objects.filter(curso=curso, is_deleted=False, path=target).first()
+                    if not folder:
+                        return JsonResponse({"ok": False, "error": "folder_not_found"}, status=404)
+
+                    # ✅ ВАЖНО: locked папки модулей НЕ запрещают перенос
+                    # if folder.is_locked:  <-- УБРАТЬ БЛОКИРОВКУ
+
+                cf.folder_path = target
+                cf.save(update_fields=["folder_path"])
+
+                return JsonResponse({"ok": True, "file_id": cf.id, "target_path": target})
+
             # upload
             if "upload" in request.POST:
                 tipo = request.POST.get("tipo") or CursoFile.TIPO_ALUMNOS
@@ -480,6 +639,42 @@ def course_panel(request, codigo):
                     tipo = CursoFile.TIPO_ALUMNOS
 
                 created = 0
+                for k, v in request.POST.items():
+                    if not k.startswith("url_"):
+                        continue
+
+                    suffix = k.split("_", 1)[1]     # "url_1" -> "1"
+                    url = (v or "").strip()
+                    if not url:
+                        continue
+
+                    title = (request.POST.get(f"url_title_{suffix}") or "").strip()
+                    mod_key = (request.POST.get(f"url_module_key_{suffix}") or "").strip()
+
+                    try:
+                        filename, data = _download_url(url)
+                        folder_path = _normalize_path(request.POST.get("folder_path") or current_path or "")
+                        obj = CursoFile(
+                            curso=curso,
+                            uploaded_by=user,
+                            tipo=tipo,
+                            module_key=mod_key,
+                            folder_path=folder_path, 
+                            title=title or filename,
+                            size=len(data),
+                            ext=(filename.rsplit(".", 1)[-1].lower() if "." in filename else ""),
+                        )
+                        # важно: сначала сохранить, потом file.save (или наоборот — так тоже ок)
+                        obj.save()
+                        obj.file.save(filename, ContentFile(data), save=True)
+
+                        created += 1
+
+                    except Exception as e:
+                        logger.exception("URL upload failed: %s", url)
+                        # хочешь — можешь вернуть ошибку вместо тихого редиректа:
+                        # return HttpResponseBadRequest(f"URL upload failed: {e}")
+
                 for field_name, f in request.FILES.items():
                     if not field_name.startswith("file_"):
                         continue
@@ -487,12 +682,13 @@ def course_panel(request, codigo):
                     suffix = field_name.split("_", 1)[1]
                     mod_key = (request.POST.get(f"module_key_{suffix}") or "").strip()
                     title = (request.POST.get(f"title_{suffix}") or "").strip()
-
+                    folder_path = _normalize_path(request.POST.get("folder_path") or current_path or "")
                     obj = CursoFile(
                         curso=curso,
                         uploaded_by=user,
                         tipo=tipo,
                         module_key=mod_key,
+                        folder_path=folder_path, 
                         title=title or f.name,
                         file=f,
                         size=f.size,
@@ -501,7 +697,25 @@ def course_panel(request, codigo):
                     obj.save()
                     created += 1
 
-                return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}")
+                # move file to folder (AJAX)
+                if request.method == "POST" and is_teacher and request.POST.get("action") == "file_move":
+                    fid = request.POST.get("file_id")
+                    target = _normalize_path(request.POST.get("target_path") or "")
+                    cf = CursoFile.objects.filter(pk=fid, curso=curso).first()
+                    if not cf:
+                        return JsonResponse({"ok": False, "error": "file_not_found"}, status=404)
+
+                    # (опционально) проверка: папка существует или target пустой (корень)
+                    if target:
+                        exists = CursoFolder.objects.filter(curso=curso, is_deleted=False, path=target).exists()
+                        if not exists:
+                            return JsonResponse({"ok": False, "error": "folder_not_found"}, status=404)
+
+                    cf.folder_path = target
+                    cf.save(update_fields=["folder_path"])
+                    return JsonResponse({"ok": True, "file_id": cf.id, "target_path": target})
+
+                return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}&sort={sort}")
 
             # delete
             if "delete_id" in request.POST:
@@ -520,7 +734,8 @@ def course_panel(request, codigo):
                         except Exception:
                             pass
 
-                return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}")
+                return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}&sort={sort}&p={current_path}")
+
 
             # share/unshare
             if "share_id" in request.POST:
@@ -529,7 +744,7 @@ def course_panel(request, codigo):
                 if cf:
                     cf.share_alumnos = not cf.share_alumnos
                     cf.save(update_fields=["share_alumnos"])
-                return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}")
+                return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}&sort={sort}")
 
             # copy to privados
             if "copy_id" in request.POST:
@@ -548,7 +763,7 @@ def course_panel(request, codigo):
                         share_alumnos=False,
                     )
                     new.save()
-                return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}")
+                return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}&sort={sort}")
 
         # ===== counts for filters BEFORE module filter =====
         from collections import Counter
@@ -582,7 +797,19 @@ def course_panel(request, codigo):
         elif selected_mod:
             files_qs = files_qs.filter(module_key=selected_mod)
 
+        # ===== base ordering inside module =====
+        # created_at должен быть в модели CursoFile (у тебя он уже используется выше)
+        if sort == "new":
+            files_qs = files_qs.order_by("-created_at", "-id")
+        elif sort == "old":
+            files_qs = files_qs.order_by("created_at", "id")
+        elif sort == "az":
+            files_qs = files_qs.order_by("title", "id")
+        elif sort == "za":
+            files_qs = files_qs.order_by("-title", "-id")
+
         files = list(files_qs)
+
 
         # downloaded marker for students
         if not is_teacher:
@@ -596,13 +823,14 @@ def course_panel(request, codigo):
         # sorting by module order (from INFO list)
         mod_order = {(m["name"] or "").strip(): idx for idx, m in enumerate(mods, start=1)}
 
-        def _file_sort_key(f):
+        def _module_group_key(f):
             key = (f.module_key or "").strip()
             order = 0 if not key else mod_order.get(key, 9999)
-            title = (f.title or getattr(f, "filename", "") or "").lower()
-            return (order, key.lower(), title)
+            return (order, key.lower())
 
-        files.sort(key=_file_sort_key)
+        # Python sort стабильный => порядок внутри одной группы сохранится как пришёл из DB (created_at sort)
+        files.sort(key=_module_group_key)
+
 
         # fmt_size
         for f in files:
@@ -652,12 +880,39 @@ def course_panel(request, codigo):
                     return f"{n:.1f} {unit}"
                 n /= 1024.0
             return f"{n} B"
+        # choices для селекта
+        module_choices = curso_modules_choices(curso)  # [(key,label), ...]
+        context["module_choices"] = module_choices
+
+        # выбранный модуль из GET (Todos / конкретный / none)
+        selected_mod = (request.GET.get("mod") or "").strip()  # "" = Todos
+        context["selected_mod"] = selected_mod
+
+        # валидные ключи
+        valid_mod_keys = {k for k, _ in module_choices}
+
+        # удобные флаги для UI
+        has_none = CourseTask.objects.filter(curso=curso, module_key="").exists()
+        context["has_none_mod"] = has_none
+
 
         # ── TEACHER: создать задачу
         if request.method == "POST" and is_teacher and request.POST.get("action") == "task_create":
             title = (request.POST.get("title") or "").strip()
             description = (request.POST.get("description") or "").strip()
             f = request.FILES.get("task_file")
+            module_key = (request.POST.get("module_key") or "").strip()
+
+            # NEW:
+            is_final_exam = (request.POST.get("is_final_exam") == "on")
+            conv_raw = (request.POST.get("convocatoria") or "").strip()
+            convocatoria = None
+            if is_final_exam and conv_raw in {"1", "2"}:
+                convocatoria = int(conv_raw)
+
+            valid = {k for k, _ in curso_modules_choices(curso)}
+            if module_key not in valid:
+                return HttpResponseBadRequest("Módulo inválido")
 
             if title:
                 t = CourseTask.objects.create(
@@ -665,8 +920,14 @@ def course_panel(request, codigo):
                     created_by=user,
                     title=title,
                     description=description,
+                    module_key=module_key,
+                    module_label=curso_module_label(curso, module_key),
                     is_published=True,
                     is_closed=False,
+
+                    # NEW:
+                    is_final_exam=is_final_exam,
+                    convocatoria=convocatoria,
                 )
                 if f:
                     t.file = f
@@ -676,6 +937,7 @@ def course_panel(request, codigo):
                     t.save(update_fields=["file", "file_name", "file_size", "ext"])
 
             return redirect(f"{request.path}?tab=tareas")
+
 
         # ── TEACHER: закрыть/открыть задачу
         if request.method == "POST" and is_teacher and request.POST.get("action") == "task_toggle_close":
@@ -783,19 +1045,29 @@ def course_panel(request, codigo):
 
         # ── queries + контекст
         if is_teacher:
+            tasks_qs = CourseTask.objects.filter(curso=curso)
+
+            if selected_mod == "none":
+                tasks_qs = tasks_qs.filter(module_key="")
+            elif selected_mod:
+                # защита от мусора в url
+                if selected_mod in valid_mod_keys:
+                    tasks_qs = tasks_qs.filter(module_key=selected_mod)
+                else:
+                    # если пришёл невалидный ключ — считаем как Todos
+                    selected_mod = ""
+                    context["selected_mod"] = ""
+
             tasks = list(
-                CourseTask.objects.filter(curso=curso)
-                .order_by("-created_at")
+                tasks_qs.order_by("-created_at")
                 .prefetch_related(
                     Prefetch(
                         "submissions",
-                        queryset=TaskSubmission.objects.select_related("alumno").order_by(
-                            "status",
-                            "-submitted_at"
-                        )
+                        queryset=TaskSubmission.objects.select_related("alumno").order_by("status", "-submitted_at")
                     )
                 )
             )
+
 
             for t in tasks:
                 t.fmt_size = _fmt_size(getattr(t, "file_size", 0))
@@ -806,10 +1078,19 @@ def course_panel(request, codigo):
 
         else:
             # ✅ STUDENT видит опубликованные задачи
-            tasks = list(
-                CourseTask.objects.filter(curso=curso, is_published=True)
-                .order_by("-created_at")
-            )
+            tasks_qs = CourseTask.objects.filter(curso=curso, is_published=True)
+
+            if selected_mod == "none":
+                tasks_qs = tasks_qs.filter(module_key="")
+            elif selected_mod:
+                if selected_mod in valid_mod_keys:
+                    tasks_qs = tasks_qs.filter(module_key=selected_mod)
+                else:
+                    selected_mod = ""
+                    context["selected_mod"] = ""
+
+            tasks = list(tasks_qs.order_by("-created_at"))
+
 
             # ✅ его сдачи (нужно для t.my_sub в шаблоне)
             subs_qs = (
@@ -911,7 +1192,6 @@ def course_panel(request, codigo):
 
             # обработка POST: reset / remove
             if request.method == "POST":
-                # удалить ученика с курса
                 # удалить ученика с курса (и при необходимости удалить user целиком)
                 if "remove_id" in request.POST:
                     uid = request.POST.get("remove_id")
@@ -1051,6 +1331,29 @@ def course_panel(request, codigo):
                 s["total_files"] = total_visible
                 s["downloaded_files"] = int(dl_map.get(sid, 0))
                 s["receipts_count"] = int(rc_map.get(sid, 0))
+                
+            # --- AVG grade per alumno (only graded submissions) ---
+            graded = (
+                TaskSubmission.objects
+                .filter(task__curso=curso, status=TaskSubmission.STATUS_GRADED)
+                .values("alumno_id")
+                .annotate(
+                    avg=Avg("grade"),
+                    n=Count("id", filter=Q(grade__isnull=False)),
+                )
+            )
+
+            grade_map = {row["alumno_id"]: row for row in graded}
+
+            for s in students:
+                row = grade_map.get(s["id"])
+                if row and row["avg"] is not None:
+                    # округление как хочешь: 1 знак или 2
+                    s["avg_grade"] = round(float(row["avg"]), 1)
+                    s["graded_tasks"] = int(row["n"] or 0)
+                else:
+                    s["avg_grade"] = None
+                    s["graded_tasks"] = 0
 
 
     return render(request, "panel/course_panel.html", context)
@@ -1239,7 +1542,8 @@ def material_share_link_create(request, file_id: int):
         return JsonResponse({"ok": False, "error": "auth_required"}, status=401)
 
     # твоя логика: teacher/admin
-    is_teacher = getattr(user, "is_staff", False) or getattr(user, "is_teacher", False)
+    curso = cf.curso
+    is_teacher = Enrol.objects.filter(user=user, codigo=curso.codigo, role="teacher").exists() or user.is_staff
     if not is_teacher:
         return JsonResponse({"ok": False, "error": "forbidden"}, status=403)
 

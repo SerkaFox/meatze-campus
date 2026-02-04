@@ -953,6 +953,20 @@ async function horarioMap(){
 		// ✅ новая разметка под CSS
 		el.innerHTML = `<div class="day">${d}</div><div class="evts"></div>`;
 		const evtsBox = el.querySelector('.evts');
+// double-tap / double-click on pointerup (because pointerdown preventDefault blocks dblclick)
+let __lastTap = window.__MZ_HORARIOS_LAST_TAP__ || {key:null, t:0};
+el.addEventListener('pointerup', (e)=>{
+  if (e.button !== 0) return;
+  const now = Date.now();
+  const prev = __lastTap;
+  __lastTap = {key, t: now};
+  window.__MZ_HORARIOS_LAST_TAP__ = __lastTap;
+
+  // if second tap on same date within 350ms => open modal
+  if (prev.key === key && (now - prev.t) < 350){
+    if (window.__MZ_DAYMODAL_OPEN__) window.__MZ_DAYMODAL_OPEN__(key);
+  }
+});
 
       const dayItems = cache.det.get(key) || [];
       if (dayItems.length && evtsBox){
@@ -3188,5 +3202,354 @@ URL.revokeObjectURL(url);
       alert('Error al exportar DOCX: '+(e.message||'desconocido'));
     }
   }
+
+// ================================
+// Modal editor (NO redeclare of API_A/tok/auth/apiJSON)
+// ================================
+(function(){
+  const modal   = document.getElementById('mzh-daymodal');
+  const dayList = document.getElementById('mzh-daylist');
+  const dayErr  = document.getElementById('mzh-dayerr');
+  const dayMins = document.getElementById('mzh-day-mins');
+  const sub     = document.getElementById('mzh-daymodal-sub');
+  const layerInfo = document.getElementById('mzh-daylayerinfo');
+
+  const btnAdd    = document.getElementById('mzh-day-add');
+  const btnSave   = document.getElementById('mzh-day-save');
+  const btnCancel = document.getElementById('mzh-day-cancel');
+  const btnDelete = document.getElementById('mzh-day-delete');
+
+  if (!modal || !dayList) return;
+
+  // helpers time (у тебя parseHHMM/minutesBetween уже есть ниже, но здесь безопасно локально)
+  const parseHHMM = (t)=>{
+    const m=/^(\d{1,2}):(\d{2})$/.exec(String(t||'').trim());
+    if(!m) return null;
+    const h=Math.min(23,Math.max(0,+m[1])), mm=Math.min(59,Math.max(0,+m[2]));
+    return [h,mm];
+  };
+  const minutesBetweenLocal = (a,b)=>{
+    const A=parseHHMM(a), B=parseHHMM(b); if(!A||!B) return 0;
+    return (B[0]*60+B[1])-(A[0]*60+A[1]);
+  };
+
+  function showErr(msg){
+    if (!dayErr) return;
+    dayErr.textContent = msg || '';
+    dayErr.style.display = msg ? 'block' : 'none';
+  }
+  function openModal(){
+    modal.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(){
+    modal.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+  }
+
+  // close handlers
+  modal.addEventListener('click', (e)=>{
+    const t = e.target;
+    if (t && t.getAttribute && t.getAttribute('data-close') === '1') closeModal();
+  });
+  document.addEventListener('keydown', (e)=>{
+    if (modal.getAttribute('aria-hidden') === 'false' && e.key === 'Escape') closeModal();
+  });
+  btnCancel?.addEventListener('click', closeModal);
+
+  // state
+  let current = {
+    codigo: null,
+    date: null,
+    tipo: 'curso',
+    grupo: '',
+    slots: []
+  };
+
+  function layerLabel(){
+    const t = (current.tipo === 'practica') ? 'Práctica' : 'Curso';
+    return current.tipo === 'practica' ? `${t} · ${current.grupo || '(sin alumno)'}` : t;
+  }
+
+  function updateMins(){
+    const mins = current.slots.reduce((s,x)=> s + Math.max(0, minutesBetweenLocal(x.desde, x.hasta)), 0);
+    if (dayMins) dayMins.textContent = String(mins|0);
+  }
+
+  function validateSlots(){
+    const spans = [];
+    for (const s of current.slots){
+      const m = minutesBetweenLocal(s.desde, s.hasta);
+      if (m <= 0) return 'Cada tramo debe tener "Desde" < "Hasta".';
+      const A = parseHHMM(s.desde); const B = parseHHMM(s.hasta);
+      spans.push([A[0]*60 + A[1], B[0]*60 + B[1]]);
+    }
+    spans.sort((a,b)=>a[0]-b[0]);
+    for (let i=1;i<spans.length;i++){
+      if (spans[i][0] < spans[i-1][1]) return 'Hay solapamiento entre tramos.';
+    }
+    return '';
+  }
+
+function getCourseModuleOptions(){
+  // 1) берем из modsAll если существует (там и MF/UF и простые модули)
+  const arr = (typeof modsAll !== 'undefined' && Array.isArray(modsAll)) ? modsAll : [];
+
+  // хотим показывать и "простые модули", и MF/UF
+  // но значение будем сохранять в nota как КЛЮЧ (key), чтобы дальше стабильно.
+  const opts = arr
+    .map(m => ({
+      key: String(m.key || m.id || m.label || '').trim(),
+      label: String(m.label || m.name || m.key || '').trim(),
+      type: (m.type || '').trim()
+    }))
+    .filter(x => x.key && x.label);
+
+  // уберем дубли по key
+  const seen = new Set();
+  const uniq = [];
+  for (const o of opts){
+    if (seen.has(o.key)) continue;
+    seen.add(o.key);
+    uniq.push(o);
+  }
+
+  // Сортировка: сначала "простые"/MF, потом UF (если хочешь)
+  uniq.sort((a,b)=>{
+    const aw = (a.type === 'UF') ? 1 : 0;
+    const bw = (b.type === 'UF') ? 1 : 0;
+    if (aw !== bw) return aw - bw;
+    return a.label.localeCompare(b.label);
+  });
+
+  return uniq;
+}
+
+function moduleLabelByKey(key){
+  const opts = getCourseModuleOptions();
+  const m = opts.find(x=>x.key === String(key||'').trim());
+  return m ? m.label : '';
+}
+
+
+
+function rowTemplate(slot, idx){
+  const id = slot.id ? String(slot.id) : '';
+  const desde = slot.desde || '09:00';
+  const hasta = slot.hasta || '14:00';
+  const aula  = slot.aula  || '';
+  const nota  = slot.nota  || '';
+
+  // ✅ готовим SELECT options ДО innerHTML
+  const opts = getCourseModuleOptions();
+  const safeNota = String(nota || '').trim();
+
+  const hasNotaInList = safeNota && opts.some(o => o.key === safeNota);
+  const customValue = (!hasNotaInList && safeNota) ? safeNota : '';
+
+  const optionsHtml = [
+    `<option value="">— (sin módulo) —</option>`,
+    ...opts.map(o => (
+      `<option value="${escapeHtml(o.key)}" ${o.key===safeNota?'selected':''}>${escapeHtml(o.label)}</option>`
+    )),
+    customValue
+      ? `<option value="${escapeHtml(customValue)}" selected>(Personalizado) ${escapeHtml(customValue)}</option>`
+      : ``
+  ].join('');
+
+  const el = document.createElement('div');
+  el.className = 'mz-dayrow';
+  el.dataset.idx = String(idx);
+
+  el.innerHTML = `
+    <div class="mz-time">
+      <div class="mz-auto-range">
+        <label><span class="mz-help">Desde</span>
+          <input class="mz-inp js-desde" type="time" step="900" value="${desde}">
+        </label>
+        <span class="mz-auto-range-sep">–</span>
+        <label><span class="mz-help">Hasta</span>
+          <input class="mz-inp js-hasta" type="time" step="900" value="${hasta}">
+        </label>
+      </div>
+      ${id ? `<div class="mz-help" style="margin-top:4px;opacity:.65">id: ${id}</div>` : ``}
+    </div>
+
+    <label class="mz-aula">
+      <span class="mz-help">Aula / empresa (opcional)</span>
+      <input class="mz-inp js-aula" value="${escapeHtml(aula)}" placeholder="Aula…">
+    </label>
+
+    <label class="mz-nota">
+      <span class="mz-help">Módulo</span>
+      <select class="mz-inp js-nota">
+        ${optionsHtml}
+      </select>
+    </label>
+
+    <button type="button" class="mz-del js-del" title="Eliminar tramo">🗑</button>
+  `;
+
+  el.querySelector('.js-del').addEventListener('click', ()=>{
+    current.slots.splice(idx,1);
+    renderSlots();
+  });
+  el.querySelector('.js-desde').addEventListener('input', (e)=>{
+    current.slots[idx].desde = e.target.value;
+    updateMins();
+  });
+  el.querySelector('.js-hasta').addEventListener('input', (e)=>{
+    current.slots[idx].hasta = e.target.value;
+    updateMins();
+  });
+  el.querySelector('.js-aula').addEventListener('input', (e)=>{
+    current.slots[idx].aula = e.target.value;
+  });
+  el.querySelector('.js-nota').addEventListener('change', (e)=>{
+    current.slots[idx].nota = e.target.value; // ✅ сохраняем key
+  });
+
+  return el;
+}
+
+
+  function renderSlots(){
+    dayList.innerHTML = '';
+    current.slots.sort((a,b)=> String(a.desde||'').localeCompare(String(b.desde||'')));
+    current.slots.forEach((s,i)=> dayList.appendChild(rowTemplate(s,i)));
+    updateMins();
+  }
+
+btnAdd?.addEventListener('click', ()=>{
+  const last = current.slots[current.slots.length-1] || null;
+  current.slots.push({
+    desde:'09:00',
+    hasta:'14:00',
+    aula: last?.aula || '',
+    nota: last?.nota || ''   // ✅ ключ существующего модуля
+  });
+  renderSlots();
+});
+
+
+  // ===== API calls: use YOUR apiJSON + API_A + auth() =====
+  async function loadDay(){
+    const qs2 = new URLSearchParams({ date: current.date, tipo: current.tipo });
+    if (current.tipo === 'practica' && current.grupo) qs2.set('grupo', current.grupo);
+
+    // используем твою apiJSON + auth()
+    return apiJSON(`${API_A}/curso/${encodeURIComponent(current.codigo)}/horario/day?`+qs2.toString(), {
+      headers: auth()
+    });
+  }
+
+  async function postDay(){
+    const payload = {
+      date: current.date,
+      tipo: current.tipo,
+      grupo: current.grupo,
+      slots: current.slots.map(s=>({
+        id: s.id || undefined,
+        desde: (s.desde||'').slice(0,5),
+        hasta: (s.hasta||'').slice(0,5),
+        aula: (s.aula||'').trim(),
+        nota: (s.nota||'').trim()
+      }))
+    };
+    return apiJSON(`${API_A}/curso/${encodeURIComponent(current.codigo)}/horario/day`, {
+      method:'POST',
+      headers: auth(true),
+      body: JSON.stringify(payload)
+    });
+  }
+
+  async function postDeleteDay(){
+    return apiJSON(`${API_A}/curso/${encodeURIComponent(current.codigo)}/horario/day/delete`, {
+      method:'POST',
+      headers: auth(true),
+      body: JSON.stringify({ date: current.date, tipo: current.tipo, grupo: current.grupo })
+    });
+  }
+
+  btnSave?.addEventListener('click', async ()=>{
+    showErr('');
+    const msg = validateSlots();
+    if (msg){ showErr(msg); return; }
+
+    if (!current.codigo || !current.date) { showErr('No hay curso/fecha.'); return; }
+    if (current.tipo === 'practica' && !current.grupo){ showErr('Selecciona un alumno para las prácticas.'); return; }
+
+    btnSave.disabled = true;
+    try{
+      const j = await postDay();
+      current.slots = (j.items_day || []).map(x=>({ id:x.id, desde:x.desde, hasta:x.hasta, aula:x.aula||'', nota:x.nota||'' }));
+      renderSlots();
+
+      // просто обновляем календарь
+      await renderMonth();
+
+      closeModal();
+    }catch(e){
+      showErr('Error: ' + (e.message || 'desconocido'));
+    }finally{
+      btnSave.disabled = false;
+    }
+  });
+
+  btnDelete?.addEventListener('click', async ()=>{
+    showErr('');
+    if (!current.codigo || !current.date) return;
+    if (!confirm('¿Eliminar todos los tramos de este día?')) return;
+
+    try{
+      await postDeleteDay();
+      await renderMonth();
+      closeModal();
+    }catch(e){
+      showErr('Error: ' + (e.message || 'desconocido'));
+    }
+  });
+
+  // ===== open on dblclick =====
+  // ===== expose open function (so calendar can call it) =====
+window.__MZ_DAYMODAL_OPEN__ = async function(dateYMD){
+  if (!dateYMD) return;
+  if (!codigo) return; // внешний current course
+
+  const tipo = (selTipo.value === 'practica') ? 'practica' : 'curso';
+  const grupoKey = (tipo === 'practica') ? getAlumnoGroupKey() : '';
+
+  if (tipo === 'practica' && !grupoKey){
+    alert('Selecciona un alumno para editar prácticas.');
+    return;
+  }
+
+  current.codigo = codigo;
+  current.date   = dateYMD;
+  current.tipo   = tipo;
+  current.grupo  = grupoKey;
+
+  if (sub) sub.textContent = `${current.date} · ${layerLabel()}`;
+  if (layerInfo) layerInfo.textContent = layerLabel();
+  showErr('');
+
+  try{
+    const j = await loadDay();
+    current.slots = (j.items_day || []).map(x=>({
+      id:x.id, desde:x.desde, hasta:x.hasta, aula:x.aula||'', nota:x.nota||''
+    }));
+    if (!current.slots.length) current.slots = [{ desde:'09:00', hasta:'14:00', aula:'', nota:'' }];
+    renderSlots();
+    openModal();
+  }catch(err){
+    alert('No se pudo cargar el día: ' + (err.message || 'error'));
+  }
+};
+
+
+})();
+
+
+
 
 })();
