@@ -929,3 +929,60 @@
   margin-top:2px;
   flex-wrap:wrap;
 }
+.mz-fold-tiles{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(160px, 1fr));
+  gap:10px;
+  margin-top:10px;
+}
+
+.mz-fold-tile{
+  border:1px solid rgba(148,163,184,.22);
+  background:rgba(15,23,42,.45);
+  border-radius:14px;
+  padding:12px;
+  cursor:pointer;
+  text-align:left;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  transition:transform .12s ease, border-color .12s ease;
+}
+.mz-fold-tile:hover{ transform:translateY(-1px); border-color:rgba(59,130,246,.35); }
+.mz-fold-tile.is-act{ border-color:rgba(59,130,246,.65); box-shadow:0 10px 26px rgba(0,0,0,.22); }
+.mz-fold-ico{ font-size:22px; }
+.mz-fold-name{ font-weight:900; color:#e5e7eb; display:flex; gap:8px; align-items:center; }
+.mz-fold-sub{ font-size:.78rem; color:#94a3b8; }
+
+.mz-fold-panel{
+  margin-top:12px;
+  border:1px solid rgba(148,163,184,.18);
+  border-radius:16px;
+  background:rgba(15,23,42,.55);
+  overflow:hidden;
+}
+.mz-fold-panel-head{
+  padding:10px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  border-bottom:1px solid rgba(148,163,184,.16);
+}
+.mz-fold-panel-title{ font-weight:900; color:#e5e7eb; }
+.mz-fold-panel-hint{ font-size:.78rem; color:#9ca3af; }
+.mz-fold-panel-body{
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  min-height:80px;
+}
+.mz-fold-tile{ position:relative; }
+.mz-fold-tile .mz-chip-mini{
+  position:absolute;
+  top:10px;
+  right:10px;
+  font-size:.72rem;
+  opacity:.95;
+}
