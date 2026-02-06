@@ -27,6 +27,13 @@ from django.shortcuts import get_object_or_404
 from .decorators import require_admin_token 
 from panel.models import (CursoFile, CursoPhysicalConfig, MaterialDownload, MaterialReceipt)
 from panel.views import PHYSICAL_ITEMS  
+from django.template.loader import render_to_string
+from api.horario_legend import (
+    build_horario_header_from_db,
+    build_modules_legend_from_db,
+    _add_legend_nonlective,
+    _add_modules_legend_blocks,
+)
 logger = logging.getLogger(__name__)
 
 LIBREOFFICE_BIN = getattr(settings, "LIBREOFFICE_PATH", "/usr/bin/soffice")
@@ -826,11 +833,6 @@ def admin_fixed_nonlective(request):
         return JsonResponse({"years": norm})
 
     # ----- POST -----
-    try:
-        payload = json.loads(request.body or "{}")
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "json_invalid"}, status=400)
-
     years_raw = payload.get("years") or {}
     if not isinstance(years_raw, dict):
         return JsonResponse({"error": "years_invalid"}, status=400)
@@ -1239,25 +1241,6 @@ def admin_auto_schedule(request, codigo):
         created += 1
 
     return JsonResponse({"ok": True, "count": created})
-
-
-@api_view(["GET"])
-@require_admin_token
-def admin_schedule_doc(request, codigo):
-    # берём реальное расписание из WP-БД
-    r = requests.get(
-        f"https://meatzed.zaindari.eus/meatze/v5/curso/{codigo}/horario",
-        headers={"X-MZ-Admin": settings.MEATZE_ADMIN_PASS}
-    )
-    data = r.json()
-    items = data.get("items", [])
-
-    path = build_schedule_doc(codigo, items)
-
-    with open(path, "rb") as f:
-        resp = HttpResponse(f.read(), content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-        resp["Content-Disposition"] = f'attachment; filename="{codigo}_horario.docx"'
-        return resp
 
 
 class AdminAuthMiddleware:
@@ -1774,55 +1757,37 @@ def _inject_headers_footers(docx_path: Path):
 
 @csrf_exempt
 @require_http_methods(["POST"])
+@require_admin_token
 def export_docx_graphic(request):
     try:
         payload = json.loads(request.body or "{}")
     except json.JSONDecodeError:
         return JsonResponse({"ok": False, "error": "json_invalid"}, status=400)
 
+    codigo = (payload.get("codigo") or "").strip().upper()
+    tipo   = (payload.get("tipo") or "curso").strip().lower()
+    grupo  = (payload.get("grupo") or "").strip()
     vacaciones = payload.get("vacaciones") or []
 
-    def _es_dmy(ymd: str) -> str:
-        # '2026-03-19' -> '19/03/2026'
-        try:
-            return datetime.strptime(ymd, "%Y-%m-%d").strftime("%d/%m/%Y")
-        except Exception:
-            return ymd or ""
+    if not codigo:
+        return JsonResponse({"ok": False, "error": "codigo_required"}, status=400)
 
-    def _range_es(seg: dict) -> str:
-        f = _es_dmy(seg.get("from", ""))
-        t = _es_dmy(seg.get("to", ""))
-        if f and t and f != t:
-            return f"Del {f} al {t}"
-        return f or t or ""
+    curso = get_object_or_404(Curso, codigo=codigo)
 
-    def _add_legend_nonlective(doc: Document, vacaciones: list):
-        # Заголовок секции
-        p = doc.add_paragraph("Días no lectivos / vacaciones")
-        p.runs[0].bold = True
-        p.runs[0].font.size = Pt(12)
-
-        # 1) Выходные (это фиксированная легенда)
-        doc.add_paragraph("• Fines de semana (sábado y domingo) — día no lectivo")
-
-        # 2) Сегменты vacacionesSegs (официальные+центр+ручные пропуски)
-        if not vacaciones:
-            doc.add_paragraph("• (Sin días no lectivos adicionales en el rango del curso)")
-            return
-
-        for seg in vacaciones:
-            rango = _range_es(seg)
-            motivo = (seg.get("motivo") or "").strip()
-            # Пример: "Del 30/03/2026 al 06/04/2026 – Vacaciones por Jueves Santo..."
-            line = f"• {rango}"
-            if motivo:
-                line += f" – {motivo}"
-            doc.add_paragraph(line)
-
-
+    # ✅ ВОТ ГЛАВНОЕ: берем HTML из payload, если он есть
     html = (payload.get("html") or "").strip()
+
+    # fallback: только если html не пришёл — тогда рендерим серверный шаблон
     if not html:
-        return JsonResponse({"ok": False, "error": "html_required"}, status=400)
+        header = build_horario_header_from_db(curso, tipo, grupo)
+        mods   = build_modules_legend_from_db(curso)
+        html = render_to_string("exports/calendario_docx.html", {
+            "curso": curso,
+            "header_main": header["main"],
+            "header_exceptions": header["exceptions"],
+            "modules": mods,
+            "vacaciones": vacaciones,
+        })
 
     filename = (payload.get("filename") or "calendario.docx").strip()
     if not filename.lower().endswith(".docx"):
@@ -1877,30 +1842,43 @@ def export_docx_graphic(request):
 
         docx_path = docx_files[0]
 
-        # 2) Инжектируем колонтитулы с логотипами
+        # после docx_path = docx_files[0]
+
+        # branding как было
         try:
             _inject_headers_footers(docx_path)
-        except Exception as e:
-            logger.exception("Failed to inject headers/footers: %s", e)
-            # даже если колонтитулы не добавились — лучше всё равно вернуть файл
-            # но можно и сделать ошибку, если хочешь:
-            # return JsonResponse({"ok": False, "error": "branding_failed"}, status=500)
-        # 3) Добавляем легенду: выходные + vacaciones (неучебные)
-        try:
-            vacaciones = payload.get("vacaciones") or []
-            try:
-                _patch_docx_courseinfo_paragraphs(docx_path, font_size_pt=11)
-            except Exception as e:
-                logger.exception("DOCX patch failed, continuing without font patch: %s", e)
-            doc = Document(str(docx_path))
-            _add_legend_nonlective(doc, vacaciones)
-            doc.save(str(docx_path))
-            try:
-                t_hits, p_hits = _patch_courseinfo_fonts_and_borders(docx_path, font_size_pt=12, row_height_cm=0.7, v_align="center",)
-                logger.warning("DOCX XML: course table hits=%s; marker paragraphs hits=%s", t_hits, p_hits)
-            except Exception as e:
-                logger.exception("DOCX patch failed, continuing without font/border patch: %s", e)
+        except Exception:
+            logger.exception("Failed to inject headers/footers")
 
+        # patch как было
+        try:
+            _patch_docx_courseinfo_paragraphs(docx_path, font_size_pt=11)
+        except Exception:
+            logger.exception("DOCX patch failed, continuing")
+
+        doc = Document(str(docx_path))
+
+        # 1) легенда модулей ИЗ БД
+        try:
+            mods = build_modules_legend_from_db(curso)   # <- DB
+            legend = payload.get("legend") or []
+            _add_modules_legend_blocks(doc, curso, legend)
+        except Exception:
+            logger.exception("Failed to add modules legend table")
+
+        # 2) vacaciones / no lectivos — как раньше (payload) или тоже DB если сделаешь
+        try:
+            _add_legend_nonlective(doc, vacaciones)
+        except Exception:
+            logger.exception("Failed to add nonlective legend")
+
+        doc.save(str(docx_path))
+
+        # XML-бодер патч (если он “про таблицу курса”)
+        try:
+            _patch_courseinfo_fonts_and_borders(docx_path, font_size_pt=12, row_height_cm=0.7, v_align="center")
+        except Exception:
+            logger.exception("DOCX border patch failed")
         except Exception as e:
             logger.exception("Failed to add nonlective legend: %s", e)
 

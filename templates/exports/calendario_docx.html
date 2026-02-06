@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body{ font-family: Arial, sans-serif; font-size: 11pt; color:#111; }
+    h1{ font-size: 14pt; margin: 0 0 10px; }
+    .muted{ color:#555; }
+    .box{ margin: 10px 0 14px; }
+    table{ width:100%; border-collapse: collapse; }
+    td, th{ border:1px solid #cfcfcf; padding:6px; vertical-align:top; }
+    th{ background:#f3f3f3; text-align:left; }
+    ul{ margin:6px 0 0 18px; padding:0; }
+  </style>
+</head>
+<body>
+
+  <h1>Calendario · {{ curso.codigo }} · {{ curso.titulo }}</h1>
+
+  {% if header_main %}
+    <div class="box">
+      <div><b>Horario general:</b> {{ header_main }}</div>
+
+      {% if header_exceptions %}
+        <div class="muted" style="margin-top:6px;"><b>Excepciones:</b></div>
+        <ul>
+          {% for e in header_exceptions %}
+            {# e = {"date": date, "line": "..."} #}
+            <li>{{ e.line }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="box">
+    <div><b>Módulos (leyenda):</b></div>
+    {% if modules %}
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40%">Módulo</th>
+            <th style="width:30%">Rango</th>
+            <th>Excepciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in modules %}
+            {# m = {"mod_key":..., "from":date, "to":date, "exceptions":[str,...]} #}
+            <tr>
+              <td>{{ m.mod_key }}</td>
+              <td>Del {{ m.from|date:"d/m/Y" }} al {{ m.to|date:"d/m/Y" }}</td>
+              <td>
+                {% if m.exceptions %}
+                  <ul>
+                    {% for line in m.exceptions %}
+                      <li>{{ line }}</li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <span class="muted">—</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="muted">Sin módulos.</div>
+    {% endif %}
+  </div>
+
+  <div class="box">
+    <div><b>Vacaciones / No lectivos:</b></div>
+    {% if vacaciones %}
+      <ul>
+        {% for v in vacaciones %}
+          {# ожидаем dict {from,to,motivo} из твоего JS #}
+          <li>{{ v.from }} — {{ v.to }}{% if v.motivo %} · {{ v.motivo }}{% endif %}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="muted">—</div>
+    {% endif %}
+  </div>
+
+</body>
+</html>

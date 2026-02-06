@@ -783,7 +783,7 @@ async function deleteFechasBulk(codigo, fechas){
 	async function openCurso(code, meta){
 	  codigo = code;
 	  cursoMeta = meta || cursoMeta || null;
-
+		rebuildModuleMaps();
 	  selected.clear();
 	  selCnt.textContent='0';
 	  infoCtx();
@@ -913,6 +913,69 @@ async function horarioMap(){
     return colorByKey.get(key);
   }
 
+let __HAS_MF_UF__ = false;
+let __MOD_GROUP_BY_KEY__ = new Map(); // UFxxx -> MFxxxx (или сам ключ)
+let __MODS_ALL__ = []; // [{key,label,type,group,horas}]
+function rebuildModuleMaps(){
+  __MOD_GROUP_BY_KEY__ = new Map();
+  __HAS_MF_UF__ = false;
+  __MODS_ALL__ = [];
+
+  if (!cursoMeta) return;
+
+  const grouped = getModulesGrouped(cursoMeta);
+  const hasMF = grouped.some(m => m.type === 'MF');
+  const hasUF = grouped.some(m => m.type === 'UF');
+  __HAS_MF_UF__ = hasMF && hasUF;
+
+  grouped.forEach(m=>{
+    const key = String(m.key||'').trim();
+    if (!key) return;
+    const group = String(m.group || m.key || '').trim();
+    if (group) __MOD_GROUP_BY_KEY__.set(key, group);
+
+    __MODS_ALL__.push({
+      key,
+      label: String(m.label || m.key || '').trim(),
+      type: m.type,
+      group,
+      horas: Number(m.horas||0) || 0
+    });
+  });
+}
+
+// возвращает ключ, по которому надо красить
+function colorKeyFromNota(rawNota, desde, hasta){
+  // если нет nota → старое поведение (по времени)
+  const raw = (rawNota && String(rawNota).trim())
+    ? String(rawNota).trim()
+    : `${(desde||'').slice(0,5)}-${(hasta||'').slice(0,5)}`;
+
+  const parts = raw.split(' · ').map(s=>s.trim()).filter(Boolean);
+
+  // 1) пытаемся понять модуль как “последний токен” (обычно UF/MF/ModuleKey)
+  const last = parts[parts.length-1] || '';
+  if (last){
+    // если MF/UF структура есть → UF красим в MF (group)
+    if (__HAS_MF_UF__ && __MOD_GROUP_BY_KEY__.has(last)){
+      return __MOD_GROUP_BY_KEY__.get(last);
+    }
+    // иначе (курсы без MF/UF) — красим по самому модулю
+    if (__MOD_GROUP_BY_KEY__.has(last)){
+      return last;
+    }
+  }
+
+  // 2) fallback: если строка была в стиле "MFxxx · ...", используем первый токен
+  const first = parts[0] || raw;
+  if (__HAS_MF_UF__ && __MOD_GROUP_BY_KEY__.has(first)){
+    return first; // MF
+  }
+
+  return first || raw;
+}
+
+
   async function renderMonth(){
     if(!codigo){ clearGrid(); return; }
     gTitle.textContent = title(month);
@@ -931,15 +994,18 @@ async function horarioMap(){
         const raw = (it.nota && it.nota.trim())
           ? it.nota.trim()
           : `${(it.desde||'').slice(0,5)}-${(it.hasta||'').slice(0,5)}`;
-        const pure = String(raw).split(' · ')[0];
-        mfSet.add(pure);
+		const kColor = colorKeyFromNota(it.nota, it.desde, it.hasta);
+		mfSet.add(kColor);
       });
     });
-    [...mfSet].sort().forEach(k=>{
-      const s = document.createElement('span');
-      s.innerHTML = `<i style="background:${colorForKey(k)}"></i>${k}`;
-      legend.appendChild(s);
-    });
+const labelByKey = new Map((__MODS_ALL__||[]).map(m=>[m.key, m.label]));
+
+[...mfSet].sort().forEach(k=>{
+  const s = document.createElement('span');
+  const lbl = labelByKey.get(k) || k;
+  s.innerHTML = `<i style="background:${colorForKey(k)}"></i>${escapeHtml(lbl)}`;
+  legend.appendChild(s);
+});
 
     for(let i=0;i<start;i++){ const c=document.createElement('div'); c.className='cell'; c.style.opacity='.3'; grid.appendChild(c); }
 
@@ -998,8 +1064,8 @@ el.addEventListener('pointerup', (e)=>{
         const stops = dayItems.map((it,i)=>{
           const rawKey = (it.nota && it.nota.trim()) ? it.nota.trim()
                        : `${(it.desde||'').slice(0,5)}-${(it.hasta||'').slice(0,5)}`;
-          const pure = String(rawKey).split(' · ')[0];
-          const c = colorForKey(pure);
+			const kColor = colorKeyFromNota(it.nota, it.desde, it.hasta);
+			const c = colorForKey(kColor);
           const from = (acc/total*100).toFixed(2)+'%';
           acc += mins[i];
           const to = (acc/total*100).toFixed(2)+'%';
@@ -2212,6 +2278,95 @@ await apiJSON(API_BASE + H(codigo) + qp(), {
     });
   }
 
+// =========================================
+// Horario segments (for header table / DOCX)
+// det: Map<YYYY-MM-DD, Array<{desde,hasta,...}>>
+// =========================================
+function buildHorarioSegments(det){
+  const dates = Array.from((det instanceof Map) ? det.keys() : []).sort();
+  const segs = [];
+
+  const norm = (t)=>{
+    const m = /^(\d{1,2}):(\d{2})/.exec(String(t||'').trim());
+    if(!m) return null;
+    const h = Math.min(23, Math.max(0, +m[1]));
+    const mm= Math.min(59, Math.max(0, +m[2]));
+    return String(h).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
+  };
+
+  for (const d of dates){
+    const items = det.get(d) || [];
+    if (!items.length) continue;
+
+    // собрать интервалы и слить пересечения
+    let spans = [];
+    for (const it of items){
+      const a = norm(it.desde);
+      const b = norm(it.hasta);
+      if (!a || !b || a >= b) continue;
+      spans.push([a,b]);
+    }
+    if (!spans.length) continue;
+
+    spans.sort((A,B)=> A[0].localeCompare(B[0]));
+    const merged = [];
+    for (const s of spans){
+      if (!merged.length){ merged.push(s); continue; }
+      const last = merged[merged.length-1];
+      if (last[1] >= s[0]) {
+        if (s[1] > last[1]) last[1] = s[1];
+      } else {
+        merged.push(s);
+      }
+    }
+
+    const desde = merged[0][0];
+    const hasta = merged[merged.length-1][1];
+
+    // signature учитывает “разбитые” дни тоже
+    const sig = merged.map(p=>`${p[0]}-${p[1]}`).join('|');
+
+    segs.push({ date: d, desde, hasta, sig });
+  }
+
+  return segs;
+}
+
+function mergeHorarioSegmentsByTime(segs){
+  const arr = Array.isArray(segs) ? segs.slice() : [];
+  arr.sort((a,b)=> String(a.date).localeCompare(String(b.date)));
+
+  const plusOne = (ymdStr)=>{
+    const d = new Date(ymdStr + 'T00:00:00');
+    d.setDate(d.getDate()+1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const dd= String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${dd}`;
+  };
+
+  const out = [];
+  for (const s of arr){
+    if (!out.length){
+      out.push({ from:s.date, to:s.date, desde:s.desde, hasta:s.hasta, sig:s.sig });
+      continue;
+    }
+    const last = out[out.length-1];
+
+    const contiguous = plusOne(last.to) === s.date;
+    const sameTime   = String(last.sig) === String(s.sig);
+
+    if (contiguous && sameTime){
+      last.to = s.date;
+    } else {
+      out.push({ from:s.date, to:s.date, desde:s.desde, hasta:s.hasta, sig:s.sig });
+    }
+  }
+
+  // sig наружу можно не светить
+  return out.map(({sig, ...rest}) => rest);
+}
+
   async function exportWordGraphicAll(){
     try{
       if (!codigo){ alert('Abre un curso primero.'); return; }
@@ -2223,6 +2378,7 @@ await apiJSON(API_BASE + H(codigo) + qp(), {
 
       cache = await horarioMap();
       const det = cache.det || new Map();
+	  const hdr = buildHorarioHeaderFromDet(det); // {main, exceptions}
       const allDates = Array.from(det.keys()).sort();
       const cursoStart = allDates[0] || (cursoMeta?.fecha_inicio || '');
       const cursoEnd   = allDates[allDates.length-1] || '';
@@ -2392,59 +2548,44 @@ const usePlainModulesLegend = !hasMF && !hasUF; // ✅ fallback режим
         });
       });
 
-      function buildHorarioSegments(det){
-        const dates = Array.from(det.keys()).sort();
-        if (!dates.length) return [];
-        const segments=[];
-        let cur = {from:dates[0], to:dates[0], desde:null, hasta:null};
-        const updateTimes = (date, items)=>{
-          (items||[]).forEach(it=>{
-            const d=(it.desde||'').slice(0,5);
-            const h=(it.hasta||'').slice(0,5);
-            cur.desde = minTime(cur.desde,d);
-            cur.hasta = maxTime(cur.hasta,h);
-          });
-        };
-        updateTimes(dates[0], det.get(dates[0])||[]);
-        for(let i=1;i<dates.length;i++){
-          const prev=dates[i-1], cd=dates[i];
-          if (dayDiff(prev,cd) > 7){
-            segments.push(cur);
-            cur = {from:cd,to:cd,desde:null,hasta:null};
-          }else{
-            cur.to = cd;
-          }
-          updateTimes(cd, det.get(cd)||[]);
-        }
-        segments.push(cur);
-        return segments;
-      }
-	  
-	        // Сливает подряд идущие сегменты с одинаковым horario (desde/hasta)
-      function mergeHorarioSegmentsByTime(segs){
-        if (!Array.isArray(segs) || !segs.length) return [];
-        const out = [];
-        let cur = {...segs[0]}; // копия первого
+function buildHorarioHeaderFromDet(det){
+  const dates = Array.from(det.keys()).sort();
+  if (!dates.length) return {main:'', exceptions:[]};
 
-        for (let i = 1; i < segs.length; i++){
-          const s = segs[i];
-          const sameTime =
-            (String(s.desde||'') === String(cur.desde||'')) &&
-            (String(s.hasta||'') === String(cur.hasta||''));
+  // факты по дню: minStart/maxEnd/minutes
+  const facts = new Map(); // date -> {start,end,mins}
+  dates.forEach(d=>{
+    const items = det.get(d) || [];
+    let start=null, end=null, mins=0;
+    items.forEach(it=>{
+      const a=(it.desde||'').slice(0,5), b=(it.hasta||'').slice(0,5);
+      if (!a || !b) return;
+      start = (!start || a < start) ? a : start;
+      end   = (!end   || b > end)   ? b : end;
+      mins += Math.max(0, minutesBetween(a,b));
+    });
+    if (start && end) facts.set(d, {start,end,mins});
+  });
 
-          if (sameTime){
-            // расширяем текущий сегмент по датам
-            if (s.from < cur.from) cur.from = s.from;
-            if (s.to   > cur.to)   cur.to   = s.to;
-          } else {
-            out.push(cur);
-            cur = {...s}; // начинаем новый сегмент
-          }
-        }
+  const keys = Array.from(facts.values()).map(v=> `${v.start}|${v.end}`);
+  // dominant (mode)
+  const freq = new Map();
+  keys.forEach(k=> freq.set(k, (freq.get(k)||0)+1));
+  let baseKey = null, best = -1;
+  freq.forEach((v,k)=>{ if(v>best){best=v;baseKey=k;} });
+  const [baseStart, baseEnd] = (baseKey||'||').split('|');
 
-        out.push(cur);
-        return out;
-      }
+  const main = `Del ${esDateDMY(dates[0])} al ${esDateDMY(dates[dates.length-1])} ${baseStart} – ${baseEnd}`;
+
+  const exceptions = [];
+  facts.forEach((v, d)=>{
+    if (v.start === baseStart && v.end === baseEnd) return;
+    const horas = (v.mins/60).toFixed(1).replace('.',',');
+    exceptions.push(`El ${esDateDMY(d)} el horario será de ${horas} horas (de ${v.start} a ${v.end})`);
+  });
+
+  return {main, exceptions};
+}
 
       const horarioSegs = buildHorarioSegments(det);
       const mergedSegs = mergeHorarioSegmentsByTime(horarioSegs);
@@ -2454,7 +2595,12 @@ const usePlainModulesLegend = !hasMF && !hasUF; // ✅ fallback режим
         const ym = months[i];
         const detMonth = new Map();
         det.forEach((items, d)=>{ if (d.startsWith(ym)) detMonth.set(d, items); });
-        const svg = buildMonthSVG(ym, detMonth, colorForKey);
+        const keyColorMF = (rawKey)=>{
+		  // rawKey туда приходит как "pure", но мы можем нормализовать:
+		  const k = colorKeyFromNota(rawKey, '', ''); // rawKey уже строка
+		  return colorForKey(k);
+		};
+		const svg = buildMonthSVG(ym, detMonth, keyColorMF);
         const png = await svgToRasterDataUrl(svg, {scale:2.0, mime:'image/png'});
         monthImgs.push({ ym, png });
         busy.pct(10 + Math.round((i+1)/Math.max(1,months.length)*40));
@@ -2822,13 +2968,16 @@ const tipoForm = tipoFormLabel(cursoMeta?.tipo_formacion);
       });
 
       const cursoTxt = (cursosByCode.get(codigo)?.titulo || '—').toString().toUpperCase();
+
 const headerTableHtml = `
-<table width="100%" cellspacing="0" cellpadding="0" style="width:100%; border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+<table width="100%" cellspacing="0" cellpadding="0"
+       style="width:100%; border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
   <tr>
     <td style="padding:0; margin:0;">
 
       <table class="hdr-table" width="100%" cellspacing="0" cellpadding="0"
-             style="width:100%; border-collapse:collapse; table-layout:fixed; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+             style="width:100%; border-collapse:collapse; table-layout:fixed; mso-table-lspace:0pt; mso-table-rspace:0pt; background-color:#ffffff;"
+             bgcolor="#ffffff">
         <colgroup>
           <col width="22%">
           <col width="28%">
@@ -2836,51 +2985,53 @@ const headerTableHtml = `
           <col width="28%">
         </colgroup>
 
-        <tr>
-          <td class="hdr-label">Nombre curso:</td>
-          <td class="hdr-val" colspan="3">${esc(cursoTxt)}</td>
+        <tr bgcolor="#eef2f9" style="background-color:#eef2f9;">
+          <td class="hdr-label" bgcolor="#eef2f9" style="background-color:#eef2f9;">Nombre curso:</td>
+          <td class="hdr-val" colspan="3" bgcolor="#ffffff" style="background-color:#ffffff;">${esc(cursoTxt)}</td>
         </tr>
 
         <tr>
-          <td class="hdr-label">Código curso:</td>
-          <td class="hdr-val nowrap">${esc(codigo||'')}</td>
-          <td class="hdr-label">Entidad:</td>
-          <td class="hdr-val">${esc(entidad || ' ')}</td>
+          <td class="hdr-label" bgcolor="#eef2f9" style="background-color:#eef2f9;">Código curso:</td>
+          <td class="hdr-val nowrap" bgcolor="#ffffff" style="background-color:#ffffff;">${esc(codigo||'')}</td>
+          <td class="hdr-label" bgcolor="#eef2f9" style="background-color:#eef2f9;">Entidad:</td>
+          <td class="hdr-val" bgcolor="#ffffff" style="background-color:#ffffff;">${esc(entidad || ' ')}</td>
         </tr>
 
         <tr>
-          <td class="hdr-label">Año académico:</td>
-          <td class="hdr-val nowrap">${esc(anoAcad)}</td>
-          <td class="hdr-label">Tipo formación:</td>
-          <td class="hdr-val">${esc(tipoForm || ' ')}</td>
+          <td class="hdr-label" bgcolor="#eef2f9" style="background-color:#eef2f9;">Año académico:</td>
+          <td class="hdr-val nowrap" bgcolor="#ffffff" style="background-color:#ffffff;">${esc(anoAcad)}</td>
+          <td class="hdr-label" bgcolor="#eef2f9" style="background-color:#eef2f9;">Tipo formación:</td>
+          <td class="hdr-val" bgcolor="#ffffff" style="background-color:#ffffff;">${esc(tipoForm || ' ')}</td>
         </tr>
 
         <tr>
-          <td class="hdr-label">Fechas impartición:</td>
-          <td class="hdr-val nowrap" colspan="3">
-            ${esc(fechaIni)} <span class="hdr-a">a</span> ${esc(fechaFin)}
+          <td class="hdr-label" bgcolor="#eef2f9" style="background-color:#eef2f9;">Fechas impartición:</td>
+          <td class="hdr-val nowrap" colspan="3" bgcolor="#ffffff" style="background-color:#ffffff;">
+            ${esc(fechaIni)} <span class="hdr-a" bgcolor="#eef2f9" style="background-color:#eef2f9;">a</span> ${esc(fechaFin)}
           </td>
         </tr>
 
-	${mergedSegs.map((s,idx)=>`
-	  <tr>
-		<td class="hdr-label">${idx===0?'Horario:':''}</td>
-		<td class="hdr-val" colspan="3">
-		  <span class="h-left">Del ${esDateDMY(s.from)} al ${esDateDMY(s.to)}</span>
-		  <span class="h-right">${(s.desde||'')} – ${(s.hasta||'')}</span>
-		</td>
-	  </tr>
-	`).join('')}
+        ${hdr?.main ? `
+        <tr>
+          <td class="hdr-label" bgcolor="#eef2f9" style="background-color:#eef2f9;">Horario:</td>
+          <td class="hdr-val" colspan="3" bgcolor="#ffffff" style="background-color:#ffffff;">
+            ${esc(hdr.main)}
+          </td>
+        </tr>` : ''}
 
+        ${(hdr?.exceptions || []).map(line => `
+        <tr>
+          <td class="hdr-label" bgcolor="#eef2f9" style="background-color:#eef2f9;"></td>
+          <td class="hdr-val" colspan="3" bgcolor="#ffffff" style="background-color:#ffffff; font-size:9.5pt;">
+            ${esc(line)}
+          </td>
+        </tr>`).join('')}
 
       </table>
 
     </td>
   </tr>
 </table>`;
-
-
-
 
       busy.pct(70);
 
@@ -3017,14 +3168,6 @@ img.month{
 	  ${monthsTableHtml || '<p>No hay datos.</p>'}
 	</div>
 
-	<br clear="all" style="page-break-before:always;mso-break-type:page-break"/>
-
-	<div class="page">
-	  <div class="legend-page-title">${esc(cursoTxt)}</div>
-	  <div class="legend-page-sub">(${totalHoras} horas)</div>
-	  ${legendHTML()}
-	</div>
-
   </div>
 </body>
 </html>`;
@@ -3154,19 +3297,23 @@ img.month{
       });
 	  
 	  
-	  
-      const amb = (selTipo.value === 'practica') ? 'practica' : 'curso';
-      let grp = '';
-      if (amb === 'practica' && selAlumno && selAlumno.value) {
-        grp = selAlumno.value.trim(); // тот же ID, что уходит в ?grupo=
-      }
+const amb = (selTipo.value === 'practica') ? 'practica' : 'curso';
+const grupoKey = (amb === 'practica') ? getAlumnoGroupKey() : '';
 
-      const fname = `${codigo || 'curso'}_${amb}${grp ? ('_' + grp) : ''}_grafico.docx`;
+if (amb === 'practica' && !grupoKey){
+  throw new Error('Selecciona un alumno para exportar prácticas.');
+}
+
+const fname = `${codigo || 'curso'}_${amb}${grupoKey ? ('_' + grupoKey.replace('alumno:','')) : ''}_grafico.docx`;
 
 const payload = {
-  filename: fname,   // ADGG020854_curso.doc / .docx – как хочешь
+  codigo,
+  tipo: amb,
+  grupo: grupoKey,        // ✅ уже определён
+  filename: fname,
   html,
-  vacaciones: vacacionesSegs
+  vacaciones: vacacionesSegs,
+  legend: legendJson
 };
 
 const res = await fetch(`${API_BASE}/export-docx-graphic${qs()}`, {
@@ -3292,20 +3439,16 @@ URL.revokeObjectURL(url);
   }
 
 function getCourseModuleOptions(){
-  // 1) берем из modsAll если существует (там и MF/UF и простые модули)
-  const arr = (typeof modsAll !== 'undefined' && Array.isArray(modsAll)) ? modsAll : [];
+  const arr = Array.isArray(__MODS_ALL__) ? __MODS_ALL__ : [];
 
-  // хотим показывать и "простые модули", и MF/UF
-  // но значение будем сохранять в nota как КЛЮЧ (key), чтобы дальше стабильно.
   const opts = arr
     .map(m => ({
-      key: String(m.key || m.id || m.label || '').trim(),
-      label: String(m.label || m.name || m.key || '').trim(),
-      type: (m.type || '').trim()
+      key: String(m.key||'').trim(),
+      label: String(m.label||m.key||'').trim(),
+      type: String(m.type||'').trim()
     }))
     .filter(x => x.key && x.label);
 
-  // уберем дубли по key
   const seen = new Set();
   const uniq = [];
   for (const o of opts){
@@ -3314,12 +3457,11 @@ function getCourseModuleOptions(){
     uniq.push(o);
   }
 
-  // Сортировка: сначала "простые"/MF, потом UF (если хочешь)
   uniq.sort((a,b)=>{
     const aw = (a.type === 'UF') ? 1 : 0;
     const bw = (b.type === 'UF') ? 1 : 0;
     if (aw !== bw) return aw - bw;
-    return a.label.localeCompare(b.label);
+    return a.label.localeCompare(b.label,'es',{sensitivity:'base'});
   });
 
   return uniq;
@@ -3481,7 +3623,7 @@ btnAdd?.addEventListener('click', ()=>{
 
     btnSave.disabled = true;
     try{
-      const j = await postDay();
+      const j = await postDay();rebuildModuleMaps();
       current.slots = (j.items_day || []).map(x=>({ id:x.id, desde:x.desde, hasta:x.hasta, aula:x.aula||'', nota:x.nota||'' }));
       renderSlots();
 

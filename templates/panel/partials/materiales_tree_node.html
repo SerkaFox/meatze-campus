@@ -1,0 +1,47 @@
+{# panel/partials/materiales_tree_node.html #}
+<div class="mz-tree-node"
+     data-node="{{ node.path|escape }}"
+     data-folder-name="{{ node.name|default:''|escape }}"
+     data-locked="{% if node.is_locked %}1{% else %}0{% endif %}"
+     {% if is_teacher %}data-drop-folder="{{ node.path|escape }}"{% endif %}>
+
+  <div class="mz-tree-row">
+    <button type="button" class="mz-tree-tgl" data-toggle aria-label="Toggle">▸</button>
+
+    <a class="mz-tree-folder"
+       href="?tab=materiales&aud={{ audience }}&p={{ node.path|urlencode }}&mod={{ selected_mod|default:''|urlencode }}&sort={{ sort }}&view=tree">
+      📁 {{ node.name }}
+      {% if node.is_locked %}<span class="mz-chip-mini">Módulo</span>{% endif %}
+    </a>
+
+    <span class="mz-tree-count">{{ node.count }}</span>
+
+    {% if is_teacher and not node.is_locked %}
+      <form method="post" style="margin:0" onsubmit="return confirm('¿Eliminar carpeta?');">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="folder_delete">
+        <input type="hidden" name="path" value="{{ node.path }}">
+        <button class="mzc-btn ghost" type="submit">Eliminar</button>
+      </form>
+    {% endif %}
+  </div>
+
+  <div class="mz-tree-children" hidden>
+
+    {# ===== FILES in this folder ===== #}
+    {% if node.files %}
+	{% for f in node.files %}
+	  {% include "panel/partials/materiales_tree_file.html" with f=f %}
+	{% endfor %}
+
+    {% else %}
+      <div class="mz-tree-empty">— sin archivos —</div>
+    {% endif %}
+
+    {# ===== CHILD FOLDERS ===== #}
+    {% for child in node.children %}
+      {% include "panel/partials/materiales_tree_node.html" with node=child %}
+    {% endfor %}
+
+  </div>
+</div>

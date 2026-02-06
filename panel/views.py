@@ -26,6 +26,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from urllib.parse import urlparse
 import random, re, requests
+from collections import defaultdict
 
 try:
     from api.models import UserProfile
@@ -604,11 +605,157 @@ def course_panel(request, codigo):
                 Q(tipo=CursoFile.TIPO_ALUMNOS) |
                 Q(tipo__in=[CursoFile.TIPO_DOCENTES, CursoFile.TIPO_PRIVADO], share_alumnos=True)
             )
+            
+        # ===== TREE VIEW (folders + files) =====
+        view = "tree"
+        context["view"] = view
+
+        if view == "tree":
+            # 1) все файлы по аудитории (без folder_path фильтра)
+            tree_qs = CursoFile.objects.filter(curso=curso)
+
+            if is_teacher:
+                if audience == "alumnos":
+                    tree_qs = tree_qs.filter(tipo=CursoFile.TIPO_ALUMNOS)
+                elif audience == "docentes":
+                    tree_qs = tree_qs.filter(tipo=CursoFile.TIPO_DOCENTES)
+                elif audience == "mis":
+                    tree_qs = tree_qs.filter(tipo=CursoFile.TIPO_PRIVADO, uploaded_by=user)
+            else:
+                tree_qs = tree_qs.filter(
+                    Q(tipo=CursoFile.TIPO_ALUMNOS) |
+                    Q(tipo__in=[CursoFile.TIPO_DOCENTES, CursoFile.TIPO_PRIVADO], share_alumnos=True)
+                )
+
+            # сорт внутри папки
+            tree_qs = tree_qs.order_by("-created_at", "-id")
+            tree_files = list(tree_qs.order_by("-created_at", "-id"))
+            # downloaded marker for students (tree)
+            if not is_teacher:
+                dl_ids = set(
+                    MaterialDownload.objects.filter(alumno=user, file_id__in=[f.id for f in tree_files])
+                    .values_list("file_id", flat=True)
+                )
+                for f in tree_files:
+                    f.is_downloaded = (f.id in dl_ids)
+
+            # 2) папки
+            folders_all = list(
+                CursoFolder.objects.filter(curso=curso, is_deleted=False)
+                .values("path", "title", "is_locked")
+            )
+
+            folder_by_path = {x["path"]: x for x in folders_all}
+
+            # 3) group files by folder_path
+
+            files_by_folder = defaultdict(list)
+            root_files = []
+            for f in tree_files:
+                fp = (f.folder_path or "").strip()
+                if fp:
+                    files_by_folder[fp].append(f)
+                else:
+                    root_files.append(f)
+
+            # --- helpers ---
+            def parent_path(p: str) -> str:
+                p = (p or "").strip().strip("/")
+                if not p: return ""
+                if "/" not in p: return ""
+                return p.rsplit("/", 1)[0]
+
+            def leaf_name(p: str) -> str:
+                p = (p or "").strip().strip("/")
+                return p.split("/")[-1] if p else ""
+
+            # 1) Убедимся что в дереве есть все пути папок, которые упоминаются файлами
+            all_paths = set(folder_by_path.keys()) | set(files_by_folder.keys())
+
+            # 2) Для каждого пути добавим всех родителей, чтобы дерево не рвалось
+            expanded = set()
+            for p in list(all_paths):
+                cur = p
+                while cur:
+                    expanded.add(cur)
+                    cur = parent_path(cur)
+            all_paths = expanded
+
+            # 3) children map: parent -> [child1, child2]
+            children = defaultdict(list)
+            for p in all_paths:
+                children[parent_path(p)].append(p)
+
+            # 4) сортировка детей: locked вверх, затем A-Z
+            def node_sort_key(path):
+                meta = folder_by_path.get(path) or {}
+                locked = bool(meta.get("is_locked"))
+                nm = (meta.get("title") or leaf_name(path) or path).lower()
+                return (0 if locked else 1, nm)
+
+            for par in list(children.keys()):
+                children[par] = sorted(children[par], key=node_sort_key)
+
+            # 5) Рекурсивно строим nodes
+            def build_node(path):
+                meta = folder_by_path.get(path) or {}
+                name = (meta.get("title") or leaf_name(path) or path)
+                locked = bool(meta.get("is_locked"))
+                node_files = files_by_folder.get(path, [])
+
+                return {
+                    "path": path,
+                    "name": name,
+                    "is_locked": locked,
+                    "count": len(node_files),
+                    "files": node_files,
+                    "children": [build_node(ch) for ch in children.get(path, [])],
+                }
+
+            tree_nodes = [build_node(ch) for ch in children.get("", [])]
+
+            context["tree_root_files"] = root_files
+            context["tree_nodes"] = tree_nodes
+            
         files_qs = files_qs.filter(folder_path=current_path)
 
         # --- teacher POST ops (upload/delete/share/copy) ---
         if request.method == "POST" and is_teacher:
             action = (request.POST.get("action") or "").strip()
+            
+            
+            def _infer_module_from_path(curso, target_path: str) -> str:
+                """
+                Ищем ближайшую locked папку по пути (самая глубокая).
+                Если нашли — module_key = её title (или leaf).
+                Если нет — module_key = "".
+                """
+                tp = (target_path or "").strip().strip("/")
+                if not tp:
+                    return ""
+
+                parts = tp.split("/")
+                prefixes = []
+                cur = ""
+                for p in parts:
+                    cur = f"{cur}/{p}" if cur else p
+                    prefixes.append(cur)
+
+                locked = (CursoFolder.objects
+                          .filter(curso=curso, is_deleted=False, is_locked=True, path__in=prefixes)
+                          .values("path", "title"))
+
+                if not locked:
+                    return ""
+
+                # самая глубокая = самая длинная path
+                best = sorted(locked, key=lambda x: len(x["path"] or ""), reverse=True)[0]
+                title = (best.get("title") or "").strip()
+                if title:
+                    return title
+
+                # fallback: имя сегмента
+                return best["path"].split("/")[-1]
 
             if action == "file_move":
                 fid = request.POST.get("file_id")
@@ -628,9 +775,35 @@ def course_panel(request, codigo):
                     # if folder.is_locked:  <-- УБРАТЬ БЛОКИРОВКУ
 
                 cf.folder_path = target
-                cf.save(update_fields=["folder_path"])
+                cf.module_key = _infer_module_from_path(curso, target)
+                cf.save(update_fields=["folder_path", "module_key"])
 
-                return JsonResponse({"ok": True, "file_id": cf.id, "target_path": target})
+                return JsonResponse({
+                    "ok": True,
+                    "file_id": cf.id,
+                    "target_path": target,
+                    "module_key": cf.module_key or "",
+                })
+
+
+            if action == "folder_create":
+                name = (request.POST.get("folder_name") or "").strip()
+                parent = (request.POST.get("folder_parent") or "").strip()
+
+                # TODO: твоя функция создания папки (в модели/FS)
+                # new_path = make_folder(curso, audience, parent, name)
+
+                if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                    # соберём node для вставки (идеально)
+                    node = build_node(new_path)  # твоя структура {path,name,is_locked,files,children,count}
+                    html = render_to_string(
+                        "panel/partials/materiales_tree_node.html",
+                        {"node": node, "is_teacher": True, "audience": audience, "selected_mod": selected_mod, "sort": sort},
+                        request=request,
+                    )
+                    return JsonResponse({"ok": True, "path": new_path, "name": name, "node_html": html})
+
+                return redirect(request.get_full_path())
 
             # upload
             if "upload" in request.POST:
@@ -696,26 +869,6 @@ def course_panel(request, codigo):
                     )
                     obj.save()
                     created += 1
-
-                # move file to folder (AJAX)
-                if request.method == "POST" and is_teacher and request.POST.get("action") == "file_move":
-                    fid = request.POST.get("file_id")
-                    target = _normalize_path(request.POST.get("target_path") or "")
-                    cf = CursoFile.objects.filter(pk=fid, curso=curso).first()
-                    if not cf:
-                        return JsonResponse({"ok": False, "error": "file_not_found"}, status=404)
-
-                    # (опционально) проверка: папка существует или target пустой (корень)
-                    if target:
-                        exists = CursoFolder.objects.filter(curso=curso, is_deleted=False, path=target).exists()
-                        if not exists:
-                            return JsonResponse({"ok": False, "error": "folder_not_found"}, status=404)
-
-                    cf.folder_path = target
-                    cf.save(update_fields=["folder_path"])
-                    return JsonResponse({"ok": True, "file_id": cf.id, "target_path": target})
-
-                return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}&sort={sort}")
 
             # delete
             if "delete_id" in request.POST:

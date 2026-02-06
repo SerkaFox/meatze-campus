@@ -1,0 +1,82 @@
+{# panel/partials/materiales_tree_file.html #}
+<div class="mz-tree-file{% if not is_teacher %} has-file-chip{% endif %}"
+     {% if is_teacher %}draggable="true" data-drag-file="{{ f.id }}"{% endif %}
+     data-name="{{ f.display_name|escape }}"
+     data-ts="{{ f.created_at|date:'U' }}">
+
+  {% if not is_teacher %}
+    {% if f.is_downloaded %}
+      <div class="mz-chip-mini mz-file-chip">Descargado</div>
+    {% else %}
+      <div class="mz-chip-mini mz-file-chip is-undl">No descargado</div>
+    {% endif %}
+  {% endif %}
+
+  <div style="min-width:0; flex:1">
+    <div class="mz-tree-file-name" style="font-weight:800; color:#e5e7eb; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">
+      {{ f.display_name }}
+    </div>
+
+    <div class="mz-mat-meta" style="margin-top:4px">
+      <span>{{ f.ext|upper }}</span>
+      <span class="mz-mat-dot"></span>
+      <span>{{ f.fmt_size }}</span>
+      <span class="mz-mat-dot"></span>
+      <span>{{ f.uploaded_by.get_full_name|default:f.uploaded_by.email }}</span>
+      <span class="mz-mat-dot"></span>
+      {% if f.module_key %}
+        <span class="mz-mat-tag">{{ f.module_key }}</span>
+      {% else %}
+        <span class="mz-mat-tag muted">Sin módulo</span>
+      {% endif %}
+    </div>
+
+    {% if is_teacher and f.share_alumnos %}
+      <div class="mz-chip-mini" style="margin-top:6px">Visible para alumnos</div>
+    {% endif %}
+  </div>
+
+  <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end">
+    <a class="mzc-btn ghost"
+       href="{% url 'panel:material_download' f.id %}"
+       target="_blank" rel="noopener">Descargar</a>
+
+    <a class="mzc-btn ghost"
+       data-preview
+       data-ext="{{ f.ext|lower }}"
+       data-name="{{ f.display_name|escape }}"
+       href="{% url 'panel:material_download' f.id %}?inline=1">Ver</a>
+
+    {% if is_teacher %}
+      <button class="mzc-btn ghost" type="button"
+              data-action="materials.copy_public_link"
+              data-share-url="{% url 'panel:material_share_link_create' f.id %}">
+        Copiar enlace
+      </button>
+
+      {% if audience != 'alumnos' %}
+        <form method="post" style="margin:0" data-ajax="share-toggle" data-file-id="{{ f.id }}">
+          {% csrf_token %}
+          <input type="hidden" name="share_id" value="{{ f.id }}">
+          <button class="mzc-btn ghost" type="submit">
+            {% if f.share_alumnos %}Ocultar de alumnos{% else %}Mostrar a alumnos{% endif %}
+          </button>
+        </form>
+      {% endif %}
+
+      {% if f.tipo == "docentes" %}
+        <form method="post" style="margin:0" data-ajax="copy-private" data-file-id="{{ f.id }}">
+          {% csrf_token %}
+          <input type="hidden" name="copy_id" value="{{ f.id }}">
+          <button class="mzc-btn ghost" type="submit">Copiar a privados</button>
+        </form>
+      {% endif %}
+
+      <form method="post" style="margin:0" onsubmit="return confirm('¿Eliminar este archivo?');" data-ajax="delete" data-file-id="{{ f.id }}">
+        {% csrf_token %}
+        <input type="hidden" name="delete_id" value="{{ f.id }}">
+        <button class="mzc-btn ghost" type="submit">Eliminar</button>
+      </form>
+    {% endif %}
+  </div>
+</div>

@@ -169,7 +169,8 @@ def horario_day(request, codigo: str):
             desde = (s.get("desde") or "").strip()
             hasta = (s.get("hasta") or "").strip()
             aula  = (s.get("aula") or "").strip()
-            nota  = (s.get("nota") or "").strip()
+            module_key = (s.get("module_key") or "").strip()  # надо начать слать это из фронта
+            nota = (s.get("nota") or "").strip()
             # validate time format
             _parse_hhmm(desde)
             _parse_hhmm(hasta)
@@ -198,7 +199,7 @@ def horario_day(request, codigo: str):
                 obj.hora_inicio = _parse_hhmm(s["desde"])
                 obj.hora_fin    = _parse_hhmm(s["hasta"])
                 obj.aula        = s["aula"]
-                obj.modulo      = s["nota"]
+                obj.modulo      = module_key
                 obj.save(update_fields=["hora_inicio", "hora_fin", "aula", "modulo"])
 
                 keep_ids.add(obj.id)
@@ -220,8 +221,13 @@ def horario_day(request, codigo: str):
         for eid, obj in existing.items():
             if eid not in keep_ids:
                 obj.delete()
-        # ✅ ВАЖНО: балансировка после сохранения дня
-        reb = _rebalance_schedule_to_target_minutes(curso, tipo, grupo)
+        # ✅ 1) сначала перепривязать модули внутри anchor day
+        assign = _reassign_modules_for_day(curso, tipo, grupo, d)
+
+        # ✅ 2) потом пересобрать хвост
+        reb = _reflow_modules_chain(curso, tipo, grupo, anchor_date=d, keep_anchor_day=True)
+
+        # и верни assign тоже для дебага
     # return fresh day + aggregates
     # (перечитываем)
     qs = Horario.objects.filter(curso=curso).filter(layer).filter(dia=d)
@@ -266,9 +272,15 @@ def horario_day_delete(request, codigo: str):
         return JsonResponse({"ok": False, "message": str(e)}, status=400)
 
     with transaction.atomic():
-        qs = Horario.objects.filter(curso=curso).filter(layer).filter(dia=d)
+        qs = Horario.objects.select_for_update().filter(curso=curso).filter(layer).filter(dia=d)
         deleted = qs.count()
         qs.delete()
+
+        # ✅ пересобрать модули на anchor day (теперь он пустой, но ок)
+        assign = _reassign_modules_for_day(curso, tipo, grupo, d)
+
+        # ✅ пересобрать хвост начиная со следующего учебного дня
+        reb = _reflow_modules_chain(curso, tipo, grupo, anchor_date=d, keep_anchor_day=True)
 
     return JsonResponse({
         "ok": True,
@@ -318,12 +330,25 @@ def _sum_layer_minutes_db(curso: Curso, tipo: str, grupo: str) -> int:
     return max(0, total)
 
 def _get_target_minutes(curso: Curso) -> int:
-    # Фиксируем по horas_total курса (если есть)
+    # 1) пробуем из JSON modules
+    mods = getattr(curso, "modules", None)
+    if isinstance(mods, list) and mods:
+        total_h = 0
+        for m in mods:
+            try:
+                total_h += int(m.get("hours") or m.get("horas") or 0)
+            except Exception:
+                pass
+        if total_h > 0:
+            return total_h * 60
+
+    # 2) иначе horas_total как fallback
     try:
         horas = int(getattr(curso, "horas_total", 0) or 0)
     except Exception:
         horas = 0
     return max(0, horas * 60)
+
 
 def _extend_slot(obj: Horario, add_minutes: int) -> int:
     """
@@ -348,187 +373,233 @@ def _extend_slot(obj: Horario, add_minutes: int) -> int:
 
 
 from django.db import transaction
+from datetime import timedelta
+from typing import Dict, Any, List, Tuple, Optional
+import json
 
-def _rebalance_schedule_to_target_minutes(curso: Curso, tipo: str, grupo: str) -> Dict[str, Any]:
-    with transaction.atomic():
-        target = _get_target_minutes(curso)
-        current = _sum_layer_minutes_db(curso, tipo, grupo)
+def _get_modules_plan(curso: Curso) -> List[Tuple[str, int]]:
+    """
+    Возвращает план модулей в виде списка (module_key, minutes_target) в правильном порядке.
+    Берём из curso.modules (list или JSON-string). Понимаем поля: code/cod/name + hours/horas.
+    """
+    raw = getattr(curso, "modules", None)
 
-        if target <= 0:
-            return {"target_minutes": target, "before_minutes": current, "after_minutes": current, "delta_applied": 0, "mode": "no_target"}
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except Exception:
+            raw = []
 
-        delta = current - target
-        if delta == 0:
-            return {"target_minutes": target, "before_minutes": current, "after_minutes": current, "delta_applied": 0, "mode": "ok"}
+    if not isinstance(raw, list):
+        raw = []
 
-        qs = (
-            _layer_queryset(curso, tipo, grupo)
-            .select_for_update()
-            .order_by("-dia", "-hora_inicio", "-hora_fin", "-id")
-        )
+    plan: List[Tuple[str, int]] = []
+    for i, m in enumerate(raw):
+        if not isinstance(m, dict):
+            continue
+        key = str(m.get("code") or m.get("cod") or m.get("name") or m.get("key") or f"M{i+1}").strip()
+        try:
+            horas = float(m.get("hours") or m.get("horas") or 0)
+        except Exception:
+            horas = 0
+        mins = int(max(0, round(horas * 60)))
+        if key and mins > 0:
+            plan.append((key, mins))
 
-    applied = 0
+    return plan
 
-    if delta > 0:
-        # нужно УБРАТЬ delta минут
-        need_cut = delta
 
-        for h in qs:
-            m = _slot_minutes(h)
-            if m <= 0:
-                continue
+def _sum_minutes_qs(qs) -> int:
+    total = 0
+    for it in qs.only("hora_inicio", "hora_fin"):
+        if it.hora_inicio and it.hora_fin:
+            total += max(0, _minutes(it.hora_inicio, it.hora_fin))
+    return max(0, total)
 
-            if need_cut >= m:
-                # удалить целиком
-                need_cut -= m
-                applied += m
-                h.delete()
-            else:
-                # укоротить слот на need_cut минут (с конца)
-                fin_min = _tmin(h.hora_fin)
-                new_fin = fin_min - need_cut
-                if new_fin <= _tmin(h.hora_inicio):
-                    # на всякий случай — если стало невалидно, удаляем
-                    applied += m
-                    h.delete()
-                else:
-                    h.hora_fin = _time_from_min(new_fin)
-                    h.save(update_fields=["hora_fin"])
-                    applied += need_cut
-                need_cut = 0
 
-            if need_cut <= 0:
-                break
+def _advance_in_plan(plan: List[Tuple[str, int]], consumed: int) -> Tuple[int, int]:
+    """
+    По количеству уже отученных минут возвращает:
+      - индекс текущего модуля в plan
+      - сколько минут осталось ДОУЧИТЬ в этом модуле
+    """
+    idx = 0
+    while idx < len(plan) and consumed > 0:
+        _, need = plan[idx]
+        if consumed >= need:
+            consumed -= need
+            idx += 1
+        else:
+            need -= consumed
+            consumed = 0
+            return idx, need
 
+    if idx >= len(plan):
+        return len(plan), 0
+
+    return idx, plan[idx][1]
+
+
+def _reflow_modules_chain(
+    curso: Curso,
+    tipo: str,
+    grupo: str,
+    anchor_date: date,
+    keep_anchor_day: bool = True,
+) -> Dict[str, Any]:
+    """
+    Пересобирает цепочку модулей ПОСЛЕ anchor_date (обычно день, который ты вручную отредактировал).
+    keep_anchor_day=True => оставляем anchor_date как есть, перестраиваем только дни > anchor_date.
+    """
+    tipo = (tipo or "curso").strip().lower()
+    grupo = (grupo or "").strip()
+
+    # Это решение — для "curso". Практику не трогаем.
+    if tipo == "practica":
+        return {"ok": True, "mode": "skip_practica"}
+
+    plan = _get_modules_plan(curso)
+    if not plan:
+        return {"ok": True, "mode": "no_modules_plan"}
+
+    target_total = sum(m for _, m in plan)
+    if target_total <= 0:
+        return {"ok": True, "mode": "no_target"}
+
+    layer = _layer_q(tipo, grupo)
+
+    # Паттерн дня (старт/конец)
+    pat = _dominant_day_pattern(curso, tipo, grupo)
+    day_start: time = pat["day_start"]
+    day_end: time   = pat["day_end"]
+
+    day_start_min = _tmin(day_start)
+    day_end_min   = _tmin(day_end)
+    if day_end_min <= day_start_min:
+        # на всякий случай
+        day_start_min = 9 * 60
+        day_end_min   = 14 * 60
+
+    # 1) Считаем “сколько минут уже отучено” ДО начала перестройки
+    #    Если keep_anchor_day=True, то перестраиваем дни > anchor_date,
+    #    значит consumed считаем по дням <= anchor_date.
+    cutoff = anchor_date if keep_anchor_day else (anchor_date - timedelta(days=1))
+
+    qs_before = (
+        Horario.objects
+        .filter(curso=curso).filter(layer)
+        .filter(dia__lte=cutoff)
+        .order_by("dia", "hora_inicio", "hora_fin", "id")
+    )
+    consumed_before = _sum_minutes_qs(qs_before)
+
+    # Если вдруг до cutoff уже “перебрали” больше target — это тоже ок:
+    # цепочка модулей закончится раньше, а лишнее мы НЕ исправляем (это была ручная правка),
+    # но можно захотеть “подрезать” — это отдельная политика.
+    idx, left_in_mod = _advance_in_plan(plan, min(consumed_before, target_total))
+
+    # 2) Удаляем хвост, который будем пересобирать
+    #    (строго после anchor_date, если keep_anchor_day=True)
+    reflow_from = anchor_date + timedelta(days=1) if keep_anchor_day else anchor_date
+    qs_tail = Horario.objects.select_for_update().filter(curso=curso).filter(layer).filter(dia__gte=reflow_from)
+    deleted = qs_tail.count()
+    qs_tail.delete()
+
+    # 3) Если план уже полностью закрыт к cutoff — ничего не строим
+    if idx >= len(plan):
         after = _sum_layer_minutes_db(curso, tipo, grupo)
         return {
-            "target_minutes": target,
-            "before_minutes": current,
+            "ok": True,
+            "mode": "done_before_anchor",
+            "target_minutes": target_total,
+            "before_minutes": consumed_before,
             "after_minutes": after,
-            "delta_applied": applied,
-            "mode": "cut_tail",
+            "deleted_tail": deleted,
         }
-    # delta < 0 => нужно ДОБАВИТЬ минут
-    need_add = -delta
 
-    pat = _dominant_day_pattern(curso, tipo, grupo)
-    day_start = pat["day_start"]
-    day_end   = pat["day_end"]          # ✅ вот твой потолок
-    max_day_minutes = pat["day_minutes"] # ✅ сколько обычно часов в день
-
-
-    # берём последнюю запись слоя (хвост), чтобы:
-    #  - если есть место в дне: удлинить её
-    #  - если нет: создавать новый день с тем же modulo/aula
-    latest = (
-        _layer_queryset(curso, tipo, grupo)
-        .select_for_update()
+    # Базовые поля для новых дней: подхватим aula из последнего слота ДО хвоста
+    last_before = (
+        Horario.objects
+        .filter(curso=curso).filter(layer)
+        .filter(dia__lte=cutoff)
         .order_by("-dia", "-hora_fin", "-id")
         .first()
     )
+    base_aula = (last_before.aula or "") if last_before else ""
 
-    if not latest:
-        # если слоя вообще нет — тогда уже нечего "удлинять",
-        # создаём первую запись нормальным шаблоном (но НЕ "(auto)")
-        # тут можно выбрать любой дефолт для modulo
-        base_mod = ""
-        base_aula = ""
-        d = _next_lective_day(date.today())
-        hi = day_start
-        chunk = min(need_add, max_day_minutes, max(0, _tmin(max_end) - _tmin(hi)))
-        hf = _time_from_min(_tmin(hi) + chunk)
+    # Сколько минут осталось доучить всего
+    remaining_total = target_total - min(consumed_before, target_total)
 
-        obj = Horario(
-            curso=curso,
-            dia=d,
-            tipo=("practica" if tipo == "practica" else "curso"),
-            grupo=(grupo if tipo == "practica" else ""),
-            hora_inicio=hi,
-            hora_fin=hf,
-            aula=base_aula,
-            modulo=base_mod,
-        )
-        obj.save()
-        applied += chunk
-        need_add -= chunk
-        latest = obj
+    # 4) Генерация дней (пропуская неучебные)
+    dcur = _next_lective_day(reflow_from)
 
-    # запоминаем “последний модуль”, чтобы переносить его на новые дни
-    base_mod = (latest.modulo or "")
-    base_aula = (latest.aula or "")
+    created = 0
+    safety_days = 0
 
-    while need_add > 0 and latest:
-        d = latest.dia
-
-        # конец текущего дня: max(hora_fin) в этом дне
-        last_in_day = (
-            _layer_queryset(curso, tipo, grupo)
-            .select_for_update()
-            .filter(dia=d)
-            .order_by("-hora_fin", "-id")
-            .first()
-        )
-
-        # ✅ ключевая идея: расширяем ПОСЛЕДНИЙ слот дня (не создаём новый)
-        tail = last_in_day or latest
-
-        start_min = _tmin(tail.hora_fin) if tail.hora_fin else _tmin(day_start)
-        end_cap = _tmin(day_end)
-        free = max(0, end_cap - start_min)
-
-        if free > 0:
-            chunk = min(need_add, free, max_day_minutes)
-
-            new_fin_min = start_min + chunk
-            tail.hora_fin = _time_from_min(new_fin_min)
-            tail.save(update_fields=["hora_fin"])
-
-            applied += chunk
-            need_add -= chunk
-
-            # latest должен указывать на реальный хвост
-            latest = tail
-            continue
-
-        # если в текущем дне места нет — создаём НОВЫЙ день
-        next_day = _next_lective_day(d + timedelta(days=1))
-
-
-        # новый слот: 09:00-... с ТЕМ ЖЕ modulo/aula (не "(auto)")
-        hi = day_start
-        free2 = max(0, _tmin(day_end) - _tmin(hi))
-        if free2 <= 0:
-            # теоретически не случится, но пусть будет
+    while remaining_total > 0 and idx < len(plan):
+        safety_days += 1
+        if safety_days > 900:  # защита от бесконечного цикла
             break
 
-        chunk = min(need_add, free2, max_day_minutes)
-        hf = _time_from_min(_tmin(hi) + chunk)
+        # гарантируем, что dcur учебный
+        dcur = _next_lective_day(dcur)
 
-        obj = Horario(
-            curso=curso,
-            dia=next_day,
-            tipo=("practica" if tipo == "practica" else "curso"),
-            grupo=(grupo if tipo == "practica" else ""),
-            hora_inicio=hi,
-            hora_fin=hf,
-            aula=base_aula,
-            modulo=base_mod,
-        )
-        obj.save()
-        applied += chunk
-        need_add -= chunk
-        latest = obj
+        # доступное окно дня
+        free_day = max(0, day_end_min - day_start_min)
+        if free_day <= 0:
+            break
+
+        # в этот день “заливаем” время начиная с day_start
+        cursor_min = day_start_min
+
+        # можно сделать несколько слотов в день, если модуль меняется в середине дня
+        while remaining_total > 0 and free_day > 0 and idx < len(plan):
+            mod_key, _mod_target = plan[idx]
+
+            take = min(free_day, left_in_mod, remaining_total)
+            if take <= 0:
+                break
+
+            hi = _time_from_min(cursor_min)
+            hf = _time_from_min(cursor_min + take)
+
+            Horario.objects.create(
+                curso=curso,
+                dia=dcur,
+                tipo="curso",
+                grupo="",
+                hora_inicio=hi,
+                hora_fin=hf,
+                aula=base_aula,
+                modulo=mod_key,   # <-- КЛЮЧ МОДУЛЯ В БД
+            )
+            created += 1
+
+            cursor_min += take
+            free_day   -= take
+            remaining_total -= take
+            left_in_mod -= take
+
+            if left_in_mod <= 0:
+                idx += 1
+                if idx < len(plan):
+                    left_in_mod = plan[idx][1]
+
+        # следующий календарный день
+        dcur = dcur + timedelta(days=1)
 
     after = _sum_layer_minutes_db(curso, tipo, grupo)
     return {
-        "target_minutes": target,
-        "before_minutes": current,
+        "ok": True,
+        "mode": "reflow_after_anchor",
+        "target_minutes": target_total,
+        "before_minutes": consumed_before,
         "after_minutes": after,
-        "delta_applied": applied,
-        "mode": "add_tail_extend_last",
+        "deleted_tail": deleted,
+        "created_slots": created,
+        "anchor_date": anchor_date.isoformat(),
+        "reflow_from": reflow_from.isoformat(),
     }
-
-
 
 from collections import Counter, defaultdict
 from datetime import timedelta
@@ -608,3 +679,55 @@ def _next_lective_day(d: date) -> date:
     while _is_nonlective(cur):
         cur += timedelta(days=1)
     return cur
+
+def _reassign_modules_for_day(curso: Curso, tipo: str, grupo: str, d: date) -> Dict[str, Any]:
+    if (tipo or "").strip().lower() == "practica":
+        return {"ok": True, "mode": "skip_practica"}
+
+    plan = _get_modules_plan(curso)
+    if not plan:
+        return {"ok": True, "mode": "no_plan"}
+
+    layer = _layer_q(tipo, grupo)
+
+    # 1) сколько минут уже отучено до начала дня d
+    qs_before = (
+        Horario.objects.filter(curso=curso).filter(layer)
+        .filter(dia__lt=d)
+        .order_by("dia", "hora_inicio", "hora_fin", "id")
+    )
+    consumed = _sum_minutes_qs(qs_before)
+
+    target_total = sum(m for _, m in plan)
+    idx, left_in_mod = _advance_in_plan(plan, min(consumed, target_total))
+
+    # 2) берём слоты дня и присваиваем модуль по плану
+    qs_day = (
+        Horario.objects.select_for_update()
+        .filter(curso=curso).filter(layer)
+        .filter(dia=d)
+        .order_by("hora_inicio", "hora_fin", "id")
+    )
+
+    changed = 0
+    for h in qs_day:
+        mins = _slot_minutes(h)
+        if mins <= 0:
+            continue
+        if idx >= len(plan):
+            break
+
+        # Если слот пересекает границу модуля — тут есть 2 варианта:
+        # - либо резать слот на два (сложнее),
+        # - либо оставлять один ключ (проще, но менее точно).
+        # Я сделаю "простое": ставим ключ текущего модуля.
+        h.modulo = plan[idx][0]
+        h.save(update_fields=["modulo"])
+        changed += 1
+
+        left_in_mod -= mins
+        while left_in_mod <= 0 and idx < len(plan) - 1:
+            idx += 1
+            left_in_mod += plan[idx][1]
+
+    return {"ok": True, "changed": changed}

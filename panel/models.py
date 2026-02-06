@@ -86,6 +86,11 @@ class CursoFile(models.Model):
         return f"{self.curso.codigo} · {self.title or self.filename}"
 
     @property
+    def display_name(self):
+        t = (self.title or "").strip()
+        return t or self.filename or f"Archivo #{self.id}"
+
+    @property
     def filename(self):
         return self.file.name.rsplit("/", 1)[-1]
 
