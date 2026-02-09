@@ -33,3 +33,11 @@ urlpatterns = [
     path("anexo_vi/<str:codigo>/<int:alumno_id>/", anexo_vi_doc, name="anexo_vi"),
 ]
 
+# panel/urls.py
+from django.urls import path
+from .views_materiales_api import materiales_upload_files_ajax, materiales_upload_folder_bundle
+
+urlpatterns += [
+    path("meatze/v5/materiales/upload_files_ajax/", materiales_upload_files_ajax, name="mz_upload_files_ajax"),
+    path("meatze/v5/materiales/upload_folder_bundle/", materiales_upload_folder_bundle, name="mz_upload_folder_bundle"),
+]

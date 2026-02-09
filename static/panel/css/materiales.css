@@ -582,12 +582,6 @@
   gap:8px;
   flex-wrap:wrap;
 }
-/* chip в правом верхнем углу файла */
-.mz-mat-item{ position: relative; }
-
-.mz-mat-item.has-file-chip .mz-mat-main{
-  padding-right: 110px; /* резерв под чип, чтобы не мешал заголовку/кнопкам */
-}
 
 .mz-file-chip{
   position:absolute;
@@ -906,14 +900,7 @@
   display: none !important;
 }
 /* chip на файле в дереве */
-.mz-tree-file{ position: relative; }
-.mz-tree-file.has-file-chip{ padding-right: 120px; } /* место под чип справа */
-.mz-tree-file .mz-file-chip{
-  position:absolute;
-  top:8px;
-  right:10px;
-  pointer-events:none;
-}
+
 .mz-tree-file-head{
   display:flex;
   gap:8px;
@@ -985,4 +972,322 @@
   right:10px;
   font-size:.72rem;
   opacity:.95;
+}
+.mz-mat-search { margin: 10px 0 0; }
+.mz-search-row { display:flex; gap:8px; align-items:center; }
+.mz-search-input { flex:1; padding:10px 12px; border-radius:10px; border:1px solid rgba(148,163,184,.25); background:#0b1220; color:#e5e7eb; }
+.mz-search-clear { padding:10px 12px; border-radius:10px; border:1px solid rgba(148,163,184,.25); background:transparent; color:#cbd5e1; cursor:pointer; }
+
+.mz-search-results { margin-top:8px; border:1px solid rgba(148,163,184,.18); border-radius:12px; overflow:hidden; }
+.mz-search-item { width:100%; text-align:left; padding:10px 12px; background:rgba(15,23,42,.55); border:0; border-bottom:1px solid rgba(148,163,184,.12); cursor:pointer; }
+.mz-search-item:hover { background:rgba(30,41,59,.75); }
+.mz-search-name { font-weight:600; color:#e5e7eb; }
+.mz-search-path { font-size:12px; color:#94a3b8; margin-top:2px; }
+.mz-search-empty { padding:12px; color:#94a3b8; }
+
+.mz-tree-file.is-found { outline:2px solid rgba(59,130,246,.9); border-radius:10px; }
+
+.mz-tree-file, .mz-tree-row, .mz-tree-folder { -webkit-user-select:none; user-select:none; }
+
+.mz-tree-file{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+}
+
+.mz-drag-handle{
+  flex:0 0 auto;
+  width:28px;
+  height:28px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+  cursor: grab;
+  opacity:.85;
+  margin-top:2px;
+  -webkit-user-select:none;
+  user-select:none;
+}
+.mz-drag-handle{
+  cursor: grab;
+  user-select: none;
+  padding: 6px 10px;
+  border-radius: 10px;
+  opacity: .85;
+}
+.mz-drag-handle:active{ cursor: grabbing; }
+
+.mz-drag-handle:hover{
+  opacity:1;
+  background: rgba(148,163,184,.12);
+}
+
+.mz-tree-file.is-dragging .mz-drag-handle{
+  cursor: grabbing;
+}
+
+.mz-tree-file,
+.mz-tree-file * {
+  user-select: none;
+}
+
+.mz-tree-file a,
+.mz-tree-file button,
+.mz-tree-file input,
+.mz-tree-file textarea {
+  user-select: text; /* чтобы в контролах всё было норм */
+}
+
+.mz-drag-handle {
+  cursor: grab;
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+.mz-drag-handle:active { cursor: grabbing; }
+/* Drop target highlight */
+[data-drop-folder]{
+  position: relative;
+  border-radius: 12px;
+}
+
+/* когда на папке можно бросить */
+.is-drop-ok{
+  outline: 2px solid rgba(34,211,238,.55);
+  background: rgba(34,211,238,.10);
+}
+
+/* “полоса” куда бросится (визуальный якорь) */
+.is-drop-ok::after{
+  content:"";
+  position:absolute;
+  left:10px;
+  right:10px;
+  bottom:6px;
+  height:3px;
+  border-radius:999px;
+  background: rgba(34,211,238,.75);
+  box-shadow: 0 0 0 3px rgba(34,211,238,.14);
+  pointer-events:none;
+}
+/* интерактивные элементы внутри папки не должны ломать drop */
+.mz-tree-row a,
+.mz-tree-row button{
+  position: relative;
+  z-index: 2;
+}
+
+.mz-tree-actions{
+  margin-left:auto;
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.mz-folder-add{
+  font-weight:900;
+  width:34px;
+  height:30px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* === MZ Confirm Modal === */
+.mz-modal {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(2,6,23,.62);
+  z-index: 9999;
+}
+.mz-modal[hidden] { display:none; }
+
+.mz-modal-card{
+  width: min(560px, calc(100vw - 28px));
+  border-radius: 16px;
+  background: rgba(15,23,42,.96);
+  border: 1px solid rgba(148,163,184,.18);
+  box-shadow: 0 30px 90px rgba(0,0,0,.55);
+  overflow: hidden;
+}
+.mz-modal-head{
+  padding: 14px 16px;
+  display:flex; align-items:center; justify-content:space-between;
+  border-bottom: 1px solid rgba(148,163,184,.14);
+}
+.mz-modal-title{
+  font-weight: 900;
+  color: #e5e7eb;
+  letter-spacing: .2px;
+}
+.mz-modal-x{
+  border:0; background: transparent;
+  color:#cbd5e1; font-size:18px; cursor:pointer;
+}
+.mz-modal-body{ padding: 14px 16px; color:#cbd5e1; }
+.mz-modal-body b{ color:#e5e7eb; }
+.mz-modal-actions{
+  padding: 14px 16px;
+  display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;
+  border-top: 1px solid rgba(148,163,184,.14);
+}
+.mz-modal-actions .mzc-btn{ white-space:nowrap; }
+
+/* чуть “опасная” кнопка без смены твоего UI */
+.mzc-btn.danger{
+  border-color: rgba(239,68,68,.35) !important;
+  color: #fecaca !important;
+}
+.mzc-btn.danger:hover{
+  background: rgba(239,68,68,.12) !important;
+}
+
+.mz-tree-actions .mzc-btn.ghost{
+  padding: 4px 8px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.is-drop-upload { outline: 2px dashed rgba(34,197,94,.8); outline-offset: 2px; }
+.is-drop-ok     { outline: 2px dashed rgba(59,130,246,.8); outline-offset: 2px; }
+.mz-fold-grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 10px 0 16px;
+}
+.mz-fold-card{
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding:12px;
+  border-radius:16px;
+  border:1px solid rgba(148,163,184,.25);
+  background: rgba(15,23,42,.25);
+  color:#e5e7eb;
+}
+.mz-fold-card:hover{ border-color: rgba(148,163,184,.45); }
+.mz-fold-ico{ font-size:28px; }
+.mz-fold-name{ font-weight:600; text-align:left; }
+
+.mz-cards-panel{
+  margin-top: 10px;
+  border-radius: 16px;
+  border:1px solid rgba(148,163,184,.25);
+  background: rgba(15,23,42,.20);
+}
+.mz-cards-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 12px;
+  border-bottom:1px solid rgba(148,163,184,.20);
+}
+.mz-cards-title{ font-weight:700; color:#e5e7eb; }
+.mz-cards-body{ padding: 8px 10px; }
+
+.mz-fold-card{
+  position:relative;
+  text-align:left;
+}
+
+.mz-fold-meta{
+  position:absolute;
+  left:10px;
+  right:10px;
+  bottom:10px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  pointer-events:none;
+}
+
+.mz-fold-count{
+  font-size:.78rem;
+  color:#9ca3af;
+  padding:3px 8px;
+  border:1px solid rgba(148,163,184,.25);
+  border-radius:999px;
+  background:rgba(15,23,42,.35);
+}
+
+.mz-fold-badge{
+  font-size:.72rem;
+  font-weight:800;
+  color:#e5e7eb;
+  padding:3px 8px;
+  border-radius:999px;
+  background:rgba(59,130,246,.25);
+  border:1px solid rgba(59,130,246,.35);
+}
+
+/* cards: top row */
+.mz-fold-card { position: relative; }
+.mz-fold-top{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  width:100%;
+}
+
+.mz-fold-top .mz-fold-name{
+  flex:1;
+  min-width:0;
+}
+
+/* badge near icon/title */
+.mz-fold-top .mz-fold-badge{
+  margin-left:auto;
+  font-size:.72rem;
+  font-weight:800;
+  padding:2px 8px;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.25);
+  background:rgba(15,23,42,.6);
+  color:#e5e7eb;
+  line-height:1.2;
+}
+
+.mz-fold-top{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  width:100%;
+}
+
+.mz-fold-top .mz-fold-name{
+  flex:1;
+  min-width:0;
+}
+
+.mz-fold-top .mz-fold-badge{
+  margin-left:auto;
+  font-size:.72rem;
+  font-weight:800;
+  padding:2px 8px;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.25);
+  background:rgba(15,23,42,.6);
+  color:#e5e7eb;
+  line-height:1.2;
+}
+.mz-fold-card{
+  padding-bottom: 46px; /* место под .mz-fold-meta снизу */
+}
+
+/* chip должен быть частью нижней строки, а не абсолютом */
+.mz-file-chip{
+  position: static !important;
+  margin-left: 6px;
+  pointer-events: none;
+}
+
+/* нижняя строка — флекс, чтобы чип красиво встал рядом */
+.mz-mat-meta{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex-wrap:wrap;
 }

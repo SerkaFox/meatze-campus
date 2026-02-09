@@ -27,6 +27,8 @@ from tempfile import TemporaryDirectory
 from urllib.parse import urlparse
 import random, re, requests
 from collections import defaultdict
+from django.template.loader import render_to_string
+from .materiales_fs import normalize_path, create_folder
 
 try:
     from api.models import UserProfile
@@ -405,8 +407,7 @@ def course_panel(request, codigo):
     # ───────────── ВКЛАДКА "MATERIALES" ─────────────
     if active_tab == "materiales":
         audience = request.GET.get("aud", "alumnos")  # alumnos/docentes/mis
-        selected_mod = request.GET.get("mod") or ""   # ""=все, "none"=без модуля
-        
+        selected_mod = ""
         sort = (request.GET.get("sort") or "new").strip()  # new/old/az/za
         if sort not in {"new", "old", "az", "za"}:
             sort = "new"
@@ -485,7 +486,7 @@ def course_panel(request, codigo):
                     is_enabled=True,
                     order=0
                 )
-            return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}&sort={sort}")
+            return redirect(f"{request.path}?tab=materiales&aud={audience}&sort={sort}")
 
 
         if request.method == "POST" and is_teacher and request.POST.get("action") == "physical_item_update":
@@ -495,12 +496,12 @@ def course_panel(request, codigo):
                 it.label = (request.POST.get("label") or it.label).strip()
                 it.is_enabled = (request.POST.get("is_enabled") == "on")
                 it.save()
-            return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}&sort={sort}")
+            return redirect(f"{request.path}?tab=materiales&aud={audience}&sort={sort}")
 
         if request.method == "POST" and is_teacher and request.POST.get("action") == "physical_item_delete":
             item_id = request.POST.get("item_id")
             CursoPhysicalItem.objects.filter(pk=item_id, curso=curso).delete()
-            return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}&sort={sort}")
+            return redirect(f"{request.path}?tab=materiales&aud={audience}&sort={sort}")
 
         if request.method == "POST" and (not is_teacher) and request.POST.get("action") == "receipt_save":
             enabled_items = list(
@@ -525,7 +526,7 @@ def course_panel(request, codigo):
                         item_label=it["label"],
                     )
 
-            return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}&sort={sort}")
+            return redirect(f"{request.path}?tab=materiales&aud={audience}&sort={sort}")
         if not is_teacher:
             receipt_keys = set(MaterialReceipt.objects.filter(curso=curso, alumno=user).values_list("item_key", flat=True))
             enabled_keys = set(CursoPhysicalItem.objects.filter(curso=curso, is_enabled=True).values_list("key", flat=True))
@@ -550,45 +551,6 @@ def course_panel(request, codigo):
 
             context["student_visible_files"] = student_visible_files
 
-        if request.method == "POST" and is_teacher and request.POST.get("action") == "folder_create":
-            name = (request.POST.get("folder_name") or "").strip()
-            base = _normalize_path(name)
-            if not base:
-                return redirect(f"{request.path}?tab=materiales&aud={audience}&p={current_path}")
-
-
-            # если создаём внутри текущей папки:
-            full = _normalize_path((current_path + "/" + base) if current_path else base)
-
-            # запретим создание “поверх” locked-папок (не обязательно, но разумно):
-            obj, created = CursoFolder.objects.get_or_create(
-                curso=curso,
-                path=full,
-                defaults={"title": base, "created_by": user, "is_locked": False}
-            )
-            # если было удалено раньше — оживим
-            if not created and obj.is_deleted:
-                obj.is_deleted = False
-                obj.save(update_fields=["is_deleted"])
-
-            return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}&sort={sort}&p={full}")
-
-        if request.method == "POST" and is_teacher and request.POST.get("action") == "folder_delete":
-            path = _normalize_path(request.POST.get("path") or "")
-            f = CursoFolder.objects.filter(curso=curso, path=path, is_deleted=False).first()
-            if not f or f.is_locked:
-                return HttpResponseBadRequest("folder_locked_or_missing")
-
-            # проверим, что папка пустая (нет файлов в ней и нет подпапок)
-            has_files = CursoFile.objects.filter(curso=curso, folder_path=path).exists()
-            has_sub = CursoFolder.objects.filter(curso=curso, is_deleted=False, path__startswith=(path + "/")).exists()
-            if has_files or has_sub:
-                return HttpResponseBadRequest("folder_not_empty")
-
-            f.is_deleted = True
-            f.save(update_fields=["is_deleted"])
-            return redirect(f"{request.path}?tab=materiales&aud={audience}&p={current_path}")
-
         # ===== base queryset for this audience =====
         files_qs = CursoFile.objects.filter(curso=curso)
 
@@ -607,7 +569,9 @@ def course_panel(request, codigo):
             )
             
         # ===== TREE VIEW (folders + files) =====
-        view = "tree"
+        view = (request.GET.get("view") or "tree").strip()
+        if view not in {"tree", "cards"}:
+            view = "tree"
         context["view"] = view
 
         if view == "tree":
@@ -703,13 +667,19 @@ def course_panel(request, codigo):
                 locked = bool(meta.get("is_locked"))
                 node_files = files_by_folder.get(path, [])
 
+                kids = [build_node(ch) for ch in children.get(path, [])]
+
+                count_direct = len(node_files)
+                count_total = count_direct + sum(int(k.get("count_total", 0)) for k in kids)
+
                 return {
                     "path": path,
                     "name": name,
                     "is_locked": locked,
-                    "count": len(node_files),
+                    "count_direct": count_direct,
+                    "count_total": count_total,
                     "files": node_files,
-                    "children": [build_node(ch) for ch in children.get(path, [])],
+                    "children": kids,
                 }
 
             tree_nodes = [build_node(ch) for ch in children.get("", [])]
@@ -723,6 +693,83 @@ def course_panel(request, codigo):
         if request.method == "POST" and is_teacher:
             action = (request.POST.get("action") or "").strip()
             
+            
+            if action == "folder_delete":
+                path = _normalize_path(request.POST.get("path") or "")
+                mode = (request.POST.get("mode") or "check").strip()
+
+                f = CursoFolder.objects.filter(curso=curso, path=path, is_deleted=False).first()
+                if not f or f.is_locked:
+                    return JsonResponse({"ok": False, "error": "folder_locked_or_missing"}, status=400)
+
+                # собираем содержимое
+                has_files_qs = CursoFile.objects.filter(curso=curso, folder_path=path)
+                has_sub_qs = CursoFolder.objects.filter(curso=curso, is_deleted=False, path__startswith=(path + "/"))
+
+                files_count = has_files_qs.count()
+                sub_count = has_sub_qs.count()
+
+                if mode == "check":
+                    if files_count or sub_count:
+                        return JsonResponse({
+                            "ok": False,
+                            "error": "folder_not_empty",
+                            "files_count": files_count,
+                            "subfolders_count": sub_count,
+                        }, status=409)
+
+                    f.is_deleted = True
+                    f.save(update_fields=["is_deleted"])
+                    return JsonResponse({"ok": True, "deleted": True})
+
+                if mode == "move_root":
+                    with transaction.atomic():
+                        # 1) переместим файлы из папки и всех подпапок в корень
+                        # (если хочешь сохранить структуру — можно иначе, но ты просил “в корень”)
+                        CursoFile.objects.filter(
+                            curso=curso
+                        ).filter(
+                            Q(folder_path=path) | Q(folder_path__startswith=(path + "/"))
+                        ).update(folder_path="", module_key="")
+
+                        # 2) пометим удалёнными все подпапки и саму папку
+                        CursoFolder.objects.filter(curso=curso, is_deleted=False, path__startswith=(path + "/")).update(is_deleted=True)
+                        f.is_deleted = True
+                        f.save(update_fields=["is_deleted"])
+
+                    return JsonResponse({"ok": True, "deleted": True, "moved_to_root": True})
+
+                if mode == "purge":
+                    # ⚠️ аккуратно: если у тебя физические файлы шарятся (copy-private делает ссылку на тот же file),
+                    # надо удалять физический файл только когда на него больше нет ссылок.
+                    with transaction.atomic():
+                        # соберём id файлов, которые надо удалить (в папке и подпапках)
+                        qs = CursoFile.objects.filter(curso=curso).filter(
+                            Q(folder_path=path) | Q(folder_path__startswith=(path + "/"))
+                        )
+                        file_ids = list(qs.values_list("id", flat=True))
+
+                        # удаляем записи CursoFile (физику — отдельно)
+                        files = list(qs.only("id", "file"))
+                        qs.delete()
+
+                        # чистим физические файлы безопасно
+                        for cf in files:
+                            fname = (cf.file.name or "").strip()
+                            if fname and not CursoFile.objects.filter(file=fname).exists():
+                                try:
+                                    cf.file.storage.delete(fname)
+                                except Exception:
+                                    pass
+
+                        # пометим папки удалёнными
+                        CursoFolder.objects.filter(curso=curso, is_deleted=False, path__startswith=(path + "/")).update(is_deleted=True)
+                        f.is_deleted = True
+                        f.save(update_fields=["is_deleted"])
+
+                    return JsonResponse({"ok": True, "deleted": True, "purged": True})
+
+                return JsonResponse({"ok": False, "error": "bad_mode"}, status=400)
             
             def _infer_module_from_path(curso, target_path: str) -> str:
                 """
@@ -788,23 +835,80 @@ def course_panel(request, codigo):
 
             if action == "folder_create":
                 name = (request.POST.get("folder_name") or "").strip()
-                parent = (request.POST.get("folder_parent") or "").strip()
+                parent = _normalize_path(request.POST.get("folder_parent") or current_path or "")
 
-                # TODO: твоя функция создания папки (в модели/FS)
-                # new_path = make_folder(curso, audience, parent, name)
+                try:
+                    folder, created = create_folder(
+                        curso,
+                        parent_path=parent,
+                        name=name,
+                        user=user,
+                        locked=False,
+                    )
+                except ValueError as e:
+                    return JsonResponse({"ok": False, "error": str(e)}, status=400)
+
+                # ✅ соберём node-словарь как в build_node
+                node = {
+                    "path": folder.path,
+                    "name": folder.title or folder.path.split("/")[-1],
+                    "is_locked": bool(folder.is_locked),
+                    "count": 0,
+                    "files": [],
+                    "children": [],
+                }
+
+                html = render_to_string(
+                    "panel/partials/materiales_tree_node.html",
+                    {"node": node, "is_teacher": True},
+                    request=request,
+                )
 
                 if request.headers.get("x-requested-with") == "XMLHttpRequest":
-                    # соберём node для вставки (идеально)
-                    node = build_node(new_path)  # твоя структура {path,name,is_locked,files,children,count}
-                    html = render_to_string(
-                        "panel/partials/materiales_tree_node.html",
-                        {"node": node, "is_teacher": True, "audience": audience, "selected_mod": selected_mod, "sort": sort},
-                        request=request,
+                    return JsonResponse({
+                        "ok": True,
+                        "path": folder.path,
+                        "parent_path": parent,
+                        "node_html": html,
+                    })
+
+                # fallback non-AJAX
+                return redirect(f"{request.path}?tab=materiales&aud={audience}&p={parent}")
+                
+            if action == "upload_files_ajax":
+                folder_path = _normalize_path(request.POST.get("folder_path") or current_path or "")
+                files = request.FILES.getlist("files")
+
+                if not files:
+                    return JsonResponse({"ok": False, "error": "no_files"}, status=400)
+
+                created_items = []
+                for f in files:
+                    obj = CursoFile(
+                        curso=curso,
+                        uploaded_by=user,
+                        tipo=CursoFile.TIPO_ALUMNOS,  # или вычисли по audience
+                        folder_path=folder_path,
+                        title=f.name,
+                        size=f.size,
+                        ext=(f.name.rsplit(".", 1)[-1].lower() if "." in f.name else ""),
                     )
-                    return JsonResponse({"ok": True, "path": new_path, "name": name, "node_html": html})
+                    obj.module_key = _infer_module_from_path(curso, folder_path)
+                    obj.file = f
+                    obj.save()
 
-                return redirect(request.get_full_path())
+                    # вернём html элемента файла, чтобы UI обновился без reload
+                    html = render_to_string(
+                        "panel/partials/materiales_tree_file.html",
+                        {"f": obj, "is_teacher": True, "audience": audience},
+                        request=request
+                    )
+                    created_items.append({"id": obj.id, "file_html": html})
 
+                return JsonResponse({"ok": True, "files": created_items})            
+                        
+                
+                
             # upload
             if "upload" in request.POST:
                 tipo = request.POST.get("tipo") or CursoFile.TIPO_ALUMNOS
@@ -842,7 +946,27 @@ def course_panel(request, codigo):
                         obj.file.save(filename, ContentFile(data), save=True)
 
                         created += 1
+                        # ✅ AJAX: вернуть html файла сразу, чтобы UI обновился без перезагрузки
+                        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                            # если mod_key не задан — можно инферить от папки
+                            if not obj.module_key:
+                                obj.module_key = _infer_module_from_path(curso, folder_path)
+                                obj.save(update_fields=["module_key"])
 
+                            file_html = render_to_string(
+                                "panel/partials/materiales_tree_file.html",
+                                {"f": obj, "is_teacher": True, "audience": audience},
+                                request=request
+                            )
+                            return JsonResponse({
+                                "ok": True,
+                                "mode": "url_upload",
+                                "file_id": obj.id,
+                                "folder_path": folder_path,
+                                "module_key": obj.module_key or "",
+                                "file_html": file_html,
+                                "created": created,
+                            })
                     except Exception as e:
                         logger.exception("URL upload failed: %s", url)
                         # хочешь — можешь вернуть ошибку вместо тихого редиректа:
@@ -871,24 +995,79 @@ def course_panel(request, codigo):
                     created += 1
 
             # delete
+            # delete
             if "delete_id" in request.POST:
                 fid = request.POST.get("delete_id")
                 cf = CursoFile.objects.filter(pk=fid, curso=curso).first()
                 if cf:
                     file_name = (cf.file.name or "").strip()
+                    src_folder = (cf.folder_path or "").strip()
 
-                    # 1) удаляем запись
                     cf.delete()
 
-                    # 2) удаляем физический файл ТОЛЬКО если больше нет ссылок
                     if file_name and not CursoFile.objects.filter(file=file_name).exists():
                         try:
                             cf.file.storage.delete(file_name)
                         except Exception:
                             pass
 
-                return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}&sort={sort}&p={current_path}")
+                    # ✅ AJAX response
+                    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                        return JsonResponse({
+                            "ok": True,
+                            "file_id": str(fid),
+                            "folder_path": src_folder,
+                        })
 
+                if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                    return JsonResponse({"ok": False, "error": "file_not_found"}, status=404)
+
+                return redirect(f"{request.path}?tab=materiales&aud={audience}&sort={sort}&p={current_path}")
+                
+            if action == "upload_folder_bundle":
+                files = request.FILES.getlist('files')
+                rels  = request.POST.getlist('paths')
+
+                if len(files) != len(rels):
+                    return JsonResponse({"ok": False, "error": "bad_payload"}, status=400)
+
+                tipo = CursoFile.TIPO_ALUMNOS  # или из GET/POST
+
+                created_files = 0
+                created_folders = set()
+
+                for fobj, rel in zip(files, rels):
+                    rel = (rel or "").replace("\\","/").strip("/")
+                    if not rel:
+                        continue
+
+                    # "Root/Sub/a.pdf" => folder="Root/Sub"
+                    folder = rel.rsplit("/", 1)[0] if "/" in rel else ""
+                    folder = normalize_path(folder)
+
+                    if folder and folder not in created_folders:
+                        # создаём цепочку родителей тоже
+                        cur = ""
+                        for seg in folder.split("/"):
+                            cur = f"{cur}/{seg}" if cur else seg
+                            create_folder(curso, parent_path=parent_path(cur), name=leaf_name(cur), user=user, locked=False)
+                        created_folders.add(folder)
+
+                    obj = CursoFile(
+                        curso=curso,
+                        uploaded_by=user,
+                        tipo=tipo,
+                        folder_path=folder,
+                        module_key=_infer_module_from_path(curso, folder),
+                        title=fobj.name,
+                        size=fobj.size,
+                        ext=(fobj.name.rsplit(".",1)[-1].lower() if "." in fobj.name else ""),
+                    )
+                    obj.save()
+                    obj.file.save(fobj.name, fobj, save=True)
+                    created_files += 1
+
+                return JsonResponse({"ok": True, "files_created": created_files, "folders": len(created_folders)})
 
             # share/unshare
             if "share_id" in request.POST:
@@ -897,7 +1076,7 @@ def course_panel(request, codigo):
                 if cf:
                     cf.share_alumnos = not cf.share_alumnos
                     cf.save(update_fields=["share_alumnos"])
-                return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}&sort={sort}")
+                return redirect(f"{request.path}?tab=materiales&aud={audience}&sort={sort}")
 
             # copy to privados
             if "copy_id" in request.POST:
@@ -916,7 +1095,7 @@ def course_panel(request, codigo):
                         share_alumnos=False,
                     )
                     new.save()
-                return redirect(f"{request.path}?tab=materiales&aud={audience}&mod={selected_mod}&sort={sort}")
+                return redirect(f"{request.path}?tab=materiales&aud={audience}&sort={sort}")
 
         # ===== counts for filters BEFORE module filter =====
         from collections import Counter

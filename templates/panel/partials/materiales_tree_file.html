@@ -1,40 +1,49 @@
 {# panel/partials/materiales_tree_file.html #}
-<div class="mz-tree-file{% if not is_teacher %} has-file-chip{% endif %}"
-     {% if is_teacher %}draggable="true" data-drag-file="{{ f.id }}"{% endif %}
-     data-name="{{ f.display_name|escape }}"
+<div class="mz-tree-file"
+     {% if is_teacher %}draggable="true"{% endif %}
+     data-drag-file="{{ f.id }}"
+     data-file-id="{{ f.id }}"
+     data-name="{{ f.display_name|default:f.filename|escape }}"
+     data-folder="{{ f.folder_path|default:''|escape }}"
      data-ts="{{ f.created_at|date:'U' }}">
 
-  {% if not is_teacher %}
-    {% if f.is_downloaded %}
-      <div class="mz-chip-mini mz-file-chip">Descargado</div>
-    {% else %}
-      <div class="mz-chip-mini mz-file-chip is-undl">No descargado</div>
-    {% endif %}
-  {% endif %}
+{% if is_teacher %}
+  <span class="mz-drag-handle" title="Mover">⠿</span>
+{% endif %}
+	 
+	<div style="min-width:0; flex:1">
+	  <div class="mz-tree-file-name" style="font-weight:800; color:#e5e7eb; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">
+		{{ f.display_name }}
+	  </div>
 
-  <div style="min-width:0; flex:1">
-    <div class="mz-tree-file-name" style="font-weight:800; color:#e5e7eb; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">
-      {{ f.display_name }}
-    </div>
+	  <div class="mz-mat-meta" style="margin-top:4px">
+		<span>{{ f.ext|upper }}</span>
+		<span class="mz-mat-dot"></span>
+		<span>{{ f.fmt_size }}</span>
+		<span class="mz-mat-dot"></span>
+		<span>{{ f.uploaded_by.get_full_name|default:f.uploaded_by.email }}</span>
+		<span class="mz-mat-dot"></span>
 
-    <div class="mz-mat-meta" style="margin-top:4px">
-      <span>{{ f.ext|upper }}</span>
-      <span class="mz-mat-dot"></span>
-      <span>{{ f.fmt_size }}</span>
-      <span class="mz-mat-dot"></span>
-      <span>{{ f.uploaded_by.get_full_name|default:f.uploaded_by.email }}</span>
-      <span class="mz-mat-dot"></span>
-      {% if f.module_key %}
-        <span class="mz-mat-tag">{{ f.module_key }}</span>
-      {% else %}
-        <span class="mz-mat-tag muted">Sin módulo</span>
-      {% endif %}
-    </div>
+		{% if f.module_key %}
+		  <span class="mz-mat-tag">{{ f.module_key }}</span>
+		{% else %}
+		  <span class="mz-mat-tag muted">Sin módulo</span>
+		{% endif %}
 
-    {% if is_teacher and f.share_alumnos %}
-      <div class="mz-chip-mini" style="margin-top:6px">Visible para alumnos</div>
-    {% endif %}
-  </div>
+		{# ✅ ВОТ ТУТ РЯДОМ С МОДУЛЕМ #}
+		{% if not is_teacher %}
+		  {% if f.is_downloaded %}
+			<span class="mz-chip-mini mz-file-chip">Descargado</span>
+		  {% else %}
+			<span class="mz-chip-mini mz-file-chip is-undl">No descargado</span>
+		  {% endif %}
+		{% endif %}
+	  </div>
+
+	  {% if is_teacher and f.share_alumnos %}
+		<div class="mz-chip-mini" style="margin-top:6px">Visible para alumnos</div>
+	  {% endif %}
+	</div>
 
   <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end">
     <a class="mzc-btn ghost"
@@ -72,7 +81,7 @@
         </form>
       {% endif %}
 
-      <form method="post" style="margin:0" onsubmit="return confirm('¿Eliminar este archivo?');" data-ajax="delete" data-file-id="{{ f.id }}">
+      <form method="post" style="margin:0" onsubmit="return confirm('¿Eliminar este archivo?');" data-ajax="file-delete"  data-file-id="{{ f.id }}">
         {% csrf_token %}
         <input type="hidden" name="delete_id" value="{{ f.id }}">
         <button class="mzc-btn ghost" type="submit">Eliminar</button>

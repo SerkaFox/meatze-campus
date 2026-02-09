@@ -1,7 +1,6 @@
 {# panel/tabs/materiales.html #}
 {% load static %}
-<link rel="stylesheet" href="{% static 'panel/css/materiales.css' %}?v=120">
-
+<link rel="stylesheet" href="{% static 'panel/css/materiales.css' %}?v={% now 'U' %}">
 
 <div class="mzc-card mz-mat-card">
   <div class="mz-mat-head">
@@ -14,8 +13,6 @@
         {{ files|length }} archivo{{ files|length|pluralize:"s" }}
       </div>
     {% endif %}
-
-
   </div>
 
   {# ---- верхний бар: alumnos / docentes / mis ---- #}
@@ -23,435 +20,208 @@
     <div class="mz-mat-audience">
       <div class="mz-seg">
         {% for key,label in audience_options %}
-			<a href="?tab=materiales
-				&aud={{ key }}
-				&p={{ current_path|urlencode }}
-				&mod={{ selected_mod|default:''|urlencode }}
-			&sort={{ sort|default:'new'|urlencode }}"
-			   class="mzc-btn ghost{% if audience == key %} is-act{% endif %}"
-			   data-action="materials.audience"
-			   data-aud="{{ key }}">
-			  {{ label }}
-			</a>
-
+          <a
+            href="?tab=materiales&aud={{ key|urlencode }}&p={{ current_path|default:''|urlencode }}&mod={{ selected_mod|default:''|urlencode }}&sort={{ sort|default:'new'|urlencode }}"
+            class="mzc-btn ghost{% if audience == key %} is-act{% endif %}"
+            data-action="materials.audience"
+            data-aud="{{ key }}"
+          >
+            {{ label }}
+          </a>
         {% endfor %}
       </div>
     </div>
   {% endif %}
-
-{# ---- фильтр по модулю (компактно) ---- #}
-<div class="mz-mat-modfilters" data-selected-mod="{{ selected_mod|default:'' }}">
-  <a href="?tab=materiales&aud={{ audience }}&p={{ current_path|urlencode }}&sort={{ sort }}"
-     class="mz-pill{% if not selected_mod %} is-act{% endif %}"
-     data-action="materials.filter"
-     data-mod="">
-    Todos{% if total_files %} · {{ total_files }}{% endif %}
-  </a>
-
-<a href="?tab=materiales&aud={{ audience }}&p={{ current_path|urlencode }}&mod=none&sort={{ sort }}"
-     class="mz-pill{% if selected_mod == 'none' %} is-act{% endif %}"
-     data-action="materials.filter"
-     data-mod="none">
-    Sin módulo{% if none_count %} · {{ none_count }}{% endif %}
-  </a>
-
-  {# dropdown MF → UF #}
-  <div class="mz-mod-dd" id="mz-mod-dd">
-    <div class="mz-mod-btn" id="mz-mod-btn" role="button" tabindex="0">
-      <span>Modulos</span>
-      <span style="opacity:.75;font-size:.75rem">
-        {% if selected_mod and selected_mod != 'none' %}· {{ selected_mod }}{% else %}· todos{% endif %}
-      </span>
-      <span style="opacity:.8">▾</span>
-    </div>
-
-    <div class="mz-mod-menu" id="mz-mod-menu">
-      {# fallback: если нет группировки, покажем плоский список #}
-      {% if mod_groups %}
-        {# mod_groups: [{mf:'MF1', items:[{name:'UF1',count:3}, ...]}, ...] #}
-        {% for g in mod_groups %}
-          <div class="mz-mod-group">
-            <div class="mz-mod-mf">
-              <span>{{ g.mf }}</span>
-              <span style="font-size:.74rem;opacity:.75">{{ g.total|default:'' }}</span>
-            </div>
-            <div class="mz-mod-uf">
-              {% for it in g.items %}
-                <a class="mz-mod-link{% if selected_mod == it.name %} is-act{% endif %}"
-                   href="?tab=materiales&aud={{ audience }}&p={{ current_path|urlencode }}&mod={{ it.name|urlencode }}&sort={{ sort }}"
-                   data-action="materials.filter"
-                   data-mod="{{ it.name }}">
-                  {{ it.name }}{% if it.count %} · {{ it.count }}{% endif %}
-                </a>
-              {% endfor %}
-            </div>
-          </div>
-        {% endfor %}
-      {% else %}
-        <div class="mz-mod-group">
-          <div class="mz-mod-mf"><span>Listado</span></div>
-          <div class="mz-mod-uf">
-            {% for m in mods_with_counts %}
-              <a class="mz-mod-link{% if selected_mod == m.name %} is-act{% endif %}"
-                 href="?tab=materiales&aud={{ audience }}&mod={{ m.name|urlencode }}"
-                 data-action="materials.filter"
-                 data-mod="{{ m.name }}">
-                {{ m.name }}{% if m.count %} · {{ m.count }}{% endif %}
-              </a>
-            {% endfor %}
-          </div>
-        </div>
-      {% endif %}
-    </div>
-  </div>
-</div>
-
-
-
-
 
   {# ---- форма загрузки (только преподаватель) ---- #}
   {% if is_teacher %}
+    <div class="mz-upl-wrap" data-focus="upload">
+      <form id="mz-upload-form" method="post" enctype="multipart/form-data" class="mz-upl">
+        {% csrf_token %}
+        <input type="hidden" name="upload" value="1">
+        <input type="hidden" name="folder_path" value="{{ current_path }}">
+        <input type="hidden" name="tipo"
+               value="{% if audience == 'docentes' %}docentes{% elif audience == 'mis' %}privado{% else %}alumnos{% endif %}">
 
-    <div class="mz-upl-wrap"  data-focus="upload">
-<form id="mz-upload-form" method="post" enctype="multipart/form-data" class="mz-upl">
-  {% csrf_token %}
-  <input type="hidden" name="upload" value="1">
-  <input type="hidden" name="folder_path" value="{{ current_path }}">
-  <input type="hidden" name="tipo"
-         value="{% if audience == 'docentes' %}docentes{% elif audience == 'mis' %}privado{% else %}alumnos{% endif %}">
-
-  <!-- ===== СЕКЦИЯ 1: Локальные файлы ===== -->
-  <div class="mz-upl-section" data-upl="files">
-<div class="mz-upl-head">
-  <div class="mz-upl-head-left">
-    <div class="mz-upl-head-title">📎 Subir archivos</div>
-    <div class="mz-upl-head-sub">Arrastra/suelta o selecciona varios</div>
-  </div>
-  {% if is_teacher %}
-    <button class="mz-new-folder" type="button"
-            data-action="folder.create.big"
-            title="Crear carpeta aquí">
-      <span class="mz-new-folder-ico">📁</span>
-      <span class="mz-new-folder-plus">＋</span>
-    </button>
-  {% endif %}
-</div>
-
-
-    <div id="mz-upl-rows" class="mz-upl-rows">
-      <div class="mz-upl-row" data-row-idx="1">
-
-        <div class="mz-drop" data-role="dropzone" title="Arrastra archivos aquí o haz clic">
-          <div class="mz-drop-ico">⬆</div>
-          <div class="mz-drop-txt">
-            <div class="mz-drop-title" data-role="droplabel">Arrastra y suelta archivos</div>
-            <div class="mz-drop-sub" data-role="dropsub">o haz clic para seleccionarlos (multi)</div>
-          </div>
-          <div class="mz-drop-count" data-role="dropcount">0</div>
-
-          <button type="button"
-                  class="mz-file-clear"
-                  data-role="dropclear"
-                  title="Quitar selección"
-                  style="margin-left:0">×</button>
+        <div class="mzc-note" style="margin-bottom:10px">
+          <b>Cómo subir materiales:</b>
+          <ul style="margin:8px 0 0 18px; line-height:1.35">
+            <li><b>Arrastra</b> archivos desde tu ordenador y <b>suéltalos</b> encima de una carpeta en el árbol.</li>
+            <li>O pulsa <b>“Subir aquí”</b> en una carpeta (si lo tienes) para seleccionar archivos.</li>
+            <li>Si necesitas subir un archivo que está online, usa <b>Subir por URL</b> abajo.</li>
+          </ul>
         </div>
 
-        <input type="file"
-               name="file_1"
-               data-role="file"
-               class="mz-upl-input"
-               style="display:none"
-               multiple>
-
-        <input type="text"
-               name="title_1"
-               data-role="title"
-               class="mz-upl-input"
-               placeholder="Título (opcional)">
-
-        <input type="hidden" name="module_key_1" data-role="module_key" value="">
-
-        <button type="button"
-                class="mz-file-clear mz-upl-remove-row"
-                title="Quitar fila"
-                data-action="materials.upload.row.remove">×</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== Разделитель ===== -->
-  <div style="margin:12px 0;display:flex;align-items:center;gap:10px">
-    <div style="height:1px;flex:1;background:rgba(148,163,184,.25)"></div>
-    <div style="font-size:.78rem;color:#9ca3af;white-space:nowrap">o</div>
-    <div style="height:1px;flex:1;background:rgba(148,163,184,.25)"></div>
-  </div>
-
-  <!-- ===== СЕКЦИЯ 2: По ссылке ===== -->
-  <div class="mz-upl-section" data-upl="url">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-      <div style="font-weight:800;color:#e5e7eb">🔗 Subir por URL</div>
-      <div style="font-size:.78rem;color:#9ca3af">Enlace directo a un archivo</div>
-    </div>
-
-    <div class="mz-upl-row" style="width:100%">
-      <input type="url"
-             name="url_1"
-             data-role="url"
-             class="mz-upl-input"
-             placeholder="https://..."
-             style="flex:1;min-width:320px">
-
-      <input type="text"
-             name="url_title_1"
-             data-role="url_title"
-             class="mz-upl-input"
-             placeholder="Título (opcional)"
-             style="min-width:220px">
-
-      <input type="hidden" name="url_module_key_1" data-role="url_module_key" value="">
-    </div>
-  </div>
-</form>
-
-<form id="mz-folder-create-form" method="post" style="display:none">
-  {% csrf_token %}
-  <input type="hidden" name="action" value="folder_create">
-  <input type="hidden" name="folder_name" value="">
-  <input type="hidden" name="folder_parent" value="{{ current_path|default:'' }}">
-  <input type="hidden" name="aud" value="{{ audience }}">
-</form>
-
-
-<!-- Кнопка сабмита лучше держать сразу под секциями (не внизу страницы) -->
-<button type="submit"
-        form="mz-upload-form"
-        id="mzf-send"
-        class="mz-upload-cta">
-  ⬆ Subir
-</button>
-
-    </div>
-  {% endif %}
-
-
-<div class="mz-mat-sort" style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; align-items:center">
-  <span style="font-size:.78rem; color:#9ca3af; margin-right:6px;">Orden:</span>
-
-  <a href="?tab=materiales&aud={{ audience }}&p={{ current_path|urlencode }}&mod={{ selected_mod|default:''|urlencode }}&sort=new"
-     class="mz-pill{% if sort == 'new' %} is-act{% endif %}">Nuevos</a>
-
-  <a href="?tab=materiales&aud={{ audience }}&p={{ current_path|urlencode }}&mod={{ selected_mod|default:''|urlencode }}&sort=old"
-     class="mz-pill{% if sort == 'old' %} is-act{% endif %}">Antiguos</a>
-
-  <a href="?tab=materiales&aud={{ audience }}&p={{ current_path|urlencode }}&mod={{ selected_mod|default:''|urlencode }}&sort=az"
-     class="mz-pill{% if sort == 'az' %} is-act{% endif %}">A–Z</a>
-
-  <a href="?tab=materiales&aud={{ audience }}&p={{ current_path|urlencode }}&mod={{ selected_mod|default:''|urlencode }}&sort=za"
-     class="mz-pill{% if sort == 'za' %} is-act{% endif %}">Z–A</a>
-</div>
-
-{% if current_path %}
-  <div class="mz-fold-bc" id="mz-fold-bc"
-       data-path="{{ current_path|escape }}"
-       data-aud="{{ audience }}"
-       data-mod="{{ selected_mod|default:''|escape }}"
-       data-sort="{{ sort|default:'new'|escape }}">
-    <a class="mz-bc" href="?tab=materiales&aud={{ audience }}&p=&mod={{ selected_mod|default:''|urlencode }}&sort={{ sort }}">🏠 Inicio</a>
-  </div>
-{% endif %}
-{% if view == "tree" %}
-{% if is_teacher %}
-  <div class="mz-tree-node" data-drop-folder="">
-    <div class="mz-tree-row">
-      <span style="opacity:.9">🏠 Raíz</span>
-      <span style="margin-left:auto;opacity:.6;font-size:.78rem">soltar aquí = mover al root</span>
-    </div>
-  </div>
-{% endif %}
-
-
-  <div class="mz-tree">
-    {# корневые файлы #}
-    {% if tree_root_files %}
-      <div class="mz-tree-rootfiles">
-		{% for f in tree_root_files %}
-		  {% include "panel/partials/materiales_tree_file.html" with f=f %}
-		{% endfor %}
-
-      </div>
-    {% endif %}
-
-    {% for node in tree_nodes %}
-      {% include "panel/partials/materiales_tree_node.html" with node=node %}
-    {% empty %}
-      <div class="mzc-note">No hay carpetas.</div>
-    {% endfor %}
-  </div>
-{% else %}
-
-
-
-{% if folders %}
-  <div class="mz-fold-grid">
-  {% if is_teacher %}
-  <div class="mz-fold-item" data-drop-folder="">
-    <a class="mz-fold-link"
-       href="?tab=materiales&aud={{ audience }}&p=&mod={{ selected_mod|default:''|urlencode }}&sort={{ sort }}">
-      🏠 Raíz (sin carpeta)
-    </a>
-  </div>
-{% endif %}
-    {% for fld in folders %}
-      <div class="mz-fold-item{% if fld.is_locked %} is-locked{% endif %}"
-     {% if is_teacher %}
-       data-drop-folder="{{ fld.path }}"
-     {% endif %}
->
-
-        <a class="mz-fold-link"
-           href="?tab=materiales&aud={{ audience }}&p={{ fld.path|urlencode }}&mod={{ selected_mod|default:''|urlencode }}&sort={{ sort }}">
-          📁 {{ fld.name }}
-          {% if fld.is_locked %}<span class="mz-chip-mini">Módulo</span>{% endif %}
-        </a>
-
-        {% if is_teacher and not fld.is_locked %}
-          <form method="post" style="margin:0" onsubmit="return confirm('¿Eliminar carpeta?');">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="folder_delete">
-            <input type="hidden" name="path" value="{{ fld.path }}">
-            <button class="mzc-btn ghost" type="submit">Eliminar</button>
-          </form>
-        {% endif %}
-      </div>
-    {% endfor %}
-  </div>
-{% else %}
-  <div class="mzc-note">No hay carpetas aquí.</div>
-{% endif %}
-{% endif %}
-
-
-{% if view != "tree" %}
-  {# ---- список файлов ---- #}
-  <ul class="mz-mat-list">
-    {% if files %}
-      {% for f in files %}
-        <li class="mz-mat-item{% if not is_teacher %} has-file-chip{% endif %}"
-    {% if is_teacher %}
-      draggable="true"
-      data-drag-file="{{ f.id }}"
-    {% endif %}
->
-  {% if not is_teacher %}
-    {% if f.is_downloaded %}
-      <div class="mz-chip-mini mz-file-chip">Descargado</div>
-    {% else %}
-      <div class="mz-chip-mini mz-file-chip is-undl">No descargado</div>
-    {% endif %}
-  {% endif %}
-          <div class="mz-mat-main">
-<p class="mz-mat-title-file">
-  <span class="mz-file-name">{{ f.display_name }}</span>
-
-  <a class="mzc-btn ghost"
-     href="{% url 'panel:material_download' f.id %}"
-     target="_blank" rel="noopener"
-     title="Descargar archivo">
-    Descargar
-  </a>
-
-  <a class="mzc-btn ghost"
-     data-preview
-     data-ext="{{ f.ext|lower }}"
-     data-name="{{ f.display_name|escape }}"
-     href="{% url 'panel:material_download' f.id %}?inline=1">
-    Ver
-  </a>
-
-  {% if is_teacher %}
-    <button class="mzc-btn ghost" type="button"
-            data-action="materials.copy_public_link"
-            data-share-url="{% url 'panel:material_share_link_create' f.id %}">
-      Copiar enlace
-    </button>
-  {% endif %}
-</p>
-
-
-
-            <div class="mz-mat-meta">
-              <span>{{ f.ext|upper }}</span>
-              <span class="mz-mat-dot"></span>
-              <span>{{ f.fmt_size }}</span>
-              <span class="mz-mat-dot"></span>
-              <span>{{ f.uploaded_by.get_full_name|default:f.uploaded_by.email }}</span>
-              {% if f.module_key %}
-                <span class="mz-mat-dot"></span>
-                <span class="mz-mat-tag">{{ f.module_key }}</span>
-              {% else %}
-                <span class="mz-mat-dot"></span>
-                <span class="mz-mat-tag muted">Sin módulo</span>
-              {% endif %}
-            </div>
-
-            {% if is_teacher and f.share_alumnos %}
-              <div class="mz-chip-mini">
-                Visible para alumnos
-              </div>
-            {% endif %}
+        <!-- ===== По ссылке ===== -->
+        <div class="mz-upl-section" data-upl="url">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <div style="font-weight:800;color:#e5e7eb">🔗 Subir por URL</div>
+            <div style="font-size:.78rem;color:#9ca3af">Enlace directo a un archivo</div>
           </div>
 
-          {% if is_teacher %}
-            <div class="mz-mat-actions">
-{% if audience != 'alumnos' %}
-  <form method="post" style="margin:0">
-    {% csrf_token %}
-    <input type="hidden" name="share_id" value="{{ f.id }}">
-    <button class="mzc-btn ghost" type="submit"
-            data-action="materials.share.toggle"
-            data-file-id="{{ f.id }}">
-      {% if f.share_alumnos %}Ocultar de alumnos{% else %}Mostrar a alumnos{% endif %}
-    </button>
-  </form>
-{% endif %}
-              {% if f.tipo == "docentes" %}
-                <form method="post" style="margin:0">
-                  {% csrf_token %}
-                  <input type="hidden" name="copy_id" value="{{ f.id }}">
- <button class="mzc-btn ghost" type="submit"
-        data-action="materials.copy.to_private"
-        data-file-id="{{ f.id }}">
-  Copiar a privados
-</button>
+          <div class="mz-upl-row" style="width:100%">
+            <input type="url"
+                   name="url_1"
+                   data-role="url"
+                   class="mz-upl-input"
+                   placeholder="https://..."
+                   style="flex:1;min-width:320px">
 
-                </form>
-              {% endif %}
+            <input type="text"
+                   name="url_title_1"
+                   data-role="url_title"
+                   class="mz-upl-input"
+                   placeholder="Título (opcional)"
+                   style="min-width:220px">
 
-              <form method="post" style="margin:0"
-                    onsubmit="return confirm('¿Eliminar este archivo?');">
-                {% csrf_token %}
-                <input type="hidden" name="delete_id" value="{{ f.id }}">
-                <button class="mzc-btn ghost" type="submit">
-                  Eliminar
-                </button>
-				
-              </form>
-            </div>
-          {% endif %}
-        </li>
-      {% endfor %}
-    {% else %}
-      <li class="mzc-note">No hay materiales aún.</li>
-    {% endif %}
-  </ul>
+            <input type="hidden" name="url_module_key_1" data-role="url_module_key" value="">
+          </div>
+        </div>
+      </form>
+
+      <form id="mz-folder-create-form" method="post" style="display:none">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="folder_create">
+        <input type="hidden" name="folder_name" value="">
+        <input type="hidden" name="folder_parent" value="{{ current_path|default:'' }}">
+        <input type="hidden" name="aud" value="{{ audience }}">
+      </form>
+
+      <button type="submit"
+              form="mz-upload-form"
+              id="mzf-send"
+              class="mz-upload-cta">
+        ⬆ Subir
+      </button>
+    </div>
   {% endif %}
-  {% if is_teacher %}
-  <div class="mz-rec-card" style="border-color:rgba(191,219,254,0.35);background:radial-gradient(circle at top left, rgba(59,130,246,0.18), rgba(15,23,42,0.92));">
-    <h4 class="mz-rec-title">Así lo ven los alumnos</h4>
-    <p class="mz-rec-sub">Lista rápida de materiales visibles para alumnos (sin cambiar de pestañas).</p>
 
-</div>
+  <div class="mz-mat-sort" style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+    <span style="font-size:.78rem; color:#9ca3af; margin-right:6px;">Orden:</span>
+
+    <a href="?tab=materiales&aud={{ audience }}&p={{ current_path|urlencode }}&mod={{ selected_mod|default:''|urlencode }}&sort=new"
+       class="mz-pill{% if sort == 'new' %} is-act{% endif %}">Nuevos</a>
+
+    <a href="?tab=materiales&aud={{ audience }}&p={{ current_path|urlencode }}&mod={{ selected_mod|default:''|urlencode }}&sort=old"
+       class="mz-pill{% if sort == 'old' %} is-act{% endif %}">Antiguos</a>
+
+    <a href="?tab=materiales&aud={{ audience }}&p={{ current_path|urlencode }}&mod={{ selected_mod|default:''|urlencode }}&sort=az"
+       class="mz-pill{% if sort == 'az' %} is-act{% endif %}">A–Z</a>
+
+    <a href="?tab=materiales&aud={{ audience }}&p={{ current_path|urlencode }}&mod={{ selected_mod|default:''|urlencode }}&sort=za"
+       class="mz-pill{% if sort == 'za' %} is-act{% endif %}">Z–A</a>
+  </div>
+
+  {% if current_path %}
+    <div class="mz-fold-bc" id="mz-fold-bc"
+         data-path="{{ current_path|escape }}"
+         data-aud="{{ audience }}"
+         data-mod="{{ selected_mod|default:''|escape }}"
+         data-sort="{{ sort|default:'new'|escape }}">
+      <a class="mz-bc" href="?tab=materiales&aud={{ audience }}&p=&mod={{ selected_mod|default:''|urlencode }}&sort={{ sort }}">🏠 Inicio</a>
+    </div>
+  {% endif %}
+
+  {# ===== Layout switch ===== #}
+  <div class="mz-mat-layout" style="margin-top:10px; display:flex; justify-content:flex-end">
+    <div class="mz-seg">
+      <button type="button" class="mzc-btn ghost is-act" data-layout="tree">🌲 Árbol</button>
+      <button type="button" class="mzc-btn ghost" data-layout="cards">🗂️ Tarjetas</button>
+    </div>
+  </div>
+
+  <div id="mz-tree-wrap">
+    {% if is_teacher %}
+      <div class="mz-tree-node" data-drop-folder="">
+        <div class="mz-tree-row" style="gap:10px">
+          <span style="opacity:.9">🏠 Raíz</span>
+
+          <button class="mz-new-folder" type="button"
+                  data-action="folder.create.big"
+                  data-parent=""
+                  title="Crear carpeta en Raíz"
+                  style="margin-left:6px">
+            <span class="mz-new-folder-ico">📁</span>
+            <span class="mz-new-folder-plus">＋</span>
+          </button>
+
+          <span style="margin-left:auto;opacity:.6;font-size:.78rem">soltar aquí = mover al root</span>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="mz-tree">
+      {% if tree_root_files %}
+        <div class="mz-tree-rootfiles">
+          {% for f in tree_root_files %}
+            {% include "panel/partials/materiales_tree_file.html" with f=f %}
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% for node in tree_nodes %}
+        {% include "panel/partials/materiales_tree_node.html" with node=node %}
+      {% empty %}
+        <div class="mzc-note">No hay carpetas.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div id="mz-cards-wrap" hidden>
+	<div class="mz-fold-grid" id="mz-fold-grid">
+		{% for fld in folders %}
+		  <button type="button"
+				  class="mz-fold-card{% if fld.is_locked %} is-locked{% endif %}"
+				  data-open-path="{{ fld.path|escape }}"
+				  data-path="{{ fld.path|escape }}"
+				  data-drop-folder="{{ fld.path|escape }}"
+				  title="Abrir">
+			<div class="mz-fold-ico">📁</div>
+			<div class="mz-fold-name">{{ fld.name }}</div>
+
+			<div class="mz-fold-meta">
+			  <span class="mz-fold-count" data-count>{{ fld.files_count|default:"0" }}</span>
+			  {% if fld.is_locked %}
+				<span class="mz-fold-badge">Módulo</span>
+			  {% endif %}
+			</div>
+		  </button>
+		{% empty %}
+		  <div class="mz-fold-empty">— No hay carpetas —</div>
+		{% endfor %}
+	</div>
+
+    <div class="mz-cards-panel" id="mz-cards-panel" hidden>
+      <div class="mz-cards-head">
+        <div class="mz-cards-title" id="mz-cards-title">Archivos</div>
+
+        <div class="mz-cards-actions">
+          <button type="button" class="mzc-btn ghost"
+                  data-action="folder.upload.here"
+                  data-parent="">
+            Subir aquí
+          </button>
+
+          <button type="button" class="mzc-btn ghost"
+                  data-action="folder.create.here"
+                  data-parent="">
+            Nueva carpeta
+          </button>
+        </div>
+      </div>
+
+      <div class="mz-cards-body" id="mz-cards-body">
+        {# JS will move the folder's .mz-tree-children (or rootfiles) here #}
+      </div>
+    </div>
+  </div>
+
+  {# ---- así lo ven los alumnos ---- #}
+  {% if is_teacher %}
+    <div class="mz-rec-card" style="border-color:rgba(191,219,254,0.35);background:radial-gradient(circle at top left, rgba(59,130,246,0.18), rgba(15,23,42,0.92));">
+      <h4 class="mz-rec-title">Así lo ven los alumnos</h4>
+      <p class="mz-rec-sub">Lista rápida de materiales visibles para alumnos (sin cambiar de pestañas).</p>
+    </div>
 
     {% if student_visible_files %}
       <ul class="mz-mat-list" style="margin-top:10px">
@@ -481,124 +251,116 @@
     {% else %}
       <div class="mzc-note">Ahora mismo no hay archivos visibles para alumnos.</div>
     {% endif %}
-  </div>
-{% endif %}
-
-	{% if is_teacher %}
-	  <div class="mz-rec-card" data-focus="receipts">
-		<h4 class="mz-rec-title">Material físico del curso</h4>
-		<p class="mz-rec-sub">Crea y gestiona la lista por curso. Los alumnos solo verán los elementos “activos”.</p>
-
-		{# --- ADD NEW ITEM --- #}
-		<form method="post" style="margin:0 0 10px; display:flex; gap:8px; flex-wrap:wrap; align-items:center">
-		  {% csrf_token %}
-		  <input type="hidden" name="action" value="physical_item_add">
-			<input class="mz-upl-input" name="label" placeholder="Nombre (ej: Cuaderno)" style="min-width:220px">
-		  <button class="mzc-btn" type="submit">Añadir</button>
-
-		  <div class="mz-rec-hint" style="margin-left:auto; white-space:nowrap">
-			Activos: {{ physical_items_enabled|length }} / {{ physical_items_all|length }}
-		  </div>
-		</form>
-
-{# --- LIST + EDIT --- #}
-{% if physical_items_all %}
-  <div class="mz-rec-grid">
-    {% for it in physical_items_all %}
-      <div class="mz-rec-row" style="align-items:flex-start">
-
-        {# update form #}
-        <form method="post"
-              style="margin:0; display:flex; gap:10px; flex-wrap:wrap; align-items:center; width:100%">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="physical_item_update">
-          <input type="hidden" name="item_id" value="{{ it.id }}">
-
-          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; width:100%">
-            <label style="display:flex; align-items:center; gap:8px">
-              <input type="checkbox" name="is_enabled" {% if it.is_enabled %}checked{% endif %}>
-              <span style="color:#e5e7eb;font-size:.86rem;font-weight:700">Activo</span>
-            </label>
-
-            <input class="mz-upl-input"
-                   name="label"
-                   value="{{ it.label }}"
-                   style="min-width:240px; flex:1"
-                   placeholder="Nombre visible">
-
-            <button class="mzc-btn ghost" type="submit">Guardar</button>
-
-            {# ✅ download docx рядом с Guardar #}
-            <button type="button"
-                    class="mzc-btn ghost"
-                    data-action="mz.download.acta"
-                    data-codigo="{{ curso.codigo }}"
-                    data-item-key="{{ it.key }}"
-                    {% if not it.is_enabled %}title="Desactivado (aun así puedes descargar)"{% endif %}>
-              Descargar DOCX
-            </button>
-          </div>
-        </form>
-
-        {# delete form #}
-        <form method="post" style="margin:0"
-              onsubmit="return confirm('¿Eliminar este material físico del curso?');">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="physical_item_delete">
-          <input type="hidden" name="item_id" value="{{ it.id }}">
-          <button class="mzc-btn ghost" type="submit">Eliminar</button>
-        </form>
-
-      </div>
-    {% endfor %}
-  </div>
-{% else %}
-  <div class="mzc-note">Aún no hay materiales físicos para este curso.</div>
-{% endif %}
-
   {% endif %}
 
-  
-{% if not is_teacher and physical_items_enabled and not receipt_all_done %}
-  <div class="mz-rec-card">
-    <h4 class="mz-rec-title">Material físico recibido</h4>
-    <p class="mz-rec-sub">Confirma solo una vez. Después queda bloqueado para la trazabilidad (Lanbide).</p>
+  {# ---- физический материал (оставляем как есть) ---- #}
+  {% if is_teacher %}
+    <div class="mz-rec-card" data-focus="receipts">
+      <h4 class="mz-rec-title">Material físico del curso</h4>
+      <p class="mz-rec-sub">Crea y gestiona la lista por curso. Los alumnos solo verán los elementos “activos”.</p>
 
-    <form method="post" style="margin:0">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="receipt_save">
+      <form method="post" style="margin:0 0 10px; display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="physical_item_add">
+        <input class="mz-upl-input" name="label" placeholder="Nombre (ej: Cuaderno)" style="min-width:220px">
+        <button class="mzc-btn" type="submit">Añadir</button>
 
-      <div class="mz-rec-grid">
-  {% for item in physical_items_enabled %}
-          <label class="mz-rec-row{% if item.key in receipt_locked_keys %} is-locked{% endif %}">
-            <input type="checkbox"
-                   name="receipt_{{ item.key }}"
-                   {% if item.key in receipt_keys %}checked{% endif %}
-                   {% if item.key in receipt_locked_keys %}disabled{% endif %}>
+        <div class="mz-rec-hint" style="margin-left:auto; white-space:nowrap">
+          Activos: {{ physical_items_enabled|length }} / {{ physical_items_all|length }}
+        </div>
+      </form>
 
-            <div style="min-width:0">
-              <div style="color:#e5e7eb;font-size:.86rem">{{ item.label }}</div>
+      {% if physical_items_all %}
+        <div class="mz-rec-grid">
+          {% for it in physical_items_all %}
+            <div class="mz-rec-row" style="align-items:flex-start">
 
-              {% if item.key in receipt_locked_keys %}
-                <div class="mz-rec-hint">Confirmado · bloqueado</div>
-              {% else %}
-                <div class="mz-rec-hint">Pendiente</div>
-              {% endif %}
+              <form method="post" style="margin:0; display:flex; gap:10px; flex-wrap:wrap; align-items:center; width:100%">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="physical_item_update">
+                <input type="hidden" name="item_id" value="{{ it.id }}">
+
+                <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; width:100%">
+                  <label style="display:flex; align-items:center; gap:8px">
+                    <input type="checkbox" name="is_enabled" {% if it.is_enabled %}checked{% endif %}>
+                    <span style="color:#e5e7eb;font-size:.86rem;font-weight:700">Activo</span>
+                  </label>
+
+                  <input class="mz-upl-input"
+                         name="label"
+                         value="{{ it.label }}"
+                         style="min-width:240px; flex:1"
+                         placeholder="Nombre visible">
+
+                  <button class="mzc-btn ghost" type="submit">Guardar</button>
+
+                  <button type="button"
+                          class="mzc-btn ghost"
+                          data-action="mz.download.acta"
+                          data-codigo="{{ curso.codigo }}"
+                          data-item-key="{{ it.key }}"
+                          {% if not it.is_enabled %}title="Desactivado (aun así puedes descargar)"{% endif %}>
+                    Descargar DOCX
+                  </button>
+                </div>
+              </form>
+
+              <form method="post" style="margin:0" onsubmit="return confirm('¿Eliminar este material físico del curso?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="physical_item_delete">
+                <input type="hidden" name="item_id" value="{{ it.id }}">
+                <button class="mzc-btn ghost" type="submit">Eliminar</button>
+              </form>
+
             </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="mzc-note">Aún no hay materiales físicos para este curso.</div>
+      {% endif %}
+    </div>
+  {% endif %}
 
-            {% if item.key in receipt_keys %}
-              <span class="mz-chip-mini">Confirmado</span>
-            {% endif %}
-          </label>
-        {% endfor %}
-      </div>
+  {% if not is_teacher and physical_items_enabled and not receipt_all_done %}
+    <div class="mz-rec-card">
+      <h4 class="mz-rec-title">Material físico recibido</h4>
+      <p class="mz-rec-sub">Confirma solo una vez. Después queda bloqueado para la trazabilidad (Lanbide).</p>
 
-      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <button class="mzc-btn" type="submit">Confirmar</button>
-      </div>
-    </form>
-  </div>
-{% endif %}
+      <form method="post" style="margin:0">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="receipt_save">
+
+        <div class="mz-rec-grid">
+          {% for item in physical_items_enabled %}
+            <label class="mz-rec-row{% if item.key in receipt_locked_keys %} is-locked{% endif %}">
+              <input type="checkbox"
+                     name="receipt_{{ item.key }}"
+                     {% if item.key in receipt_keys %}checked{% endif %}
+                     {% if item.key in receipt_locked_keys %}disabled{% endif %}>
+
+              <div style="min-width:0">
+                <div style="color:#e5e7eb;font-size:.86rem">{{ item.label }}</div>
+
+                {% if item.key in receipt_locked_keys %}
+                  <div class="mz-rec-hint">Confirmado · bloqueado</div>
+                {% else %}
+                  <div class="mz-rec-hint">Pendiente</div>
+                {% endif %}
+              </div>
+
+              {% if item.key in receipt_keys %}
+                <span class="mz-chip-mini">Confirmado</span>
+              {% endif %}
+            </label>
+          {% endfor %}
+        </div>
+
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button class="mzc-btn" type="submit">Confirmar</button>
+        </div>
+      </form>
+    </div>
+  {% endif %}
 
 </div>
 
@@ -612,1015 +374,10 @@
         <button class="mzc-btn ghost" type="button" data-close>Cerrar</button>
       </div>
     </div>
-
-    <div class="mz-prev-body" id="mz-prev-body">
-      <!-- сюда подставим iframe или img -->
-    </div>
+    <div class="mz-prev-body" id="mz-prev-body"></div>
   </div>
 </div>
 
-<script>
-(function(){
-  const dd = document.getElementById('mz-mod-dd');
-  const btn = document.getElementById('mz-mod-btn');
-  const menu = document.getElementById('mz-mod-menu');
-  if (!dd || !btn || !menu) return;
-
-function calcMenuWidth(){
-  // временно показываем, чтобы можно было измерить
-  const wasOpen = menu.classList.contains('is-open');
-  if (!wasOpen) {
-    menu.style.visibility = 'hidden';
-    menu.classList.add('is-open');
-  }
-
-  // измеряем самую широкую ссылку
-  let maxW = 0;
-  menu.querySelectorAll('a').forEach(a => {
-    maxW = Math.max(maxW, a.scrollWidth);
-  });
-
-  // + паддинги + небольшой запас
-  const padding = 32; // запас под padding/границы
-  const target = Math.ceil(maxW + padding);
-
-  // не уже кнопки
-  const btnW = btn.getBoundingClientRect().width;
-  const finalW = Math.max(target, Math.ceil(btnW), 260);
-
-  menu.style.width = finalW + 'px';
-
-  if (!wasOpen) {
-    menu.classList.remove('is-open');
-    menu.style.visibility = '';
-  }
-}
-
-function open(){
-  calcMenuWidth();
-  menu.classList.add('is-open');
-}
-function close(){ menu.classList.remove('is-open'); }
-function toggle(){
-  if (menu.classList.contains('is-open')) close();
-  else open();
-}
-
-
-  btn.addEventListener('click', function(e){ e.preventDefault(); toggle(); });
-  btn.addEventListener('keydown', function(e){
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
-    if (e.key === 'Escape') close();
-  });
-
-  document.addEventListener('click', function(e){
-    if (!dd.contains(e.target)) close();
-  });
-
-  // close after selecting a module
-  menu.addEventListener('click', function(e){
-    const a = e.target.closest('a[data-mod]');
-    if (a) close();
-  });
-})();
-</script>
-
-<script>
-(function(){
-  const filters = document.querySelector('.mz-mat-modfilters[data-selected-mod]');
-  if (!filters) return;
-
-  const selected = (filters.getAttribute('data-selected-mod') || '').trim();
-
-  // если модуль не выбран или выбрано "none" → оставляем пусто (= "Sin módulo")
-  if (!selected || selected === 'none') return;
-
-  const rowsContainer = document.getElementById('mz-upl-rows');
-  if (!rowsContainer) return;
-
-  function applyToRow(row){
-    const mk = row.querySelector('[data-role="module_key"]');
-    if (!mk) return;
-    mk.value = selected; // hidden input
-  }
-
-  function applyAll(){
-    rowsContainer.querySelectorAll('.mz-upl-row').forEach(applyToRow);
-  }
-
-  applyAll();
-
-  const mo = new MutationObserver(function(muts){
-    for (const m of muts) {
-      if (m.type === 'childList' && m.addedNodes && m.addedNodes.length) {
-        applyAll();
-        break;
-      }
-    }
-  });
-  mo.observe(rowsContainer, { childList:true });
-})();
-</script>
-<script>
-(function() {
-  const rowsContainer = document.getElementById('mz-upl-rows');
-  if (!rowsContainer) return;
-
-  function setSingleFile(input, file){
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    input.files = dt.files;
-  }
-
-  function clearFileInput(input){
-    try { input.value = ''; } catch(e) {}
-    // на всякий — сбросим через DataTransfer
-    const dt = new DataTransfer();
-    input.files = dt.files;
-  }
-
-  function addRowFromTemplate(){
-    const template = rowsContainer.children[0];
-    if (!template) return null;
-
-    const idx = rowsContainer.children.length + 1;
-    const clone = template.cloneNode(true);
-
-    // убрать dropzone из клонов
-    const dz = clone.querySelector('[data-role="dropzone"]');
-    if (dz) dz.remove();
-
-    // показать file input (в шаблоне он hidden)
-    const fileInput = clone.querySelector('[data-role="file"]');
-    if (fileInput) fileInput.style.display = '';
-
-    clone.setAttribute('data-row-idx', String(idx));
-
-    clone.querySelectorAll('[data-role]').forEach(function(el) {
-      const role = el.getAttribute('data-role');
-      if (!role) return;
-      el.name = role + '_' + idx;
-
-      if (role === 'file') {
-        el.value = '';
-        el.removeAttribute('multiple');
-      }
-      if (role === 'title') el.value = '';
-      if (role === 'module_key') el.value = '';
-    });
-
-    rowsContainer.appendChild(clone);
-
-    // кнопка удаления
-    const removeBtn = clone.querySelector('.mz-upl-remove-row');
-    if (removeBtn) {
-      removeBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        clone.remove();
-      });
-    }
-
-    return clone;
-  }
-
-  const firstRow = rowsContainer.querySelector('.mz-upl-row');
-  if (!firstRow) return;
-
-  const firstFileInput = firstRow.querySelector('[data-role="file"]');
-  if (!firstFileInput) return;
-
-  const dropLabel = firstRow.querySelector('[data-role="droplabel"]');
-  const dropSub   = firstRow.querySelector('[data-role="dropsub"]');
-  const countEl   = firstRow.querySelector('[data-role="dropcount"]');
-  const clearBtn  = firstRow.querySelector('[data-role="dropclear"]');
-
-  function resetDropUI(){
-    if (dropLabel) dropLabel.textContent = 'Arrastra y suelta archivos';
-    if (dropSub) dropSub.textContent = 'o haz clic para seleccionarlos (multi)';
-    if (countEl) countEl.textContent = '0';
-  }
-
-  // ❗️ПЕРЕНОСИМ ВСЕ файлы из drop input в строки (включая первый)
-  function moveFilesToRows(files){
-    if (!files || !files.length) return;
-
-    // создаём строки под каждый файл
-    for (let i = 0; i < files.length; i++) {
-      const row = addRowFromTemplate();
-      if (!row) break;
-      const inp = row.querySelector('[data-role="file"]');
-      if (inp) setSingleFile(inp, files[i]);
-    }
-
-    // очищаем drop input, чтобы он не "держал" первый файл
-    clearFileInput(firstFileInput);
-    resetDropUI();
-  }
-
-  firstFileInput.addEventListener('change', function(){
-    const files = Array.from(firstFileInput.files || []);
-    if (!files.length) { resetDropUI(); return; }
-
-    // обновим UI на секунду (если хочешь видеть имя перед переносом)
-    if (countEl) countEl.textContent = String(files.length);
-    if (dropLabel) dropLabel.textContent = files.length === 1 ? files[0].name : `${files.length} archivos`;
-    if (dropSub) dropSub.textContent = files.length > 1 ? 'Se repartirán en filas abajo' : 'Se añadirá una fila abajo';
-
-    // переносим ВСЕ файлы в обычные строки
-    moveFilesToRows(files);
-  });
-
-  // кнопка очистки (на случай если что-то осталось)
-  if (clearBtn){
-    clearBtn.addEventListener('click', function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      clearFileInput(firstFileInput);
-      resetDropUI();
-    });
-  }
-
-  // стартовый вид
-  resetDropUI();
-})();
-</script>
-
-<script>
-(function(){
-  const rowsContainer = document.getElementById('mz-upl-rows');
-  if (!rowsContainer) return;
-
-  const firstRow = rowsContainer.querySelector('.mz-upl-row');
-  if (!firstRow) return;
-
-  const drop = firstRow.querySelector('[data-role="dropzone"]');
-  const countEl = firstRow.querySelector('[data-role="dropcount"]');
-  const input = firstRow.querySelector('[data-role="file"]');
-
-  if (!drop || !input) return;
-
-  // клик по зоне -> открыть диалог выбора
-  drop.addEventListener('click', function(){
-    input.click();
-  });
-
-  function setCount(n){
-    if (countEl) countEl.textContent = String(n || 0);
-  }
-
-  // если выбрали через диалог — обновим бейдж
-  input.addEventListener('change', function(){
-    setCount((input.files && input.files.length) || 0);
-  });
-
-  // drag events
-  const stop = (e) => { e.preventDefault(); e.stopPropagation(); };
-
-  ['dragenter','dragover'].forEach(evt=>{
-    drop.addEventListener(evt, function(e){
-      stop(e);
-      drop.classList.add('is-over');
-    });
-  });
-
-  ['dragleave','dragend','drop'].forEach(evt=>{
-    drop.addEventListener(evt, function(e){
-      stop(e);
-      drop.classList.remove('is-over');
-    });
-  });
-
-  drop.addEventListener('drop', function(e){
-    stop(e);
-    const files = e.dataTransfer && e.dataTransfer.files ? e.dataTransfer.files : null;
-    if (!files || !files.length) return;
-
-    // кладём FileList в input через DataTransfer
-    const dt = new DataTransfer();
-    for (const f of files) dt.items.add(f);
-    input.files = dt.files;
-
-    setCount(dt.files.length);
-
-    // важно: триггерим change -> твой скрипт разложит по строкам
-    input.dispatchEvent(new Event('change', { bubbles: true }));
-  });
-})();
-</script>
-<script>
-(function(){
-  const form = document.getElementById('mz-upload-form');
-  if (!form) return;
-
-  const rows = document.getElementById('mz-upl-rows');
-  const urlInp = form.querySelector('input[data-role="url"]');
-
-  const firstRow = rows ? rows.querySelector('.mz-upl-row') : null;
-  const drop = firstRow ? firstRow.querySelector('[data-role="dropzone"]') : null;
-
-  function anyFileSelected(){
-    const inputs = form.querySelectorAll('input[type="file"][data-role="file"]');
-    for (const inp of inputs){
-      if (inp.files && inp.files.length) return true;
-    }
-    return false;
-  }
-
-  function hasUrl(){
-    return !!(urlInp && urlInp.value && urlInp.value.trim().length);
-  }
-
-  form.addEventListener('submit', function(e){
-    if (anyFileSelected() || hasUrl()) return;
-
-    e.preventDefault();
-    if (drop){
-      drop.classList.add('is-over');
-      setTimeout(()=>drop.classList.remove('is-over'), 350);
-    }
-    alert('Sube un archivo o pega una URL.');
-  });
-})();
-</script>
-
-<script>
-(function(){
-  async function copyToClipboard(text){
-    try{
-      await navigator.clipboard.writeText(text);
-      return true;
-    }catch(e){
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.left = '-9999px';
-      document.body.appendChild(ta);
-      ta.select();
-      try { document.execCommand('copy'); } catch(_){}
-      document.body.removeChild(ta);
-      return true;
-    }
-  }
-
-  async function postJSON(url){
-    if (url && !url.endsWith('/')) url += '/'; // ✅ APPEND_SLASH safe
-    const r = await fetch(url, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'X-Requested-With':'XMLHttpRequest' }
-    });
-    const txt = await r.text();
-    let j = {};
-    try { j = txt ? JSON.parse(txt) : {}; } catch(_){}
-    if (!r.ok) throw new Error(j.error || j.message || ('HTTP ' + r.status));
-    return j;
-  }
-
-  document.addEventListener('click', async (e)=>{
-    const btn = e.target.closest('[data-action="materials.copy_public_link"]');
-    if (!btn) return;
-
-    const shareUrl = btn.getAttribute('data-share-url'); // ✅ берём URL из кнопки
-    if (!shareUrl) {
-      alert('Falta data-share-url en el botón');
-      return;
-    }
-
-    btn.disabled = true;
-    const old = btn.textContent;
-    btn.textContent = 'Generando...';
-
-    try{
-      const j = await postJSON(shareUrl);
-      const publicUrl = j.url;
-      if (!publicUrl) throw new Error('Respuesta sin url');
-
-      await copyToClipboard(publicUrl);
-
-      btn.textContent = 'Copiado ✓';
-      setTimeout(()=>{ btn.textContent = old; btn.disabled = false; }, 900);
-    }catch(err){
-      btn.textContent = 'Error';
-      console.error(err);
-      setTimeout(()=>{ btn.textContent = old; btn.disabled = false; }, 1200);
-      alert('No se pudo generar el enlace: ' + (err.message || err));
-    }
-  });
-})();
-</script>
-
-<script>
-(function(){
-  const modal = document.getElementById('mz-preview');
-  const body  = document.getElementById('mz-prev-body');
-  const title = document.getElementById('mz-prev-title');
-  const openA = document.getElementById('mz-prev-open');
-  const closeBtn = modal ? modal.querySelector('button[data-close]') : null;
-  if(!modal || !body || !title || !openA) return;
-
-  let lastFocus = null;
-
-  function openPreview(url, name){
-    lastFocus = document.activeElement; // ✅ запомнили
-    title.textContent = name || 'Vista previa';
-    openA.href = url;
-
-    body.innerHTML = '';
-    const u = (url || '').toLowerCase();
-
-    // ✅ у тебя теперь inline=1 — считаем это pdf (или добавь data-ext как мы обсуждали)
-    const isPdf = u.includes('.pdf') || u.includes('inline=1');
-    const isImg = u.match(/\.(png|jpg|jpeg|webp|gif)(\?|$)/);
-
-    if(isPdf){
-      const ifr = document.createElement('iframe');
-      ifr.src = url;
-      body.appendChild(ifr);
-    } else if(isImg){
-      const img = document.createElement('img');
-      img.src = url;
-      img.alt = title.textContent;
-      body.appendChild(img);
-    } else {
-      body.innerHTML = '<div style="padding:14px;color:#cbd5e1">No hay vista previa para este tipo. Usa “Abrir/Descargar”.</div>';
-    }
-
-    modal.classList.remove('is-hidden');
-    modal.setAttribute('aria-hidden','false');
-    document.body.style.overflow = 'hidden';
-
-    // ✅ переводим фокус внутрь модалки
-    (closeBtn || openA).focus();
-  }
-
-  function closePreview(){
-    // ✅ сначала верни фокус назад, потом прячь
-    if(lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
-    lastFocus = null;
-
-    modal.classList.add('is-hidden');
-    modal.setAttribute('aria-hidden','true');
-    body.innerHTML = '';
-    document.body.style.overflow = '';
-  }
-
-  modal.addEventListener('click', (e)=>{
-    if(e.target.matches('[data-close]') || e.target.closest('[data-close]')) closePreview();
-  });
-  document.addEventListener('keydown', (e)=>{
-    if(e.key === 'Escape' && !modal.classList.contains('is-hidden')) closePreview();
-  });
-
-  document.addEventListener('click', (e)=>{
-    const a = e.target.closest('a[data-preview]');
-    if(!a) return;
-    e.preventDefault();
-    openPreview(a.getAttribute('href'), a.getAttribute('data-name') || a.textContent.trim());
-  });
-})();
-</script>
-<script>
-/**
- * Скачивает акт (DOCX) по материалу физ. для курса.
- * Реальный endpoint (по get_resolver):
- *   /alumno/curso/<codigo>/physical_report_doc  (и вариант со слэшем)
- *
- * Требует авторизацию (cookie), т.к. это teacher-only view.
- */
-
-function mzDownloadPhysicalActa(codigo, itemKey){
-  const inp = document.querySelector(`.mz-phys-date[data-item-key="${CSS.escape(itemKey)}"]`);
-  const fecha = inp && inp.value ? inp.value : "";
-
-  const qs = new URLSearchParams();
-  qs.set("item_key", itemKey);
-  if (fecha) qs.set("fecha", fecha);
-
-  // ✅ правильный endpoint (teacher session)
-  const url = `/alumno/curso/${encodeURIComponent(codigo)}/physical_report_doc/?` + qs.toString();
-
-  window.location.href = url; // скачивание
-}
-
-
-/**
- * Быстрый биндинг на кнопки:
- * <button data-action="mz.download.acta"
- *         data-codigo="{{ curso.codigo }}"
- *         data-item-key="{{ it.key }}">
- *   Descargar acta
- * </button>
- */
-document.addEventListener('click', (e) => {
-  const btn = e.target.closest('[data-action="mz.download.acta"]');
-  if (!btn) return;
-  e.preventDefault();
-
-  const codigo = btn.getAttribute('data-codigo') || '';
-  const itemKey = btn.getAttribute('data-item-key') || '';
-  if (!codigo || !itemKey) {
-    alert('Falta codigo o item_key');
-    return;
-  }
-
-  mzDownloadPhysicalActa(codigo, itemKey);
-});
-</script>
-<script>
-(function(){
-  const form = document.getElementById('mz-upload-form');
-  if(!form) return;
-
-  const urlInp = form.querySelector('input[data-role="url"]');
-  const dropRow = form.querySelector('.mz-upl-row[data-row-idx="1"]');
-  const drop = dropRow ? dropRow.querySelector('[data-role="dropzone"]') : null;
-
-  function anyFileSelected(){
-    const inputs = form.querySelectorAll('input[type="file"][data-role="file"]');
-    for (const inp of inputs){
-      if (inp.files && inp.files.length) return true;
-    }
-    return false;
-  }
-  function hasUrl(){
-    return !!(urlInp && urlInp.value && urlInp.value.trim().length);
-  }
-
-  form.addEventListener('submit', function(e){
-    if (anyFileSelected() || hasUrl()) return;
-
-    e.preventDefault();
-    if (drop){
-      drop.classList.add('is-over');
-      setTimeout(()=>drop.classList.remove('is-over'), 350);
-    }
-    alert('Sube un archivo o pega una URL.');
-  });
-})();
-</script>
-<script>
-(function(){
-  const filters = document.querySelector('.mz-mat-modfilters[data-selected-mod]');
-  if (!filters) return;
-
-  const selected = (filters.getAttribute('data-selected-mod') || '').trim();
-  if (!selected || selected === 'none') return;
-
-  // 1) файловые строки как было
-  const rowsContainer = document.getElementById('mz-upl-rows');
-  if (rowsContainer) {
-    rowsContainer.querySelectorAll('.mz-upl-row').forEach(row=>{
-      const mk = row.querySelector('[data-role="module_key"]');
-      if (mk) mk.value = selected;
-    });
-  }
-
-  // 2) URL секция
-  const urlMk = document.querySelector('#mz-upload-form [data-role="url_module_key"]');
-  if (urlMk) urlMk.value = selected;
-})();
-</script>
-<script>
-(function(){
-  const bc = document.getElementById('mz-fold-bc');
-  if(!bc) return;
-
-  const path = (bc.getAttribute('data-path') || '').trim();
-  if(!path) return;
-
-  const aud  = encodeURIComponent(bc.getAttribute('data-aud') || 'alumnos');
-  const mod  = encodeURIComponent(bc.getAttribute('data-mod') || '');
-  const sort = encodeURIComponent(bc.getAttribute('data-sort') || 'new');
-
-  const parts = path.split('/').filter(Boolean);
-  let acc = '';
-
-  parts.forEach((p, idx)=>{
-    acc = acc ? (acc + '/' + p) : p;
-
-    const sep = document.createElement('span');
-    sep.className = 'mz-bc-sep';
-    sep.textContent = '›';
-    bc.appendChild(sep);
-
-    const a = document.createElement('a');
-    a.className = 'mz-bc';
-    a.textContent = p;
-    a.href = `?tab=materiales&aud=${aud}&p=${encodeURIComponent(acc)}&mod=${mod}&sort=${sort}`;
-    bc.appendChild(a);
-  });
-})();
-</script><script>
-(function(){
-  const isTeacher = !!document.querySelector('[data-drop-folder]');
-  if(!isTeacher) return;
-
-  function getCookie(name){
-    const v = document.cookie.split(';').map(s=>s.trim()).find(s=>s.startsWith(name+'='));
-    return v ? decodeURIComponent(v.split('=')[1]) : '';
-  }
-  const csrftoken = getCookie('csrftoken');
-
-  let dragFileId = null;
-  let dragEl = null;
-
-  function isValidId(x){
-    return /^\d+$/.test(String(x || '').trim());
-  }
-
-  function findTargetContainer(targetPath){
-    // targetPath == "" => root
-    if (!targetPath) {
-      let root = document.querySelector('.mz-tree-rootfiles');
-      if (!root){
-        root = document.createElement('div');
-        root.className = 'mz-tree-rootfiles';
-        const tree = document.querySelector('.mz-tree');
-        if (tree) tree.prepend(root);
-      }
-      return root;
-    }
-
-    const node = document.querySelector(`.mz-tree-node[data-node="${CSS.escape(targetPath)}"]`);
-    if (!node) return null;
-
-    const kids = node.querySelector('.mz-tree-children');
-    if (!kids) return null;
-
-    // раскрыть папку, чтобы было видно
-    kids.hidden = false;
-    const tgl = node.querySelector('[data-toggle]');
-    if (tgl) tgl.textContent = '▾';
-
-    return kids;
-  }
-
-  function bumpCount(path, delta){
-    const node = path
-      ? document.querySelector(`.mz-tree-node[data-node="${CSS.escape(path)}"]`)
-      : null;
-
-    // root count мы не показываем — можно пропустить
-    if (!node) return;
-
-    const c = node.querySelector('.mz-tree-count');
-    if (!c) return;
-
-    const n = parseInt((c.textContent || '0'), 10) || 0;
-    c.textContent = String(Math.max(0, n + delta));
-  }
-
-  // --- DRAG START/END ---
-  document.addEventListener('dragstart', (e)=>{
-    const it = e.target.closest('[data-drag-file]');
-    if(!it) return;
-
-    dragEl = it;
-    dragFileId = it.getAttribute('data-drag-file');
-
-    if (!isValidId(dragFileId)){
-      dragEl = null;
-      dragFileId = null;
-      return;
-    }
-
-    it.classList.add('is-dragging');
-
-    e.dataTransfer.effectAllowed = 'move';
-    // кладём и в text/plain, и в кастомный mime
-    e.dataTransfer.setData('text/plain', String(dragFileId));
-    e.dataTransfer.setData('application/x-mz-file-id', String(dragFileId));
-  });
-
-  document.addEventListener('dragend', ()=>{
-    if(dragEl) dragEl.classList.remove('is-dragging');
-    dragEl = null;
-    dragFileId = null;
-
-    document.querySelectorAll('.is-drop-ok,.is-drop-bad')
-      .forEach(x=>x.classList.remove('is-drop-ok','is-drop-bad'));
-  });
-
-  function canDrop(){ return true; }
-
-  // --- DROP on folders (grid + tree) ---
-  document.querySelectorAll('[data-drop-folder]').forEach(folderEl=>{
-    folderEl.addEventListener('dragenter', (e)=>{
-      e.preventDefault();
-      if(!dragFileId) return;
-      folderEl.classList.add('is-drop-ok');
-    });
-    folderEl.addEventListener('dragover', (e)=>{
-      e.preventDefault();
-      if(!dragFileId) return;
-      e.dataTransfer.dropEffect = canDrop(folderEl) ? 'move' : 'none';
-    });
-    folderEl.addEventListener('dragleave', ()=>{
-      folderEl.classList.remove('is-drop-ok','is-drop-bad');
-    });
-
-    folderEl.addEventListener('drop', async (e)=>{
-      e.preventDefault();
-      folderEl.classList.remove('is-drop-ok','is-drop-bad');
-
-      // читаем ТОЛЬКО наш id, иначе игнор
-      const rawId =
-        dragFileId ||
-        e.dataTransfer.getData('application/x-mz-file-id') ||
-        e.dataTransfer.getData('text/plain');
-
-      if(!isValidId(rawId)){
-        console.warn('DROP ignored: not a file id', rawId);
-        return;
-      }
-      const fileId = String(rawId).trim();
-
-      const targetPath = folderEl.getAttribute('data-drop-folder') || '';
-
-      // найдём DOM элемент файла
-      const fileEl = document.querySelector(`[data-drag-file="${CSS.escape(fileId)}"]`);
-      if(!fileEl){
-        console.warn('file element not found for', fileId);
-        return;
-      }
-
-      // откуда переносим (только для дерева — чтобы обновить счетчик)
-      const srcNode = fileEl.closest('.mz-tree-node');
-      const srcPath = srcNode ? (srcNode.getAttribute('data-node') || '') : '';
-
-      const form = new FormData();
-      form.append('action', 'file_move');
-      form.append('file_id', fileId);
-      form.append('target_path', targetPath);
-
-      try{
-        const r = await fetch(window.location.pathname + window.location.search, {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'X-CSRFToken': csrftoken,
-            'X-Requested-With': 'XMLHttpRequest',
-          },
-          body: form
-        });
-
-        const raw = await r.text();
-        let j = {};
-        try { j = raw ? JSON.parse(raw) : {}; } catch(_) {}
-
-        if(!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
-
-        // ✅ UI: переносим DOM-элемент в целевую папку (tree)
-        const targetContainer = findTargetContainer(targetPath);
-
-        if (targetContainer){
-          // вставляем в начало контейнера
-          targetContainer.prepend(fileEl);
-        } else {
-          // если мы в LIST view, просто уберём
-          fileEl.remove();
-        }
-		// 1) обновим dataset
-		if (j.module_key !== undefined) {
-		  fileEl.dataset.module = j.module_key || '';
-		}
-
-		// 2) обновим бейдж где бы он ни был
-		const tag = fileEl.querySelector('.mz-mat-tag, .mz-tree-modtag');
-		if (tag) {
-		  tag.textContent = j.module_key || 'Sin módulo';
-		  tag.classList.toggle('muted', !j.module_key);
-		}
-		if (j.file_html) {
-		  fileEl.outerHTML = j.file_html;
-		  // заново найдём новый element
-		  fileEl = document.querySelector(`[data-drag-file="${CSS.escape(fileId)}"]`);
-		}
-
-
-
-        // ✅ обновим счетчики в дереве
-        if (srcPath !== targetPath){
-          if (srcPath) bumpCount(srcPath, -1);
-          if (targetPath) bumpCount(targetPath, +1);
-        }
-
-      }catch(err){
-        console.error(err);
-        alert('No se pudo mover el archivo: ' + (err.message || err));
-      }
-    });
-  });
-})();
-</script>
-<script>
-(function(){
-  const btn = document.querySelector('[data-action="folder.create.big"]');
-  const form = document.getElementById('mz-folder-create-form');
-  if(!btn || !form) return;
-
-  function getCookie(name){
-    const v = document.cookie.split(';').map(s=>s.trim()).find(s=>s.startsWith(name+'='));
-    return v ? decodeURIComponent(v.split('=')[1]) : '';
-  }
-
-  async function createFolderAjax(name){
-    // обновим parent из текущего path (если breadcrumb есть)
-    const bc = document.getElementById('mz-fold-bc');
-    const parent = bc ? (bc.getAttribute('data-path') || '') : (form.querySelector('[name="folder_parent"]').value || '');
-    form.querySelector('[name="folder_parent"]').value = parent;
-
-    const fd = new FormData(form);
-    fd.set('folder_name', name);
-
-    const r = await fetch(window.location.pathname + window.location.search, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'X-CSRFToken': getCookie('csrftoken'),
-        'X-Requested-With': 'XMLHttpRequest',
-      },
-      body: fd
-    });
-
-    const txt = await r.text();
-    let j = {};
-    try { j = txt ? JSON.parse(txt) : {}; } catch(_) {}
-    if(!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
-    return j;
-  }
-
-  btn.addEventListener('click', async ()=>{
-    const name = prompt('Nombre de la carpeta:');
-    if(!name) return;
-
-    // попробуем AJAX (если backend отдаёт JSON). Если нет — обычный submit.
-    try{
-      const j = await createFolderAjax(name.trim());
-
-      // ✅ обновим UI без перезагрузки (tree + grid)
-      if (j.node_html){
-        // если backend вернёт готовый html — вставим
-        const tree = document.querySelector('.mz-tree');
-        if (tree) tree.insertAdjacentHTML('afterbegin', j.node_html);
-      } else {
-        // минимально: просто перезагрузим (если JSON не подготовлен)
-        // но ты просил без reload — поэтому лучше сделать node_html на бэке (см. ниже)
-        console.warn('folder created but no node_html returned');
-      }
-
-    }catch(err){
-      console.warn('AJAX folder_create failed, fallback to normal submit', err);
-
-      // fallback обычным submit (надежно)
-      form.querySelector('input[name="folder_name"]').value = name.trim();
-      // обновим parent на всякий
-      const bc = document.getElementById('mz-fold-bc');
-      form.querySelector('[name="folder_parent"]').value = bc ? (bc.getAttribute('data-path') || '') : '';
-      form.submit();
-    }
-  });
-})();
-</script>
-<script>
-(function(){
-  const root = document.querySelector('.mz-tree');
-  if(!root) return;
-
-  const KEY = 'mz_tree_open_v1';
-
-  function loadState(){
-    try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; }
-    catch(e){ return {}; }
-  }
-  function saveState(st){
-    try { localStorage.setItem(KEY, JSON.stringify(st || {})); } catch(e){}
-  }
-  const state = loadState();
-
-  // init: применяем сохранённое состояние
-  root.querySelectorAll('.mz-tree-node').forEach(nodeEl=>{
-    const path = nodeEl.getAttribute('data-node') || '';
-    const kids = nodeEl.querySelector('.mz-tree-children');
-    const btn  = nodeEl.querySelector('[data-toggle]');
-    if(!kids || !btn) return;
-
-    const open = !!state[path];
-    kids.hidden = !open;
-    btn.textContent = open ? '▾' : '▸';
-  });
-
-  // click (delegation)
-  root.addEventListener('click', (e)=>{
-    const btn = e.target.closest('[data-toggle]');
-    if(!btn) return;
-
-    const nodeEl = btn.closest('.mz-tree-node');
-    if(!nodeEl) return;
-
-    const kids = nodeEl.querySelector('.mz-tree-children');
-    if(!kids) return;
-
-    const path = nodeEl.getAttribute('data-node') || '';
-    kids.hidden = !kids.hidden;
-
-    const openNow = !kids.hidden;
-    btn.textContent = openNow ? '▾' : '▸';
-
-    state[path] = openNow ? 1 : 0;
-    saveState(state);
-  });
-})();
-</script>
-
-<script>
-(function(){
-
-  const sortBar = document.querySelector('.mz-mat-sort');
-  if(!sortBar) return;
-
-  function sortContainerFiles(container, mode){
-    const files = Array.from(container.querySelectorAll(':scope > .mz-tree-file'));
-    if(!files.length) return;
-
-    const byName = (a,b)=> (a.dataset.name||'').localeCompare(b.dataset.name||'', undefined, {numeric:true, sensitivity:'base'});
-    const byTs   = (a,b)=> (parseInt(a.dataset.ts||'0',10) - parseInt(b.dataset.ts||'0',10));
-
-    let cmp = byName;
-    if(mode === 'az') cmp = byName;
-    if(mode === 'za') cmp = (a,b)=> -byName(a,b);
-    if(mode === 'old') cmp = byTs;
-    if(mode === 'new') cmp = (a,b)=> -byTs(a,b);
-
-    files.sort(cmp);
-    files.forEach(el=>container.appendChild(el));
-  }
-
-	function sortFolderNodes(container, mode){
-	  // сортируем только непосредственные папки в этом контейнере
-	  const nodes = Array.from(container.querySelectorAll(':scope > .mz-tree-node'));
-	  if(!nodes.length) return;
-
-		const getName = (el)=> (el.getAttribute('data-folder-name') || '').trim().toLowerCase();
-		const getLockedKey = (el)=> (el.getAttribute('data-locked') === '1' ? 0 : 1);
-
-		const byName = (a,b)=> getName(a).localeCompare(getName(b), undefined, {numeric:true, sensitivity:'base'});
-		const cmp = (a,b)=>{
-		  const la = getLockedKey(a), lb = getLockedKey(b);
-		  if (la !== lb) return la - lb;
-		  return (mode === 'za') ? -byName(a,b) : byName(a,b);
-		};
-
-
-	  nodes.sort(cmp);
-	  nodes.forEach(n=>container.appendChild(n));
-	}
-
-	function applySort(mode){
-	  // 1) СОРТИРУЕМ ПАПКИ (root level)
-	  const treeRoot = document.querySelector('.mz-tree');
-	  if (treeRoot) sortFolderNodes(treeRoot, mode);
-
-	  // 2) СОРТИРУЕМ ПАПКИ на каждом уровне
-	  document.querySelectorAll('.mz-tree-node .mz-tree-children').forEach(kids=>{
-		sortFolderNodes(kids, mode);
-	  });
-
-	  // 3) СОРТИРУЕМ ФАЙЛЫ как было
-	  const root = document.querySelector('.mz-tree-rootfiles');
-	  if(root) sortContainerFiles(root, mode);
-
-	  document.querySelectorAll('.mz-tree-node .mz-tree-children').forEach(kids=>{
-		sortContainerFiles(kids, mode);
-	  });
-
-	  // визуально активная плашка
-	  sortBar.querySelectorAll('a.mz-pill').forEach(a=>a.classList.remove('is-act'));
-	  const active = sortBar.querySelector(`a[href*="sort=${mode}"]`);
-	  if(active) active.classList.add('is-act');
-	}
-
-
-  sortBar.addEventListener('click', (e)=>{
-    const a = e.target.closest('a[href*="sort="]');
-    if(!a) return;
-
-    const u = new URL(a.href, location.origin);
-    const mode = u.searchParams.get('sort') || 'new';
-
-    // ✅ не перезагружаем
-    e.preventDefault();
-
-    // сохраняем в URL без reload
-    const cur = new URL(location.href);
-    cur.searchParams.set('sort', mode);
-    history.replaceState({}, '', cur);
-
-    applySort(mode);
-  });
-
-  // старт — применяем текущий sort из URL
-  const curSort = new URLSearchParams(location.search).get('sort') || 'new';
-  applySort(curSort);
-})();
-</script>
+<script src="{% static 'panel/js/materiales.js' %}?v={% now 'U' %}"></script>
+<script src="{% static 'panel/js/materiales_fs.js' %}?v={% now 'U' %}"></script>
+<script src="{% static 'panel/js/materiales_physical.js' %}?v={% now 'U' %}"></script>
