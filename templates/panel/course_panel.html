@@ -389,12 +389,176 @@
   width:6px;height:6px;border-radius:50%;
   background:#fff;
 }
+/* скрыть watermark слева */
+.watermark.leftwatermark { display: none !important; }
 
+/* часто еще есть правый watermark/brand */
+.watermark.rightwatermark,
+.branding { display: none !important; }
+
+/* ——— FAB BURGER (MÓVIL) ——— */
+.mz-fab-burger{
+  position: fixed;
+  top: 34px;
+  left: 14px;
+  z-index: 9999;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  border: 1px solid rgba(148,163,184,0.55);
+  background: radial-gradient(circle at top, rgba(51,65,85,0.9), rgba(15,23,42,0.96));
+  display: none;             /* включим на móvil через media */
+  flex-direction: column;    /* ВАЖНО: линии друг над другом */
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 18px 45px rgba(15,23,42,0.85);
+  backdrop-filter: blur(10px);
+}
+
+.mz-fab-burger .line{
+  width: 20px;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(226,232,240,0.95);
+}
+
+/* Меню-слой */
+.mz-fab-menu{
+  position: fixed;
+  top: 66px;
+  left: 14px;
+  right: 14px;
+  z-index: 9998;
+  display: none;
+  border-radius: 18px;
+  border: 1px solid rgba(148,163,184,0.45);
+  background: radial-gradient(circle at top, rgba(15,23,42,0.96), rgba(15,23,42,0.92));
+  box-shadow: 0 20px 55px rgba(15,23,42,0.92);
+  overflow: hidden;
+}
+
+.mz-fab-menu.is-open{ display:block; }
+
+.mz-fab-menu-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(148,163,184,0.25);
+}
+
+.mz-fab-menu-head .ttl{
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  font-weight: 700;
+}
+
+.mz-fab-menu-head .x{
+  width: 36px;
+  height: 32px;
+  border-radius: 12px;
+  border: 1px solid rgba(148,163,184,0.35);
+  background: rgba(15,23,42,0.65);
+  color: #e5e7eb;
+  font-size: 20px;
+  line-height: 1;
+  cursor:pointer;
+}
+
+.mz-fab-menu-list{
+  display:flex;
+  flex-direction:column;
+}
+
+.mz-fab-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+  padding: 12px 12px;
+  text-decoration:none;
+  color:#e5e7eb;
+  border-top: 1px solid rgba(30,41,59,0.85);
+}
+
+.mz-fab-item:first-child{ border-top:none; }
+
+.mz-fab-item:hover{
+  background: rgba(59,130,246,0.10);
+}
+
+.mz-fab-item.is-act{
+  background: radial-gradient(circle at top, rgba(34,211,238,0.22), rgba(59,130,246,0.18));
+  border-left: 3px solid rgba(34,211,238,0.85);
+}
+
+.mz-fab-item .txt{ font-weight: 650; }
+
+/* На móvil: прячем табы и показываем плавающий бургер */
+@media (max-width: 820px){
+  .mz-tabs{ display:none !important; }
+  .mz-fab-burger{ display:flex; }
+
+  /* чуть больше места сверху, чтобы FAB не перекрывал контент */
+  #mz-panel-wrap{ padding-top: 70px; }
+}
+
+/* На desktop бургер не нужен */
+@media (min-width: 821px){
+  .mz-fab-menu{ display:none !important; }
+}
+
+@media (max-width: 480px){
+  #mz-panel.mzc-wrap{ padding: 0 6px; }
+  #mz-panel .mzc-card{ padding: 12px 12px 14px; }
+}
 </style>
 
 <div id="mz-panel-wrap">
   <div id="mz-panel-overlay"></div>
+<button type="button"
+        class="mz-fab-burger"
+        id="mz-fab-burger"
+        aria-label="Menú"
+        aria-expanded="false">
+  <span class="line"></span>
+  <span class="line"></span>
+  <span class="line"></span>
+</button>
 
+<div class="mz-fab-menu" id="mz-fab-menu" aria-hidden="true">
+  <div class="mz-fab-menu-head">
+    <div class="ttl">Menú</div>
+    <button type="button" class="x" id="mz-fab-close" aria-label="Cerrar">×</button>
+  </div>
+
+  <div class="mz-fab-menu-list">
+    {% for m in modules_cfg %}
+      {% if m.slug == "live" and not show_live_tab %}
+        {# скрываем кнопку live #}
+      {% else %}
+        <a href="?tab={{ m.slug }}"
+           class="mz-fab-item{% if active_tab == m.slug %} is-act{% endif %}"
+           data-action="panel.tab"
+           data-tab="{{ m.slug }}"
+           data-curso="{{ curso.codigo }}">
+          <span class="txt">{{ m.label }}</span>
+
+          {% if m.slug == "chat" %}
+            <span class="mz-main-chat-badge" id="mz-main-chat-badge-mobile" style="display:none;">
+              <span class="dot"></span>
+              <span class="txt">0</span>
+            </span>
+          {% endif %}
+        </a>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
   <section id="mz-panel" class="mzc-wrap">
     <div class="mzc-card">
       <header class="mzc-head">
@@ -403,6 +567,8 @@
         </h3>
 
         <div class="mzc-note">
+	
+		
           <span>{{ curso.codigo }}</span>
 
           {% if curso.localidad %}
@@ -417,23 +583,26 @@
         </div>
 
         <nav class="mz-tabs">
-          {% for m in modules_cfg %}
-<a href="?tab={{ m.slug }}"
-   class="mzc-btn ghost{% if active_tab == m.slug %} is-act{% endif %}"
-   data-action="panel.tab"
-   data-tab="{{ m.slug }}"
-   data-curso="{{ curso.codigo }}">
-  <span>{{ m.label }}</span>
+	{% for m in modules_cfg %}
+	  {% if m.slug == "live" and not show_live_tab %}
+		{# скрываем кнопку live, но сам таб продолжит работать по ?tab=live #}
+	  {% else %}
+		<a href="?tab={{ m.slug }}"
+		   class="mzc-btn ghost{% if active_tab == m.slug %} is-act{% endif %}"
+		   data-action="panel.tab"
+		   data-tab="{{ m.slug }}"
+		   data-curso="{{ curso.codigo }}">
+		  <span>{{ m.label }}</span>
 
-  {% if m.slug == "chat" %}
-    <span class="mz-main-chat-badge" id="mz-main-chat-badge" style="display:none;">
-      <span class="dot"></span>
-      <span class="txt">0</span>
-    </span>
-  {% endif %}
-</a>
-
-          {% endfor %}
+		  {% if m.slug == "chat" %}
+			<span class="mz-main-chat-badge" id="mz-main-chat-badge" style="display:none;">
+			  <span class="dot"></span>
+			  <span class="txt">0</span>
+			</span>
+		  {% endif %}
+		</a>
+	  {% endif %}
+	{% endfor %}
         </nav>
       </header>
 
@@ -463,6 +632,10 @@
           <div class="mzc-tab-inner">
             {% include "panel/tabs/ia.html" %}
           </div>
+		{% elif active_tab == "live" %}
+		  <div class="mzc-tab-inner">
+			{% include "panel/tabs/live.html" %}
+		  </div>
         {% elif active_tab == "chat" %}
           <div class="mzc-tab-inner">
             {% include "panel/tabs/chat.html" %}
@@ -477,14 +650,20 @@
   const codigo = "{{ curso.codigo|escapejs }}";
   const V5 = "{{ V5_API_BASE|default:'/meatze/v5'|escapejs }}";
   const badge = document.getElementById('mz-main-chat-badge');
+  const badgeMobile = document.getElementById('mz-main-chat-badge-mobile');
   if (!codigo || !badge) return;
 
-  function setBadge(n){
-    const x = parseInt(n || 0, 10) || 0;
-    const txt = badge.querySelector('.txt');
-    if (txt) txt.textContent = String(x);
-    badge.style.display = x > 0 ? 'inline-flex' : 'none';
-  }
+function _applyBadge(el, x){
+  if (!el) return;
+  const txt = el.querySelector('.txt');
+  if (txt) txt.textContent = String(x);
+  el.style.display = x > 0 ? 'inline-flex' : 'none';
+}
+function setBadge(n){
+  const x = parseInt(n || 0, 10) || 0;
+  _applyBadge(badge, x);
+  _applyBadge(badgeMobile, x);
+}
 
   async function getJson(url){
     try{
@@ -516,6 +695,40 @@
   setInterval(refresh, 25000);
 })();
 </script>
+
+<script>
+(function(){
+  const btn   = document.getElementById('mz-fab-burger');
+  const menu  = document.getElementById('mz-fab-menu');
+  const close = document.getElementById('mz-fab-close');
+  if (!btn || !menu) return;
+
+  function openMenu(){
+    menu.classList.add('is-open');
+    menu.setAttribute('aria-hidden','false');
+    btn.setAttribute('aria-expanded','true');
+  }
+  function closeMenu(){
+    menu.classList.remove('is-open');
+    menu.setAttribute('aria-hidden','true');
+    btn.setAttribute('aria-expanded','false');
+  }
+  function toggle(){
+    menu.classList.contains('is-open') ? closeMenu() : openMenu();
+  }
+
+  btn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); toggle(); });
+  if (close) close.addEventListener('click', (e) => { e.preventDefault(); closeMenu(); });
+
+  menu.addEventListener('click', (e) => e.stopPropagation());
+  document.addEventListener('click', closeMenu);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
+
+  // Закрывать при выборе пункта
+  menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => closeMenu()));
+})();
+</script>
+
 <script>
   window.MZ_TRAFFIC = {
     endpoint: "{% url 'panel:event' %}",   // это твой panel эндпоинт

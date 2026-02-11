@@ -1,0 +1,58 @@
+{% extends "panel/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="mzc-card">
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+    <div>
+      <h3 style="margin:0;">Clase en directo</h3>
+      <div class="mzc-note" style="margin-top:6px;">
+        Curso: <b>{{ curso }}</b> · Sala: <code>{{ jitsi_room }}</code>
+      </div>
+      <div class="mzc-note" style="margin-top:6px;">
+        is_teacher={{ jitsi_is_teacher }} · jwt={{ jitsi_jwt|yesno:"YES,NO" }}
+      </div>
+    </div>
+
+    <div style="display:flex; gap:8px; align-items:center;">
+      <a class="mz-btn" href="#" onclick="history.back(); return false;">← Volver</a>
+      <button class="mz-btn mz-btn-danger" id="btn-leave" type="button">Salir</button>
+    </div>
+  </div>
+
+  <div id="jitsi-root"
+       style="margin-top:12px; width:100%; height: calc(100vh - 220px); min-height:520px; border-radius:14px; overflow:hidden;">
+  </div>
+</div>
+
+<script src="https://{{ jitsi_domain }}/external_api.js"></script>
+<script>
+(() => {
+  const domain = "{{ jitsi_domain|escapejs }}";
+  const roomName = "{{ jitsi_room|escapejs }}";
+  const displayName = "{{ jitsi_display_name|escapejs }}";
+  const jwtToken = "{{ jitsi_jwt|default:''|escapejs }}";
+
+	const options = {
+	  roomName,
+	  parentNode: document.querySelector('#jitsi-root'),
+	  width: '100%',
+	  height: '100%',
+	  userInfo: { displayName },
+	  // jwt НЕ передаём
+	  configOverwrite: {
+		disableDeepLinking: true,
+		prejoinPageEnabled: true,
+		enableUserRolesBasedOnToken: false
+	  }
+	};
+
+  const api = new JitsiMeetExternalAPI(domain, options);
+
+  const btn = document.getElementById('btn-leave');
+  if (btn) btn.addEventListener('click', () => {
+    try { api.executeCommand('hangup'); } catch(e) {}
+  });
+})();
+</script>
+{% endblock %}

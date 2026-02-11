@@ -41,3 +41,11 @@ urlpatterns += [
     path("meatze/v5/materiales/upload_files_ajax/", materiales_upload_files_ajax, name="mz_upload_files_ajax"),
     path("meatze/v5/materiales/upload_folder_bundle/", materiales_upload_folder_bundle, name="mz_upload_folder_bundle"),
 ]
+
+# panel/urls.py
+from django.urls import path
+from . import views_live
+
+urlpatterns += [
+    path("curso/<int:curso_id>/live/", views_live.curso_live, name="curso_live"),
+]

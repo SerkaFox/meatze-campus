@@ -29,7 +29,7 @@ import random, re, requests
 from collections import defaultdict
 from django.template.loader import render_to_string
 from .materiales_fs import normalize_path, create_folder
-
+from .views_live import build_live_context
 try:
     from api.models import UserProfile
 except ImportError:
@@ -46,6 +46,7 @@ TEACHER_MODULES = [
     {"slug": "calendario", "label": "Calendario"},
     {"slug": "alumnos",    "label": "Alumnos"},
     {"slug": "ia",         "label": "IA"},
+    {"slug":"live",        "label": "Directo"},
     {"slug": "chat",       "label": "Chat"},
 ]
 
@@ -54,6 +55,7 @@ STUDENT_MODULES = [
     {"slug": "materiales", "label": "Materiales"},
     {"slug": "tareas", "label": "Tareas"}, 
     {"slug": "calendario", "label": "Calendario"},
+    {"slug":"live",         "label":"Directo"},
     {"slug": "chat",       "label": "Chat"},
 ]
 
@@ -130,12 +132,18 @@ def _download_url(url: str):
 
     return filename, b"".join(chunks)
 
-
 @login_required
 def alumnos_status(request, codigo: str):
     curso = get_object_or_404(Curso, codigo=codigo)
+    user = request.user
 
-    is_teacher = Enrol.objects.filter(user=request.user, codigo=curso.codigo, role="teacher").exists()
+    # 1) роли
+    is_teacher = Enrol.objects.filter(user=user, codigo=curso.codigo, role="teacher").exists()
+    is_student = Enrol.objects.filter(user=user, codigo=curso.codigo).exclude(role="teacher").exists()
+
+    # 2) доступ
+    if not (is_teacher or is_student):
+        return JsonResponse({"message": "Acceso denegado"}, status=403)
 
     # ✅ реальный список физ. предметов из конфигурации курса
     physical_keys = list(
@@ -143,24 +151,18 @@ def alumnos_status(request, codigo: str):
         .values_list("key", flat=True)
     )
 
-    # какие файлы видны ученикам
-    visible_files_qs = CursoFile.objects.filter(curso=curso).filter(
+    visible_files_qs = (CursoFile.objects.filter(curso=curso).filter(
         Q(tipo=CursoFile.TIPO_ALUMNOS) |
         (Q(share_alumnos=True) & Q(tipo__in=[CursoFile.TIPO_DOCENTES, CursoFile.TIPO_PRIVADO]))
-    ).only("id", "title", "file", "module_key", "ext", "size")
+    ).only("id", "title", "file", "module_key", "ext", "size"))
 
     visible_ids = list(visible_files_qs.values_list("id", flat=True))
     total_visible = len(visible_ids)
 
-    # ✅ STUDENT MODE (без нового эндпоинта)
+    # --- STUDENT MODE ---
     if not is_teacher:
-        # проверим доступ к курсу (ученик должен быть зачислен)
-        is_student = Enrol.objects.filter(user=request.user, codigo=curso.codigo).exclude(role="teacher").exists()
-        if not is_student:
-            return JsonResponse({"message": "Acceso denegado"}, status=403)
-
-        my_d = MaterialDownload.objects.filter(alumno=request.user, file_id__in=visible_ids).count()
-        my_r = MaterialReceipt.objects.filter(curso=curso, alumno=request.user, item_key__in=physical_keys).count()
+        my_d = MaterialDownload.objects.filter(alumno=user, file_id__in=visible_ids).count()
+        my_r = MaterialReceipt.objects.filter(curso=curso, alumno=user, item_key__in=physical_keys).count()
 
         return JsonResponse({
             "role": "student",
@@ -171,8 +173,7 @@ def alumnos_status(request, codigo: str):
             "my_r": int(my_r),
         })
 
-
-    # ----- агрегаты (счетчики) -----
+    # --- TEACHER MODE ---
     dl_counts = dict(
         MaterialDownload.objects.filter(file_id__in=visible_ids)
         .values("alumno_id").annotate(c=Count("id"))
@@ -184,10 +185,7 @@ def alumnos_status(request, codigo: str):
         .values_list("alumno_id", "c")
     )
 
-    # ----- детали для tooltip -----
-    # downloads: alumno -> [file_id,...]
-    dl_rows = (
-        MaterialDownload.objects
+    dl_rows = (MaterialDownload.objects
         .filter(file_id__in=visible_ids)
         .values("alumno_id", "file_id")
     )
@@ -200,16 +198,13 @@ def alumnos_status(request, codigo: str):
         fid = row["file_id"]
         dl_detail.setdefault(aid, []).append(file_map.get(fid, f"#{fid}"))
 
-    # receipts: alumno -> [item_label,...]
-    rc_rows = (
-        MaterialReceipt.objects
+    rc_rows = (MaterialReceipt.objects
         .filter(curso=curso, item_key__in=physical_keys)
         .values("alumno_id", "item_label", "item_key")
     )
-    # fallback label по ключу
+
     label_by_key = dict(
-    CursoPhysicalItem.objects.filter(curso=curso)
-    .values_list("key", "label")
+        CursoPhysicalItem.objects.filter(curso=curso).values_list("key", "label")
     )
 
     rc_detail = {}
@@ -218,19 +213,15 @@ def alumnos_status(request, codigo: str):
         label = (row.get("item_label") or "").strip() or label_by_key.get(row["item_key"], row["item_key"])
         rc_detail.setdefault(aid, []).append(label)
 
-    # все alumno_id, у кого есть хоть что-то
     all_ids = set(dl_counts.keys()) | set(rc_counts.keys()) | set(dl_detail.keys()) | set(rc_detail.keys())
+
     slot = _current_slot(curso)
     presence = {}
-
     if slot:
         day_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
-
-        # берём ВСЕ сессии этого слота за сегодня
         qs = (AttendanceSession.objects
               .filter(curso_codigo=curso.codigo, horario_id=slot.id, started_at__gte=day_start)
               .exclude(status=AttendanceSession.STATUS_ENDED)
-              # ключевое: сначала самые “живые”
               .order_by("-last_heartbeat_at", "-last_seen_at", "-started_at", "-id")
               .values("id","user_id","status","active_sec","active_confirmed_sec",
                       "started_at","confirmed_at","last_heartbeat_at"))
@@ -238,8 +229,7 @@ def alumnos_status(request, codigo: str):
         for r in qs:
             uid = str(r["user_id"])
             if uid in presence:
-                continue  # уже взяли самую свежую для этого user
-
+                continue
             presence[uid] = {
                 "id": r["id"],
                 "status": r["status"],
@@ -251,24 +241,21 @@ def alumnos_status(request, codigo: str):
 
     students_total = Enrol.objects.filter(codigo=curso.codigo, role="student").count()
 
-
     return JsonResponse({
         "total_files": total_visible,
         "total_phys": len(physical_keys),
         "students_total": students_total,
-
         "items": {
             str(aid): {
                 "d": int(dl_counts.get(aid, 0)),
                 "r": int(rc_counts.get(aid, 0)),
-                "dl": dl_detail.get(aid, []),   # ✅ названия скачанных файлов
-                "rc": rc_detail.get(aid, []),   # ✅ названия подтверждённых предметов
+                "dl": dl_detail.get(aid, []),
+                "rc": rc_detail.get(aid, []),
             }
             for aid in all_ids
         },
         "slot": {"id": slot.id, "dia": slot.dia.isoformat(), "desde": slot.hora_inicio.strftime("%H:%M"), "hasta": slot.hora_fin.strftime("%H:%M")} if slot else None,
         "presence": presence
-       
     })
 
 
@@ -400,6 +387,7 @@ def course_panel(request, codigo):
         "modules_cfg": modules_cfg,
         "active_tab": active_tab,
         "audience_options": audience_options,
+        "show_live_tab": getattr(settings, "MEETZE_SHOW_LIVE_TAB", True),
     }
     context["IS_TEACHER"] = request.user.groups.filter(name="Docente").exists()
     context["USER_ID"] = request.user.id
@@ -1687,7 +1675,8 @@ def course_panel(request, codigo):
                     s["avg_grade"] = None
                     s["graded_tasks"] = 0
 
-
+    # --- LIVE tab context (легко и дёшево, можно всегда) ---
+    context.update(build_live_context(request=request, curso=curso, is_teacher=is_teacher))
     return render(request, "panel/course_panel.html", context)
 
 @login_required

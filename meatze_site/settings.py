@@ -206,3 +206,11 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024 * 1024 # 6GB общий лимит
 MZ_ATTENDANCE_HB_SEC = 90   
 
 PLAYWRIGHT_BIN = "/usr/bin/chromium"  # или оставь пустым, если playwright сам
+
+JITSI_DOMAIN = "meet.meatzeaula.es"
+JITSI_JWT_APP_ID = os.getenv("JITSI_JWT_APP_ID", "meatze")
+JITSI_JWT_SECRET = os.getenv("JITSI_JWT_SECRET", "")
+JITSI_JWT_AUD = "jitsi"
+JITSI_JWT_TTL_SECONDS = 2 * 60 * 60  # 2 часа
+
+MEETZE_SHOW_LIVE_TAB = False
