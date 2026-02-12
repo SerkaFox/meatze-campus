@@ -211,4 +211,47 @@
     }
   });
 })();
+
+
+// ---------------------------------------
+// TOTAL files counter (all folders, not only raíz)
+// ---------------------------------------
+(function initTotalFilesCounter(){
+  const out = document.getElementById('mz-files-count');
+  if(!out) return;
+
+  function calc(){
+    // считаем и в дереве, и в перемещённой панели карточек (там тоже .mz-tree-file)
+    const n = document.querySelectorAll('.mz-tree-file[data-file-id], .mz-tree-file[data-drag-file]').length;
+    out.textContent = `${n} archivo${n === 1 ? '' : 's'}`;
+  }
+
+  // 1) первичный расчёт
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', calc);
+  } else {
+    calc();
+  }
+
+  // 2) авто-обновление на upload/move/delete/ajax
+  if (window.MutationObserver){
+    let t = null;
+    const schedule = ()=>{
+      clearTimeout(t);
+      t = setTimeout(calc, 80);
+    };
+
+    const tree = document.querySelector('.mz-tree');
+    const cardsBody = document.getElementById('mz-cards-body');
+
+    const obs = new MutationObserver((muts)=>{
+      for(const m of muts){
+        if(m.type === 'childList'){ schedule(); break; }
+      }
+    });
+
+    if(tree) obs.observe(tree, { childList:true, subtree:true });
+    if(cardsBody) obs.observe(cardsBody, { childList:true, subtree:true });
+  }
+})();
 })();

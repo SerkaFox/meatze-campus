@@ -1291,3 +1291,299 @@
   gap:6px;
   flex-wrap:wrap;
 }
+
+/*НОВОЕ*/
+
+/* =========================
+   TREE: mobile-friendly names
+   ========================= */
+
+/* чтобы длинные имена не выталкивали экшены */
+.mz-tree-row{
+  align-items: flex-start; /* чтобы многострочный текст выглядел норм */
+}
+
+/* ссылка-папка: можно переносить */
+.mz-tree-folder{
+  flex: 1 1 auto;      /* занимает всё свободное */
+  min-width: 0;        /* КЛЮЧ: иначе flex-элемент не умеет ужиматься */
+  white-space: normal; /* разрешаем перенос */
+  overflow-wrap: anywhere; /* перенос даже для длинных слов/кодовых имен */
+  word-break: break-word;
+  line-height: 1.15;
+}
+
+/* счётчик/экшены не должны сжиматься */
+.mz-tree-count,
+.mz-tree-actions,
+.mz-new-folder,
+.mz-tree-tgl{
+  flex: 0 0 auto;
+}
+
+/* если у тебя в узле есть .mz-tree-actions — прижимаем вправо */
+.mz-tree-actions{
+  margin-left: auto;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  white-space: nowrap;
+}
+
+/* кнопки внутри действий — компактнее по умолчанию */
+.mz-tree-actions .mzc-btn.ghost{
+  padding: 4px 8px;
+  line-height: 1;
+}
+
+/* ====== MOBILE ====== */
+@media (max-width: 720px){
+  /* меньше воздуха в строке */
+  .mz-tree-row{
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  /* меньше тоггл */
+  .mz-tree-tgl{
+    width: 26px;
+    height: 26px;
+    border-radius: 9px;
+  }
+
+  /* папка: чуть меньше шрифт, но 2-3 строки ок */
+  .mz-tree-folder{
+    font-size: .92rem;
+  }
+
+  /* счётчик компактнее */
+  .mz-tree-count{
+    font-size: .68rem;
+    padding: 2px 6px;
+  }
+
+  /* экшены: маленькие кнопки */
+  .mz-tree-actions{
+    gap: 6px;
+  }
+  .mz-tree-actions .mzc-btn.ghost{
+    padding: 3px 6px;
+    border-radius: 10px;
+    font-size: .78rem;
+  }
+
+  /* плюсик/новая папка на мобиле меньше */
+  .mz-new-folder{
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+  }
+  .mz-new-folder-ico{ font-size: 18px; }
+  .mz-new-folder-plus{
+    right: 7px;
+    bottom: 7px;
+    width: 16px;
+    height: 16px;
+    font-size: 12px;
+  }
+}
+
+/* =========================
+   TREE FILE: 3-row mobile layout
+   ========================= */
+
+.mz-tree-file2{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+}
+
+.mz-file-main{
+  flex: 1 1 auto;
+  min-width: 0;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+/* 1) title full width, wraps */
+.mz-file-title{ min-width:0; }
+.mz-file-name{
+  display:block;
+  font-weight:800;
+  color:#e5e7eb;
+
+  white-space: normal;
+  overflow-wrap:anywhere;
+  word-break: break-word;
+  line-height: 1.15;
+}
+
+/* 2) meta line */
+.mz-file-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  align-items:center;
+  font-size:.78rem;
+  color:#9ca3af;
+}
+
+.mz-file-pill{
+  color:#cbd5e1;
+  opacity:.95;
+}
+
+/* 3) actions: icon buttons row */
+.mz-file-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+
+/* на десктопе можешь оставить “кнопки-облака” — но ты просил именно мобилку.
+   Поэтому: по умолчанию иконки. Если хочешь — могу сделать @media(min-width:721px) обратно в облака. */
+
+@media (max-width: 720px){
+  .mz-tree-file2{
+    padding: 8px 10px;
+  }
+  .mz-file-name{
+    font-size: .94rem;
+  }
+  .mz-file-actions .mz-icbtn{
+    width:30px;
+    height:30px;
+    border-radius:10px;
+  }
+}
+
+/* file actions: icons on mobile, clouds on desktop */
+.mz-file-actions{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.mz-file-actions-icons{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.mz-file-actions-cloud{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+
+/* desktop default = clouds */
+@media (min-width: 721px){
+  .mz-file-actions-icons{ display:none; }
+  .mz-file-actions-cloud{ display:flex; }
+}
+
+/* mobile default = icons */
+@media (max-width: 720px){
+  .mz-file-actions-icons{ display:flex; }
+  .mz-file-actions-cloud{ display:none; }
+}
+
+.mz-fold-card{ position:relative; }
+
+.mz-fold-zip{
+  position:absolute;
+  top:10px;
+  right:10px;
+  z-index:3;
+
+  width:34px;
+  height:34px;
+  border-radius:12px;
+  border:1px solid rgba(148,163,184,.35);
+  background: rgba(15,23,42,.75);
+  color:#e5e7eb;
+  cursor:pointer;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1;
+}
+
+.mz-fold-zip:hover{
+  border-color: rgba(191,219,254,.65);
+  background: rgba(30,64,175,.35);
+}
+.mz-tree-title-row{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+}
+
+.mz-icbtn-zip{
+  flex: 0 0 auto;
+}
+
+.mz-tree-title-row{
+  display:flex;
+  align-items:flex-start;   /* кнопка на уровне первой строки */
+  gap:10px;
+  width:100%;
+}
+
+.mz-tree-folder{
+  flex: 1 1 auto;           /* занимает всю ширину */
+  min-width:0;              /* переносы работают */
+}
+
+.mz-icbtn-zip{
+  flex: 0 0 auto;
+  margin-left:auto;         /* ✅ уезжает вправо */
+}
+
+.mz-fold-top{ position:relative; }
+
+.mz-fold-zip{
+  position:absolute;
+  top:8px;
+  right:8px;
+  z-index:2;
+}
+
+.mz-fold-top{ position:relative; padding-right:40px; }
+
+.mz-fold-zip{
+  position:absolute;
+  top:6px;
+  right:6px;
+  width:32px;
+  height:32px;
+  border-radius:10px;
+  border:1px solid rgba(148,163,184,.35);
+  background: rgba(15,23,42,.55);
+  color:#e5e7eb;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  text-decoration:none;
+  cursor:pointer;
+  line-height:1;
+}
+.mz-fold-zip:hover{
+  background: rgba(30,64,175,.28);
+  border-color: rgba(191,219,254,.55);
+}
+
+.mz-mat-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.mz-mat-head-right{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+.mz-mat-zipall{
+  white-space:nowrap;
+}

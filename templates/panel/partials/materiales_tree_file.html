@@ -1,5 +1,5 @@
 {# panel/partials/materiales_tree_file.html #}
-<div class="mz-tree-file"
+<div class="mz-tree-file mz-tree-file2"
      {% if is_teacher %}draggable="true"{% endif %}
      data-drag-file="{{ f.id }}"
      data-file-id="{{ f.id }}"
@@ -7,45 +7,99 @@
      data-folder="{{ f.folder_path|default:''|escape }}"
      data-ts="{{ f.created_at|date:'U' }}">
 
-{% if is_teacher %}
-  <span class="mz-drag-handle" title="Mover">⠿</span>
-{% endif %}
-	 
-	<div style="min-width:0; flex:1">
-	  <div class="mz-tree-file-name" style="font-weight:800; color:#e5e7eb; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">
-		{{ f.display_name }}
-	  </div>
+  {% if is_teacher %}
+    <span class="mz-drag-handle" title="Mover" aria-label="Mover">⠿</span>
+  {% endif %}
 
-	  <div class="mz-mat-meta" style="margin-top:4px">
-		<span>{{ f.ext|upper }}</span>
-		<span class="mz-mat-dot"></span>
-		<span>{{ f.fmt_size }}</span>
-		<span class="mz-mat-dot"></span>
-		<span>{{ f.uploaded_by.get_full_name|default:f.uploaded_by.email }}</span>
-		<span class="mz-mat-dot"></span>
+  <div class="mz-file-main">
+    {# 1) title #}
+    <div class="mz-file-title">
+      <span class="mz-file-name">
+        {{ f.display_name }}
+      </span>
+    </div>
 
-		{% if f.module_key %}
-		  <span class="mz-mat-tag">{{ f.module_key }}</span>
-		{% else %}
-		  <span class="mz-mat-tag muted">Sin módulo</span>
-		{% endif %}
+    {# 2) meta/badges #}
+    <div class="mz-file-meta">
+      <span class="mz-file-pill">{{ f.ext|upper }}</span>
+      <span class="mz-mat-dot"></span>
+      <span class="mz-file-pill">{{ f.fmt_size }}</span>
+      <span class="mz-mat-dot"></span>
+      <span class="mz-file-pill">{{ f.uploaded_by.get_full_name|default:f.uploaded_by.email }}</span>
 
-		{# ✅ ВОТ ТУТ РЯДОМ С МОДУЛЕМ #}
-		{% if not is_teacher %}
-		  {% if f.is_downloaded %}
-			<span class="mz-chip-mini mz-file-chip">Descargado</span>
-		  {% else %}
-			<span class="mz-chip-mini mz-file-chip is-undl">No descargado</span>
-		  {% endif %}
-		{% endif %}
-	  </div>
+      {% if f.module_key %}
+        <span class="mz-mat-tag">{{ f.module_key }}</span>
+      {% else %}
+        <span class="mz-mat-tag muted">Sin módulo</span>
+      {% endif %}
 
-	  {% if is_teacher and f.share_alumnos %}
-		<div class="mz-chip-mini" style="margin-top:6px">Visible para alumnos</div>
-	  {% endif %}
-	</div>
+      {% if not is_teacher %}
+        {% if f.is_downloaded %}
+          <span class="mz-chip-mini mz-file-chip">Descargado</span>
+        {% else %}
+          <span class="mz-chip-mini mz-file-chip is-undl">No descargado</span>
+        {% endif %}
+      {% endif %}
 
-  <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end">
+      {% if is_teacher and f.share_alumnos %}
+        <span class="mz-chip-mini">Visible para alumnos</span>
+      {% endif %}
+    </div>
+
+{# 3) actions: mobile icons + desktop clouds #}
+<div class="mz-file-actions">
+
+  {# --- MOBILE: icon buttons --- #}
+  <div class="mz-file-actions-icons">
+    <a class="mz-icbtn"
+       href="{% url 'panel:material_download' f.id %}"
+       target="_blank" rel="noopener"
+       title="Descargar" aria-label="Descargar">⬇️</a>
+
+    <a class="mz-icbtn"
+       data-preview
+       data-ext="{{ f.ext|lower }}"
+       data-name="{{ f.display_name|escape }}"
+       href="{% url 'panel:material_download' f.id %}?inline=1"
+       title="Ver" aria-label="Ver">👁️</a>
+
+    {% if is_teacher %}
+      <button class="mz-icbtn" type="button"
+              data-action="materials.copy_public_link"
+              data-share-url="{% url 'panel:material_share_link_create' f.id %}"
+              title="Copiar enlace" aria-label="Copiar enlace">🔗</button>
+
+      {% if audience != 'alumnos' %}
+        <form method="post" style="margin:0" data-ajax="share-toggle" data-file-id="{{ f.id }}">
+          {% csrf_token %}
+          <input type="hidden" name="share_id" value="{{ f.id }}">
+          <button class="mz-icbtn" type="submit"
+                  title="{% if f.share_alumnos %}Ocultar de alumnos{% else %}Mostrar a alumnos{% endif %}"
+                  aria-label="Visibilidad alumnos">
+            {% if f.share_alumnos %}🙈{% else %}👥{% endif %}
+          </button>
+        </form>
+      {% endif %}
+
+      {% if f.tipo == "docentes" %}
+        <form method="post" style="margin:0" data-ajax="copy-private" data-file-id="{{ f.id }}">
+          {% csrf_token %}
+          <input type="hidden" name="copy_id" value="{{ f.id }}">
+          <button class="mz-icbtn" type="submit" title="Copiar a privados" aria-label="Copiar a privados">📄</button>
+        </form>
+      {% endif %}
+
+      <form method="post" style="margin:0" data-ajax="file-delete" data-file-id="{{ f.id }}"
+            onsubmit="return confirm('¿Eliminar este archivo?');">
+        {% csrf_token %}
+        <input type="hidden" name="delete_id" value="{{ f.id }}">
+        <button class="mz-icbtn mz-icbtn-danger" type="submit" title="Eliminar" aria-label="Eliminar">🗑️</button>
+      </form>
+    {% endif %}
+  </div>
+
+  {# --- DESKTOP: cloud buttons --- #}
+  <div class="mz-file-actions-cloud">
     <a class="mzc-btn ghost"
        href="{% url 'panel:material_download' f.id %}"
        target="_blank" rel="noopener">Descargar</a>
@@ -81,11 +135,15 @@
         </form>
       {% endif %}
 
-      <form method="post" style="margin:0" onsubmit="return confirm('¿Eliminar este archivo?');" data-ajax="file-delete"  data-file-id="{{ f.id }}">
+      <form method="post" style="margin:0" data-ajax="file-delete" data-file-id="{{ f.id }}"
+            onsubmit="return confirm('¿Eliminar este archivo?');">
         {% csrf_token %}
         <input type="hidden" name="delete_id" value="{{ f.id }}">
         <button class="mzc-btn ghost" type="submit">Eliminar</button>
       </form>
     {% endif %}
+  </div>
+
+</div>
   </div>
 </div>

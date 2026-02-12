@@ -1,316 +1,135 @@
 {# panel/tabs/alumnos.html #}
 
 <style>
-  /* ================================
-     MEATZE · TAB ALUMNOS (DOCENTES)
-  ================================= */
-  #mz-alumnos-tab .mz-alu-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-  #mz-alumnos-tab .mz-alu-title {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-  #mz-alumnos-tab .mz-alu-sub {
-    margin: 2px 0 0;
-    font-size: 0.82rem;
-    opacity: 0.85;
-  }
-  #mz-alumnos-tab .mz-alu-badge {
-    font-size: 0.76rem;
-    padding: 4px 9px;
-    border-radius: 999px;
-    border: 1px solid rgba(148,163,184,0.7);
-    background: rgba(15,23,42,0.9);
-    white-space: nowrap;
-  }
+/* ================================
+   MEATZE · TAB ALUMNOS (DOCENTES)
+================================= */
 
-  #mz-alumnos-tab .mz-alu-tablewrap {
-    margin-top: 8px;
-    border-radius: 12px;
-    border: 1px solid rgba(148,163,184,0.45);
-    overflow: auto;
-    background: rgba(15,23,42,0.85);
-  }
-
-  #mz-alumnos-tab .mz-tbl {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.86rem;
-  }
-  #mz-alumnos-tab .mz-tbl thead tr {
-    background: rgba(15,23,42,0.98);
-  }
-  #mz-alumnos-tab .mz-tbl th,
-  #mz-alumnos-tab .mz-tbl td {
-    padding: 6px 9px;
-    text-align: left;
-    border-bottom: 1px solid rgba(30,64,175,0.45);
-  }
-  #mz-alumnos-tab .mz-tbl th {
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    opacity: 0.85;
-  }
-  #mz-alumnos-tab .mz-tbl tbody tr:nth-child(2n) {
-    background: rgba(15,23,42,0.9);
-  }
-
-  #mz-alumnos-tab .mz-alu-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  #mz-alumnos-tab .mz-alu-inline-pass {
-    margin-top: 4px;
-    padding: 4px 6px;
-    border-radius: 10px;
-    border: 1px dashed rgba(148,163,184,0.65);
-    font-size: 0.78rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-  #mz-alumnos-tab .mz-alu-inline-pass code {
-    font-size: 0.9rem;
-  }
-
-  /* ================================
-     ACCESOS TEMPORALES
-  ================================= */
-  #mz-alumnos-tab #mz-temp-root {
-    margin-top: 14px;
-  }
-  #mz-alumnos-tab .mz-temp-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-    margin: 6px 0;
-  }
-  #mz-alumnos-tab .mz-temp-bar label,
-  #mz-alumnos-tab .mz-temp-bar span {
-    font-size: 0.8rem;
-    opacity: 0.9;
-  }
-  #mz-alumnos-tab .mz-temp-input {
-    max-width: 120px;
-  }
-  #mz-alumnos-tab .mz-temp-select {
-    max-width: 200px;
-  }
-
-  #mz-alumnos-tab #mz-temp-table {
-    margin-top: 10px;
-    border-radius: 12px;
-    border: 1px solid rgba(148,163,184,0.45);
-    overflow: auto;
-  }
-
-  #mz-alumnos-tab #mz-temp-table table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.86rem;
-  }
-  #mz-alumnos-tab #mz-temp-table th,
-  #mz-alumnos-tab #mz-temp-table td {
-    padding: 6px 9px;
-    border-bottom: 1px solid rgba(30,64,175,0.45);
-  }
-  #mz-alumnos-tab #mz-temp-table thead tr {
-    background: rgba(15,23,42,0.98);
-  }
-  #mz-alumnos-tab #mz-temp-table tbody tr:nth-child(2n) {
-    background: rgba(15,23,42,0.9);
-  }
-
-  #mz-alumnos-tab .mz-temp-present-wrap {
-    display: flex;
-    justify-content: flex-end;
-    padding: 6px 6px 0;
-  }
-
-  @media (max-width: 780px) {
-    #mz-alumnos-tab .mz-alu-head {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 4px;
-    }
-    #mz-alumnos-tab .mz-alu-actions {
-      flex-direction: row;
-      flex-wrap: wrap;
-    }
-  }
-    /* КНОПКИ В АЛУМНОС — СТЕКЛО, ЧТОБЫ НЕ ПРОПАДАЛИ */
-  #mz-alumnos-tab .mzc-btn {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 6px 16px;
-    font-size: 0.82rem;
-    font-weight: 500;
-    border-radius: 999px;
-    border: 1px solid rgba(148,163,184,0.7);
-    cursor: pointer;
-    user-select: none;
-    text-decoration: none;
-    background: radial-gradient(circle at top, rgba(56,189,248,0.22), rgba(15,23,42,0.96));
-    color: #e5e7eb;
-    transition:
-      background 140ms ease,
-      border-color 140ms ease,
-      box-shadow 140ms ease,
-      transform 90ms ease;
-  }
-
-  #mz-alumnos-tab .mzc-btn.ghost {
-    background: radial-gradient(circle at top, rgba(15,23,42,0.9), rgba(30,64,175,0.85));
-  }
-
-  #mz-alumnos-tab .mzc-btn:hover {
-    transform: translateY(-1px);
-    box-shadow:
-      0 8px 20px rgba(15,23,42,0.9),
-      0 0 0 1px rgba(15,23,42,1);
-    border-color: rgba(191,219,254,0.9);
-  }
-
-  #mz-alumnos-tab .mzc-btn:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 8px rgba(15,23,42,0.9);
-  }
-/* ===== FIX: ровные колонки в Alumnos ===== */
-#mz-alumnos-tab .mz-alu-tbl{
-  table-layout: fixed;      /* ключевое */
-  width: 100%;
+#mz-alumnos-tab .mz-alu-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+  margin-bottom:10px;
+}
+#mz-alumnos-tab .mz-alu-title{
+  margin:0;
+  font-size:1rem;
+  font-weight:600;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+#mz-alumnos-tab .mz-alu-sub{
+  margin:2px 0 0;
+  font-size:.82rem;
+  opacity:.85;
+}
+#mz-alumnos-tab .mz-alu-badge{
+  font-size:.76rem;
+  padding:4px 9px;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.7);
+  background:rgba(15,23,42,.9);
+  white-space:nowrap;
 }
 
-#mz-alumnos-tab .mz-alu-tbl .c-idx  { width: 44px; }
-#mz-alumnos-tab .mz-alu-tbl .c-name { width: 22%; }
-#mz-alumnos-tab .mz-alu-tbl .c-email{ width: 34%; }
-#mz-alumnos-tab .mz-alu-tbl .c-prog { width: 18%; }
-#mz-alumnos-tab .mz-alu-tbl .c-act  { width: 220px; } /* под 2-3 кнопки */
-
-#mz-alumnos-tab .mz-alu-tbl td,
-#mz-alumnos-tab .mz-alu-tbl th{
-  vertical-align: middle;
+#mz-alumnos-tab .mz-alu-tablewrap{
+  margin-top:8px;
+  border-radius:12px;
+  border:1px solid rgba(148,163,184,.45);
+  overflow:auto;
+  background:rgba(15,23,42,.85);
 }
 
-/* email не раздвигает таблицу */
-#mz-alumnos-tab .mz-alu-tbl td:nth-child(3){
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+#mz-alumnos-tab .mz-tbl{
+  width:100%;
+  border-collapse:collapse;
+  font-size:.86rem;
+}
+#mz-alumnos-tab .mz-tbl thead tr{
+  background:rgba(15,23,42,.98);
+}
+#mz-alumnos-tab .mz-tbl th,
+#mz-alumnos-tab .mz-tbl td{
+  padding:6px 9px;
+  text-align:left;
+  border-bottom:1px solid rgba(30,64,175,.45);
+}
+#mz-alumnos-tab .mz-tbl th{
+  font-size:.8rem;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  opacity:.85;
+}
+#mz-alumnos-tab .mz-tbl tbody tr:nth-child(2n){
+  background:rgba(15,23,42,.9);
 }
 
-/* прогресс можно переносить */
-#mz-alumnos-tab .mz-alu-tbl td:nth-child(4){
-  white-space: normal;
+/* ===== Buttons (glass) ===== */
+#mz-alumnos-tab .mzc-btn{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:6px 16px;
+  font-size:.82rem;
+  font-weight:500;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.7);
+  cursor:pointer;
+  user-select:none;
+  text-decoration:none;
+  background:radial-gradient(circle at top, rgba(56,189,248,.22), rgba(15,23,42,.96));
+  color:#e5e7eb;
+  transition:background 140ms ease, border-color 140ms ease, box-shadow 140ms ease, transform 90ms ease;
+}
+#mz-alumnos-tab .mzc-btn.ghost{
+  background:radial-gradient(circle at top, rgba(15,23,42,.9), rgba(30,64,175,.85));
+}
+#mz-alumnos-tab .mzc-btn:hover{
+  transform:translateY(-1px);
+  box-shadow:0 8px 20px rgba(15,23,42,.9), 0 0 0 1px rgba(15,23,42,1);
+  border-color:rgba(191,219,254,.9);
+}
+#mz-alumnos-tab .mzc-btn:active{
+  transform:translateY(0);
+  box-shadow:0 2px 8px rgba(15,23,42,.9);
 }
 
-/* acciones — всегда “колонкой”, без расползания */
-#mz-alumnos-tab .mz-alu-actions{
-  align-items: flex-start;
-  min-width: 0;
+/* ===== Tooltip progreso (fixed) ===== */
+.mz-tip{
+  position:fixed;
+  z-index:99999;
+  width:min(360px, 92vw);
+  max-height:min(320px, 70vh);
+  overflow:auto;
+  padding:12px 12px 10px;
+  border-radius:14px;
+  border:1px solid rgba(191,219,254,.45);
+  background:#0b1220;
+  color:#e5e7eb;
+  box-shadow:0 18px 45px rgba(0,0,0,.55);
 }
-#mz-alumnos-tab .mz-alu-tbl td:nth-child(4) * { min-width: 0; }
-#mz-alumnos-tab .mz-alu-tbl td:nth-child(5) { white-space: nowrap; }
-#mz-alumnos-tab table.mz-alu-tbl col.c-idx  { width: 44px; }
-#mz-alumnos-tab table.mz-alu-tbl col.c-name { width: 22%; }
-#mz-alumnos-tab table.mz-alu-tbl col.c-email{ width: 34%; }
-#mz-alumnos-tab table.mz-alu-tbl col.c-prog { width: 18%; }
-#mz-alumnos-tab table.mz-alu-tbl col.c-act  { width: 220px; }
-/* === Tooltip прогресса === */
-.mz-prog-wrap { position: relative; display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-
-.mz-prog-tip {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  z-index: 9999;
-  width: min(520px, 70vw);
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(148,163,184,0.55);
-  background: radial-gradient(circle at top left, rgba(30,64,175,0.22), rgba(15,23,42,0.96));
-  box-shadow: 0 12px 30px rgba(0,0,0,0.35);
-  display: none;
+.mz-tip h5{
+  margin:0 0 6px;
+  font-size:.78rem;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  opacity:.92;
 }
-
-.mz-prog-tip.is-open { display: block; }
-
-.mz-prog-tip h5{
-  margin: 0 0 6px;
-  font-size: .78rem;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  opacity: .9;
+.mz-tip ul{
+  margin:0 0 10px;
+  padding-left:16px;
+  font-size:.82rem;
+  color:#e5e7eb;
 }
+.mz-tip li{ margin:4px 0; }
+.mz-tip .muted{ color:#9ca3af; font-size:.8rem; }
 
-.mz-prog-tip ul{
-  margin: 0;
-  padding-left: 18px;
-  color: #e5e7eb;
-  font-size: .82rem;
-}
-
-.mz-prog-tip li{ margin: 2px 0; }
-
-.mz-prog-tip .muted{ color:#9ca3af; font-size:.8rem; }
-/* ===== Tooltip progreso (fixed, opaque, no layout impact) ===== */
-.mz-tip {
-  position: fixed;
-  z-index: 99999;
-  width: min(360px, 92vw);
-  max-height: min(320px, 70vh);
-  overflow: auto;
-
-  padding: 12px 12px 10px;
-  border-radius: 14px;
-  border: 1px solid rgba(191,219,254,0.45);
-
-  /* НЕ прозрачный */
-  background: #0b1220;
-  color: #e5e7eb;
-
-  box-shadow: 0 18px 45px rgba(0,0,0,0.55);
-}
-
-.mz-tip h5 {
-  margin: 0 0 6px;
-  font-size: .78rem;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  opacity: .92;
-}
-
-.mz-tip ul {
-  margin: 0 0 10px;
-  padding-left: 16px;
-  font-size: .82rem;
-  color: #e5e7eb;
-}
-
-.mz-tip li { margin: 4px 0; }
-
-.mz-tip .muted {
-  color: #9ca3af;
-  font-size: .8rem;
-}
-/* ===== Presencia (inline in Progreso) ===== */
+/* ===== Presencia ===== */
 #mz-alumnos-tab .mz-prog-row{ display:flex; flex-direction:column; gap:8px; }
-#mz-alumnos-tab .mz-prog-chips{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+#mz-alumnos-tab .mz-prog-chips{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
 
 #mz-alumnos-tab .mz-pres-row{
   display:flex;
@@ -318,7 +137,6 @@
   align-items:center;
   flex-wrap:wrap;
 }
-
 #mz-alumnos-tab .mz-pres-chip{
   display:inline-flex;
   align-items:center;
@@ -328,20 +146,384 @@
   font-size:.78rem;
   font-weight:700;
   letter-spacing:.02em;
-  border:1px solid rgba(148,163,184,0.55);
+  border:1px solid rgba(148,163,184,.55);
   background:#0b1220;
   color:#e5e7eb;
 }
-
 #mz-alumnos-tab .mz-pres-none{ opacity:.6; }
-#mz-alumnos-tab .mz-pres-confirmed{ border-color: rgba(52,211,153,.55); color:#6ee7b7; }
-#mz-alumnos-tab .mz-pres-pending{ border-color: rgba(251,191,36,.55); color:#fde68a; }
-#mz-alumnos-tab .mz-pres-offsite{ border-color: rgba(248,113,113,.55); color:#fecaca; }
-#mz-alumnos-tab .mz-pres-ended{ border-color: rgba(148,163,184,.4); color:#cbd5e1; opacity:.9; }
-
+#mz-alumnos-tab .mz-pres-confirmed{ border-color:rgba(52,211,153,.55); color:#6ee7b7; }
+#mz-alumnos-tab .mz-pres-pending{ border-color:rgba(251,191,36,.55); color:#fde68a; }
+#mz-alumnos-tab .mz-pres-offsite{ border-color:rgba(248,113,113,.55); color:#fecaca; }
+#mz-alumnos-tab .mz-pres-ended{ border-color:rgba(148,163,184,.4); color:#cbd5e1; opacity:.9; }
 #mz-alumnos-tab .mz-pres-actions{ display:inline-flex; gap:6px; align-items:center; }
 #mz-alumnos-tab .mz-pres-actions .mzc-btn{ padding:4px 10px; font-size:.78rem; }
 
+/* ===== Compact layout (tabla alumnos) ===== */
+#mz-alumnos-tab .mz-alu-tbl{
+  table-layout:fixed;
+  width:100%;
+}
+#mz-alumnos-tab .mz-alu-tbl th,
+#mz-alumnos-tab .mz-alu-tbl td{
+  box-sizing:border-box;
+}
+
+/* col widths */
+#mz-alumnos-tab .mz-alu-tbl .c-idx{ width:40px; }
+#mz-alumnos-tab .mz-alu-tbl .c-student{ width:44%; }
+#mz-alumnos-tab .mz-alu-tbl .c-prog{ width:36%; }
+#mz-alumnos-tab .mz-alu-tbl .c-act{ width:108px; }
+
+#mz-alumnos-tab .th-idx,
+#mz-alumnos-tab .td-idx{ width:40px; text-align:center; opacity:.85; }
+#mz-alumnos-tab .th-act{ text-align:center; }
+#mz-alumnos-tab .td-student,
+#mz-alumnos-tab .td-prog,
+#mz-alumnos-tab .td-act{ vertical-align:middle; }
+
+/* headers: no se pisan */
+#mz-alumnos-tab .mz-alu-tbl th{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* alumno: nombre + email */
+#mz-alumnos-tab .mz-stu{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+#mz-alumnos-tab .mz-stu-name{ font-weight:800; color:#f9fafb; line-height:1.15; }
+#mz-alumnos-tab .mz-stu-mail{
+  font-size:.78rem;
+  color:#9ca3af;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  max-width:100%;
+}
+
+/* chips */
+#mz-alumnos-tab .mz-chip-mini{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:.78rem;
+  font-weight:800;
+  border:1px solid rgba(148,163,184,.45);
+  background:#0b1220;
+  color:#e5e7eb;
+  white-space:nowrap;
+}
+
+/* icon buttons (acciones) */
+#mz-alumnos-tab .mz-act{
+  display:flex;
+  gap:8px;
+  justify-content:center;
+  align-items:center;
+}
+#mz-alumnos-tab .mz-icbtn{
+  width:36px;
+  height:36px;
+  border-radius:12px;
+  border:1px solid rgba(148,163,184,.55);
+  background:radial-gradient(circle at top, rgba(56,189,248,.18), rgba(15,23,42,.96));
+  color:#e5e7eb;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  line-height:1;
+  font-size:16px;
+  transition:transform 120ms ease, box-shadow 140ms ease, border-color 140ms ease;
+}
+#mz-alumnos-tab .mz-icbtn:hover{
+  transform:translateY(-1px);
+  border-color:rgba(191,219,254,.9);
+  box-shadow:0 10px 24px rgba(15,23,42,.85);
+}
+#mz-alumnos-tab .mz-icbtn:active{ transform:translateY(0); }
+#mz-alumnos-tab .mz-icbtn.danger{ border-color:rgba(248,113,113,.45); }
+
+/* password inline */
+#mz-alumnos-tab .mz-stu-pass{
+  margin-top:4px;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 8px;
+  border-radius:12px;
+  border:1px dashed rgba(148,163,184,.55);
+  background:rgba(11,18,32,.55);
+  flex-wrap:wrap;
+}
+#mz-alumnos-tab .mz-stu-pass .lbl{ font-size:.74rem; color:#9ca3af; }
+#mz-alumnos-tab .mz-stu-pass code{ font-size:.9rem; }
+
+/* ===== Mobile tweaks: acciones vertical, no horizontal scroll ===== */
+@media (max-width: 820px){
+  #mz-alumnos-tab .mz-alu-tablewrap{
+    overflow-x:hidden;
+    overflow-y:auto;
+  }
+
+  #mz-alumnos-tab .mz-tbl th,
+  #mz-alumnos-tab .mz-tbl td{ padding:8px 6px; }
+
+  #mz-alumnos-tab .mz-alu-tbl th{
+    font-size:.72rem;
+    letter-spacing:.04em;
+    padding:6px 6px;
+  }
+
+  /* tighter columns */
+  #mz-alumnos-tab .mz-alu-tbl .c-student{ width:52%; }
+  #mz-alumnos-tab .mz-alu-tbl .c-prog{ width:34%; }
+  #mz-alumnos-tab .mz-alu-tbl .c-act{ width:64px; }
+
+  /* acciones one above another */
+  #mz-alumnos-tab .mz-act{
+    flex-direction:column;
+    gap:6px;
+  }
+  #mz-alumnos-tab .mz-icbtn{
+    width:32px;
+    height:32px;
+    font-size:15px;
+  }
+  #mz-alumnos-tab .mz-chip-mini{
+    font-size:.74rem;
+    padding:4px 7px;
+  }
+}
+
+/* ================================
+   ACCESOS TEMPORALES
+================================= */
+#mz-alumnos-tab #mz-temp-root{ margin-top:14px; }
+
+#mz-alumnos-tab .mz-temp-bar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+  margin:6px 0;
+}
+#mz-alumnos-tab .mz-temp-bar label,
+#mz-alumnos-tab .mz-temp-bar span{
+  font-size:.8rem;
+  opacity:.9;
+}
+#mz-alumnos-tab .mz-temp-input{ max-width:120px; }
+#mz-alumnos-tab .mz-temp-select{ max-width:200px; }
+#mz-alumnos-tab .mz-temp-present-wrap{
+  display:flex;
+  justify-content:flex-end;
+  padding:6px 6px 0;
+}
+
+/* temp: table wrapper (only here!) */
+#mz-alumnos-tab #mz-temp-table .mz-temp-tablewrap{
+  margin-top:10px;
+  border-radius:12px;
+  border:1px solid rgba(148,163,184,.45);
+  overflow:auto;
+  background:rgba(15,23,42,.85);
+}
+
+/* SMALL: table full width, no forced min-width (prevents “phantom” scroll) */
+@media (max-width: 1023px){
+  #mz-alumnos-tab #mz-temp-table table.mz-tbl{
+    width:100%;
+    table-layout:auto;
+  }
+  /* allow first column to wrap if needed */
+  #mz-alumnos-tab #mz-temp-table table.mz-tbl td:first-child,
+  #mz-alumnos-tab #mz-temp-table table.mz-tbl th:first-child{
+    white-space:normal;
+  }
+  /* keep key code readable */
+  #mz-alumnos-tab #mz-temp-table table.mz-tbl code{
+    white-space:nowrap;
+  }
+}
+
+/* Desktop: cards for temp (если ты рендеришь .mz-temp-cards) */
+#mz-alumnos-tab #mz-temp-table .mz-temp-cards{ display:none; }
+
+@media (min-width: 1024px){
+  #mz-alumnos-tab #mz-temp-table .mz-temp-tablewrap{ display:none; }
+
+  #mz-alumnos-tab #mz-temp-table .mz-temp-cards{
+    display:grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap:12px;
+    padding:10px;
+  }
+  @media (min-width: 1360px){
+    #mz-alumnos-tab #mz-temp-table .mz-temp-cards{
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  #mz-alumnos-tab #mz-temp-table .mz-temp-card{
+    border-radius:18px;
+    border:1px solid rgba(148,163,184,.40);
+    background:radial-gradient(circle at top, rgba(15,23,42,.92), rgba(15,23,42,.84));
+    box-shadow:0 14px 32px rgba(15,23,42,.75);
+    padding:12px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    min-width:0;
+  }
+  #mz-alumnos-tab #mz-temp-table .mz-temp-user{
+    font-weight:900;
+    font-size:1rem;
+    color:#f9fafb;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  #mz-alumnos-tab #mz-temp-table .mz-temp-key{
+    font-family:ui-monospace, Menlo, Consolas, monospace;
+    font-weight:900;
+    font-size:1.6rem;
+    letter-spacing:.06em;
+    color:#e5e7eb;
+  }
+  #mz-alumnos-tab #mz-temp-table .mz-temp-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+  }
+  #mz-alumnos-tab #mz-temp-table .mz-temp-icbtn{
+    width:34px;
+    height:34px;
+    border-radius:12px;
+    border:1px solid rgba(148,163,184,.55);
+    background:radial-gradient(circle at top, rgba(56,189,248,.18), rgba(15,23,42,.96));
+    color:#e5e7eb;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+    line-height:1;
+  }
+}
+
+/* ===== Head responsive ===== */
+@media (max-width: 780px){
+  #mz-alumnos-tab .mz-alu-head{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:4px;
+  }
+}
+
+/* ================================
+   ALUMNOS: table (móvil) + cards (desktop)
+================================= */
+
+/* cards container */
+#mz-alumnos-tab .mz-alu-cards{ display:none; }
+
+@media (min-width: 1024px){
+  /* на десктопе прячем таблицу, показываем карточки */
+  #mz-alumnos-tab .mz-alu-tablewrap{ display:none; }
+  #mz-alumnos-tab .mz-alu-cards{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    margin-top:10px;
+  }
+}
+
+/* single alumno card */
+#mz-alumnos-tab .mz-alu-card{
+  border-radius:18px;
+  border:1px solid rgba(148,163,184,.40);
+  background: radial-gradient(circle at top, rgba(15,23,42,.92), rgba(15,23,42,.84));
+  box-shadow:0 14px 32px rgba(15,23,42,.65);
+  padding:12px 12px 10px;
+  position:relative;
+  min-width:0;
+}
+
+/* top row: name + email */
+#mz-alumnos-tab .mz-alu-card-head{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-width:0;
+}
+#mz-alumnos-tab .mz-alu-card-name{
+  font-weight:900;
+  font-size:1.02rem;
+  color:#f9fafb;
+  line-height:1.15;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#mz-alumnos-tab .mz-alu-card-mail{
+  font-size:.82rem;
+  color:#9ca3af;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+/* second row: progreso */
+#mz-alumnos-tab .mz-alu-card-prog{
+  margin-top:10px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+/* bottom-right actions */
+#mz-alumnos-tab .mz-alu-card-actions{
+  position:absolute;
+  right:10px;
+  bottom:10px;
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
+/* make sure chips don't collide with actions */
+#mz-alumnos-tab .mz-alu-card{
+  padding-bottom:52px; /* место под кнопки внизу справа */
+}
+/* ===== DESKTOP: cards en grid (3 por fila) ===== */
+#mz-alumnos-tab .mz-alu-cards{ display:none; }
+
+@media (min-width: 1024px){
+  #mz-alumnos-tab .mz-alu-tablewrap{ display:none; }
+
+  #mz-alumnos-tab .mz-alu-cards{
+    display:grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap:12px;
+    margin-top:10px;
+  }
+}
+
+/* адаптив: 2 в ряд на средних */
+@media (min-width: 1024px) and (max-width: 1250px){
+  #mz-alumnos-tab .mz-alu-cards{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* 4 в ряд на очень широких (по желанию) */
+@media (min-width: 1500px){
+  #mz-alumnos-tab .mz-alu-cards{
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
 </style>
 
 <div id="mz-alumnos-tab" data-focus="alumnos_tab">
@@ -375,108 +557,109 @@
         <table class="mz-tbl mz-alu-tbl">
 <colgroup>
   <col class="c-idx" />
-  <col class="c-name" />
-  <col class="c-email" />
+  <col class="c-student" />
   <col class="c-prog" />
   <col class="c-act" />
 </colgroup>
 
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Nombre</th>
-            <th>Email</th>
-            <th>Progreso</th>
-            <th>Acción</th>
-          </tr>
-        </thead>
+<thead>
+  <tr>
+    <th class="th-idx">#</th>
+    <th>Alumno</th>
+    <th>Progreso</th>
+    <th class="th-act">Acciones</th>
+  </tr>
+</thead>
         <tbody>
           {% if students %}
             {% for s in students %}
-			<tr>
-			  <td>{{ s.idx }}</td>
-			  <td><b>{{ s.name }}</b></td>
-			  <td>{{ s.email }}</td>
+				<tr>
+				  <td class="td-idx">{{ s.idx }}</td>
 
-				<td data-role="progress" data-student-id="{{ s.id }}">
-				  <div class="mz-prog-row">
-					<div class="mz-prog-chips" data-focus="physical">
-					  <span class="mz-chip-mini" data-p-dl="{{ s.id }}">📥 {{ s.downloaded_files }}/{{ s.total_files }}</span>
-					  <span class="mz-chip-mini" data-p-rc="{{ s.id }}">📦 {{ s.receipts_count }}</span>
+				  <td class="td-student">
+					<div class="mz-stu">
+					  <div class="mz-stu-name">{{ s.name }}</div>
+					  <div class="mz-stu-mail" title="{{ s.email }}">{{ s.email }}</div>
 
-					  <span class="mz-chip-mini" data-p-grade="{{ s.id }}">
-						🎓
-						{% if s.avg_grade is not None %}
-						  {{ s.avg_grade }}{% if s.graded_tasks %} ({{ s.graded_tasks }}){% endif %}
-						{% else %}
-						  —
-						{% endif %}
-					  </span>
+					  {% if s.last_pass %}
+						<div class="mz-stu-pass mz-inline-pass" data-pass="{{ s.last_pass }}">
+						  <span class="lbl">Nueva clave:</span>
+						  <code>{{ s.last_pass }}</code>
+
+						  <button type="button"
+								  class="mz-icbtn mz-pass-copy"
+								  title="Copiar clave"
+								  aria-label="Copiar clave"
+								  data-action="alumno.password.copy"
+								  data-alumno-id="{{ s.id }}">
+							📋
+						  </button>
+
+						  <button type="button"
+								  class="mz-icbtn mz-pass-hide"
+								  title="Ocultar"
+								  aria-label="Ocultar">
+							✕
+						  </button>
+						</div>
+					  {% endif %}
 					</div>
+				  </td>
 
-					<div class="mz-pres-row" data-pres-row="{{ s.id }}">
-					  <span class="mz-pres-chip mz-pres-none" data-pres-chip="{{ s.id }}">—</span>
-					  <span class="mz-pres-actions" data-pres-actions="{{ s.id }}"></span>
+				  <td class="td-prog" data-role="progress" data-student-id="{{ s.id }}">
+					<div class="mz-prog-row">
+					  <div class="mz-prog-chips" data-focus="physical">
+						<span class="mz-chip-mini" data-p-dl="{{ s.id }}" title="Descargas">📥 {{ s.downloaded_files }}/{{ s.total_files }}</span>
+						<span class="mz-chip-mini" data-p-rc="{{ s.id }}" title="Material físico">📦 {{ s.receipts_count }}</span>
+
+						<span class="mz-chip-mini" data-p-grade="{{ s.id }}" title="Calificaciones">
+						  🎓
+						  {% if s.avg_grade is not None %}
+							{{ s.avg_grade }}{% if s.graded_tasks %} ({{ s.graded_tasks }}){% endif %}
+						  {% else %}
+							—
+						  {% endif %}
+						</span>
+					  </div>
+
+					  <div class="mz-pres-row" data-pres-row="{{ s.id }}">
+						<span class="mz-pres-chip mz-pres-none" data-pres-chip="{{ s.id }}">—</span>
+						<span class="mz-pres-actions" data-pres-actions="{{ s.id }}"></span>
+					  </div>
 					</div>
-				  </div>
-				</td>
+				  </td>
 
-
-                <td>
-                  <div class="mz-alu-actions">
-
-                    {# сброс пароля #}
-                    <form method="post" style="margin:0">
-                      {% csrf_token %}
-                      <input type="hidden" name="reset_id" value="{{ s.id }}">
+				  <td class="td-act">
+					<div class="mz-act">
+					  <form method="post" style="margin:0">
+						{% csrf_token %}
+						<input type="hidden" name="reset_id" value="{{ s.id }}">
 						<button type="submit"
-								class="mzc-btn sm ghost"
+								class="mz-icbtn"
 								title="Reiniciar clave"
+								aria-label="Reiniciar clave"
 								data-action="alumno.password.reset"
 								data-alumno-id="{{ s.id }}">
-						  🔑 Reiniciar clave
+						  🔑
 						</button>
+					  </form>
 
-                    </form>
-
-                    {# удалить ученика #}
-                    <form method="post" style="margin:0"
-                          onsubmit="return confirm('¿Eliminar a este alumno del curso?');">
-                      {% csrf_token %}
-                      <input type="hidden" name="remove_id" value="{{ s.id }}">
+					  <form method="post" style="margin:0"
+							onsubmit="return confirm('¿Eliminar a este alumno del curso?');">
+						{% csrf_token %}
+						<input type="hidden" name="remove_id" value="{{ s.id }}">
 						<button type="submit"
-								class="mzc-btn sm ghost"
+								class="mz-icbtn danger"
 								title="Eliminar del curso"
+								aria-label="Eliminar del curso"
 								data-action="alumno.remove"
 								data-alumno-id="{{ s.id }}">
-						  ✕ Eliminar
+						  🗑️
 						</button>
-                    </form>
-
-                    {# последний выданный пароль (если есть) #}
-			{% if s.last_pass %}
-			  <div class="mzc-note mz-alu-inline-pass mz-inline-pass" data-pass="{{ s.last_pass }}">
-				Nueva clave:
-				<code>{{ s.last_pass }}</code>
-
-				<button type="button"
-						class="mzc-btn sm ghost mz-pass-copy"
-						data-action="alumno.password.copy"
-						data-alumno-id="{{ s.id }}">
-				  Copiar
-				</button>
-
-				<button type="button"
-						class="mzc-btn sm ghost mz-pass-hide"
-						title="Ocultar">
-				  ✕
-				</button>
-			  </div>
-			{% endif %}
-
-                  </div>
-                </td>
-              </tr>
+					  </form>
+					</div>
+				  </td>
+				</tr>
             {% endfor %}
           {% else %}
             <tr>
@@ -488,6 +671,83 @@
         </tbody>
       </table>
     </div>
+	{# ===== DESKTOP: CARDS ===== #}
+<div class="mz-alu-cards" data-view="cards">
+  {% for s in students %}
+    <div class="mz-alu-card">
+
+      <div class="mz-alu-card-head">
+        <div class="mz-alu-card-name" title="{{ s.name }}">{{ s.name }}</div>
+        <div class="mz-alu-card-mail" title="{{ s.email }}">{{ s.email }}</div>
+
+        {% if s.last_pass %}
+          <div class="mz-stu-pass mz-inline-pass" data-pass="{{ s.last_pass }}">
+            <span class="lbl">Nueva clave:</span>
+            <code>{{ s.last_pass }}</code>
+
+            <button type="button"
+                    class="mz-icbtn mz-pass-copy"
+                    title="Copiar clave"
+                    aria-label="Copiar clave"
+                    data-action="alumno.password.copy"
+                    data-alumno-id="{{ s.id }}">📋</button>
+
+            <button type="button"
+                    class="mz-icbtn mz-pass-hide"
+                    title="Ocultar"
+                    aria-label="Ocultar">✕</button>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="mz-alu-card-prog" data-role="progress" data-student-id="{{ s.id }}">
+        <div class="mz-prog-chips" data-focus="physical">
+          <span class="mz-chip-mini" data-p-dl="{{ s.id }}" title="Descargas">📥 {{ s.downloaded_files }}/{{ s.total_files }}</span>
+          <span class="mz-chip-mini" data-p-rc="{{ s.id }}" title="Material físico">📦 {{ s.receipts_count }}</span>
+          <span class="mz-chip-mini" data-p-grade="{{ s.id }}" title="Calificaciones">
+            🎓
+            {% if s.avg_grade is not None %}
+              {{ s.avg_grade }}{% if s.graded_tasks %} ({{ s.graded_tasks }}){% endif %}
+            {% else %}
+              —
+            {% endif %}
+          </span>
+        </div>
+
+        <div class="mz-pres-row" data-pres-row="{{ s.id }}">
+          <span class="mz-pres-chip mz-pres-none" data-pres-chip="{{ s.id }}">—</span>
+          <span class="mz-pres-actions" data-pres-actions="{{ s.id }}"></span>
+        </div>
+      </div>
+
+      <div class="mz-alu-card-actions">
+        <form method="post" style="margin:0">
+          {% csrf_token %}
+          <input type="hidden" name="reset_id" value="{{ s.id }}">
+          <button type="submit"
+                  class="mz-icbtn"
+                  title="Reiniciar clave"
+                  aria-label="Reiniciar clave"
+                  data-action="alumno.password.reset"
+                  data-alumno-id="{{ s.id }}">🔑</button>
+        </form>
+
+        <form method="post" style="margin:0"
+              onsubmit="return confirm('¿Eliminar a este alumno del curso?');">
+          {% csrf_token %}
+          <input type="hidden" name="remove_id" value="{{ s.id }}">
+          <button type="submit"
+                  class="mz-icbtn danger"
+                  title="Eliminar del curso"
+                  aria-label="Eliminar del curso"
+                  data-action="alumno.remove"
+                  data-alumno-id="{{ s.id }}">🗑️</button>
+        </form>
+      </div>
+
+    </div>
+  {% endfor %}
+</div>
   </div>
 
   {# ==== ACCESOS TEMPORALES (через V5 API, как раньше) ==== #}
@@ -634,95 +894,117 @@
       });
     }
 
-    function renderTempTable(list){
-      if (!list.length){
-        $tbl.innerHTML = '<div class="mzc-note" style="padding:6px 8px">No hay accesos temporales aún.</div>';
-        return;
-      }
-      $tbl.innerHTML = `
-        <div class="mz-temp-present-wrap">
-          <button id="mz-temp-present" class="mzc-btn" type="button">
-            Presentar en pantalla
-          </button>
+function renderTempTable(list){
+  if (!list.length){
+    $tbl.innerHTML = '<div class="mzc-note" style="padding:6px 8px">No hay accesos temporales aún.</div>';
+    return;
+  }
+
+  const cardsHtml = `
+    <div class="mz-temp-cards">
+      ${list.map(it => `
+        <div class="mz-temp-card">
+          <div class="mz-temp-user" title="${it.temp_name}">${it.temp_name}</div>
+          <div class="mz-temp-key">${it.key}</div>
+          <div class="mz-temp-actions">
+            <button class="mz-temp-icbtn mz-copy" data-key="${it.key}" type="button" title="Copiar" aria-label="Copiar">📋</button>
+          </div>
         </div>
-        <table class="mz-tbl">
-          <thead>
-            <tr><th>Usuario</th><th>Clave</th></tr>
-          </thead>
-          <tbody>
-            ${list.map(it => `
-              <tr>
-                <td>${it.temp_name}</td>
-                <td>
-                  <code>${it.key}</code>
-                  <button class="mzc-btn ghost mz-copy" data-key="${it.key}" type="button">
-                    Copiar
-                  </button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
+      `).join('')}
+    </div>
+  `;
 
-      $tbl.querySelectorAll('.mz-copy').forEach(function(b){
-        b.addEventListener('click', async function(){
-          try{
-            await navigator.clipboard.writeText(b.dataset.key || '');
-            const old = b.textContent;
-            b.textContent = 'Copiado';
-            setTimeout(function(){ b.textContent = old; }, 1200);
-          }catch(_){}
+  const tableHtml = `
+    <div class="mz-temp-present-wrap">
+      <button id="mz-temp-present" class="mzc-btn" type="button">
+        Presentar en pantalla
+      </button>
+    </div>
+
+    <div class="mz-temp-tablewrap">
+      <table class="mz-tbl">
+        <thead>
+          <tr><th>Usuario</th><th>Clave</th><th></th></tr>
+        </thead>
+        <tbody>
+          ${list.map(it => `
+            <tr>
+              <td>${it.temp_name}</td>
+              <td><code>${it.key}</code></td>
+              <td>
+                <button class="mzc-btn ghost mz-copy" data-key="${it.key}" type="button">
+                  Copiar
+                </button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  // Важно: и table, и cards — в DOM всегда; CSS решает, что показывать
+  $tbl.innerHTML = tableHtml + cardsHtml;
+
+  // bind copy (работает и для таблицы и для карточек)
+  $tbl.querySelectorAll('.mz-copy').forEach(function(b){
+    b.addEventListener('click', async function(){
+      try{
+        await navigator.clipboard.writeText(b.dataset.key || '');
+        const old = b.textContent;
+        b.textContent = 'Copiado';
+        setTimeout(function(){ b.textContent = old; }, 1200);
+      }catch(_){}
+    });
+  });
+
+  // present overlay — как у тебя было
+  const presentBtn = $tbl.querySelector('#mz-temp-present');
+  if (presentBtn){
+    presentBtn.addEventListener('click', function(){
+      const html = `
+        <div id="mz-temp-present-overlay"
+             style="position:fixed;inset:0;background:#0b1220e6;z-index:99999;
+                    display:flex;align-items:center;justify-content:center">
+          <div style="width:min(1400px,96vw);height:min(90vh,900px);
+                      background:#0b1220;border:1px solid #17243a;border-radius:16px;
+                      padding:18px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;justify-content:space-between;align-items:center;color:#e6f0ff">
+              <div style="font-weight:800;font-size:24px">Accesos temporales</div>
+              <button class="mzc-btn" id="mz-tp-close">Cerrar</button>
+            </div>
+            <div style="
+                  flex:1;
+                  overflow:auto;
+                  display:grid;
+                  gap:16px;
+                  grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+                ">
+              ${list.map(x => `
+                <div style="background:#0f1b2d;border:1px solid #1d2c45;border-radius:16px;
+                            padding:20px;display:flex;flex-direction:column;gap:12px">
+                  <div style="color:#93b7e6;font-size:22px;font-weight:700;
+                              white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                    ${x.temp_name}
+                  </div>
+                  <div style="color:#fff;font-size:56px;font-weight:900;
+                              font-family:ui-monospace,Menlo,Consolas,monospace;
+                              letter-spacing:0.08em;text-align:center">
+                    ${x.key}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>`;
+      document.body.insertAdjacentHTML('beforeend', html);
+      document.getElementById('mz-tp-close')
+        ?.addEventListener('click', function(){
+          document.getElementById('mz-temp-present-overlay')?.remove();
         });
-      });
-
-      const presentBtn = $tbl.querySelector('#mz-temp-present');
-      if (presentBtn){
-        presentBtn.addEventListener('click', function(){
-		const html = `
-		  <div id="mz-temp-present-overlay"
-			   style="position:fixed;inset:0;background:#0b1220e6;z-index:99999;
-					  display:flex;align-items:center;justify-content:center">
-			<div style="width:min(1400px,96vw);height:min(90vh,900px);
-						background:#0b1220;border:1px solid #17243a;border-radius:16px;
-						padding:18px;display:flex;flex-direction:column;gap:14px">
-			  <div style="display:flex;justify-content:space-between;align-items:center;color:#e6f0ff">
-				<div style="font-weight:800;font-size:24px">Accesos temporales</div>
-				<button class="mzc-btn" id="mz-tp-close">Cerrar</button>
-			  </div>
-			  <div style="
-					flex:1;
-					overflow:auto;
-					display:grid;
-					gap:16px;
-					grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
-				  ">
-				${list.map(x => `
-				  <div style="background:#0f1b2d;border:1px solid #1d2c45;border-radius:16px;
-							  padding:20px;display:flex;flex-direction:column;gap:12px">
-					<div style="color:#93b7e6;font-size:22px;font-weight:700;
-								white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-					  ${x.temp_name}
-					</div>
-					<div style="color:#fff;font-size:56px;font-weight:900;
-								font-family:ui-monospace,Menlo,Consolas,monospace;
-								letter-spacing:0.08em;text-align:center">
-					  ${x.key}
-					</div>
-				  </div>
-				`).join('')}
-			  </div>
-			</div>
-		  </div>`;
-
-          document.body.insertAdjacentHTML('beforeend', html);
-          document.getElementById('mz-tp-close')
-            ?.addEventListener('click', function(){
-              document.getElementById('mz-temp-present-overlay')?.remove();
-            });
-        });
-      }
-    }
+    });
+  }
+}
 
     async function refreshTempList(){
       try{
@@ -792,8 +1074,7 @@
   </script>
 
 {% endif %}
-</div>
-<script>
+</div><script>
 (function(){
   const tab = document.getElementById('mz-alumnos-tab');
   if (!tab) return;
@@ -801,12 +1082,12 @@
   const courseCode = (document.querySelector('#mz-temp-root')?.dataset.courseCode) || '';
   if (!courseCode) return;
 
-  // ✅ ВАЖНО: путь на decide — подставь свой реальный URL если отличается
-const V5 = (window.MEATZE && window.MEATZE.V5) ? window.MEATZE.V5.replace(/\/$/,'') : (location.origin + '/meatze/v5');
-const STATUS_URL = `/alumno/curso/${courseCode}/alumnos/status`; // это ок, это panel
-const DECIDE_URL = `${V5}/teacher/attendance/decide`;
+  const V5 = (window.MEATZE && window.MEATZE.V5)
+    ? window.MEATZE.V5.replace(/\/$/,'')
+    : (location.origin + '/meatze/v5');
 
-
+  const STATUS_URL = `/alumno/curso/${courseCode}/alumnos/status`;
+  const DECIDE_URL = `${V5}/teacher/attendance/decide`;
 
   // --- tooltip node (lives in body) ---
   const tip = document.createElement('div');
@@ -815,23 +1096,6 @@ const DECIDE_URL = `${V5}/teacher/attendance/decide`;
   document.body.appendChild(tip);
 
   let lastData = { total_files: 0, total_phys: 0, items: {}, slot: null, presence: {} };
-// --- publish pending count for global checklist ---
-(function publishAttendance(){
-  try{
-    const pres = lastData.presence || {};
-    let pending = 0;
-    for (const sid in pres){
-      if (String(pres[sid]?.status || '') === 'PENDING') pending++;
-    }
-    window.MEATZE = window.MEATZE || {};
-    window.MEATZE.ATTENDANCE = {
-      pending_count: pending,
-      presence: pres,
-      courseCode: courseCode
-    };
-    window.dispatchEvent(new CustomEvent('meatze:attendance', { detail: window.MEATZE.ATTENDANCE }));
-  }catch(e){}
-})();
 
   function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
 
@@ -847,7 +1111,7 @@ const DECIDE_URL = `${V5}/teacher/attendance/decide`;
   }
 
   function escapeHtml(s){
-    return s.replace(/[&<>"']/g, m => ({
+    return String(s || '').replace(/[&<>"']/g, m => ({
       '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
     }[m]));
   }
@@ -863,11 +1127,11 @@ const DECIDE_URL = `${V5}/teacher/attendance/decide`;
 
     tip.innerHTML = `
       <h5>Descargados (${Number(it.d||0)}/${totalFiles})</h5>
-      ${dl.length ? `<ul>${dl.map(x => `<li>${escapeHtml(String(x))}</li>`).join('')}</ul>`
+      ${dl.length ? `<ul>${dl.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>`
                   : `<div class="muted">Nada descargado</div>`}
 
       <h5>Material físico (${Number(it.r||0)}/${totalPhys})</h5>
-      ${rc.length ? `<ul>${rc.map(x => `<li>${escapeHtml(String(x))}</li>`).join('')}</ul>`
+      ${rc.length ? `<ul>${rc.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>`
                   : `<div class="muted">Nada confirmado</div>`}
     `;
   }
@@ -904,76 +1168,72 @@ const DECIDE_URL = `${V5}/teacher/attendance/decide`;
     return m + 'm';
   }
 
-function renderPresenceFor(studentId){
-  const p = (lastData.presence || {})[studentId] || null;
+  function renderPresenceFor(studentId){
+    const p = (lastData.presence || {})[studentId] || null;
 
-  const chip = tab.querySelector(`[data-pres-chip="${studentId}"]`);
-  const act  = tab.querySelector(`[data-pres-actions="${studentId}"]`);
-  if (!chip || !act) return;
+    const chips = tab.querySelectorAll(`[data-pres-chip="${studentId}"]`);
+    const acts  = tab.querySelectorAll(`[data-pres-actions="${studentId}"]`);
+    if (!chips.length || !acts.length) return;
 
-  act.innerHTML = '';
+    function setAllChip(className, text){
+      chips.forEach(ch => { ch.className = className; ch.textContent = text; });
+    }
+    function setAllAct(html){
+      acts.forEach(a => { a.innerHTML = html; });
+    }
+    function drawActions(aid){
+      if (!aid) return '';
+      return `
+        <button class="mzc-btn sm ghost" type="button" data-decide="confirm" data-aid="${aid}">✅</button>
+        <button class="mzc-btn sm ghost" type="button" data-decide="reject"  data-aid="${aid}">❌</button>
+      `;
+    }
 
-  if (!p){
-    chip.className = 'mz-pres-chip mz-pres-none';
-    chip.textContent = '—';
-    return;
+    // clear actions first
+    setAllAct('');
+
+    if (!p){
+      setAllChip('mz-pres-chip mz-pres-none', '—');
+      return;
+    }
+
+    const status = String(p.status || '');
+    const mins = fmtMin(p.active_sec || 0);
+    const aid = p.id;
+
+    if (status === 'CONFIRMED'){
+      setAllChip('mz-pres-chip mz-pres-confirmed', `🟢 En clase · ${mins}`);
+      setAllAct('');
+      return;
+    }
+
+    if (status === 'PENDING'){
+      setAllChip('mz-pres-chip mz-pres-pending', `🟡 Esperando · ${mins}`);
+      setAllAct(drawActions(aid));
+      return;
+    }
+
+    if (status === 'REJECTED'){
+      setAllChip('mz-pres-chip mz-pres-offsite', `🔴 Rechazado · ${mins}`);
+      setAllAct(drawActions(aid));
+      return;
+    }
+
+    if (status === 'OFFSITE'){
+      setAllChip('mz-pres-chip mz-pres-offsite', `🔴 Fuera · ${mins}`);
+      setAllAct('');
+      return;
+    }
+
+    if (status === 'ENDED'){
+      setAllChip('mz-pres-chip mz-pres-ended', `⚪ Terminado · ${mins}`);
+      setAllAct('');
+      return;
+    }
+
+    setAllChip('mz-pres-chip mz-pres-none', status || '—');
+    setAllAct('');
   }
-
-  const status = String(p.status || '');
-  const mins = fmtMin(p.active_sec || 0);
-  const aid = p.id;
-
-  // helper: рисуем кнопки если есть attendance id
-  function drawActions(){
-    if (!aid) return;
-    act.innerHTML = `
-      <button class="mzc-btn sm ghost" type="button" data-decide="confirm" data-aid="${aid}">✅</button>
-      <button class="mzc-btn sm ghost" type="button" data-decide="reject"  data-aid="${aid}">❌</button>
-    `;
-  }
-
-  if (status === 'CONFIRMED'){
-    chip.className = 'mz-pres-chip mz-pres-confirmed';
-    chip.textContent = `🟢 En clase · ${mins}`;
-
-    // ✅ если хочешь разрешить “пере-решить” даже из CONFIRMED — включи:
-    // drawActions();
-    return;
-  }
-
-  if (status === 'PENDING'){
-    chip.className = 'mz-pres-chip mz-pres-pending';
-    chip.textContent = `🟡 Esperando · ${mins}`;
-    drawActions();         // ✅ было и остаётся
-    return;
-  }
-
-  if (status === 'REJECTED'){
-    chip.className = 'mz-pres-chip mz-pres-offsite';
-    chip.textContent = `🔴 Rechazado · ${mins}`;
-    drawActions();         // ✅ ВОТ ЭТОГО НЕ ХВАТАЛО
-    return;
-  }
-
-  if (status === 'OFFSITE'){
-    chip.className = 'mz-pres-chip mz-pres-offsite';
-    chip.textContent = `🔴 Fuera · ${mins}`;
-    // по желанию можно тоже дать кнопки:
-    // drawActions();
-    return;
-  }
-
-  if (status === 'ENDED'){
-    chip.className = 'mz-pres-chip mz-pres-ended';
-    chip.textContent = `⚪ Terminado · ${mins}`;
-    return;
-  }
-
-  chip.className = 'mz-pres-chip mz-pres-none';
-  chip.textContent = status || '—';
-}
-
-
 
   // decide click (delegation)
   tab.addEventListener('click', async function(e){
@@ -998,10 +1258,27 @@ function renderPresenceFor(studentId){
     }catch(_){
     }finally{
       b.disabled = false;
-      // обновим сразу, не ждём интервал
-      refreshProgress();
+      refreshProgress(); // обновим сразу
     }
   });
+
+  // --- publish pending count for global checklist ---
+  function publishAttendance(){
+    try{
+      const pres = lastData.presence || {};
+      let pending = 0;
+      for (const sid in pres){
+        if (String(pres[sid]?.status || '') === 'PENDING') pending++;
+      }
+      window.MEATZE = window.MEATZE || {};
+      window.MEATZE.ATTENDANCE = {
+        pending_count: pending,
+        presence: pres,
+        courseCode: courseCode
+      };
+      window.dispatchEvent(new CustomEvent('meatze:attendance', { detail: window.MEATZE.ATTENDANCE }));
+    }catch(e){}
+  }
 
   async function refreshProgress(){
     try{
@@ -1017,30 +1294,30 @@ function renderPresenceFor(studentId){
         presence: data.presence || {}
       };
 
+      publishAttendance();
+
       const total = Number(lastData.total_files || 0);
       const totalPhys = Number(lastData.total_phys || 0);
 
-		tab.querySelectorAll('[data-role="progress"]').forEach(td => {
-		  const id = td.dataset.studentId;
-		  const it = lastData.items?.[id] || { d: 0, r: 0 };
+      // ВАЖНО: [data-role="progress"] есть и в таблице, и в карточках
+      tab.querySelectorAll('[data-role="progress"]').forEach(node => {
+        const id = node.dataset.studentId;
+        const it = lastData.items?.[id] || { d: 0, r: 0 };
 
-		  const total = Number(lastData.total_files || 0);
-		  const totalPhys = Number(lastData.total_phys || 0);
+        const d = Number(it.d || 0);
+        const r = Number(it.r || 0);
 
-		  const d = Number(it.d || 0);
-		  const r = Number(it.r || 0);
+        // обновляем ВСЕ совпадения (таблица + карточки)
+        tab.querySelectorAll(`[data-p-dl="${id}"]`).forEach(el => {
+          el.textContent = `📥 ${d}/${total}`;
+        });
 
-		  // обновляем только нужные куски, не ломая разметку
-		  const dlEl = tab.querySelector(`[data-p-dl="${id}"]`);
-		  if (dlEl) dlEl.textContent = `📥 ${d}/${total}`;
+        tab.querySelectorAll(`[data-p-rc="${id}"]`).forEach(el => {
+          el.textContent = `📦 ${r}/${totalPhys}${(totalPhys && r >= totalPhys) ? " ✔" : ""}`;
+        });
 
-		  const rcEl = tab.querySelector(`[data-p-rc="${id}"]`);
-		  if (rcEl) rcEl.textContent = `📦 ${r}/${totalPhys}${(totalPhys && r >= totalPhys) ? " ✔" : ""}`;
-
-		  // 🎓 оставляем как есть (серверное) — или обновляй, если добавишь это в endpoint
-		  renderPresenceFor(id);
-		});
-
+        renderPresenceFor(id);
+      });
 
       if (hoverId && tip.style.display !== 'none') renderTip(hoverId);
 

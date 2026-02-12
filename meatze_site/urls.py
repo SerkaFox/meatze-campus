@@ -140,4 +140,5 @@ urlpatterns += [
     path("meatze/v5/admin/curso/<str:codigo>/horario/day", horario_day, name="mz_horario_day"),
     path("meatze/v5/admin/curso/<str:codigo>/horario/day/delete", horario_day_delete, name="mz_horario_day_delete"),
     path("meatze/v5/admin/curso/<str:codigo>/horario/slot/<int:slot_id>/delete", horario_slot_delete, name="mz_horario_slot_delete"),
+    path("room/", include("panel.shortshare.urls")),
 ]

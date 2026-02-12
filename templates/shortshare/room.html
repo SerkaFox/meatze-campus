@@ -1,0 +1,228 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'meatze/site.css' %}?v={% now 'U' %}">
+
+<div class="mz-page mz-auth-page">
+
+  <div class="mz-auth-card">
+
+    <!-- HEADER -->
+    <div class="mz-auth-h">
+      <h3 class="mz-auth-title">
+        Room · Código {{ room.code }}
+      </h3>
+
+      <a class="mz-btn ghost sm" href="/room/">
+        Cambiar código
+      </a>
+    </div>
+
+    <div class="mz-auth-b">
+
+      <div class="mz-help">
+        Arrastra un archivo o pulsa el botón.
+        Se eliminará automáticamente en 7 días.
+      </div>
+
+      <!-- UPLOAD ZONE -->
+      <div id="drop"
+           style="
+             margin-top:14px;
+             border:1px dashed rgba(255,255,255,.35);
+             border-radius:18px;
+             padding:20px;
+             text-align:center;
+             background:rgba(255,255,255,.04);
+             transition:.15s ease;
+           ">
+
+        <div style="font-weight:800; margin-bottom:6px;">
+          📎 Subir archivo
+        </div>
+
+        <button id="pickBtn" class="mz-btn sm" type="button">
+          Elegir archivo
+        </button>
+
+        <input id="pick" type="file" hidden>
+      </div>
+
+      <div id="toast" class="mz-bad" style="display:none; margin-top:10px;"></div>
+
+      <hr class="sep">
+
+      <!-- FILE LIST -->
+      {% if files %}
+        {% for f in files %}
+          <div style="
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                padding:10px 0;
+                border-bottom:1px solid rgba(255,255,255,.08);
+          ">
+            <div>
+              <div style="font-weight:900;">
+                <a href="{{ request.path }}f/{{ f.id }}/">
+                  {{ f.original_name }}
+                </a>
+              </div>
+              <div class="mz-help">
+                {{ f.uploaded_at|date:"d/m/Y H:i" }}
+              </div>
+            </div>
+            <div style="text-align:right;">
+			<button class="mz-btn ghost sm" type="button" data-del="{{ f.id }}">
+					  Eliminar
+					</button>
+              <div data-bytes="{{ f.size }}" style="font-weight:800"></div>
+              <div class="mz-help"
+                   data-expires="{{ f.expires_at|date:'U' }}">
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="mz-help">
+          Aún no hay archivos en esta room.
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+
+  const uploadUrl = "{{ request.path }}upload/";
+  const drop = document.getElementById("drop");
+  const pick = document.getElementById("pick");
+  const pickBtn = document.getElementById("pickBtn");
+  const toast = document.getElementById("toast");
+
+  function showError(msg){
+    toast.style.display = "block";
+    toast.textContent = msg;
+    setTimeout(()=>toast.style.display="none", 6000);
+  }
+
+  function humanSize(bytes){
+    const u=["B","KB","MB","GB"];
+    let i=0;
+    while(bytes>=1024 && i<u.length-1){
+      bytes/=1024; i++;
+    }
+    return `${bytes.toFixed(i?1:0)} ${u[i]}`;
+  }
+
+  document.querySelectorAll("[data-bytes]").forEach(el=>{
+    el.textContent = humanSize(parseInt(el.dataset.bytes||"0",10));
+  });
+
+  function tick(){
+    const now = Math.floor(Date.now()/1000);
+    document.querySelectorAll("[data-expires]").forEach(el=>{
+      const exp = parseInt(el.dataset.expires,10);
+      const sec = exp-now;
+      if(sec<=0){
+        el.textContent="expirado";
+        return;
+      }
+      const d=Math.floor(sec/86400);
+      const h=Math.floor((sec%86400)/3600);
+      if(d>0) el.textContent=`${d}d ${h}h`;
+      else{
+        const m=Math.floor((sec%3600)/60);
+        const s=sec%60;
+        el.textContent=`${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+      }
+    });
+  }
+  setInterval(tick,1000);
+  tick();
+
+  function upload(file){
+    return new Promise((resolve,reject)=>{
+      const xhr=new XMLHttpRequest();
+      const fd=new FormData();
+      fd.append("file",file);
+      xhr.open("POST",uploadUrl,true);
+
+      xhr.onload=()=>{
+        try{
+          const j=JSON.parse(xhr.responseText||"{}");
+          if(xhr.status>=200&&xhr.status<300&&j.ok) resolve(j);
+          else reject(new Error(j.error||"Upload error"));
+        }catch(e){
+          reject(new Error("Upload error"));
+        }
+      };
+      xhr.onerror=()=>reject(new Error("Network error"));
+      xhr.send(fd);
+    });
+  }
+
+  async function handle(file){
+    try{
+      await upload(file);
+      location.reload();
+    }catch(e){
+      showError(e.message);
+    }
+  }
+
+  pickBtn.addEventListener("click",()=>pick.click());
+  pick.addEventListener("change",()=>handle(pick.files[0]));
+
+  drop.addEventListener("dragover",e=>{
+    e.preventDefault();
+    drop.style.transform="scale(1.01)";
+  });
+  drop.addEventListener("dragleave",()=>{
+    drop.style.transform="scale(1)";
+  });
+  drop.addEventListener("drop",e=>{
+    e.preventDefault();
+    drop.style.transform="scale(1)";
+    handle(e.dataTransfer.files[0]);
+  });
+
+})();
+</script>
+<script>
+function getCookie(name){
+  const v = document.cookie.split(";").map(s=>s.trim()).find(s=>s.startsWith(name+"="));
+  return v ? decodeURIComponent(v.split("=",2)[1]) : "";
+}
+
+const CSRF = getCookie("csrftoken");
+
+document.querySelectorAll("[data-del]").forEach(btn=>{
+  btn.addEventListener("click", async ()=>{
+    const id = btn.dataset.del;
+
+    const pin = prompt("Introduce la contraseña para eliminar (código de la room):");
+    if(pin === null) return;
+
+    const fd = new FormData();
+    fd.append("pin", pin.trim());
+
+    const url = `${location.pathname}del/${id}/`;
+
+    const r = await fetch(url, {
+      method: "POST",
+      body: fd,
+      headers: {"X-CSRFToken": CSRF},
+    });
+
+    const j = await r.json().catch(()=>({}));
+
+    if(!r.ok || !j.ok){
+      alert(j.error || `Error (${r.status})`);
+      return;
+    }
+
+    location.reload();
+  });
+});
+</script>

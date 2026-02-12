@@ -3,17 +3,25 @@
 <link rel="stylesheet" href="{% static 'panel/css/materiales.css' %}?v={% now 'U' %}">
 
 <div class="mzc-card mz-mat-card">
-  <div class="mz-mat-head">
-    <div>
-      <h4 class="mz-mat-title">Materiales</h4>
-      <p class="mz-mat-sub">Archivos y recursos asociados al curso.</p>
-    </div>
-    {% if files %}
-      <div class="mz-mat-count">
-        {{ files|length }} archivo{{ files|length|pluralize:"s" }}
-      </div>
-    {% endif %}
+<div class="mz-mat-head">
+  <div>
+    <h4 class="mz-mat-title">Materiales</h4>
+    <p class="mz-mat-sub">Archivos y recursos asociados al curso.</p>
   </div>
+
+  <div class="mz-mat-head-right">
+    <div class="mz-mat-count" id="mz-files-count">
+      0 archivos
+    </div>
+
+    <button type="button" class="mzc-btn ghost mz-mat-zipall"
+            data-action="materials.zip.all"
+            data-codigo="{{ curso.codigo }}"
+            data-aud="{{ audience }}">
+      ⬇️ Descargar TODO (ZIP)
+    </button>
+  </div>
+</div>
 
   {# ---- верхний бар: alumnos / docentes / mis ---- #}
   {% if is_teacher %}
@@ -170,22 +178,31 @@
   <div id="mz-cards-wrap" hidden>
 	<div class="mz-fold-grid" id="mz-fold-grid">
 		{% for fld in folders %}
-		  <button type="button"
-				  class="mz-fold-card{% if fld.is_locked %} is-locked{% endif %}"
-				  data-open-path="{{ fld.path|escape }}"
-				  data-path="{{ fld.path|escape }}"
-				  data-drop-folder="{{ fld.path|escape }}"
-				  title="Abrir">
-			<div class="mz-fold-ico">📁</div>
-			<div class="mz-fold-name">{{ fld.name }}</div>
+<button type="button"
+        class="mz-fold-card{% if fld.is_locked %} is-locked{% endif %}"
+        data-open-path="{{ fld.path|escape }}"
+        data-path="{{ fld.path|escape }}"
+        data-drop-folder="{{ fld.path|escape }}"
+        title="Abrir">
 
-			<div class="mz-fold-meta">
-			  <span class="mz-fold-count" data-count>{{ fld.files_count|default:"0" }}</span>
-			  {% if fld.is_locked %}
-				<span class="mz-fold-badge">Módulo</span>
-			  {% endif %}
-			</div>
-		  </button>
+  <a href="#"
+     class="mz-fold-zip"
+     title="Descargar ZIP de esta carpeta"
+     data-action="materials.zip.folder"
+     data-codigo="{{ curso.codigo }}"
+     data-aud="{{ audience }}"
+     data-path="{{ fld.path|escape }}">⬇️</a>
+
+  <div class="mz-fold-ico">📁</div>
+  <div class="mz-fold-name">{{ fld.name }}</div>
+
+  <div class="mz-fold-meta">
+    <span class="mz-fold-count" data-count>{{ fld.files_count|default:"0" }}</span>
+    {% if fld.is_locked %}
+      <span class="mz-fold-badge">Módulo</span>
+    {% endif %}
+  </div>
+</button>
 		{% empty %}
 		  <div class="mz-fold-empty">— No hay carpetas —</div>
 		{% endfor %}
@@ -195,19 +212,23 @@
       <div class="mz-cards-head">
         <div class="mz-cards-title" id="mz-cards-title">Archivos</div>
 
-        <div class="mz-cards-actions">
-          <button type="button" class="mzc-btn ghost"
-                  data-action="folder.upload.here"
-                  data-parent="">
-            Subir aquí
-          </button>
+		<div class="mz-cards-actions">
 
-          <button type="button" class="mzc-btn ghost"
-                  data-action="folder.create.here"
-                  data-parent="">
-            Nueva carpeta
-          </button>
-        </div>
+
+		  {% if is_teacher %}
+			<button type="button" class="mzc-btn ghost"
+					data-action="folder.upload.here"
+					data-parent="">
+			  Subir aquí
+			</button>
+
+			<button type="button" class="mzc-btn ghost"
+					data-action="folder.create.here"
+					data-parent="">
+			  Nueva carpeta
+			</button>
+		  {% endif %}
+		</div>
       </div>
 
       <div class="mz-cards-body" id="mz-cards-body">
@@ -377,6 +398,12 @@
     <div class="mz-prev-body" id="mz-prev-body"></div>
   </div>
 </div>
+
+<script>
+  window.__MZ_ZIP_URL__ = "{% url 'panel:materiales_download_zip' %}";
+  window.__MZ_CURSO_CODIGO__ = "{{ curso.codigo|escapejs }}";
+  window.__MZ_AUD__ = "{{ audience|escapejs }}";
+</script>
 
 <script src="{% static 'panel/js/materiales.js' %}?v={% now 'U' %}"></script>
 <script src="{% static 'panel/js/materiales_fs.js' %}?v={% now 'U' %}"></script>

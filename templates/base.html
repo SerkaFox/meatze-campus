@@ -9,7 +9,7 @@
   {% block extra_head %}{% endblock %}
 
   <!-- ТВОЙ site.css находится в static/meatze/ -->
-  <link rel="stylesheet" href="{% static 'meatze/site.css' %}">
+  <link rel="stylesheet" href="{% static 'meatze/site.css' %}?v={% now 'U' %}">
 
   <!-- ЧАТ: было в оригинале -->
   <link rel="stylesheet" href="{% static 'meatze/chat_widget/chat-widget.css' %}">

@@ -1,51 +1,175 @@
 {# panel/partials/materiales_tree_node.html #}
+<style>
+/* =========================
+   TREE: 3-row mobile layout
+   ========================= */
+
+.mz-tree-row{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+}
+
+.mz-tree-main{
+  flex: 1 1 auto;
+  min-width: 0; /* важно для переносов */
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+/* 1) Title full width, wraps */
+.mz-tree-title{
+  min-width:0;
+}
+.mz-tree-folder{
+  display:block;
+  font-weight:800;
+  color:#e5e7eb;
+  white-space: normal;
+  overflow-wrap:anywhere;
+  word-break: break-word;
+  line-height:1.15;
+}
+
+/* 2) Meta row: badges + count */
+.mz-tree-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  align-items:center;
+}
+
+.mz-tree-count{
+  font-size:.72rem;
+  padding:2px 8px;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.35);
+  background: rgba(15,23,42,.55);
+  color:#cbd5e1;
+  white-space:nowrap;
+}
+
+/* 3) Actions: icon buttons */
+.mz-tree-actions{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+/* круглая иконка */
+.mz-icbtn{
+  width:34px;
+  height:34px;
+  border-radius:12px;
+  border:1px solid rgba(148,163,184,.35);
+  background: rgba(15,23,42,.55);
+  color:#e5e7eb;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1;
+  cursor:pointer;
+  padding:0;
+  box-shadow: 0 6px 14px rgba(0,0,0,.22);
+}
+
+.mz-icbtn:hover{
+  background: rgba(30,64,175,.28);
+  border-color: rgba(191,219,254,.55);
+}
+
+.mz-icbtn-danger{
+  border-color: rgba(239,68,68,.25);
+}
+.mz-icbtn-danger:hover{
+  background: rgba(239,68,68,.12);
+  border-color: rgba(239,68,68,.45);
+  color:#fecaca;
+}
+
+/* Toggle button a bit smaller on mobile */
+@media (max-width: 720px){
+  .mz-tree-row{ padding: 8px 10px; gap:8px; }
+
+  .mz-tree-tgl{
+    width:26px;
+    height:26px;
+    border-radius:9px;
+  }
+
+  .mz-tree-folder{ font-size:.94rem; }
+
+  .mz-icbtn{
+    width:30px;
+    height:30px;
+    border-radius:10px;
+  }
+}
+</style>
+
 <div class="mz-tree-node"
      data-node="{{ node.path|escape }}"
      data-folder-name="{{ node.name|default:''|escape }}"
      data-locked="{% if node.is_locked %}1{% else %}0{% endif %}">
   <div class="mz-tree-row"
        {% if is_teacher %}data-drop-folder="{{ node.path|escape }}"{% endif %}>
+
     <button type="button" class="mz-tree-tgl" data-toggle aria-label="Toggle">▸</button>
 
-    <a class="mz-tree-folder"
-       href="?tab=materiales&aud={{ audience }}&p={{ node.path|urlencode }}&mod={{ selected_mod|default:''|urlencode }}&sort={{ sort }}&view=tree">
-      📁 {{ node.name }}
-      {% if node.is_locked %}<span class="mz-chip-mini">Módulo</span>{% endif %}
-    </a>
-
-<span class="mz-tree-count" title="Directos / Total">
-  {{ node.count_direct|default:0 }}/{{ node.count_total|default:0 }}
-</span>
-
-		{% if is_teacher %}
-		  <div class="mz-tree-actions">
+    <div class="mz-tree-main">
+		<div class="mz-tree-title">
+		  <div class="mz-tree-title-row">
+			<span class="mz-tree-folder"
+				  data-role="folder-name"
+				  title="{{ node.name|default:''|escape }}">
+			  📁 {{ node.name }}
+			</span>
 
 			<button type="button"
-					class="mzc-btn ghost"
-					title="Subir archivos a esta carpeta"
-					data-action="folder.upload.here"
-					data-parent="{{ node.path|escape }}">
-			  ⬆️📁
-			</button>
-
-			<button type="button"
-					class="mzc-btn ghost mz-folder-add"
-					title="Crear subcarpeta"
-					data-action="folder.create.here"
-					data-parent="{{ node.path|escape }}">
-			  📁<span style="margin-left:2px">＋</span>
-			</button>
-
-			{% if not node.is_locked %}
-			  <form method="post" style="margin:0" data-ajax="folder-delete" data-path="{{ node.path }}" onsubmit="return false;">
-				{% csrf_token %}
-				<input type="hidden" name="action" value="folder_delete">
-				<input type="hidden" name="path" value="{{ node.path }}">
-				<button class="mzc-btn ghost" type="submit" title="Eliminar carpeta">🗑️📁</button>
-			  </form>
-			{% endif %}
+					class="mz-icbtn mz-icbtn-zip"
+					title="Descargar ZIP"
+					data-action="materials.zip.folder"
+					data-codigo="{{ curso.codigo|default:'' }}"
+					data-aud="{{ audience|default:'alumnos' }}"
+					data-path="{{ node.path|escape }}">⬇️</button>
 		  </div>
-		{% endif %}
+		</div>
+
+      <div class="mz-tree-meta">
+        {% if node.is_locked %}<span class="mz-chip-mini">Módulo</span>{% endif %}
+
+        <span class="mz-tree-count" title="Directos / Total">
+          {{ node.count_direct|default:0 }}/{{ node.count_total|default:0 }}
+        </span>
+      </div>
+
+      {% if is_teacher %}
+        <div class="mz-tree-actions">
+          <button type="button"
+                  class="mz-icbtn"
+                  title="Subir archivos"
+                  data-action="folder.upload.here"
+                  data-parent="{{ node.path|escape }}">⬆️</button>
+
+          <button type="button"
+                  class="mz-icbtn"
+                  title="Nueva subcarpeta"
+                  data-action="folder.create.here"
+                  data-parent="{{ node.path|escape }}">📁＋</button>
+
+          {% if not node.is_locked %}
+            <form method="post" style="margin:0" data-ajax="folder-delete" data-path="{{ node.path }}" onsubmit="return false;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="folder_delete">
+              <input type="hidden" name="path" value="{{ node.path }}">
+              <button class="mz-icbtn mz-icbtn-danger" type="submit" title="Eliminar">🗑️</button>
+            </form>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
   </div>
 
   <div class="mz-tree-children" hidden>

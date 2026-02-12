@@ -13,4 +13,3 @@ urlpatterns = [
     path("auth/logout", views.logout),
     path("admin/ping", views.admin_ping, name="admin_ping"),
 ]
-

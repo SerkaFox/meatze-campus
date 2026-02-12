@@ -45,7 +45,10 @@ urlpatterns += [
 # panel/urls.py
 from django.urls import path
 from . import views_live
+from . import views_materiales_api as mza
 
 urlpatterns += [
     path("curso/<int:curso_id>/live/", views_live.curso_live, name="curso_live"),
+    path("materiales/zip/", mza.materiales_download_zip, name="materiales_download_zip"),
+    
 ]

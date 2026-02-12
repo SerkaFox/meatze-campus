@@ -199,6 +199,32 @@ window.getCookie = window.getCookie || function(name){
     });
   })();
 
+// =====================================
+// TREE: toggle by arrow AND by name
+// =====================================
+(function initTreeToggleByName(){
+  document.addEventListener('click', (e)=>{
+    const link = e.target.closest('.mz-tree-folder');
+    if(!link) return;
+
+    // если кликнули по кнопкам/экшенам внутри строки — не трогаем
+    if (e.target.closest('.mz-tree-actions, button, [data-action], [data-toggle]')) return;
+
+    const node = link.closest('.mz-tree-node');
+    if(!node) return;
+
+    const btn = node.querySelector('[data-toggle]');
+    const kids = node.querySelector(':scope > .mz-tree-children');
+    if(!btn || !kids) return;
+
+    // ✅ не переходим по ссылке — работаем как toggle
+    e.preventDefault();
+    e.stopPropagation();
+
+    btn.click(); // делегируем на твою существующую логику, включая localStorage
+  }, true); // capture=true чтобы сработало раньше возможных других обработчиков
+})();
+
 
   // -----------------------------
   // 4) Tree open/close persistence
@@ -321,17 +347,28 @@ function mzSyncCardsFromTree(){
     btn.setAttribute('data-drop-folder', path);
     btn.title = isRoot ? 'Abrir raíz' : 'Abrir';
 
-    btn.innerHTML = `
-      <div class="mz-fold-top">
-        <div class="mz-fold-ico">${isRoot ? '🏠' : '📁'}</div>
-        <div class="mz-fold-name"></div>
-        <span class="mz-fold-badge" hidden>Módulo</span>
-      </div>
+	btn.innerHTML = `
+	  <div class="mz-fold-top">
+		<button type="button"
+				class="mz-fold-zip"
+				title="Descargar ZIP de esta carpeta"
+				data-action="materials.zip.folder"
+				data-codigo="${(window.__MZ_CURSO_CODIGO__||'')}"
+				data-aud="${(window.__MZ_AUD__||'alumnos')}"
+				data-path="${path}">
+		  ⬇️
+		</button>
 
-      <div class="mz-fold-meta">
-        <span class="mz-fold-count" data-count>0</span>
-      </div>
-    `;
+		<div class="mz-fold-ico">${isRoot ? '🏠' : '📁'}</div>
+		<div class="mz-fold-name"></div>
+		<span class="mz-fold-badge" hidden>Módulo</span>
+	  </div>
+
+	  <div class="mz-fold-meta">
+		<span class="mz-fold-count" data-count>0</span>
+	  </div>
+	`;
+	
 
     btn.querySelector('.mz-fold-name').textContent = name;
 
@@ -396,7 +433,17 @@ function mzSyncCardsFromTree(){
       }
     }
   });
+  // 3) reorder cards to match tree order (root first + DOM order)
+const order = [''].concat(nodes.map(n => (n.getAttribute('data-node')||'').trim()).filter(Boolean));
+
+order.forEach(path=>{
+  const card = grid.querySelector(`.mz-fold-card[data-path="${CSS.escape(path)}"]`);
+  if(card) grid.appendChild(card);  // appendChild moves if already there
+});
 }
+
+
+
 
 // экспортируем, чтобы дергать из других мест
 window.mzMaterialsSyncCardsFromTree = mzSyncCardsFromTree;
@@ -502,12 +549,17 @@ if (document.readyState === 'loading'){
     }
 	window.mzMaterialsMountPath = mountPath;
     // клик по карточке
-    grid.addEventListener('click', (e)=>{
-      const card = e.target.closest('.mz-fold-card[data-open-path]');
-      if(!card) return;
-      e.preventDefault();
-      mountPath(card.getAttribute('data-open-path') || '');
-    });
+	grid.addEventListener('click', (e)=>{
+	  // ✅ если клик по ZIP — не открываем карточку (пусть сработает initZipButtons)
+	  if (e.target.closest('[data-action="materials.zip.folder"], [data-action="materials.zip.all"], .mz-fold-zip')) {
+		return;
+	  }
+
+	  const card = e.target.closest('.mz-fold-card[data-open-path]');
+	  if(!card) return;
+	  e.preventDefault();
+	  mountPath(card.getAttribute('data-open-path') || '');
+	});
 
     // стартовое состояние: показываем текущую папку, если хочешь
 		const bc = document.getElementById('mz-fold-bc');
@@ -540,6 +592,52 @@ if (document.readyState === 'loading'){
 		  setTimeout(ensureMountAccordingToLayout, 0);
 		});
   })();
+  
+  
+  (function initZipButtons(){
+  if (window.__MZ_ZIP_BTNS__) return;
+  window.__MZ_ZIP_BTNS__ = true;
+
+	function buildZipUrl({codigo, aud, path, scope}){
+	  const base = (window.__MZ_ZIP_URL__ || '/panel/materiales/zip/');
+	  const u = new URL(base, location.origin);
+
+	  u.searchParams.set('codigo', (codigo||'').trim());
+	  u.searchParams.set('aud', (aud||'alumnos').trim());
+	  u.searchParams.set('scope', scope || 'folder');
+
+	  if(scope === 'folder' || scope === 'root'){
+		u.searchParams.set('p', (path||'').trim()); // root => ''
+	  }
+	  return u.toString();
+	}
+
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('[data-action="materials.zip.folder"]');
+    if(!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+	const path = (btn.getAttribute('data-path') || '').trim();
+	const scope = path ? 'folder' : 'root';
+	location.href = buildZipUrl({
+	  codigo: btn.getAttribute('data-codigo'),
+	  aud: btn.getAttribute('data-aud'),
+	  path,
+	  scope
+	});
+  });
+
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('[data-action="materials.zip.all"]');
+    if(!btn) return;
+    e.preventDefault();
+    location.href = buildZipUrl({
+      codigo: btn.getAttribute('data-codigo'),
+      aud: btn.getAttribute('data-aud'),
+      scope: 'all'
+    });
+  });
+})();
 
   // -----------------------------
   // 5) Drag & Drop move file (teacher)
@@ -802,7 +900,6 @@ if (document.readyState === 'loading'){
             }
 
 // ✅ обновляем folder-атрибут, чтобы поиск показывал реальный путь
-const dstPath = (targetPath || '').trim().replace(/^\/+|\/+$/g,'');
 if (fileEl){
   fileEl.setAttribute('data-folder', dstPath);
   fileEl.dataset.folder = dstPath;
@@ -835,10 +932,7 @@ window.mzMaterialsReindexSearch?.();
     }
 
     bindDropTargets();
-// внутри initDnDMove(), где уже есть:
-// const csrftoken = getCookie('csrftoken');
-// function findTargetContainer(...) ...
-// function bumpCount(...) ...
+
 
 const UPLOAD_URL = mzPostUrl(); // или window.location.pathname + window.location.search
 
@@ -1153,6 +1247,7 @@ function hasDuplicateNameInParent(parentPath, name){
       sortBar.querySelectorAll('a.mz-pill').forEach(a=>a.classList.remove('is-act'));
       const active = sortBar.querySelector(`a[href*="sort=${mode}"]`);
       if(active) active.classList.add('is-act');
+	  window.mzMaterialsSyncCardsFromTree?.();
     }
 
     sortBar.addEventListener('click', (e)=>{

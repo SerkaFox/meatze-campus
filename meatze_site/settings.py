@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'core',
     "api",
     "panel",
+    "panel.shortshare",
     'rest_framework',
 ]
 
