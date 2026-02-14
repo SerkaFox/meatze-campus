@@ -52,3 +52,8 @@ urlpatterns += [
     path("materiales/zip/", mza.materiales_download_zip, name="materiales_download_zip"),
     
 ]
+from panel.views_modules_access import teacher_student_modules_get, teacher_student_modules_set
+urlpatterns += [
+    path("meatze/v5/teacher/student-modules/get", teacher_student_modules_get, name="teacher_student_modules_get"),
+    path("meatze/v5/teacher/student-modules/set", teacher_student_modules_set, name="teacher_student_modules_set"),
+]

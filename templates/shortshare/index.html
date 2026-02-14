@@ -1,5 +1,164 @@
+{% extends "base.html" %}
 {% load static %}
+{% block content %}
 <link rel="stylesheet" href="{% static 'meatze/site.css' %}?v={% now 'U' %}">
+<style>
+  /* Layout */
+  .mz-room-grid{
+    display:grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+    gap:18px;
+    align-items:stretch;
+    margin-top:4px;
+  }
+  @media (max-width: 860px){
+    .mz-room-grid{ grid-template-columns: 1fr; }
+  }
+
+  /* Base card */
+  .mz-room-card{
+    border-radius:20px;
+    border:1px solid rgba(148,163,184,.20);
+    background:
+      radial-gradient(circle at 0 0, rgba(56,189,248,.14), transparent 55%),
+      radial-gradient(circle at 100% 100%, rgba(34,197,94,.10), transparent 55%),
+      rgba(2,6,23,.45);
+    box-shadow: 0 18px 70px rgba(15,23,42,.55);
+    padding:16px 16px 14px;
+    position:relative;
+    overflow:hidden;
+  }
+
+  /* Glow / shimmer */
+  .mz-room-card:before{
+    content:"";
+    position:absolute;
+    inset:-3px;
+    background: linear-gradient(120deg,
+      rgba(56,189,248,.00) 0%,
+      rgba(56,189,248,.20) 25%,
+      rgba(34,197,94,.14) 50%,
+      rgba(56,189,248,.18) 75%,
+      rgba(56,189,248,.00) 100%
+    );
+    transform: translateX(-35%);
+    opacity:.55;
+    filter: blur(18px);
+    pointer-events:none;
+    animation: mz-room-shimmer 6.5s ease-in-out infinite;
+  }
+  @keyframes mz-room-shimmer{
+    0%   { transform: translateX(-45%); opacity:.38; }
+    50%  { transform: translateX( 25%); opacity:.58; }
+    100% { transform: translateX(-45%); opacity:.38; }
+  }
+
+  /* Appear animation */
+  .mz-room-appear{
+    opacity:0;
+    transform: translateY(14px);
+    animation: mz-room-in .45s ease-out forwards;
+  }
+  .mz-room-appear.d2{ animation-delay:.08s; }
+  @keyframes mz-room-in{
+    to{ opacity:1; transform: translateY(0); }
+  }
+
+  /* Manual (left) */
+  .mz-room-title{
+    margin:0 0 10px 0;
+    font-size:14px;
+    font-weight:900;
+    letter-spacing:.2px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .mz-room-sub{
+    margin:0 0 10px 0;
+    color: rgba(203,213,245,.95);
+    font-size:13px;
+    line-height:1.35;
+  }
+  .mz-room-list{
+    margin:0;
+    padding:0;
+    list-style:none;
+    display:flex;
+    flex-direction:column;
+    gap:9px;
+  }
+  .mz-room-item{
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+  }
+  .mz-room-ico{
+    width:28px; height:28px;
+    border-radius:10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: rgba(15,23,42,.55);
+    border:1px solid rgba(148,163,184,.18);
+    flex:0 0 auto;
+  }
+  .mz-room-item b{ color:#e5f3ff; }
+  .mz-room-item span{
+    color: rgba(226,232,240,.92);
+    font-size:13px;
+    line-height:1.3;
+    display:block;
+    margin-top:1px;
+  }
+  .mz-room-tip{
+    margin-top:12px;
+    padding:10px 10px;
+    border-radius:14px;
+    background: rgba(15,23,42,.55);
+    border:1px solid rgba(148,163,184,.18);
+    color: rgba(203,213,245,.95);
+    font-size:12px;
+    line-height:1.3;
+  }
+
+  /* Right: big code form */
+  .mz-room-form{
+    display:flex;
+    flex-direction:column;
+    height:100%;
+  }
+  .mz-room-form .mz-label{ margin-top:2px; }
+  .mz-room-big{
+    font-size:18px;
+    padding:14px 16px;
+    border-radius:16px;
+  }
+  .mz-room-actions{
+    margin-top:12px;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .mz-room-btn{
+    width:100%;
+    padding:12px 16px;
+    border-radius:16px;
+    font-weight:900;
+    font-size:15px;
+  }
+  .mz-room-help-compact{
+    margin-top:10px;
+    color: rgba(203,213,245,.85);
+    font-size:12px;
+    line-height:1.25;
+  }
+  .mz-room-error{ margin-top:12px; }
+
+  /* Align cards heights nicely */
+  .mz-room-card-inner{ position:relative; z-index:1; height:100%; }
+</style>
 <div class="mz-page mz-auth-page">
   <div class="mz-auth-card">
 
@@ -7,38 +166,88 @@
       <h3 class="mz-auth-title">Room rápido · 7 días</h3>
     </div>
 
-    <div class="mz-auth-b">
+<div class="mz-room-grid">
 
-      <div class="mz-help">
-        Para cursos cortos. Sube archivos y compártelos con un código.
-        Se eliminan automáticamente después de 7 días.
+  <!-- LEFT: manual -->
+  <aside class="mz-room-card mz-room-appear">
+    <div class="mz-room-card-inner">
+      <h4 class="mz-room-title">⚡ Room rápido · Cómo funciona</h4>
+      <p class="mz-room-sub">
+        Sala temporal para <b>compartir archivos y enlaces</b> en cursos cortos o reuniones rápidas.
+      </p>
+
+      <ul class="mz-room-list">
+        <li class="mz-room-item">
+          <div class="mz-room-ico">🔢</div>
+          <div>
+            <b>Código (2–4 dígitos)</b>
+            <span>Identifica la sala. Quien use el mismo código entra en la misma room.</span>
+          </div>
+        </li>
+        <li class="mz-room-item">
+          <div class="mz-room-ico">📤</div>
+          <div>
+            <b>Comparte el código</b>
+            <span>Envíalo a tus alumnos/compañeros para que puedan entrar.</span>
+          </div>
+        </li>
+        <li class="mz-room-item">
+          <div class="mz-room-ico">⏳</div>
+          <div>
+            <b>Duración</b>
+            <span>Archivos: 7 días · Enlaces: 30 minutos (se borran solos).</span>
+          </div>
+        </li>
+        <li class="mz-room-item">
+          <div class="mz-room-ico">🗑️</div>
+          <div>
+            <b>Eliminar</b>
+            <span>Para borrar, se pide el mismo código de la room.</span>
+          </div>
+        </li>
+      </ul>
+
+      <div class="mz-room-tip">
+        🔒 Consejo: no compartas datos sensibles. Comparte el código solo con tu grupo.
       </div>
+    </div>
+  </aside>
 
-      <form method="post">
+  <!-- RIGHT: big code + button -->
+  <section class="mz-room-card mz-room-appear d2">
+    <div class="mz-room-card-inner mz-room-form">
+      <form method="post" style="display:flex; flex-direction:column; gap:10px; height:100%;">
         {% csrf_token %}
 
-        <label class="mz-label">Código (2–4 dígitos)</label>
-        <input class="mz-inp"
+        <label class="mz-label">Introduce el código</label>
+        <input class="mz-inp mz-room-big"
                name="code"
                inputmode="numeric"
                pattern="[0-9]{2,4}"
                maxlength="4"
-               placeholder="Ejemplo: 1234"
+               placeholder="Ej. 1234"
+               autocomplete="one-time-code"
                required>
 
-        <div style="margin-top:14px">
-          <button class="mz-btn" type="submit">
-            Entrar en la room
-          </button>
+        <button class="mz-btn mz-room-btn" type="submit">
+          Entrar en la room
+        </button>
+
+        <div class="mz-room-help-compact">
+          Tip: usa un número fácil de recordar y compártelo con los demás.
         </div>
+
+        {% if error %}
+          <div class="mz-bad mz-room-error">
+            {{ error }}
+          </div>
+        {% endif %}
       </form>
-
-      {% if error %}
-        <div class="mz-bad" style="margin-top:12px">
-          {{ error }}
-        </div>
-      {% endif %}
-
     </div>
+  </section>
+
+</div>
   </div>
 </div>
+
+{% endblock %}

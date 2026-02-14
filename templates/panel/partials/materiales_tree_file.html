@@ -20,38 +20,38 @@
     </div>
 
     {# 2) meta/badges #}
-    <div class="mz-file-meta">
-      <span class="mz-file-pill">{{ f.ext|upper }}</span>
-      <span class="mz-mat-dot"></span>
-      <span class="mz-file-pill">{{ f.fmt_size }}</span>
-      <span class="mz-mat-dot"></span>
-      <span class="mz-file-pill">{{ f.uploaded_by.get_full_name|default:f.uploaded_by.email }}</span>
+<div class="mz-file-bottom">
+  <div class="mz-file-meta">
+    <span class="mz-file-pill">{{ f.ext|upper }}</span>
+    <span class="mz-mat-dot"></span>
+    <span class="mz-file-pill">{{ f.fmt_size }}</span>
+    <span class="mz-mat-dot"></span>
+    <span class="mz-file-pill">{{ f.uploaded_by.get_full_name|default:f.uploaded_by.email }}</span>
 
-      {% if f.module_key %}
-        <span class="mz-mat-tag">{{ f.module_key }}</span>
+    {% if f.module_key %}
+      <span class="mz-mat-tag">{{ f.module_key }}</span>
+    {% else %}
+      <span class="mz-mat-tag muted">Sin módulo</span>
+    {% endif %}
+
+    {% if not is_teacher %}
+      {% if f.is_downloaded %}
+        <span class="mz-chip-mini mz-file-chip">Descargado</span>
       {% else %}
-        <span class="mz-mat-tag muted">Sin módulo</span>
+        <span class="mz-chip-mini mz-file-chip is-undl">No descargado</span>
       {% endif %}
+    {% endif %}
 
-      {% if not is_teacher %}
-        {% if f.is_downloaded %}
-          <span class="mz-chip-mini mz-file-chip">Descargado</span>
-        {% else %}
-          <span class="mz-chip-mini mz-file-chip is-undl">No descargado</span>
-        {% endif %}
-      {% endif %}
+    {% if is_teacher and f.share_alumnos %}
+      <span class="mz-chip-mini">Visible para alumnos</span>
+    {% endif %}
+  </div>
 
-      {% if is_teacher and f.share_alumnos %}
-        <span class="mz-chip-mini">Visible para alumnos</span>
-      {% endif %}
-    </div>
-
-{# 3) actions: mobile icons + desktop clouds #}
-<div class="mz-file-actions">
+  <div class="mz-file-actions">
 
   {# --- MOBILE: icon buttons --- #}
   <div class="mz-file-actions-icons">
-    <a class="mz-icbtn"
+    <a class="mz-icbtn" data-action="materials.download"
        href="{% url 'panel:material_download' f.id %}"
        target="_blank" rel="noopener"
        title="Descargar" aria-label="Descargar">⬇️</a>
@@ -100,9 +100,10 @@
 
   {# --- DESKTOP: cloud buttons --- #}
   <div class="mz-file-actions-cloud">
-    <a class="mzc-btn ghost"
-       href="{% url 'panel:material_download' f.id %}"
-       target="_blank" rel="noopener">Descargar</a>
+	<a class="mzc-btn ghost"
+	   data-action="materials.download"
+	   href="{% url 'panel:material_download' f.id %}"
+	   target="_blank" rel="noopener">Descargar</a>
 
     <a class="mzc-btn ghost"
        data-preview
@@ -144,6 +145,7 @@
     {% endif %}
   </div>
 
+</div>
 </div>
   </div>
 </div>

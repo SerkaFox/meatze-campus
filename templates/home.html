@@ -291,7 +291,75 @@
   text-decoration: underline;
   color: #38bdf8;
 }
+  .mz-hero-cta-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+  }
 
+  .mz-hero-cta-secondary{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 18px;
+    border-radius:999px;
+    background:rgba(15,23,42,.55);
+    border:1px solid rgba(148,163,184,.55);
+    color:#e5f3ff;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 12px 32px rgba(8,47,73,.35);
+  }
+  .mz-hero-cta-secondary:hover{
+    border-color:rgba(56,189,248,.75);
+    box-shadow:0 16px 40px rgba(8,47,73,.45);
+  }
+  /* ===== shimmer / glow (как в Room) ===== */
+.mz-hero-card::before,
+.mz-ai-card::before{
+  content:"";
+  position:absolute;
+  inset:-4px;
+  pointer-events:none;
+  opacity:.55;
+  filter: blur(18px);
+  transform: translateX(-45%);
+  background: linear-gradient(120deg,
+    rgba(56,189,248,.00) 0%,
+    rgba(56,189,248,.22) 25%,
+    rgba(34,197,94,.14) 50%,
+    rgba(56,189,248,.18) 75%,
+    rgba(56,189,248,.00) 100%
+  );
+  animation: mz-shimmer 7.5s ease-in-out infinite;
+}
+
+/* чуть разный темп, чтобы не “синхронно” */
+.mz-ai-card::before{
+  animation-duration: 8.8s;
+  opacity:.48;
+}
+
+@keyframes mz-shimmer{
+  0%   { transform: translateX(-48%); opacity:.35; }
+  50%  { transform: translateX( 28%); opacity:.60; }
+  100% { transform: translateX(-48%); opacity:.35; }
+}
+
+/* уважение к системной настройке */
+@media (prefers-reduced-motion: reduce){
+  .mz-hero-card::before,
+  .mz-ai-card::before{
+    animation:none;
+    opacity:.25;
+  }
+}
+.mz-hero-card:hover::before,
+.mz-ai-card:hover::before{
+  opacity:.68;
+  filter: blur(16px);
+}
 </style>
 
 <div class="mz-home-wrap">
@@ -305,10 +373,13 @@
       <h1 class="mz-hero-title">
         Bienvenido a MEATZE Campus
       </h1>
-      <p class="mz-hero-sub">
-        Aquí podrás seguir tus cursos subvencionados, revisar el calendario de clases,
-        descargar materiales, hablar con tu docente y recibir avisos importantes.
-      </p>
+<p class="mz-hero-sub">
+  Aquí podrás seguir tus cursos subvencionados, revisar el calendario de clases,
+  descargar materiales, hablar con tu docente y recibir avisos importantes.
+  <br><br>
+  También tienes una <b>Sala corta (Room)</b> para cursos rápidos: comparte archivos y enlaces con un
+  <b>código de 2–4 dígitos</b> (todos los que usen el mismo código entran en la misma sala).
+</p>
 
       <div class="mz-hero-feats">
         <div class="mz-chip-tag">
@@ -325,15 +396,22 @@
         </div>
       </div>
 
-      <div class="mz-hero-footer">
-<a class="mz-hero-cta" href="{% if request.user.is_authenticated %}/alumno/{% else %}/acceder/{% endif %}">
-  Entrar al Campus
-</a>
+<div class="mz-hero-footer">
+  <div class="mz-hero-cta-row">
+    <a class="mz-hero-cta" href="{% if request.user.is_authenticated %}/alumno/{% else %}/acceder/{% endif %}">
+      Entrar al Campus
+    </a>
 
-        <div class="mz-hero-note">
-          ¿Primera vez? Usa el PIN que te llega por e-mail o pide acceso a tu docente.
-        </div>
-      </div>
+    <a class="mz-hero-cta-secondary" href="/room/">
+      ⚡ Sala corta (Room)
+    </a>
+  </div>
+  
+
+  <div class="mz-hero-note">
+    ¿Primera vez? Usa el PIN que te llega por e-mail o pide acceso a tu docente.
+  </div>
+</div>
     </section>
 
     <!-- RIGHT: AI assistant -->

@@ -4,10 +4,12 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from django.template.loader import render_to_string
-from django.core.files.base import ContentFile  # если надо, но для обычных файлов не нужно
+from django.core.files.base import ContentFile  
+from django.db.models import Q
 from .models import CursoFile, CursoFolder
 from .materiales_fs import normalize_path, create_folder  # у тебя уже есть
 from api.models import Curso  # если нужно
+from panel.permissions_modules import get_disabled_modules
 
 def _fmt_size(num):
     try:
@@ -23,10 +25,11 @@ def _fmt_size(num):
     return f"{n} B"
 
 def _infer_module_from_path(curso, target_path: str) -> str:
-    # ВАЖНО: вынеси это из course_panel (чтобы не было UnboundLocal)
+    # возвращает КЛЮЧ МОДУЛЯ = locked folder PATH (стабильный ключ)
     tp = (target_path or "").strip().strip("/")
     if not tp:
         return ""
+
     parts = tp.split("/")
     prefixes = []
     cur = ""
@@ -34,13 +37,17 @@ def _infer_module_from_path(curso, target_path: str) -> str:
         cur = f"{cur}/{p}" if cur else p
         prefixes.append(cur)
 
-    locked = (CursoFolder.objects
-              .filter(curso=curso, is_deleted=False, is_locked=True, path__in=prefixes)
-              .values("path", "title"))
-    if not locked:
+    locked_paths = list(
+        CursoFolder.objects
+            .filter(curso=curso, is_deleted=False, is_locked=True, path__in=prefixes)
+            .values_list("path", flat=True)
+    )
+    if not locked_paths:
         return ""
-    best = sorted(locked, key=lambda x: len(x["path"] or ""), reverse=True)[0]
-    return (best.get("title") or "").strip() or best["path"].split("/")[-1]
+
+    # самый глубокий locked path
+    locked_paths.sort(key=len, reverse=True)
+    return locked_paths[0]
 
 @login_required
 @require_POST
@@ -56,7 +63,7 @@ def materiales_upload_files_ajax(request):
     if not course_code:
         return JsonResponse({"ok": False, "error": "course_code_required"}, status=400)
 
-    curso = Curso.objects.filter(code=course_code).first()
+    curso = Curso.objects.filter(codigo=course_code).first()
     if not curso:
         return JsonResponse({"ok": False, "error": "curso_not_found"}, status=404)
 
@@ -159,32 +166,28 @@ def materiales_download_zip(request):
     is_teacher = _user_is_teacher(request.user)
 
     qs = CursoFile.objects.filter(curso=curso)
-    # если у тебя есть is_deleted — добавь фильтр:
+
+    # удалённые
     if hasattr(CursoFile, "is_deleted"):
         qs = qs.filter(is_deleted=False)
 
     if is_teacher:
-        # учитель скачивает в рамках выбранной аудитории
+        # учитель: по выбранной аудитории
         tipo = _tipo_from_audience(aud)
         qs = qs.filter(tipo=tipo)
+
     else:
-        # ученик: только видимые для alumnos
-        # (alumnos) OR (docentes/privado но share_alumnos=True)
+        # ученик: только то, что ему видно
         if hasattr(CursoFile, "share_alumnos"):
-            qs = qs.filter(
-                # tipo alumnos всегда видим
-                # или расшарено для alumnos
-                # NOTE: если у тебя типы иначе — подстрой
-            ).filter(
-                # Django OR:
-                # (tipo=alumnos) | (share_alumnos=True)
-            )
-            # делаем OR корректно:
-            from django.db.models import Q
             qs = qs.filter(Q(tipo=_tipo_from_audience("alumnos")) | Q(share_alumnos=True))
         else:
             qs = qs.filter(tipo=_tipo_from_audience("alumnos"))
 
+        # и минус запрещённые модули
+        disabled = get_disabled_modules(curso, request.user)
+        if disabled:
+            qs = qs.exclude(module_key__in=list(disabled))
+        
     # scope
     if scope == "all":
         pass

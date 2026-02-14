@@ -1,4 +1,7 @@
+{% extends "base.html" %}
 {% load static %}
+
+{% block content %}
 <link rel="stylesheet" href="{% static 'meatze/site.css' %}?v={% now 'U' %}">
 
 <div class="mz-page mz-auth-page">
@@ -18,11 +21,74 @@
 
     <div class="mz-auth-b">
 
-      <div class="mz-help">
-        Arrastra un archivo o pulsa el botón.
-        Se eliminará automáticamente en 7 días.
-      </div>
+<div class="mz-help" style="margin-bottom:14px;">
+  <div style="font-weight:900; margin-bottom:6px;">✅ Cómo usar esta Room</div>
 
+  <div>📎 <b>Subir archivo:</b> arrastra el archivo o pulsa <b>Elegir archivo</b>.</div>
+
+  <div>⬇️ <b>Descargar archivo:</b> pulsa <b>Descargar</b> o haz clic en el nombre del archivo.</div>
+
+  <div>🔗 <b>Compartir enlace:</b> pega una URL en la sección “Enlaces” y pulsa <b>Añadir</b>.</div>
+
+  <div>🖱 <b>Para abrir un enlace:</b> haz clic sobre el título azul. Se abrirá en una nueva pestaña.</div>
+
+  <div>⏳ Los archivos se borran en <b>7 días</b>.  
+  Los enlaces duran <b>30 minutos</b>.</div>
+</div>
+<div style="
+  margin-top:6px;
+  padding:12px 14px;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:16px;
+  background:rgba(255,255,255,.03);
+">
+  <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
+    <div style="font-weight:900;">🔗 Enlaces (30 min)</div>
+    <div class="mz-help">Se borran automáticamente.</div>
+  </div>
+
+  <!-- add link -->
+  <div style="display:grid; grid-template-columns:1fr 170px auto; gap:8px; margin-top:10px;">
+    <input id="linkUrl" class="mz-inp" placeholder="Pega un enlace (https://...)" style="border-radius:999px;">
+    <input id="linkTitle" class="mz-inp" placeholder="Título (opcional)" style="border-radius:999px;">
+    <button id="linkAddBtn" class="mz-btn sm" type="button">Añadir</button>
+  </div>
+
+  <div id="linkErr" class="mz-bad" style="display:none; margin-top:10px;"></div>
+
+  <!-- list -->
+  <div id="linkList" style="margin-top:12px;">
+    {% if links %}
+      {% for l in links %}
+        <div class="mz-link-row" data-link-id="{{ l.id }}" style="
+          display:flex; justify-content:space-between; align-items:flex-start;
+          gap:10px; padding:10px 0; border-top:1px solid rgba(255,255,255,.08);
+        ">
+          <div style="min-width:0;">
+            <div style="font-weight:900; word-break:break-word;">
+              <a href="{{ l.url }}" target="_blank" rel="noopener noreferrer"
+                 style="text-decoration:underline; color:#38bdf8;">
+                {% if l.title %}{{ l.title }}{% else %}{{ l.url }}{% endif %}
+              </a>
+            </div>
+            {% if l.title %}
+              <div class="mz-help" style="word-break:break-word;">{{ l.url }}</div>
+            {% endif %}
+            <div class="mz-help" data-link-expires="{{ l.expires_at|date:'U' }}"></div>
+          </div>
+
+          <div style="text-align:right; flex:0 0 auto;">
+            <button class="mz-btn ghost sm" type="button" data-link-del="{{ l.id }}">Eliminar</button>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="mz-help">No hay enlaces todavía.</div>
+    {% endif %}
+  </div>
+</div>
+
+<hr class="sep">
       <!-- UPLOAD ZONE -->
       <div id="drop"
            style="
@@ -53,33 +119,51 @@
       <!-- FILE LIST -->
       {% if files %}
         {% for f in files %}
-          <div style="
-                display:flex;
-                justify-content:space-between;
-                align-items:center;
-                padding:10px 0;
-                border-bottom:1px solid rgba(255,255,255,.08);
-          ">
-            <div>
-              <div style="font-weight:900;">
-                <a href="{{ request.path }}f/{{ f.id }}/">
-                  {{ f.original_name }}
-                </a>
-              </div>
-              <div class="mz-help">
-                {{ f.uploaded_at|date:"d/m/Y H:i" }}
-              </div>
-            </div>
-            <div style="text-align:right;">
-			<button class="mz-btn ghost sm" type="button" data-del="{{ f.id }}">
-					  Eliminar
-					</button>
-              <div data-bytes="{{ f.size }}" style="font-weight:800"></div>
-              <div class="mz-help"
-                   data-expires="{{ f.expires_at|date:'U' }}">
-              </div>
-            </div>
-          </div>
+		<div style="
+		  display:flex;
+		  justify-content:space-between;
+		  align-items:flex-start;
+		  gap:12px;
+		  padding:12px 0;
+		  border-bottom:1px solid rgba(255,255,255,.08);
+		">
+		  <div style="min-width:0;">
+			<div style="display:flex; align-items:center; gap:8px; font-weight:900;">
+			  <span title="Archivo">📄</span>
+
+			  <!-- имя: тоже кликабельно -->
+			  <a href="{{ request.path }}f/{{ f.id }}/"
+				 style="text-decoration:underline; color:#38bdf8; word-break:break-word;">
+				{{ f.original_name }}
+			  </a>
+
+			  <span class="mz-help" style="font-size:12px; opacity:.85;">
+				(clic para descargar)
+			  </span>
+			</div>
+
+			<div class="mz-help">
+			  ⏱ {{ f.uploaded_at|date:"d/m/Y H:i" }}
+			</div>
+		  </div>
+
+		  <div style="text-align:right; flex:0 0 auto; display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+			<div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+			  <!-- ЯВНАЯ кнопка скачать -->
+			  <a class="mz-btn sm" href="{{ request.path }}f/{{ f.id }}/" title="Descargar">
+				⬇️ Descargar
+			  </a>
+
+			  <!-- удалить как было -->
+			  <button class="mz-btn ghost sm" type="button" data-del="{{ f.id }}" title="Eliminar">
+				🗑 Eliminar
+			  </button>
+			</div>
+
+			<div data-bytes="{{ f.size }}" style="font-weight:800;"></div>
+			<div class="mz-help" data-expires="{{ f.expires_at|date:'U' }}"></div>
+		  </div>
+		</div>
         {% endfor %}
       {% else %}
         <div class="mz-help">
@@ -226,3 +310,106 @@ document.querySelectorAll("[data-del]").forEach(btn=>{
   });
 });
 </script>
+
+<script>
+(() => {
+  function getCookie(name){
+    const v = document.cookie.split(";").map(s=>s.trim()).find(s=>s.startsWith(name+"="));
+    return v ? decodeURIComponent(v.split("=",2)[1]) : "";
+  }
+  const CSRF = getCookie("csrftoken");
+
+  const linkUrl   = document.getElementById("linkUrl");
+  const linkTitle = document.getElementById("linkTitle");
+  const linkAddBtn= document.getElementById("linkAddBtn");
+  const linkErr   = document.getElementById("linkErr");
+
+  const addLinkUrl = `${location.pathname}link/add/`;
+
+  function showLinkErr(msg){
+    linkErr.style.display="block";
+    linkErr.textContent=msg;
+    setTimeout(()=>linkErr.style.display="none", 6000);
+  }
+
+  function linkTick(){
+    const now = Math.floor(Date.now()/1000);
+    document.querySelectorAll("[data-link-expires]").forEach(el=>{
+      const exp = parseInt(el.dataset.linkExpires,10);
+      const sec = exp-now;
+      if(sec<=0){ el.textContent="expirado"; return; }
+      const m = Math.floor(sec/60);
+      const s = sec%60;
+      el.textContent = `expira en ${m}m ${s}s`;
+    });
+  }
+  setInterval(linkTick, 1000);
+  linkTick();
+
+  async function addLink(){
+    const url = (linkUrl.value||"").trim();
+    const title = (linkTitle.value||"").trim();
+
+    if(!url){ showLinkErr("Pega un enlace."); return; }
+
+    const fd = new FormData();
+    fd.append("url", url);
+    fd.append("title", title);
+
+    const r = await fetch(addLinkUrl, {
+      method: "POST",
+      body: fd,
+      headers: {"X-CSRFToken": CSRF},
+    });
+    const j = await r.json().catch(()=>({}));
+
+    if(!r.ok || !j.ok){
+      showLinkErr(j.error || `Error (${r.status})`);
+      return;
+    }
+
+    // проще всего: перезагрузка (надёжно)
+    // но если хочешь без reload — скажи, сделаю "append" в DOM.
+    location.reload();
+  }
+
+  if(linkAddBtn){
+    linkAddBtn.addEventListener("click", addLink);
+    linkUrl?.addEventListener("keydown", e=>{
+      if(e.key==="Enter"){ e.preventDefault(); addLink(); }
+    });
+    linkTitle?.addEventListener("keydown", e=>{
+      if(e.key==="Enter"){ e.preventDefault(); addLink(); }
+    });
+  }
+
+  // delete link (по PIN как у файлов)
+  document.querySelectorAll("[data-link-del]").forEach(btn=>{
+    btn.addEventListener("click", async ()=>{
+      const id = btn.dataset.linkDel;
+      const pin = prompt("Introduce la contraseña para eliminar (código de la room):");
+      if(pin === null) return;
+
+      const fd = new FormData();
+      fd.append("pin", pin.trim());
+
+      const url = `${location.pathname}link/del/${id}/`;
+
+      const r = await fetch(url, {
+        method: "POST",
+        body: fd,
+        headers: {"X-CSRFToken": CSRF},
+      });
+
+      const j = await r.json().catch(()=>({}));
+      if(!r.ok || !j.ok){
+        alert(j.error || `Error (${r.status})`);
+        return;
+      }
+      location.reload();
+    });
+  });
+})();
+</script>
+
+{% endblock %}

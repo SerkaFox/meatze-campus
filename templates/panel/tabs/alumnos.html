@@ -1,5 +1,5 @@
 {# panel/tabs/alumnos.html #}
-
+<input type="hidden" id="mz-csrf" value="{{ csrf_token }}">
 <style>
 /* ================================
    MEATZE · TAB ALUMNOS (DOCENTES)
@@ -524,6 +524,106 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+/* ===== Student modules dropdown ===== */
+.mz-mod-dd{
+  position:fixed;
+  z-index:99998;
+  width:min(420px, 92vw);
+  border-radius:16px;
+  border:1px solid rgba(148,163,184,.45);
+  background:#0b1220;
+  box-shadow:0 22px 55px rgba(0,0,0,.55);
+  color:#e5e7eb;
+  padding:12px;
+  display:none;
+}
+.mz-mod-dd .head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-bottom:10px;
+}
+.mz-mod-dd .ttl{
+  font-weight:900;
+  font-size:.92rem;
+  line-height:1.2;
+}
+.mz-mod-dd .sub{
+  font-size:.78rem;
+  color:#9ca3af;
+  margin-top:2px;
+}
+.mz-mod-dd .close{
+  width:34px;height:34px;
+  border-radius:12px;
+  border:1px solid rgba(148,163,184,.55);
+  background:rgba(15,23,42,.9);
+  color:#e5e7eb;
+  cursor:pointer;
+}
+.mz-mod-dd .list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  max-height:min(340px, 60vh);
+  overflow:auto;
+  padding:4px;
+}
+.mz-mod-dd .row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:8px 10px;
+  border-radius:12px;
+  border:1px solid rgba(148,163,184,.25);
+  background:rgba(15,23,42,.75);
+}
+.mz-mod-dd .row:hover{
+  border-color:rgba(191,219,254,.55);
+}
+.mz-mod-dd input[type="checkbox"]{
+  width:18px;height:18px;
+}
+.mz-mod-dd .lbl{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.mz-mod-dd .lbl b{
+  font-size:.86rem;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.mz-mod-dd .lbl span{
+  font-size:.74rem;
+  color:#9ca3af;
+}
+.mz-mod-dd .foot{
+  display:flex;
+  gap:8px;
+  justify-content:flex-end;
+  margin-top:10px;
+}
+.mz-mod-dd .status{
+  margin-right:auto;
+  font-size:.78rem;
+  color:#9ca3af;
+  align-self:center;
+}
+.mz-mod-dd .btn{
+  padding:6px 12px;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.55);
+  background:rgba(15,23,42,.9);
+  color:#e5e7eb;
+  cursor:pointer;
+}
+.mz-mod-dd .btn:hover{
+  border-color:rgba(191,219,254,.9);
+}
 </style>
 
 <div id="mz-alumnos-tab" data-focus="alumnos_tab">
@@ -643,7 +743,15 @@
 						  🔑
 						</button>
 					  </form>
-
+						<button type="button"
+								class="mz-icbtn"
+								title="Módulos"
+								aria-label="Módulos"
+								data-action="student.modules.open"
+								data-alumno-id="{{ s.id }}"
+								data-alumno-name="{{ s.name|escape }}">
+						  🧩
+						</button>
 					  <form method="post" style="margin:0"
 							onsubmit="return confirm('¿Eliminar a este alumno del curso?');">
 						{% csrf_token %}
@@ -731,7 +839,15 @@
                   data-action="alumno.password.reset"
                   data-alumno-id="{{ s.id }}">🔑</button>
         </form>
-
+<button type="button"
+        class="mz-icbtn"
+        title="Módulos"
+        aria-label="Módulos"
+        data-action="student.modules.open"
+        data-alumno-id="{{ s.id }}"
+        data-alumno-name="{{ s.name|escape }}">
+  🧩
+</button>
         <form method="post" style="margin:0"
               onsubmit="return confirm('¿Eliminar a este alumno del curso?');">
           {% csrf_token %}
@@ -1326,5 +1442,208 @@ function renderTempTable(list){
 
   refreshProgress();
   setInterval(refreshProgress, 8000);
+})();
+</script>
+
+<script>
+(function(){
+  const tab = document.getElementById('mz-alumnos-tab');
+  if (!tab) return;
+
+  const courseCode = (document.querySelector('#mz-temp-root')?.dataset.courseCode) || '';
+  if (!courseCode) return;
+
+  // endpoints (проверь путь как ты добавил в urls.py)
+  const GET_URL = '/alumno/meatze/v5/teacher/student-modules/get';
+  const SET_URL = '/alumno/meatze/v5/teacher/student-modules/set';
+
+  // dropdown node
+  const dd = document.createElement('div');
+  dd.className = 'mz-mod-dd';
+	dd.innerHTML = `
+	  <div class="head">
+		<div>
+		  <div class="ttl">Módulos</div>
+		  <div class="sub" data-sub></div>
+		</div>
+		<button class="close" type="button" aria-label="Cerrar">✕</button>
+	  </div>
+
+	  <div class="list" data-list></div>
+
+	  <div class="status" data-status style="margin-top:10px">—</div>
+	`;
+  document.body.appendChild(dd);
+
+  const $sub = dd.querySelector('[data-sub]');
+  const $list = dd.querySelector('[data-list]');
+  const $status = dd.querySelector('[data-status]');
+
+  let openFor = { alumnoId: null, alumnoName: '', items: [] };
+  let saveTimer = null;
+
+  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+  function placeNear(btn){
+    const r = btn.getBoundingClientRect();
+    const rect = dd.getBoundingClientRect();
+    let left = r.left;
+    let top = r.bottom + 8;
+    // show first to measure, then clamp
+    left = clamp(left, 8, window.innerWidth - rect.width - 8);
+    top  = clamp(top,  8, window.innerHeight - rect.height - 8);
+    dd.style.left = left + 'px';
+    dd.style.top  = top  + 'px';
+  }
+
+function getCookie(name){
+  const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+  return m ? decodeURIComponent(m.pop()) : '';
+}
+
+async function api(url, opts){
+  opts = opts || {};
+  const init = {
+    method: opts.method || 'GET',
+    credentials: 'include',
+    headers: opts.headers || {}
+  };
+
+  // ✅ CSRF для unsafe методов
+  const method = (init.method || 'GET').toUpperCase();
+  if (!['GET','HEAD','OPTIONS','TRACE'].includes(method)){
+    init.headers['X-CSRFToken'] = getCookie('csrftoken');
+  }
+
+  if (opts.body){
+    init.body = JSON.stringify(opts.body);
+    init.headers['Content-Type'] = 'application/json';
+  }
+
+  const resp = await fetch(url, init);
+  let data = null;
+  try { data = await resp.json(); } catch(_){}
+  if (!resp.ok){
+    throw new Error((data && (data.error || data.message)) || ('HTTP ' + resp.status));
+  }
+  return data || {};
+}
+
+  function close(){
+    dd.style.display = 'none';
+    openFor = { alumnoId: null, alumnoName: '', items: [] };
+  }
+
+  dd.querySelector('.close').addEventListener('click', close);
+
+  document.addEventListener('click', function(e){
+    if (dd.style.display === 'none') return;
+    const inside = e.target.closest('.mz-mod-dd');
+    const opener = e.target.closest('[data-action="student.modules.open"]');
+    if (!inside && !opener) close();
+  });
+
+  async function loadAndOpen(btn, alumnoId, alumnoName){
+    $status.textContent = 'Cargando…';
+    dd.style.display = 'block';
+    // temporary show to compute size
+    dd.style.left = '8px';
+    dd.style.top = '8px';
+
+    placeNear(btn);
+
+    $sub.textContent = `${alumnoName} · ${courseCode}`;
+    $list.innerHTML = '';
+
+    const u = new URL(GET_URL, window.location.origin);
+    u.searchParams.set('codigo', courseCode);
+    u.searchParams.set('alumno_id', alumnoId);
+
+    const res = await api(u.toString());
+    const items = Array.isArray(res.items) ? res.items : [];
+    openFor = { alumnoId, alumnoName, items };
+
+    if (!items.length){
+      $list.innerHTML = `<div style="padding:6px 8px;color:#9ca3af;font-size:.82rem">
+        No hay módulos (carpetas bloqueadas) en este curso.
+      </div>`;
+      $status.textContent = '—';
+      return;
+    }
+	
+
+    $list.innerHTML = items.map(it => `
+      <label class="row">
+        <input type="checkbox" data-key="${String(it.key)}" ${it.enabled ? 'checked' : ''}>
+        <div class="lbl">
+          <b title="${String(it.label)}">${String(it.label)}</b>
+          <span>${String(it.key)}</span>
+        </div>
+      </label>
+    `).join('');
+	updateStatus('');
+  }
+
+	function updateStatus(prefix){
+	  const total = $list.querySelectorAll('input[type="checkbox"]').length;
+	  const on = $list.querySelectorAll('input[type="checkbox"]:checked').length;
+	  const base = `Activos: ${on}/${total}`;
+	  $status.textContent = prefix ? `${prefix} · ${base}` : base;
+	}
+
+	function scheduleSave(){
+	  if (saveTimer) clearTimeout(saveTimer);
+	  updateStatus('Guardando');
+	  saveTimer = setTimeout(saveNow, 350);
+	}
+
+	async function saveNow(){
+	  if (!openFor.alumnoId) return;
+
+	  const inputs = Array.from($list.querySelectorAll('input[type="checkbox"][data-key]'));
+	  const payload = {
+		codigo: courseCode,
+		alumno_id: openFor.alumnoId,
+		items: inputs.map(i => ({ key: i.dataset.key, enabled: !!i.checked }))
+	  };
+
+	  try{
+		await api(SET_URL, { method:'POST', body: payload });
+		updateStatus('Guardado');
+		// можно быстро убрать “Guardado” через 800мс:
+		setTimeout(() => {
+		  // если dropdown еще открыт и тот же alumno
+		  if (dd.style.display !== 'none' && openFor.alumnoId) updateStatus('');
+		}, 900);
+	  }catch(e){
+		console.warn(e);
+		updateStatus('Error');
+	  }
+	}
+
+$list.addEventListener('change', function(e){
+  if (e.target && e.target.matches('input[type="checkbox"][data-key]')){
+    scheduleSave();
+  }
+});
+
+
+  // open handler (delegation)
+  tab.addEventListener('click', function(e){
+    const b = e.target.closest('[data-action="student.modules.open"]');
+    if (!b) return;
+    const alumnoId = b.dataset.alumnoId;
+    const alumnoName = b.dataset.alumnoName || 'Alumno';
+    loadAndOpen(b, alumnoId, alumnoName).catch(err => {
+      $status.textContent = err.message || 'Error';
+    });
+  });
+
+  window.addEventListener('resize', function(){
+    if (dd.style.display === 'none') return;
+    // no anchor after resize; keep clamped
+    const rect = dd.getBoundingClientRect();
+    dd.style.left = clamp(rect.left, 8, window.innerWidth - rect.width - 8) + 'px';
+    dd.style.top  = clamp(rect.top,  8, window.innerHeight - rect.height - 8) + 'px';
+  });
 })();
 </script>

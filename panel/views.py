@@ -5,6 +5,7 @@ from .views_attendance import _current_slot
 from api.models import Curso, Enrol, Horario
 from datetime import date as _date
 from datetime import timedelta
+from .views_modules_access import student_module_allowed
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
@@ -30,6 +31,8 @@ from collections import defaultdict
 from django.template.loader import render_to_string
 from .materiales_fs import normalize_path, create_folder
 from .views_live import build_live_context
+from .permissions_modules import get_disabled_modules
+from .views_materiales_api import _infer_module_from_path
 try:
     from api.models import UserProfile
 except ImportError:
@@ -258,7 +261,16 @@ def alumnos_status(request, codigo: str):
         "presence": presence
     })
 
+# --- helpers ---
+def parent_path(p: str) -> str:
+    p = (p or "").strip().strip("/")
+    if not p: return ""
+    if "/" not in p: return ""
+    return p.rsplit("/", 1)[0]
 
+def leaf_name(p: str) -> str:
+    p = (p or "").strip().strip("/")
+    return p.split("/")[-1] if p else ""
 @login_required
 @require_profile_complete
 def course_panel(request, codigo):
@@ -403,6 +415,11 @@ def course_panel(request, codigo):
         if is_teacher:
             _ensure_module_folders(curso, tmp, request.user)
 
+        disabled = set()
+        if not is_teacher:
+            disabled = set(get_disabled_modules(curso, user) or [])
+        context["disabled_modules"] = disabled  # если нужно в шаблон
+
         current_path = _normalize_path(request.GET.get("p") or "")
         context["current_path"] = current_path
         folders_qs = CursoFolder.objects.filter(curso=curso, is_deleted=False)
@@ -410,7 +427,12 @@ def course_panel(request, codigo):
         # показываем только “детей” текущей папки:
         prefix = current_path + "/" if current_path else ""
         level = prefix.count("/") + (1 if prefix else 0)
-
+        if (not is_teacher) and disabled:
+            # если текущая папка внутри отключенного модуля — сбрасываем в корень
+            # модуль = самая глубокая locked папка из prefixes
+            cur_mod = _infer_module_from_path(curso, current_path)  # возвращает path
+            if cur_mod and cur_mod in disabled:
+                return redirect(f"{request.path}?tab=materiales&aud=alumnos&sort={sort}&p=")
         # простой способ: фильтруем по startswith и берём только следующий уровень
         cand = folders_qs.filter(path__startswith=prefix).values_list("path", "title", "is_locked")
         children = []
@@ -421,6 +443,8 @@ def course_panel(request, codigo):
                 continue
             first = rest.split("/", 1)[0]
             child_path = (prefix + first) if prefix else first
+            if (not is_teacher) and disabled and locked and child_path in disabled:
+                continue
             if child_path in seen:
                 continue
             seen.add(child_path)
@@ -583,6 +607,8 @@ def course_panel(request, codigo):
             tree_qs = tree_qs.order_by("-created_at", "-id")
             tree_files = list(tree_qs.order_by("-created_at", "-id"))
             # downloaded marker for students (tree)
+            if (not is_teacher) and disabled:
+                tree_qs = tree_qs.exclude(module_key__in=disabled)
             if not is_teacher:
                 dl_ids = set(
                     MaterialDownload.objects.filter(alumno=user, file_id__in=[f.id for f in tree_files])
@@ -610,16 +636,7 @@ def course_panel(request, codigo):
                 else:
                     root_files.append(f)
 
-            # --- helpers ---
-            def parent_path(p: str) -> str:
-                p = (p or "").strip().strip("/")
-                if not p: return ""
-                if "/" not in p: return ""
-                return p.rsplit("/", 1)[0]
 
-            def leaf_name(p: str) -> str:
-                p = (p or "").strip().strip("/")
-                return p.split("/")[-1] if p else ""
 
             # 1) Убедимся что в дереве есть все пути папок, которые упоминаются файлами
             all_paths = set(folder_by_path.keys()) | set(files_by_folder.keys())
@@ -675,6 +692,8 @@ def course_panel(request, codigo):
             context["tree_root_files"] = root_files
             context["tree_nodes"] = tree_nodes
             
+        if (not is_teacher) and disabled:
+            files_qs = files_qs.exclude(module_key__in=disabled)
         files_qs = files_qs.filter(folder_path=current_path)
 
         # --- teacher POST ops (upload/delete/share/copy) ---
@@ -759,7 +778,7 @@ def course_panel(request, codigo):
 
                 return JsonResponse({"ok": False, "error": "bad_mode"}, status=400)
             
-            def _infer_module_from_path(curso, target_path: str) -> str:
+            def _infer_module_from_path_local(curso, target_path: str) -> str:
                 """
                 Ищем ближайшую locked папку по пути (самая глубокая).
                 Если нашли — module_key = её title (или leaf).
@@ -810,7 +829,7 @@ def course_panel(request, codigo):
                     # if folder.is_locked:  <-- УБРАТЬ БЛОКИРОВКУ
 
                 cf.folder_path = target
-                cf.module_key = _infer_module_from_path(curso, target)
+                cf.module_key = _infer_module_from_path_local(curso, target)
                 cf.save(update_fields=["folder_path", "module_key"])
 
                 return JsonResponse({
@@ -881,7 +900,7 @@ def course_panel(request, codigo):
                         size=f.size,
                         ext=(f.name.rsplit(".", 1)[-1].lower() if "." in f.name else ""),
                     )
-                    obj.module_key = _infer_module_from_path(curso, folder_path)
+                    obj.module_key = _infer_module_from_path_local(curso, folder_path)
                     obj.file = f
                     obj.save()
 
@@ -938,7 +957,7 @@ def course_panel(request, codigo):
                         if request.headers.get("x-requested-with") == "XMLHttpRequest":
                             # если mod_key не задан — можно инферить от папки
                             if not obj.module_key:
-                                obj.module_key = _infer_module_from_path(curso, folder_path)
+                                obj.module_key = _infer_module_from_path_local(curso, folder_path)
                                 obj.save(update_fields=["module_key"])
 
                             file_html = render_to_string(
@@ -1046,7 +1065,7 @@ def course_panel(request, codigo):
                         uploaded_by=user,
                         tipo=tipo,
                         folder_path=folder,
-                        module_key=_infer_module_from_path(curso, folder),
+                        module_key=_infer_module_from_path_local(curso, folder),
                         title=fobj.name,
                         size=fobj.size,
                         ext=(fobj.name.rsplit(".",1)[-1].lower() if "." in fobj.name else ""),
@@ -1187,6 +1206,11 @@ def course_panel(request, codigo):
 
     # ───────────── ВКЛАДКА "TAREAS" ─────────────
     elif active_tab == "tareas":
+
+        if not is_teacher:
+            disabled = set(get_disabled_modules(curso, user) or [])
+            if disabled:
+                tasks_qs = tasks_qs.exclude(module_key__in=disabled)
 
         def _fmt_size(num):
             try:
@@ -1747,9 +1771,15 @@ def task_download(request, codigo: str, task_id: int):
     if not user_can_access_course(request.user, curso):
         raise Http404
 
+    is_teacher = Enrol.objects.filter(user=request.user, codigo=curso.codigo, role="teacher").exists()
+
     task = CourseTask.objects.filter(pk=task_id, curso=curso, is_published=True).first()
     if not task or not task.file:
         raise Http404
+
+    if (not is_teacher) and task.module_key:
+        if not student_module_allowed(curso, request.user, task.module_key):
+            raise Http404
 
     inline = request.GET.get("inline") == "1"
     ctype, _ = mimetypes.guess_type(task.filename or "")
@@ -1861,6 +1891,9 @@ def material_share_link_create(request, file_id: int):
     user = request.user
     if not user.is_authenticated:
         return JsonResponse({"ok": False, "error": "auth_required"}, status=401)
+    cf = CursoFile.objects.select_related("curso").filter(pk=file_id).first()
+    if not cf:
+        return JsonResponse({"ok": False, "error": "not_found"}, status=404)
 
     # твоя логика: teacher/admin
     curso = cf.curso
@@ -1941,26 +1974,58 @@ from django.http import FileResponse, Http404
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 import mimetypes
 
-from django.db import IntegrityError
+from django.http import JsonResponse, Http404, FileResponse
+import mimetypes
+
+def _deny_download(request, reason: str, status=403):
+    # режим проверки для JS (чтобы показать модалку)
+    if request.GET.get("check") == "1" or request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"ok": False, "reason": reason}, status=status)
+    # обычное поведение (чтобы не раскрывать лишнее)
+    raise Http404
+
 
 @login_required
 @xframe_options_sameorigin
 def material_download(request, file_id: int):
     f = CursoFile.objects.select_related("curso").filter(id=file_id).first()
     if not f:
-        raise Http404
+        # для check=1 тоже 200, чтобы не было 404 в консоли
+        if request.GET.get("check") == "1":
+            return JsonResponse({"ok": False, "reason": "not_found"})
+        return _deny_download(request, "not_found", status=404)
 
     curso = f.curso
     if not user_can_access_course(request.user, curso):
-        raise Http404
+        if request.GET.get("check") == "1":
+            return JsonResponse({"ok": False, "reason": "no_course_access"})
+        return _deny_download(request, "no_course_access", status=404)
 
     is_teacher = Enrol.objects.filter(user=request.user, codigo=curso.codigo, role="teacher").exists()
+
     if not f.can_see(request.user, is_teacher=is_teacher):
-        raise Http404
+        if request.GET.get("check") == "1":
+            return JsonResponse({"ok": False, "reason": "no_file_access"})
+        return _deny_download(request, "no_file_access", status=404)
+
+    # ✅ precheck: до модулей тоже!
+    if request.GET.get("check") == "1":
+        if (not is_teacher) and (f.module_key or "").strip():
+            if not student_module_allowed(curso, request.user, f.module_key):
+                return JsonResponse({"ok": False, "reason": "module_disabled"})
+        return JsonResponse({"ok": True})
+
+    # ⛔ реальная загрузка (не check): тут 403 ок
+    if (not is_teacher) and (f.module_key or "").strip():
+        if not student_module_allowed(curso, request.user, f.module_key):
+            return _deny_download(request, "module_disabled", status=403)
 
     inline = request.GET.get("inline") == "1"
 
-    # content-type + отдача
+    # ✅ если это check=1 — ничего не скачиваем, просто говорим "можно"
+    if request.GET.get("check") == "1":
+        return JsonResponse({"ok": True})
+
     ctype, _ = mimetypes.guess_type(f.filename or "")
     ctype = ctype or "application/octet-stream"
 
@@ -1970,7 +2035,8 @@ def material_download(request, file_id: int):
         f'inline; filename="{filename}"' if inline
         else f'attachment; filename="{filename}"'
     )
-        # ✅ ЛОГ СКАЧИВАНИЯ: только для ученика, только при attachment (не inline preview)
+
+    # лог скачивания (как у тебя)
     if (not is_teacher) and (not inline):
         try:
             MaterialDownload.objects.get_or_create(
@@ -1982,10 +2048,9 @@ def material_download(request, file_id: int):
                 }
             )
         except Exception:
-            # никогда не ломаем выдачу файла из-за логов
             pass
-    return resp
 
+    return resp
 
 # ============================================================
 # DOCX: Acta entrega material físico (simple, no duplicates)

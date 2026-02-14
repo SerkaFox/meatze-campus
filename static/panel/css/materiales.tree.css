@@ -1,0 +1,550 @@
+/* =========================
+   MATERIALS TREE + FOLDERS UI
+   ========================= */
+
+.mz-tree{ margin-top: 12px; display: grid; gap: 8px; }
+
+.mz-tree-node{
+  border:1px solid rgba(30,64,175,0.35);
+  border-radius: 14px;
+  background: rgba(15,23,42,0.55);
+}
+
+.mz-tree-row{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding:10px 12px;
+}
+
+.mz-tree-tgl{
+  width:28px;height:28px;border-radius:10px;
+  border:1px solid rgba(148,163,184,0.45);
+  background: rgba(15,23,42,0.85);
+  color:#e5e7eb;
+  cursor:pointer;
+  flex:0 0 auto;
+}
+
+.mz-tree-folder{
+  flex: 1 1 auto;
+  min-width: 0;
+  color:#e5e7eb;
+  text-decoration:none;
+  font-weight:800;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.15;
+}
+.mz-tree-folder:hover{ text-decoration: underline; }
+
+.mz-tree-count{
+  margin-left:auto;
+  font-size:.72rem; padding:2px 8px; border-radius:999px;
+  border:1px solid rgba(148,163,184,0.35);
+  color:#cbd5e1;
+  flex:0 0 auto;
+}
+
+.mz-tree-actions{
+  margin-left:auto;
+  display:inline-flex;
+  gap:8px;
+  align-items:center;
+  white-space: nowrap;
+  flex:0 0 auto;
+}
+
+.mz-tree-actions .mzc-btn.ghost{
+  padding: 4px 8px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mz-folder-add{
+  font-weight:900;
+  width:34px;
+  height:30px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.mz-tree-children{
+  padding: 0 12px 12px 44px;
+  display:grid;
+  gap:8px;
+}
+
+/* ✅ hidden должен побеждать display:grid */
+.mz-tree-children[hidden]{ display:none !important; }
+
+/* tree file (старый, если где-то используется) */
+.mz-tree-file{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  padding:8px 10px;
+  border-radius: 12px;
+  border:1px solid rgba(148,163,184,0.25);
+  background: rgba(2,6,23,0.25);
+}
+.mz-tree-file-name{
+  flex:1;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#e5e7eb;
+  font-weight:700;
+}
+.mz-tree-empty{
+  color:#9ca3af;
+  font-size:.78rem;
+  padding-left: 6px;
+}
+
+/* tree file (новый: 3-row mobile layout) */
+.mz-tree-file2{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  padding:8px 10px;
+  border-radius: 12px;
+  border:1px solid rgba(148,163,184,0.25);
+  background: rgba(2,6,23,0.25);
+}
+
+.mz-drag-handle{
+  flex:0 0 auto;
+  width:28px;
+  height:28px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+  cursor: grab;
+  opacity:.85;
+  margin-top:2px;
+  user-select:none;
+}
+.mz-drag-handle:hover{
+  opacity:1;
+  background: rgba(148,163,184,.12);
+}
+.mz-drag-handle:active{ cursor: grabbing; }
+
+.mz-file-main{
+  flex: 1 1 auto;
+  min-width: 0;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.mz-file-title{ min-width:0; }
+
+/* IMPORTANT: чтобы не конфликтовать с list-mode .mz-file-name */
+.mz-tree .mz-file-name{
+  display:block;
+  font-weight:800;
+  color:#e5e7eb;
+  white-space: normal;
+  overflow-wrap:anywhere;
+  word-break: break-word;
+  line-height: 1.15;
+}
+
+.mz-file-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  align-items:center;
+  font-size:.78rem;
+  color:#9ca3af;
+}
+.mz-file-pill{ color:#cbd5e1; opacity:.95; }
+
+/* actions: icons on mobile, clouds on desktop */
+.mz-file-actions{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.mz-file-actions-icons{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.mz-file-actions-cloud{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+
+@media (min-width: 721px){
+  .mz-file-actions-icons{ display:none; }
+  .mz-file-actions-cloud{ display:flex; }
+}
+@media (max-width: 720px){
+  .mz-file-actions-icons{ display:flex; }
+  .mz-file-actions-cloud{ display:none; }
+}
+
+/* search highlight */
+.mz-tree-file.is-found{ outline:2px solid rgba(59,130,246,.9); border-radius:10px; }
+
+/* user-select rules */
+.mz-tree-file, .mz-tree-row, .mz-tree-folder { -webkit-user-select:none; user-select:none; }
+.mz-tree-file a,
+.mz-tree-file button,
+.mz-tree-file input,
+.mz-tree-file textarea{
+  user-select: text;
+}
+
+/* =========================
+   FOLD UI: tiles/panels/cards
+   ========================= */
+
+.mz-fold-tiles{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(160px, 1fr));
+  gap:10px;
+  margin-top:10px;
+}
+
+.mz-fold-tile{
+  border:1px solid rgba(148,163,184,.22);
+  background:rgba(15,23,42,.45);
+  border-radius:14px;
+  padding:12px;
+  cursor:pointer;
+  text-align:left;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  transition:transform .12s ease, border-color .12s ease;
+  position:relative;
+}
+.mz-fold-tile:hover{ transform:translateY(-1px); border-color:rgba(59,130,246,.35); }
+.mz-fold-tile.is-act{ border-color:rgba(59,130,246,.65); box-shadow:0 10px 26px rgba(0,0,0,.22); }
+
+.mz-fold-ico{ font-size:22px; }
+.mz-fold-name{ font-weight:900; color:#e5e7eb; display:flex; gap:8px; align-items:center; }
+.mz-fold-sub{ font-size:.78rem; color:#94a3b8; }
+
+.mz-fold-tile .mz-chip-mini{
+  position:absolute;
+  top:10px;
+  right:10px;
+  font-size:.72rem;
+  opacity:.95;
+}
+
+/* fold panel */
+.mz-fold-panel{
+  margin-top:12px;
+  border:1px solid rgba(148,163,184,.18);
+  border-radius:16px;
+  background:rgba(15,23,42,.55);
+  overflow:hidden;
+}
+.mz-fold-panel-head{
+  padding:10px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  border-bottom:1px solid rgba(148,163,184,.16);
+}
+.mz-fold-panel-title{ font-weight:900; color:#e5e7eb; }
+.mz-fold-panel-hint{ font-size:.78rem; color:#9ca3af; }
+.mz-fold-panel-body{
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  min-height:80px;
+}
+
+/* fold grid + cards (alt view) */
+.mz-fold-grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 10px 0 16px;
+}
+.mz-fold-card{
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding:12px 12px 46px;
+  border-radius:16px;
+  border:1px solid rgba(148,163,184,.25);
+  background: rgba(15,23,42,.25);
+  color:#e5e7eb;
+  position:relative;
+  text-align:left;
+}
+.mz-fold-card:hover{ border-color: rgba(148,163,184,.45); }
+.mz-fold-ico{ font-size:28px; }
+.mz-fold-name{ font-weight:600; text-align:left; }
+
+.mz-fold-top{ position:relative; padding-right:40px; display:flex; align-items:center; gap:10px; width:100%; }
+.mz-fold-top .mz-fold-name{ flex:1; min-width:0; }
+
+.mz-fold-top .mz-fold-badge{
+  margin-left:auto;
+  font-size:.72rem;
+  font-weight:800;
+  padding:2px 8px;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.25);
+  background:rgba(15,23,42,.6);
+  color:#e5e7eb;
+  line-height:1.2;
+}
+
+/* zip button on folder cards */
+.mz-fold-zip{
+  position:absolute;
+  top:6px;
+  right:6px;
+  width:32px;
+  height:32px;
+  border-radius:10px;
+  border:1px solid rgba(148,163,184,.35);
+  background: rgba(15,23,42,.55);
+  color:#e5e7eb;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  text-decoration:none;
+  cursor:pointer;
+  line-height:1;
+  z-index:3;
+}
+.mz-fold-zip:hover{
+  background: rgba(30,64,175,.28);
+  border-color: rgba(191,219,254,.55);
+}
+
+.mz-fold-meta{
+  position:absolute;
+  left:10px;
+  right:10px;
+  bottom:10px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  pointer-events:none;
+}
+
+.mz-fold-count{
+  font-size:.78rem;
+  color:#9ca3af;
+  padding:3px 8px;
+  border:1px solid rgba(148,163,184,.25);
+  border-radius:999px;
+  background:rgba(15,23,42,.35);
+}
+.mz-fold-badge{
+  font-size:.72rem;
+  font-weight:800;
+  color:#e5e7eb;
+  padding:3px 8px;
+  border-radius:999px;
+  background:rgba(59,130,246,.25);
+  border:1px solid rgba(59,130,246,.35);
+}
+
+/* файл должен быть якорем для абсолютных элементов */
+.mz-mat-item{ position:relative; }
+
+/* чип (скачано/нет) — справа сверху */
+.mz-file-chip{
+  position:absolute;
+  top:10px;
+  right:10px;
+  margin:0;
+  z-index:2;
+  pointer-events:none;
+}
+
+/* место справа, чтобы текст не залезал под кнопки */
+.mz-mat-item{ padding-right: 160px; }  /* подгони 140-190 по факту */
+
+/* list-view: якорь */
+.mz-mat-item{ position:relative; padding-right:160px; }
+
+/* list-view: экшены справа сверху */
+.mz-mat-item .mz-file-actions{
+  position:absolute;
+  top:8px;
+  right:8px;
+  margin:0;
+  z-index:3;
+}
+
+/* list-view: чип справа сверху */
+.mz-mat-item .mz-file-chip{
+  position:absolute;
+  top:10px;
+  right:10px;
+  margin:0;
+  z-index:2;
+  pointer-events:none;
+}
+.mz-icbtn-zip{
+  flex: 0 0 auto;
+  margin-left:auto;         
+}
+/* bottom row: badges + actions in one line */
+.mz-file-bottom{
+  display:flex;
+  align-items:flex-start;   /* чтобы multi-line meta выглядел нормально */
+  gap:10px;
+}
+
+/* meta занимает всё, может переноситься */
+.mz-file-bottom .mz-file-meta{
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* actions не сжимаются и всегда справа */
+.mz-file-bottom .mz-file-actions{
+  flex: 0 0 auto;
+  margin-left: auto;
+  position: static;     /* ВАЖНО: убираем absolute логику для tree */
+  top:auto; right:auto; /* на всякий */
+}
+@media (max-width:720px){
+  .mz-mat-item{ padding-right:120px; }
+}
+
+/* TREE: экшены НЕ абсолютные */
+.mz-tree .mz-file-actions{
+  position:static;
+  margin:0;
+  z-index:auto;
+}
+.mz-file-chip{
+  position: static !important;
+  margin-left: 6px;
+  pointer-events: none;
+}
+/* на мобиле меньше место */
+@media (max-width:720px){
+  .mz-mat-item{ padding-right: 120px; }
+}
+
+/* =========================
+   MOBILE tweaks
+   ========================= */
+@media (max-width: 720px){
+  .mz-tree-row{
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  .mz-tree-tgl{
+    width: 26px;
+    height: 26px;
+    border-radius: 9px;
+  }
+  .mz-tree-folder{
+    font-size: .92rem;
+  }
+  .mz-tree-count{
+    font-size: .68rem;
+    padding: 2px 6px;
+  }
+  .mz-tree-actions{
+    gap: 6px;
+  }
+  .mz-tree-actions .mzc-btn.ghost{
+    padding: 3px 6px;
+    border-radius: 10px;
+    font-size: .78rem;
+  }
+}
+
+/* folder title row: name + zip in ONE line */
+.mz-tree-title-row{
+  display:flex !important;
+  align-items:flex-start;
+  gap:10px;
+  width:100%;
+}
+
+/* имя занимает всё и переносится, но не выталкивает кнопку */
+.mz-tree-title-row .mz-tree-folder{
+  flex: 1 1 auto;
+  min-width: 0;
+  display:block;          /* чтобы переносы работали предсказуемо */
+}
+
+/* кнопка всегда справа, не переносится */
+.mz-tree-title-row .mz-icbtn-zip{
+  flex: 0 0 auto;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ONE LINE: folder name + chips + count + zip */
+.mz-tree-title-row{
+  display:flex !important;
+  align-items:flex-start;
+  gap:8px;
+  width:100%;
+}
+
+/* name can wrap, others stay on right */
+.mz-tree-title-row .mz-tree-folder{
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.15;
+}
+
+/* chip + count + zip do not wrap */
+.mz-tree-title-row .mz-tree-chip,
+.mz-tree-title-row .mz-tree-count,
+.mz-tree-title-row .mz-icbtn-zip{
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* push right side group to the end */
+.mz-tree-title-row .mz-tree-count{
+  margin-left: auto; /* => count and zip go to the right */
+}
+
+/* optional: make chip look aligned nicely */
+.mz-tree-title-row .mz-tree-chip{
+  margin-top: 1px;
+}
+
+/* Big folder+plus button */
+.mz-new-folder{
+  position: relative;
+  flex: 0 0 auto;
+
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+
+  border: 1px solid rgba(34,211,238,.75);
+  background: linear-gradient(180deg,#22d3ee,#3b82f6);
+  color:#0b1120;
+
+  cursor:pointer;
+  box-shadow: 0 12px 26px rgba(37,99,235,.45);
+  transition: transform .12s ease, box-shadow .15s ease, filter .15s ease;
+}

@@ -366,7 +366,7 @@ class AttendanceSession(models.Model):
     # техданные
     ip = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.CharField(max_length=255, blank=True, default="")
-    session_id = models.CharField(max_length=64, blank=True, default="")  # можно прокинуть твой mz_sid
+    session_id = models.CharField(max_length=64, blank=True, default="") 
 
     class Meta:
         indexes = [
@@ -395,3 +395,21 @@ class CursoPhysicalItem(models.Model):
 
     def __str__(self):
         return f"{self.curso.codigo}: {self.label}"
+
+
+class StudentModuleAccess(models.Model):
+    curso = models.ForeignKey("api.Curso", on_delete=models.CASCADE, related_name="module_access")
+    alumno = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="module_access")
+    module_key = models.CharField(max_length=255, db_index=True)  # "MF1", "UF2", "tema-3", etc
+    is_enabled = models.BooleanField(default=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["curso", "alumno", "module_key"], name="uniq_mod_access"),
+        ]
+        indexes = [
+            models.Index(fields=["curso", "alumno"]),
+            models.Index(fields=["curso", "module_key"]),
+        ]

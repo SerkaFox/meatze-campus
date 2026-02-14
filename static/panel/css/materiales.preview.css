@@ -1,0 +1,25 @@
+/* =========================
+   PREVIEW OVERLAY
+   ========================= */
+#mz-preview.is-hidden{ display:none; }
+#mz-preview{ position:fixed; inset:0; z-index:9999; }
+#mz-preview .mz-prev-backdrop{ position:absolute; inset:0; background:rgba(2,6,23,.75); }
+#mz-preview .mz-prev-card{
+  position:relative;
+  width:min(1100px, 92vw);
+  height:min(86vh, 900px);
+  margin:6vh auto;
+  border-radius:18px;
+  border:1px solid rgba(148,163,184,.35);
+  background:rgba(15,23,42,.96);
+  box-shadow:0 24px 80px rgba(0,0,0,.55);
+  display:flex; flex-direction:column;
+}
+#mz-preview .mz-prev-head{
+  display:flex; justify-content:space-between; align-items:center; gap:10px;
+  padding:10px 12px; border-bottom:1px solid rgba(148,163,184,.25);
+}
+#mz-preview .mz-prev-title{ font-weight:750; color:#e5e7eb; font-size:.95rem; }
+#mz-preview .mz-prev-body{ flex:1; overflow:hidden; background:rgba(2,6,23,.35); }
+#mz-preview iframe{ width:100%; height:100%; border:0; }
+#mz-preview img{ max-width:100%; max-height:100%; display:block; margin:auto; }

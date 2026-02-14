@@ -331,55 +331,52 @@ function mzSyncCardsFromTree(){
 		.length;
 	}
 
-  function createCard(path, node){
-    const isRoot = (path === '');
-    const name = isRoot
-      ? 'Raíz'
-      : ((node.getAttribute('data-folder-name') || path.split('/').pop() || path).trim());
+	function createCard(path, node){
+	  const isRoot = (path === '');
+	  const name = isRoot
+		? 'Raíz'
+		: ((node.getAttribute('data-folder-name') || path.split('/').pop() || path).trim());
 
-    const locked = isRoot ? false : (node.getAttribute('data-locked') === '1');
+	  const locked = isRoot ? false : (node.getAttribute('data-locked') === '1');
 
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'mz-fold-card' + (locked ? ' is-locked' : '');
-    btn.setAttribute('data-open-path', path);
-    btn.setAttribute('data-path', path);
-    btn.setAttribute('data-drop-folder', path);
-    btn.title = isRoot ? 'Abrir raíz' : 'Abrir';
+	  const btn = document.createElement('button');
+	  btn.type = 'button';
+	  btn.className = 'mz-fold-card' + (locked ? ' is-locked' : '');
+	  btn.setAttribute('data-open-path', path);
+	  btn.setAttribute('data-path', path);
+	  btn.setAttribute('data-drop-folder', path);
+	  btn.title = isRoot ? 'Abrir raíz' : 'Abrir';
 
-	btn.innerHTML = `
-	  <div class="mz-fold-top">
-		<button type="button"
-				class="mz-fold-zip"
-				title="Descargar ZIP de esta carpeta"
-				data-action="materials.zip.folder"
-				data-codigo="${(window.__MZ_CURSO_CODIGO__||'')}"
-				data-aud="${(window.__MZ_AUD__||'alumnos')}"
-				data-path="${path}">
-		  ⬇️
-		</button>
+	  btn.innerHTML = `
+		<a href="#"
+		   class="mz-fold-zip"
+		   title="Descargar ZIP de esta carpeta"
+		   data-action="materials.zip.folder"
+		   data-codigo="${(window.__MZ_CURSO_CODIGO__||'')}"
+		   data-aud="${(window.__MZ_AUD__||'alumnos')}"
+		   data-path="${path}">⬇️</a>
 
 		<div class="mz-fold-ico">${isRoot ? '🏠' : '📁'}</div>
 		<div class="mz-fold-name"></div>
-		<span class="mz-fold-badge" hidden>Módulo</span>
-	  </div>
 
-	  <div class="mz-fold-meta">
-		<span class="mz-fold-count" data-count>0</span>
-	  </div>
-	`;
-	
+		<div class="mz-fold-meta">
+		  <span class="mz-fold-count" data-count>0</span>
+		  <span class="mz-fold-badge" hidden>Módulo</span>
+		</div>
+	  `;
 
-    btn.querySelector('.mz-fold-name').textContent = name;
+	  btn.querySelector('.mz-fold-name').textContent = name;
 
-    const badge = btn.querySelector('.mz-fold-badge');
-    if(locked){
-      badge.hidden = false;
-      badge.textContent = 'Módulo';
-    }
+	  const badge = btn.querySelector('.mz-fold-badge');
+	  if(locked){
+		badge.hidden = false;
+		badge.textContent = 'Módulo';
+	  } else {
+		badge.hidden = true;
+	  }
 
-    return btn;
-  }
+	  return btn;
+	}
 
   // 1) удалить карточки, которых больше нет в дереве (кроме root, он path="")
   Array.from(grid.querySelectorAll('.mz-fold-card[data-path]')).forEach(card=>{
@@ -594,48 +591,165 @@ if (document.readyState === 'loading'){
   })();
   
   
-  (function initZipButtons(){
+(function initZipButtons(){
   if (window.__MZ_ZIP_BTNS__) return;
   window.__MZ_ZIP_BTNS__ = true;
 
-	function buildZipUrl({codigo, aud, path, scope}){
-	  const base = (window.__MZ_ZIP_URL__ || '/panel/materiales/zip/');
-	  const u = new URL(base, location.origin);
+  function buildZipUrl({codigo, aud, path, scope}){
+    const base = (window.__MZ_ZIP_URL__ || '/panel/materiales/zip/');
+    const u = new URL(base, location.origin);
 
-	  u.searchParams.set('codigo', (codigo||'').trim());
-	  u.searchParams.set('aud', (aud||'alumnos').trim());
-	  u.searchParams.set('scope', scope || 'folder');
+    u.searchParams.set('codigo', (codigo||'').trim());
+    u.searchParams.set('aud', (aud||'alumnos').trim());
+    u.searchParams.set('scope', scope || 'folder');
 
-	  if(scope === 'folder' || scope === 'root'){
-		u.searchParams.set('p', (path||'').trim()); // root => ''
-	  }
-	  return u.toString();
-	}
+    if(scope === 'folder' || scope === 'root'){
+      u.searchParams.set('p', (path||'').trim()); // root => ''
+    }
+    return u.toString();
+  }
+
+  function niceSpanishError(err, extra){
+    // err: "module_disabled" | "no_files" | etc
+    if(err === 'module_disabled'){
+      return `
+        <div style="display:flex; gap:12px; align-items:flex-start">
+          <div style="font-size:22px">⛔</div>
+          <div>
+            <div style="font-weight:900; color:#fee2e2">Acceso denegado</div>
+            <div style="margin-top:6px">
+              No tienes permiso para descargar materiales de este módulo.
+              <br>
+              <span style="opacity:.9">Si crees que es un error, avisa a tu profesor/a.</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    if(err === 'no_files'){
+      return `
+        <div style="display:flex; gap:12px; align-items:flex-start">
+          <div style="font-size:22px">📭</div>
+          <div>
+            <div style="font-weight:900; color:#e5e7eb">No hay archivos</div>
+            <div style="margin-top:6px; opacity:.95">
+              Esta carpeta no contiene archivos descargables.
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    // fallback
+    return `
+      <div style="display:flex; gap:12px; align-items:flex-start">
+        <div style="font-size:22px">⚠️</div>
+        <div>
+          <div style="font-weight:900; color:#e5e7eb">No se pudo completar</div>
+          <div style="margin-top:6px; opacity:.95">
+            ${extra || 'No tienes permisos o ocurrió un error al generar el ZIP.'}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  async function downloadZip(url){
+    let r, blob, filename;
+
+    try{
+      r = await fetch(url, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' } // чтобы на сервере различать если надо
+      });
+
+      if(!r.ok){
+        // пробуем JSON
+        let j = null;
+        try { j = await r.json(); } catch(_){}
+
+        const err = (j && (j.error || j.message)) ? (j.error || j.message) : ('HTTP ' + r.status);
+
+		if (window.mzIsDownloadForbidden?.(j, r.status)) {
+		  window.mzDownloadBlocked?.(j?.reason || j?.error || 'forbidden');
+		  return;
+		}
+
+        window.mzShowModal?.({
+          title: 'No se pudo descargar',
+          variant: 'info',
+          html: niceSpanishError(j?.error || '', err)
+        });
+        return;
+      }
+
+      blob = await r.blob();
+
+      // filename из headers (если есть)
+      const cd = r.headers.get('Content-Disposition') || '';
+      const m = cd.match(/filename="([^"]+)"/i);
+      filename = m ? m[1] : 'materiales.zip';
+
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=> URL.revokeObjectURL(objUrl), 1200);
+
+    }catch(e){
+      console.error(e);
+      window.mzShowModal?.({
+        title: 'Error de red',
+        variant: 'info',
+        html: `
+          <div style="display:flex; gap:12px; align-items:flex-start">
+            <div style="font-size:22px">📡</div>
+            <div>
+              <div style="font-weight:900; color:#e5e7eb">No se pudo conectar</div>
+              <div style="margin-top:6px; opacity:.95">
+                Revisa tu conexión e inténtalo de nuevo.
+              </div>
+            </div>
+          </div>
+        `
+      });
+    }
+  }
 
   document.addEventListener('click', (e)=>{
     const btn = e.target.closest('[data-action="materials.zip.folder"]');
     if(!btn) return;
     e.preventDefault();
     e.stopPropagation();
-	const path = (btn.getAttribute('data-path') || '').trim();
-	const scope = path ? 'folder' : 'root';
-	location.href = buildZipUrl({
-	  codigo: btn.getAttribute('data-codigo'),
-	  aud: btn.getAttribute('data-aud'),
-	  path,
-	  scope
-	});
+
+    const path = (btn.getAttribute('data-path') || '').trim();
+    const scope = path ? 'folder' : 'root';
+
+    const url = buildZipUrl({
+      codigo: btn.getAttribute('data-codigo'),
+      aud: btn.getAttribute('data-aud'),
+      path,
+      scope
+    });
+
+    downloadZip(url);
   });
 
   document.addEventListener('click', (e)=>{
     const btn = e.target.closest('[data-action="materials.zip.all"]');
     if(!btn) return;
     e.preventDefault();
-    location.href = buildZipUrl({
+
+    const url = buildZipUrl({
       codigo: btn.getAttribute('data-codigo'),
       aud: btn.getAttribute('data-aud'),
       scope: 'all'
     });
+
+    downloadZip(url);
   });
 })();
 
@@ -1876,3 +1990,91 @@ function mzPostUrl(){
 
   return clean.pathname + '?' + clean.searchParams.toString();
 }
+// -----------------------------
+// UI: simple info modal (reusable)
+// -----------------------------
+function mzShowModal({ title, html, variant='info' }){
+  let modal = document.getElementById('mz-info-modal');
+  if(!modal){
+    modal = document.createElement('div');
+    modal.id = 'mz-info-modal';
+    modal.className = 'mz-modal';
+    modal.hidden = true;
+    modal.innerHTML = `
+      <div class="mz-modal-card mz-modal-${variant}" role="dialog" aria-modal="true" aria-labelledby="mz-info-title">
+        <div class="mz-modal-head">
+          <div id="mz-info-title" class="mz-modal-title"></div>
+          <button type="button" class="mz-modal-x" data-x aria-label="Cerrar">✕</button>
+        </div>
+        <div class="mz-modal-body" data-body></div>
+        <div class="mz-modal-actions">
+          <button type="button" class="mzc-btn" data-ok>Entendido</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    const close = ()=>{
+      modal.hidden = true;
+      document.body.style.overflow = '';
+    };
+
+    modal.addEventListener('click', (e)=>{
+      if(e.target === modal) close();
+      if(e.target.closest('[data-x]')) close();
+      if(e.target.closest('[data-ok]')) close();
+    });
+    document.addEventListener('keydown', (e)=>{
+      if(!modal.hidden && e.key === 'Escape') close();
+    });
+  }
+
+  modal.querySelector('#mz-info-title').textContent = title || 'Información';
+  modal.querySelector('[data-body]').innerHTML = html || '';
+  modal.hidden = false;
+  document.body.style.overflow = 'hidden';
+
+  // focus
+  setTimeout(()=> modal.querySelector('[data-ok]')?.focus(), 0);
+}
+
+window.mzShowModal = mzShowModal;
+
+// -----------------------------
+// Unified "download blocked" stub (used everywhere)
+// -----------------------------
+function mzDownloadBlocked(reason){
+  // одна-единственная заглушка для любых блокировок скачивания
+  window.mzShowModal?.({
+    title: 'Descarga bloqueada',
+    variant: 'info',
+    html: `
+      <div style="display:flex; gap:12px; align-items:flex-start">
+        <div style="font-size:22px">🔒</div>
+        <div>
+          <div style="font-weight:900; color:#e5e7eb">No puedes descargar materiales</div>
+          <div style="margin-top:6px; opacity:.95">
+            El profesor ha desactivado la descarga para tu usuario.
+            <br><span style="opacity:.85">Si crees que es un error, avisa a tu profesor/a.</span>
+          </div>
+        </div>
+      </div>
+    `
+  });
+}
+window.mzDownloadBlocked = mzDownloadBlocked;
+
+// helper: определить “это именно блокировка доступа”
+function mzIsDownloadForbidden(j, status){
+  const r = (j && (j.reason || j.error || j.code)) ? String(j.reason || j.error || j.code) : '';
+  if (status === 403) return true;
+  return [
+    'forbidden',
+    'module_disabled',
+    'no_file_access',
+    'no_course_access',
+    'download_disabled',
+    'not_allowed'
+  ].includes(r);
+}
+window.mzIsDownloadForbidden = mzIsDownloadForbidden;

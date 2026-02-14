@@ -26,3 +26,24 @@ class ShortFile(models.Model):
     size = models.BigIntegerField(default=0)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField(default=default_expires, db_index=True)
+    
+# shortshare/models.py
+from django.db import models
+from django.utils import timezone
+from datetime import timedelta
+from django.core.validators import URLValidator
+
+def default_link_expires():
+    return timezone.now() + timedelta(minutes=30)
+
+class ShortLink(models.Model):
+    room = models.ForeignKey("ShortRoom", on_delete=models.CASCADE, related_name="links")
+    url = models.URLField(max_length=1000, validators=[URLValidator()])
+    title = models.CharField(max_length=200, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(default=default_link_expires, db_index=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["room", "expires_at"]),
+        ]

@@ -1,7 +1,11 @@
 {# panel/tabs/materiales.html #}
 {% load static %}
-<link rel="stylesheet" href="{% static 'panel/css/materiales.css' %}?v={% now 'U' %}">
 
+<link rel="stylesheet" href="{% static 'panel/css/materiales.base.css' %}?v={% now 'U' %}">
+<link rel="stylesheet" href="{% static 'panel/css/materiales.tree.css' %}?v={% now 'U' %}">
+<link rel="stylesheet" href="{% static 'panel/css/materiales.preview.css' %}?v={% now 'U' %}">
+<link rel="stylesheet" href="{% static 'panel/css/materiales.modal.css' %}?v={% now 'U' %}">
+<link rel="stylesheet" href="{% static 'panel/css/materiales.drop.css' %}?v={% now 'U' %}">
 <div class="mzc-card mz-mat-card">
 <div class="mz-mat-head">
   <div>
@@ -250,7 +254,9 @@
           <li class="mz-mat-item" style="border-color:rgba(34,211,238,0.35)">
             <div class="mz-mat-main">
               <p class="mz-mat-title-file" style="margin-bottom:4px">
-                <a href="{% url 'panel:material_download' f.id %}" target="_blank" rel="noopener">
+                <a href="{% url 'panel:material_download' f.id %}"
+											   data-action="materials.download"
+											   target="_blank" rel="noopener">
                   {{ f.display_name }}
                 </a>
               </p>
@@ -408,3 +414,4 @@
 <script src="{% static 'panel/js/materiales.js' %}?v={% now 'U' %}"></script>
 <script src="{% static 'panel/js/materiales_fs.js' %}?v={% now 'U' %}"></script>
 <script src="{% static 'panel/js/materiales_physical.js' %}?v={% now 'U' %}"></script>
+

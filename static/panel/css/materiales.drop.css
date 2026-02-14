@@ -1,0 +1,111 @@
+/* =========================
+   DRAG & DROP + HIGHLIGHTS
+   ========================= */
+
+/* === Drag & Drop upload zone === */
+.mz-drop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px dashed rgba(148,163,184,0.65);
+  background: rgba(15,23,42,0.55);
+  cursor: pointer;
+  user-select: none;
+  transition: transform 120ms ease, background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+  min-width: 260px;
+}
+
+.mz-drop:hover{
+  background: rgba(30,64,175,0.22);
+  border-color: rgba(191,219,254,0.75);
+  transform: translateY(-1px);
+}
+
+.mz-drop.is-over{
+  background: rgba(34,211,238,0.18);
+  border-color: rgba(34,211,238,0.85);
+  box-shadow: 0 0 0 2px rgba(34,211,238,0.15);
+}
+
+.mz-drop-ico{
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border: 1px solid rgba(148,163,184,0.45);
+  background: rgba(15,23,42,0.75);
+  color: #e5e7eb;
+  flex: 0 0 auto;
+}
+
+.mz-drop-txt{ min-width: 0; line-height: 1.15; }
+.mz-drop-title{ color:#e5e7eb; font-size: .84rem; font-weight: 700; }
+.mz-drop-sub{ color:#9ca3af; font-size: .74rem; margin-top: 2px; }
+
+.mz-drop-count{
+  margin-left:auto;
+  font-size: .72rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,0.45);
+  background: rgba(15,23,42,0.75);
+  color:#e5e7eb;
+  white-space: nowrap;
+}
+
+/* draggable hand (files/cards) */
+.mz-mat-item[draggable="true"]{ cursor: grab; }
+.mz-mat-item.is-dragging{ opacity:.55; transform: scale(.995); }
+
+/* draggable hand (tree files) */
+[data-drag-file]{ cursor: grab; }
+[data-drag-file].is-dragging{ cursor: grabbing; }
+
+/* active dragged item */
+.mz-tree-file.is-dragging,
+.mz-mat-item.is-dragging{
+  transform: scale(1.01);
+  box-shadow: 0 14px 36px rgba(0,0,0,.35);
+  outline: 1px solid rgba(99,102,241,.55);
+}
+
+/* Drop target base */
+[data-drop-folder]{
+  position: relative;
+  border-radius: 12px;
+}
+
+/* ok/bad states (универсально) */
+.is-drop-upload { outline: 2px dashed rgba(34,197,94,.8); outline-offset: 2px; }
+.is-drop-ok     { outline: 2px dashed rgba(59,130,246,.8); outline-offset: 2px; }
+.is-drop-bad    { outline: 2px dashed rgba(248,113,113,.8); outline-offset: 2px; }
+
+/* “полоса” куда бросится */
+.is-drop-ok::after{
+  content:"";
+  position:absolute;
+  left:10px;
+  right:10px;
+  bottom:6px;
+  height:3px;
+  border-radius:999px;
+  background: rgba(34,211,238,.75);
+  box-shadow: 0 0 0 3px rgba(34,211,238,.14);
+  pointer-events:none;
+}
+
+/* интерактивные элементы внутри папки не должны ломать drop */
+.mz-tree-row a,
+.mz-tree-row button{
+  position: relative;
+  z-index: 2;
+}
+.mz-tree-node{ border:1px solid rgba(30,64,175,0.35); border-radius: 14px; background: rgba(15,23,42,0.55); }
+.mz-tree-row{
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px;
+}

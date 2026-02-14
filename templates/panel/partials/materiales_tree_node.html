@@ -120,30 +120,32 @@
 
     <div class="mz-tree-main">
 		<div class="mz-tree-title">
-		  <div class="mz-tree-title-row">
-			<span class="mz-tree-folder"
-				  data-role="folder-name"
-				  title="{{ node.name|default:''|escape }}">
-			  📁 {{ node.name }}
-			</span>
+<div class="mz-tree-title-row">
+  <span class="mz-tree-folder"
+        data-role="folder-name"
+        title="{{ node.name|default:''|escape }}">
+    📁 {{ node.name }}
+  </span>
 
-			<button type="button"
-					class="mz-icbtn mz-icbtn-zip"
-					title="Descargar ZIP"
-					data-action="materials.zip.folder"
-					data-codigo="{{ curso.codigo|default:'' }}"
-					data-aud="{{ audience|default:'alumnos' }}"
-					data-path="{{ node.path|escape }}">⬇️</button>
-		  </div>
+  {% if node.is_locked %}
+    <span class="mz-chip-mini mz-tree-chip">Módulo</span>
+  {% endif %}
+
+  <span class="mz-tree-count" title="Directos / Total">
+    {{ node.count_direct|default:0 }}/{{ node.count_total|default:0 }}
+  </span>
+
+  <button type="button"
+          class="mz-icbtn mz-icbtn-zip"
+          title="Descargar ZIP"
+          data-action="materials.zip.folder"
+          data-codigo="{{ curso.codigo|default:'' }}"
+          data-aud="{{ audience|default:'alumnos' }}"
+          data-path="{{ node.path|escape }}">⬇️</button>
+</div>
 		</div>
 
-      <div class="mz-tree-meta">
-        {% if node.is_locked %}<span class="mz-chip-mini">Módulo</span>{% endif %}
-
-        <span class="mz-tree-count" title="Directos / Total">
-          {{ node.count_direct|default:0 }}/{{ node.count_total|default:0 }}
-        </span>
-      </div>
+   
 
       {% if is_teacher %}
         <div class="mz-tree-actions">

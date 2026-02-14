@@ -1587,3 +1587,63 @@
 .mz-mat-zipall{
   white-space:nowrap;
 }
+/* ---- modal base (ты уже используешь .mz-modal, но добавим "danger" акценты) ---- */
+.mz-modal{
+  position:fixed; inset:0; z-index:9999;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(2,6,23,.65);
+  padding:18px;
+}
+
+.mz-modal-card{
+  width:min(640px, 100%);
+  border-radius:18px;
+  background:rgba(15,23,42,.96);
+  border:1px solid rgba(148,163,184,.25);
+  box-shadow:0 18px 60px rgba(0,0,0,.45);
+  overflow:hidden;
+}
+
+.mz-modal-head{
+  display:flex; align-items:center; gap:10px;
+  padding:14px 16px;
+  border-bottom:1px solid rgba(148,163,184,.18);
+}
+
+.mz-modal-title{
+  font-weight:900;
+  color:#e5e7eb;
+  letter-spacing:.2px;
+}
+
+.mz-modal-x{
+  margin-left:auto;
+  border:0;
+  background:transparent;
+  color:#cbd5e1;
+  cursor:pointer;
+  font-size:18px;
+  line-height:1;
+  padding:6px 10px;
+  border-radius:10px;
+}
+.mz-modal-x:hover{ background:rgba(148,163,184,.12); }
+
+.mz-modal-body{
+  padding:14px 16px;
+  color:#cbd5e1;
+  line-height:1.45;
+}
+
+.mz-modal-actions{
+  display:flex; justify-content:flex-end; gap:10px;
+  padding:12px 16px;
+  border-top:1px solid rgba(148,163,184,.18);
+}
+
+.mz-modal-danger{
+  border-color: rgba(239,68,68,.35);
+}
+.mz-modal-danger .mz-modal-title{
+  color:#fecaca;
+}

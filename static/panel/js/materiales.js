@@ -195,7 +195,8 @@
           window.mzMaterialsFsBindDropTargets?.();
           window.mzMaterialsReindexSearch?.();
           window.mzCleanupEmptyPlaceholders?.();
-          if(j.folder_path) window.mzBumpCountCascade?.(j.folder_path, +1);
+          if(j.folder_path) window.mzBumpCountCascadeTotal?.(j.folder_path, +1);
+			window.mzMaterialsSyncCardsFromTree?.();
         }
       }
 
@@ -253,5 +254,48 @@
     if(tree) obs.observe(tree, { childList:true, subtree:true });
     if(cardsBody) obs.observe(cardsBody, { childList:true, subtree:true });
   }
+})();
+
+// ---------------------------------------
+// Student-friendly download: precheck + modal instead of 404 page
+// ---------------------------------------
+(function initStudentDownloadPrecheck(){
+  // Если хочешь — можно включать только для учеников через data-атрибут на body,
+  // но даже без этого оно безопасно: teacher получит ok и скачает как обычно.
+
+  async function precheckAndDownload(url){
+    try{
+      const u = new URL(url, window.location.origin);
+      u.searchParams.set('check','1');
+
+      const r = await fetch(u.toString(), {
+        credentials: 'include',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+
+      const j = await r.json().catch(()=>({}));
+      if(r.ok && j && j.ok){
+        // обычная скачка (без check=1)
+        window.location.href = url;
+        return;
+      }
+      window.mzDownloadBlocked?.((j && (j.reason || j.error)) || 'forbidden');
+    }catch(err){
+      console.error(err);
+      window.mzDownloadBlocked?.('forbidden');
+    }
+  }
+
+	document.addEventListener('click', (e)=>{
+	  const a = e.target.closest('a[data-action="materials.download"]');
+	  if(!a) return;
+
+	  const href = a.getAttribute('href') || '';
+	  if(!href) return;
+	  if(href.includes('inline=1')) return;
+
+	  e.preventDefault();
+	  precheckAndDownload(href /*, a.getAttribute('target') */);
+	});
 })();
 })();
