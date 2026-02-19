@@ -1,0 +1,358 @@
+{% block content %}
+<style>
+  body { background:#0b1120; }
+html, body { height: 100%; margin:0; }
+body { background:#0b1120; }
+
+.mz-pop-wrap{
+  height: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 12px;
+  color:#e5e7eb;
+  box-sizing: border-box;
+}
+
+.mz-pop-card{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  border: 1px solid rgba(148,163,184,0.35);
+  background: radial-gradient(circle at top, rgba(15,23,42,0.92), rgba(15,23,42,0.86));
+  box-shadow: 0 18px 45px rgba(0,0,0,0.55);
+  padding: 14px;
+  box-sizing: border-box;
+}
+
+.mz-pop-head{
+  flex: 0 0 auto;
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(148,163,184,0.25);
+  margin-bottom: 10px;
+}
+
+/* контейнер, который занимает всё оставшееся место */
+#mz-jitsi{
+  flex: 1 1 auto;
+  min-height: 0;   /* важно для flex, иначе iframe не сожмётся */
+}
+
+/* jitsi-root заполняет mz-jitsi */
+#jitsi-root{
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(2,6,23,0.55);
+}
+.mz-pop-title{
+  margin:0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  background: linear-gradient(90deg,#22d3ee,#3b82f6);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+/* ===== Base button ===== */
+.mzc-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 16px;
+  font-size: 0.84rem;
+  font-weight: 500;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  user-select: none;
+  text-decoration: none;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 120ms ease,
+    color 160ms ease;
+  color: #e5e7eb;
+  background: transparent;
+}
+
+.mzc-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  background: radial-gradient(circle at top, rgba(59,130,246,0.2), transparent 60%);
+  transition: opacity 160ms ease;
+  pointer-events: none;
+}
+
+.mzc-btn:hover::before { opacity: 1; }
+
+.mzc-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(15,23,42,0.7);
+  border-color: rgba(148,163,184,0.7);
+}
+
+.mzc-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(15,23,42,0.9);
+}
+
+.mzc-btn.ghost {
+  background: radial-gradient(circle at top, rgba(30,41,59,.95), rgba(15,23,42,.98));
+  border: 1px solid rgba(148,163,184,.55);
+  color:#e5e7eb;
+  box-shadow:
+    0 2px 0 rgba(255,255,255,.05) inset,
+    0 8px 18px rgba(0,0,0,.45);
+  font-weight: 600;
+}
+
+.mzc-btn.ghost::before { opacity: 0 !important; }
+
+.mzc-btn.ghost:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 2px 0 rgba(255,255,255,.06) inset,
+    0 14px 28px rgba(0,0,0,.55);
+  border-color: rgba(191,219,254,.75);
+  background: rgba(30,64,175,.85);
+}
+
+.mzc-btn.ghost:active{
+  transform: translateY(0);
+  box-shadow:
+    0 1px 0 rgba(0,0,0,.6) inset,
+    0 3px 8px rgba(0,0,0,.6);
+}
+
+/* danger */
+.mzc-btn.danger{
+  background: radial-gradient(circle at top, #ef4444, #b91c1c);
+  border-color: rgba(255,255,255,.35);
+  color:#fff;
+  box-shadow:
+    0 2px 0 rgba(255,255,255,.08) inset,
+    0 10px 24px rgba(185,28,28,.6);
+}
+
+.mzc-btn.danger:hover{
+  transform: translateY(-2px);
+  box-shadow:
+    0 2px 0 rgba(255,255,255,.12) inset,
+    0 16px 32px rgba(185,28,28,.75);
+}
+</style>
+<title>
+  Clase en directo · {{ curso.codigo }} · {{ curso.titulo }}
+</title>
+<div class="mz-pop-wrap">
+  <div class="mz-pop-card">
+    <div class="mz-pop-head">
+      <h1 class="mz-pop-title">Clase en directo · {{ curso.codigo }}</h1>
+		<div class="mz-pop-actions">
+		  <button class="mzc-btn ghost" id="mz-fs" type="button">
+			Pantalla completa
+		  </button>
+
+		  <button class="mzc-btn ghost danger" id="mz-close" type="button">
+			Cerrar
+		  </button>
+		</div>
+    </div>
+
+    <div id="mz-wait">
+      <div class="mz-note">La clase aún no ha empezado. Espera a que el profesor inicie la sala.</div>
+      <div class="mz-note" style="margin-top:8px;">Actualizando automáticamente…</div>
+    </div>
+
+    <div id="mz-jitsi">
+      <div id="jitsi-root"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://{{ jitsi_domain }}/external_api.js"></script>
+<script>
+(() => {
+  const isTeacher = {{ is_teacher|yesno:"true,false" }};
+
+  const statusUrl = "{% url 'panel:curso_live_status' curso.id %}";
+  const pingUrl   = "{% url 'panel:curso_live_ping' curso.id %}";
+  const closeUrl  = "{% url 'panel:curso_live_close' curso.id %}";
+
+  const domain      = "{{ jitsi_domain|escapejs }}";
+  const roomName    = "{{ jitsi_room|escapejs }}";
+  const displayName = "{{ jitsi_display_name|escapejs }}";
+  const jwtToken    = "{{ jitsi_jwt|default:''|escapejs }}";
+
+  const waitBox  = document.getElementById('mz-wait');
+  const jitsiBox = document.getElementById('mz-jitsi');
+  const root     = document.getElementById('jitsi-root');
+
+  function showWait(){ waitBox.style.display='block'; jitsiBox.style.display='none'; }
+  function showJitsi(){ waitBox.style.display='none'; jitsiBox.style.display='block'; }
+
+  function getCookie(name){
+    const v = `; ${document.cookie}`;
+    const parts = v.split(`; ${name}=`);
+    return parts.length === 2 ? parts.pop().split(';').shift() : '';
+  }
+
+  async function post(url){
+    return fetch(url, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "X-CSRFToken": getCookie('csrftoken'),
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+      },
+      body: "1=1",
+    });
+  }
+
+  async function getStatus(){
+    const r = await fetch(statusUrl, { cache:"no-store", credentials:"include" });
+    if (!r.ok) throw new Error("status " + r.status);
+    return r.json();
+  }
+
+  let api = null;
+  let pingTimer = null;
+  let statusTimer = null;
+
+  function startHeartbeat(){
+    if (!isTeacher || pingTimer) return;
+    post(pingUrl).catch(()=>{});
+    pingTimer = setInterval(() => post(pingUrl).catch(()=>{}), 15000);
+  }
+  function stopHeartbeat(forceClose=false){
+    if (!isTeacher) return;
+    if (pingTimer) clearInterval(pingTimer);
+    pingTimer = null;
+    if (forceClose) post(closeUrl).catch(()=>{});
+  }
+
+  function startStatusWatch(){
+    if (isTeacher || statusTimer) return;
+    statusTimer = setInterval(async () => {
+      try{
+        const s = await getStatus();
+        if (!s.open){
+          // если учитель закончил — аккуратно закрываем
+          try { api?.executeCommand?.('hangup'); } catch(e){}
+          try { api?.dispose?.(); } catch(e){}
+          api = null;
+          showWait();
+        }
+      }catch(e){}
+    }, 3000);
+  }
+
+  function startJitsi(){
+    if (api) return;
+    showJitsi();
+
+    api = new JitsiMeetExternalAPI(domain, {
+      roomName,
+      parentNode: root,
+      width: '100%',
+      height: '100%',
+      lang: 'es',
+      userInfo: { displayName },
+      ...(jwtToken ? { jwt: jwtToken } : {}),
+      configOverwrite: { disableDeepLinking:true, prejoinPageEnabled:true },
+      interfaceConfigOverwrite: { SHOW_POWERED_BY:false, SHOW_JITSI_WATERMARK:false, SHOW_BRAND_WATERMARK:false }
+    });
+
+    setTimeout(() => {
+      const iframe = root?.querySelector('iframe');
+      if (iframe) {
+        iframe.setAttribute('allowfullscreen', 'true');
+        iframe.setAttribute('allow', 'camera; microphone; fullscreen; display-capture');
+      }
+    }, 0);
+
+    // учитель: "эфир открыт" только когда он реально вошёл
+    api.addEventListener('videoConferenceJoined', () => {
+      if (isTeacher) startHeartbeat();
+    });
+	
+	window.addEventListener('resize', () => {
+	  try { api?.resize?.(); } catch(e){}
+	});
+
+    // учитель вышел => закрываем эфир
+    api.addEventListener('videoConferenceLeft', () => {
+      if (isTeacher) stopHeartbeat(true);
+    });
+
+    // ученик слушает статус, чтобы понимать "закрыли/открыли"
+    startStatusWatch();
+
+    api.addEventListener('readyToClose', () => {
+      if (isTeacher) stopHeartbeat(true);
+      try { api?.dispose?.(); } catch(e){}
+      api = null;
+      // учитель после "закрыть" может снова начать
+      if (isTeacher) {
+        showWait(); // или можно сразу startJitsi(); как тебе нравится
+      } else {
+        showWait();
+      }
+    });
+  }
+
+  async function waitForTeacherThenStart(){
+    showWait();
+    for(;;){
+      try{
+        const s = await getStatus();
+        if (s.open){
+          startJitsi();
+          return;
+        }
+      }catch(e){}
+      await new Promise(r => setTimeout(r, 2000));
+    }
+  }
+
+  // Fullscreen
+  function requestFs(el){
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+    if (req) req.call(el);
+  }
+  document.getElementById('mz-fs')?.addEventListener('click', () => {
+    const iframe = root?.querySelector('iframe');
+    if (iframe) return requestFs(iframe);
+    requestFs(root);
+  });
+
+  // Close button
+  document.getElementById('mz-close')?.addEventListener('click', () => {
+    try { api?.executeCommand?.('hangup'); } catch(e){}
+    try { api?.dispose?.(); } catch(e){}
+    api = null;
+    if (isTeacher) stopHeartbeat(true);
+    window.close();
+  });
+
+  // BOOT:
+  if (isTeacher){
+    // учитель видит prejoin сразу
+    startJitsi();
+  } else {
+    // ✅ ученик НЕ заходит в комнату, пока учитель не открыл эфир
+    waitForTeacherThenStart();
+  }
+})();
+</script>
+{% endblock %}

@@ -46,6 +46,7 @@ urlpatterns += [
 from django.urls import path
 from . import views_live
 from . import views_materiales_api as mza
+from .views_live import curso_live_status
 
 urlpatterns += [
     path("curso/<int:curso_id>/live/", views_live.curso_live, name="curso_live"),
@@ -56,4 +57,8 @@ from panel.views_modules_access import teacher_student_modules_get, teacher_stud
 urlpatterns += [
     path("meatze/v5/teacher/student-modules/get", teacher_student_modules_get, name="teacher_student_modules_get"),
     path("meatze/v5/teacher/student-modules/set", teacher_student_modules_set, name="teacher_student_modules_set"),
+    path("curso/<int:curso_id>/live/status/", views_live.curso_live_status, name="curso_live_status"),
+    path("curso/<int:curso_id>/live/ping/", views_live.curso_live_ping, name="curso_live_ping"),
+    path("curso/<int:curso_id>/live/close/", views_live.curso_live_close, name="curso_live_close"),
+    path("curso/<str:codigo>/live/popup/", views_live.curso_live_popup, name="curso_live_popup"),
 ]

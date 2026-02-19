@@ -7,7 +7,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from .models import ShortRoom, ShortFile
 from datetime import timedelta
-
+import os
+import mimetypes
+import logging
+logger = logging.getLogger(__name__)
+from django.utils.http import http_date
+from panel.preview_docx import ensure_docx_preview_pdf, preview_pdf_path_for
 MAX_FILE_MB = 200
 MAX_FILES_PER_ROOM = 50
 
@@ -20,17 +25,7 @@ def index(request):
         return redirect("short_room", code=room.code)
     return render(request, "shortshare/index.html")
 
-def room_view(request, code):
-    room = get_object_or_404(ShortRoom, code=code)
-    files = room.files.filter(expires_at__gt=timezone.now()).order_by("-uploaded_at")
 
-    is_teacher = (request.GET.get("k") or "").strip() == (room.secret or "")
-
-    return render(request, "shortshare/room.html", {
-        "room": room,
-        "files": files,
-        "is_teacher": is_teacher,
-    })
 
 @csrf_exempt  # если ты делаешь отдельную “публичную” страницу вне общей CSRF-логики
 @require_POST
@@ -168,3 +163,125 @@ def delete_link(request, code, link_id: int):
     obj = get_object_or_404(ShortLink, id=link_id, room=room)
     obj.delete()
     return JsonResponse({"ok": True})
+    
+    
+from django.views.decorators.clickjacking import xframe_options_sameorigin
+
+@xframe_options_sameorigin
+def view_file(request, code, file_id: int):
+    room = get_object_or_404(ShortRoom, code=code)
+    obj = get_object_or_404(ShortFile, id=file_id, room=room)
+    if obj.expires_at <= timezone.now():
+        raise Http404("Expired")
+
+    name = obj.original_name or os.path.basename(obj.file.name or "file")
+    ext = (name.rsplit(".", 1)[-1].lower() if "." in name else "")
+
+    return render(request, "shortshare/viewer.html", {
+        "room": room,
+        "file": obj,
+        "name": name,
+        "ext": ext,
+    })
+    
+import os
+import mimetypes
+import tempfile
+import shutil
+from pathlib import Path
+from django.http import HttpResponse, FileResponse, Http404
+from django.utils import timezone
+from django.utils.http import http_date
+from django.shortcuts import get_object_or_404
+
+def inline_file(request, code, file_id: int):
+    room = get_object_or_404(ShortRoom, code=code)
+    obj = get_object_or_404(ShortFile, id=file_id, room=room)
+    if obj.expires_at <= timezone.now():
+        raise Http404("Expired")
+
+    try:
+        name = obj.original_name or os.path.basename(obj.file.name or "file")
+        lower = name.lower()
+
+        logger.warning("shortshare inline_file start id=%s path=%s name=%s",
+                       obj.id, getattr(obj.file, "path", None), name)
+
+        # DOCX -> PDF
+        if lower.endswith(".docx"):
+            from panel.preview_docx import ensure_docx_preview_pdf, preview_pdf_path_for
+
+            # 1) копируем исходник в tmp с простым именем
+            with tempfile.TemporaryDirectory(prefix="mz_ss_docx_") as d:
+                d = Path(d)
+                safe_src = d / "input.docx"
+
+                with obj.file.open("rb") as src_fh:
+                    with open(safe_src, "wb") as out_fh:
+                        shutil.copyfileobj(src_fh, out_fh)
+
+                logger.warning("shortshare safe copy ok: %s bytes=%s",
+                               str(safe_src), safe_src.stat().st_size)
+
+                # sanity: пустой файл
+                if safe_src.stat().st_size < 100:
+                    return HttpResponse("DOCX seems empty/corrupt", status=500)
+
+                pdf_abs = ensure_docx_preview_pdf(str(safe_src), preview_pdf_path_for(obj.file))
+
+            logger.warning("shortshare docx->pdf ok: %s size=%s",
+                           pdf_abs, os.path.getsize(pdf_abs))
+
+            resp = FileResponse(open(pdf_abs, "rb"), content_type="application/pdf")
+            resp["Content-Disposition"] = 'inline; filename="preview.pdf"'
+            resp["Last-Modified"] = http_date(os.path.getmtime(pdf_abs))
+            resp["Cache-Control"] = "private, max-age=0, must-revalidate"
+            return resp
+
+        # PDF/images inline as-is
+        ctype, _ = mimetypes.guess_type(name)
+        ctype = ctype or "application/octet-stream"
+        resp = FileResponse(obj.file.open("rb"), content_type=ctype)
+        resp["Content-Disposition"] = f'inline; filename="{name}"'
+        return resp
+
+    except Exception as e:
+        logger.exception("shortshare inline_file FAILED id=%s", file_id)
+        return HttpResponse(f"Preview failed: {e}", status=500, content_type="text/plain")
+        
+from django.views.decorators.http import require_POST
+from django.http import JsonResponse
+from django.utils import timezone
+from datetime import timedelta
+from django.shortcuts import get_object_or_404
+
+@require_POST
+def extend_link(request, code, link_id: int):
+    room = get_object_or_404(ShortRoom, code=code)
+
+    pin = (request.POST.get("pin") or "").strip()
+    if pin != room.code:
+        return JsonResponse({"ok": False, "error": "Contraseña incorrecta"}, status=403)
+
+    obj = get_object_or_404(ShortLink, id=link_id, room=room)
+
+    # сколько прибавлять (минуты): 30 по умолчанию, или 1440 (= 1 día)
+    try:
+        mins = int(request.POST.get("mins") or "30")
+    except ValueError:
+        mins = 30
+
+    # защита от треша
+    if mins not in (30, 1440):
+        return JsonResponse({"ok": False, "error": "mins_invalid"}, status=400)
+
+    now = timezone.now()
+    base = obj.expires_at if obj.expires_at and obj.expires_at > now else now
+    obj.expires_at = base + timedelta(minutes=mins)
+    obj.save(update_fields=["expires_at"])
+
+    return JsonResponse({
+        "ok": True,
+        "expires_at": int(obj.expires_at.timestamp()),
+        "mins": mins,
+    })

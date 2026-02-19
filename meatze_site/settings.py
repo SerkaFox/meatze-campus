@@ -208,10 +208,27 @@ MZ_ATTENDANCE_HB_SEC = 90
 
 PLAYWRIGHT_BIN = "/usr/bin/chromium"  # или оставь пустым, если playwright сам
 
-JITSI_DOMAIN = "meet.meatzeaula.es"
-JITSI_JWT_APP_ID = os.getenv("JITSI_JWT_APP_ID", "meatze")
-JITSI_JWT_SECRET = os.getenv("JITSI_JWT_SECRET", "")
+JITSI_DOMAIN = "meetjwt.meatzeaula.es"
+JITSI_JWT_ENABLED = True
+JITSI_JWT_SECRET = "meatze123"          # то же самое что app_secret в Prosody
+JITSI_JWT_APP_ID = "meatze"             # то же что app_id
 JITSI_JWT_AUD = "jitsi"
-JITSI_JWT_TTL_SECONDS = 2 * 60 * 60  # 2 часа
 
-MEETZE_SHOW_LIVE_TAB = False
+MEETZE_SHOW_LIVE_TAB = True
+X_FRAME_OPTIONS = "SAMEORIGIN"
+
+LOGGING = {
+  "version": 1,
+  "disable_existing_loggers": False,
+  "handlers": {"console": {"class": "logging.StreamHandler"}},
+  "loggers": {
+    "jitsi": {"handlers": ["console"], "level": "WARNING"},
+  }
+}
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://meatzeaula.es",
+]
+
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True

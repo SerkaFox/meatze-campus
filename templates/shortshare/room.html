@@ -78,6 +78,8 @@
           </div>
 
           <div style="text-align:right; flex:0 0 auto;">
+		  <button class="mz-btn ghost sm" type="button" data-link-ext="{{ l.id }}" data-mins="30">+30 min</button>
+		  <button class="mz-btn ghost sm" type="button" data-link-ext="{{ l.id }}" data-mins="1440">+1 día</button>
             <button class="mz-btn ghost sm" type="button" data-link-del="{{ l.id }}">Eliminar</button>
           </div>
         </div>
@@ -150,9 +152,12 @@
 		  <div style="text-align:right; flex:0 0 auto; display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
 			<div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
 			  <!-- ЯВНАЯ кнопка скачать -->
-			  <a class="mz-btn sm" href="{{ request.path }}f/{{ f.id }}/" title="Descargar">
-				⬇️ Descargar
-			  </a>
+				<a class="mz-btn ghost sm" href="{{ request.path }}v/{{ f.id }}/" title="Ver">
+				  👁️ Ver
+				</a>
+				<a class="mz-btn sm" href="{{ request.path }}f/{{ f.id }}/" title="Descargar">
+				  ⬇️ Descargar
+				</a>
 
 			  <!-- удалить как было -->
 			  <button class="mz-btn ghost sm" type="button" data-del="{{ f.id }}" title="Eliminar">
@@ -319,71 +324,114 @@ document.querySelectorAll("[data-del]").forEach(btn=>{
   }
   const CSRF = getCookie("csrftoken");
 
-  const linkUrl   = document.getElementById("linkUrl");
-  const linkTitle = document.getElementById("linkTitle");
-  const linkAddBtn= document.getElementById("linkAddBtn");
-  const linkErr   = document.getElementById("linkErr");
-
-  const addLinkUrl = `${location.pathname}link/add/`;
-
-  function showLinkErr(msg){
-    linkErr.style.display="block";
-    linkErr.textContent=msg;
-    setTimeout(()=>linkErr.style.display="none", 6000);
+  // ---- tiny "pulse" animation ----
+  function pulseRow(row, ok=true){
+    if(!row) return;
+    row.animate([
+      { transform: "scale(1)", filter: "brightness(1)" },
+      { transform: "scale(1.01)", filter: ok ? "brightness(1.15)" : "brightness(0.9)" },
+      { transform: "scale(1)", filter: "brightness(1)" },
+    ], { duration: 260, easing: "ease-out" });
   }
 
-  function linkTick(){
-    const now = Math.floor(Date.now()/1000);
-    document.querySelectorAll("[data-link-expires]").forEach(el=>{
-      const exp = parseInt(el.dataset.linkExpires,10);
-      const sec = exp-now;
-      if(sec<=0){ el.textContent="expirado"; return; }
-      const m = Math.floor(sec/60);
-      const s = sec%60;
-      el.textContent = `expira en ${m}m ${s}s`;
-    });
+  function setBusy(btn, busy){
+    if(!btn) return;
+    btn.disabled = !!busy;
+    btn.style.opacity = busy ? "0.65" : "";
+    btn.style.pointerEvents = busy ? "none" : "";
   }
+
+  // ---- Update ONE link countdown text immediately ----
+	function formatRemaining(sec){
+	  if(sec <= 0) return "expirado";
+
+	  const d = Math.floor(sec / 86400);
+	  const h = Math.floor((sec % 86400) / 3600);
+	  const m = Math.floor((sec % 3600) / 60);
+	  const s = sec % 60;
+
+	  if(d > 0){
+		return `${d}d ${h}h`;
+	  }
+	  if(h > 0){
+		return `${h}h ${m}m`;
+	  }
+	  return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+	}
+
+	function renderLinkCountdown(el, expTs){
+	  const now = Math.floor(Date.now()/1000);
+	  const sec = expTs - now;
+	  el.textContent = formatRemaining(sec);
+	  if(sec > 0 && sec < 120){
+	  el.style.color = "#f87171";   // красный
+	} else {
+	  el.style.color = "";
+	}
+	  
+	}
+
+	function linkTick(){
+	  const now = Math.floor(Date.now()/1000);
+	  document.querySelectorAll("[data-link-expires]").forEach(el=>{
+		const exp = parseInt(el.dataset.linkExpires || "0", 10);
+		const sec = exp - now;
+		el.textContent = formatRemaining(sec);
+	  });
+	}
   setInterval(linkTick, 1000);
   linkTick();
 
-  async function addLink(){
-    const url = (linkUrl.value||"").trim();
-    const title = (linkTitle.value||"").trim();
+  // ---- Extend link (no reload) ----
+  document.querySelectorAll("[data-link-ext]").forEach(btn=>{
+    btn.addEventListener("click", async ()=>{
+      const id = btn.dataset.linkExt;
+      const mins = parseInt(btn.dataset.mins || "30", 10);
 
-    if(!url){ showLinkErr("Pega un enlace."); return; }
+      const pin = prompt("Introduce la contraseña para extender (código de la room):");
+      if(pin === null) return;
 
-    const fd = new FormData();
-    fd.append("url", url);
-    fd.append("title", title);
+      const fd = new FormData();
+      fd.append("pin", pin.trim());
+      fd.append("mins", String(mins));
 
-    const r = await fetch(addLinkUrl, {
-      method: "POST",
-      body: fd,
-      headers: {"X-CSRFToken": CSRF},
+      const url = `${location.pathname}link/ext/${id}/`;
+
+      setBusy(btn, true);
+      try{
+        const r = await fetch(url, {
+          method: "POST",
+          body: fd,
+          headers: {"X-CSRFToken": CSRF},
+        });
+
+        const j = await r.json().catch(()=>({}));
+        if(!r.ok || !j.ok){
+          alert(j.error || `Error (${r.status})`);
+          pulseRow(btn.closest("[data-link-id]"), false);
+          return;
+        }
+
+        // update dataset + immediately update text (no waiting for next tick)
+        const row = btn.closest("[data-link-id]");
+        const expEl = row?.querySelector("[data-link-expires]");
+        if(expEl){
+          expEl.dataset.linkExpires = String(j.expires_at);
+          renderLinkCountdown(expEl, j.expires_at);
+        }
+
+        pulseRow(row, true);
+      }catch(e){
+        console.error(e);
+        alert("Network error");
+        pulseRow(btn.closest("[data-link-id]"), false);
+      }finally{
+        setBusy(btn, false);
+      }
     });
-    const j = await r.json().catch(()=>({}));
+  });
 
-    if(!r.ok || !j.ok){
-      showLinkErr(j.error || `Error (${r.status})`);
-      return;
-    }
-
-    // проще всего: перезагрузка (надёжно)
-    // но если хочешь без reload — скажи, сделаю "append" в DOM.
-    location.reload();
-  }
-
-  if(linkAddBtn){
-    linkAddBtn.addEventListener("click", addLink);
-    linkUrl?.addEventListener("keydown", e=>{
-      if(e.key==="Enter"){ e.preventDefault(); addLink(); }
-    });
-    linkTitle?.addEventListener("keydown", e=>{
-      if(e.key==="Enter"){ e.preventDefault(); addLink(); }
-    });
-  }
-
-  // delete link (по PIN как у файлов)
+  // ---- delete link (как было) ----
   document.querySelectorAll("[data-link-del]").forEach(btn=>{
     btn.addEventListener("click", async ()=>{
       const id = btn.dataset.linkDel;
@@ -406,9 +454,16 @@ document.querySelectorAll("[data-del]").forEach(btn=>{
         alert(j.error || `Error (${r.status})`);
         return;
       }
-      location.reload();
+
+      // remove row with a small fade-out
+      const row = btn.closest("[data-link-id]");
+      if(row){
+        row.animate([{opacity:1},{opacity:0, transform:"translateY(-4px)"}], {duration:180, easing:"ease-out"})
+          .onfinish = ()=> row.remove();
+      }
     });
   });
+
 })();
 </script>
 

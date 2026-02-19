@@ -127,7 +127,10 @@ class Curso(models.Model):
     descripcion = models.TextField(blank=True, default="")
     fecha_inicio = models.DateField(null=True, blank=True)
     fecha_fin = models.DateField(null=True, blank=True)
-
+    live_is_open = models.BooleanField(default=False)
+    live_opened_at = models.DateTimeField(null=True, blank=True)
+    live_closed_at = models.DateTimeField(null=True, blank=True)
+    live_last_signal_at = models.DateTimeField(null=True, blank=True)  # heartbeat от лог-вотчера
     # новые поля для админ-панели
     modules = models.JSONField(default=list, blank=True)
     horas_total = models.PositiveIntegerField(default=0)

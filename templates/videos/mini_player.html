@@ -1,0 +1,217 @@
+{# templates/videos/mini_player.html #}
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>MEATZE — Видео</title>
+
+  <!-- PWA basics -->
+  <link rel="manifest" href="{% static 'pwa/manifest.webmanifest' %}">
+  <meta name="theme-color" content="#111111" />
+
+  <style>
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#0b0b0b;color:#f2f2f2}
+    .wrap{max-width:980px;margin:0 auto;padding:14px}
+    .player{background:#151515;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    video{width:100%;height:auto;display:block;background:#000}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:12px}
+    .title{font-size:14px;opacity:.9}
+    .pill{font-size:12px;padding:6px 10px;border-radius:999px;background:#222;border:1px solid #333}
+    .grid{display:grid;grid-template-columns:1.3fr .7fr;gap:12px;margin-top:12px}
+    @media(max-width:860px){.grid{grid-template-columns:1fr}}
+    .list{background:#121212;border:1px solid #222;border-radius:14px;overflow:hidden}
+    .item{display:flex;gap:10px;padding:10px 12px;border-top:1px solid #1f1f1f;cursor:pointer}
+    .item:first-child{border-top:none}
+    .item.active{background:#1a1a1a}
+    .thumb{width:84px;height:48px;border-radius:10px;background:#000;flex:0 0 auto;overflow:hidden;display:flex;align-items:center;justify-content:center}
+    .thumb img{width:100%;height:100%;object-fit:cover;display:block;opacity:.95}
+    .meta{min-width:0}
+    .meta .t{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .meta .d{font-size:12px;opacity:.65;margin-top:4px}
+    .hint{font-size:12px;opacity:.7;margin-top:10px;line-height:1.35}
+    button{background:#2a2a2a;border:1px solid #3a3a3a;color:#fff;border-radius:10px;padding:8px 10px;cursor:pointer}
+    button:hover{background:#313131}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="grid">
+
+    <div class="player">
+      <video id="v" controls playsinline preload="metadata"></video>
+      <div class="row">
+        <div class="title" id="nowTitle">—</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="pill" id="posInfo">00:00</span>
+          <button id="prevBtn">◀ Пред</button>
+          <button id="nextBtn">След ▶</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="list">
+      <div class="row" style="border-bottom:1px solid #1f1f1f">
+        <div class="title">Плейлист</div>
+        <button id="installBtn" style="display:none">Установить (PWA)</button>
+      </div>
+      <div id="list"></div>
+      <div class="hint">
+        Автопереход: когда видео заканчивается — включится следующее.<br>
+        Позиция запоминается (localStorage).<br>
+        Про «слушать с выключенным экраном»: это зависит от iOS/Android и часто работает только в установленном PWA/приложении.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const VIDEOS = {{ videos|safe }};
+  const v = document.getElementById('v');
+  const listEl = document.getElementById('list');
+  const nowTitle = document.getElementById('nowTitle');
+  const posInfo = document.getElementById('posInfo');
+
+  const KEY_IDX = "mz_player_idx";
+  const KEY_TIME_PREFIX = "mz_player_time_";
+
+  let idx = Number(localStorage.getItem(KEY_IDX) || 0);
+  idx = Math.max(0, Math.min(idx, VIDEOS.length - 1));
+
+  function fmt(sec){
+    sec = Math.max(0, Math.floor(sec || 0));
+    const m = String(Math.floor(sec/60)).padStart(2,'0');
+    const s = String(sec%60).padStart(2,'0');
+    return `${m}:${s}`;
+  }
+
+  function renderList(){
+    listEl.innerHTML = "";
+    VIDEOS.forEach((x,i) => {
+      const item = document.createElement("div");
+      item.className = "item" + (i===idx ? " active" : "");
+      item.onclick = () => load(i, true);
+
+      const thumb = document.createElement("div");
+      thumb.className = "thumb";
+      if (x.poster){
+        const img = document.createElement("img");
+        img.src = x.poster;
+        img.alt = x.title;
+        thumb.appendChild(img);
+      } else {
+        thumb.textContent = "▶";
+      }
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      const t = document.createElement("div");
+      t.className = "t";
+      t.textContent = x.title;
+      const d = document.createElement("div");
+      d.className = "d";
+      d.textContent = x.duration_sec ? `Длительность: ${fmt(x.duration_sec)}` : " ";
+      meta.appendChild(t);
+      meta.appendChild(d);
+
+      item.appendChild(thumb);
+      item.appendChild(meta);
+      listEl.appendChild(item);
+    });
+  }
+
+  function load(i, autoplay){
+    if (!VIDEOS.length) return;
+
+    idx = i;
+    localStorage.setItem(KEY_IDX, String(idx));
+
+    const x = VIDEOS[idx];
+    nowTitle.textContent = x.title || "Видео";
+    v.src = x.url;
+    if (x.poster) v.poster = x.poster;
+
+    renderList();
+
+    // восстановить позицию
+    const saved = Number(localStorage.getItem(KEY_TIME_PREFIX + x.id) || 0);
+
+    // Ждём metadata, чтобы можно было выставить currentTime
+    v.onloadedmetadata = () => {
+      if (saved > 3 && saved < (v.duration || Infinity) - 2) {
+        v.currentTime = saved;
+      }
+      if (autoplay) v.play().catch(()=>{});
+    };
+  }
+
+  function next(){
+    if (!VIDEOS.length) return;
+    const ni = (idx + 1) % VIDEOS.length;
+    load(ni, true);
+  }
+  function prev(){
+    if (!VIDEOS.length) return;
+    const pi = (idx - 1 + VIDEOS.length) % VIDEOS.length;
+    load(pi, true);
+  }
+
+  // автопереход
+  v.addEventListener("ended", () => next());
+
+  // сохранять позицию раз в ~2 сек
+  let lastSave = 0;
+  v.addEventListener("timeupdate", () => {
+    const x = VIDEOS[idx];
+    if (!x) return;
+    posInfo.textContent = fmt(v.currentTime);
+    const t = Math.floor(v.currentTime);
+    if (t && t !== lastSave && t % 2 === 0) {
+      lastSave = t;
+      localStorage.setItem(KEY_TIME_PREFIX + x.id, String(v.currentTime));
+    }
+  });
+
+  document.getElementById("nextBtn").onclick = next;
+  document.getElementById("prevBtn").onclick = prev;
+
+  // горячие клавиши
+  window.addEventListener("keydown", (e) => {
+    if (e.target && ["INPUT","TEXTAREA"].includes(e.target.tagName)) return;
+    if (e.key === "ArrowRight") v.currentTime += 10;
+    if (e.key === "ArrowLeft") v.currentTime -= 10;
+    if (e.key === "n") next();
+    if (e.key === "p") prev();
+    if (e.key === " ") { e.preventDefault(); v.paused ? v.play().catch(()=>{}) : v.pause(); }
+  });
+
+  renderList();
+  load(idx, false);
+
+  // ===== PWA install button (Android/Chrome) =====
+  let deferredPrompt = null;
+  const installBtn = document.getElementById("installBtn");
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = "inline-block";
+  });
+
+  installBtn.addEventListener("click", async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    installBtn.style.display = "none";
+  });
+
+  // Service worker registration
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("{% static 'pwa/sw.js' %}").catch(()=>{});
+  }
+</script>
+</body>
+</html>

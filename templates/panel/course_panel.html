@@ -127,70 +127,113 @@
     background: radial-gradient(circle at top left, rgba(51,65,85,0.9), rgba(15,23,42,0.95));
     border: 1px solid rgba(148,163,184,0.5);
   }
+/* ===== Base button ===== */
+.mzc-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 16px;
+  font-size: 0.84rem;
+  font-weight: 500;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  user-select: none;
+  text-decoration: none;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 120ms ease,
+    color 160ms ease;
+  color: #e5e7eb;
+  background: transparent;
+}
 
-  .mzc-btn {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 7px 16px;
-    font-size: 0.84rem;
-    font-weight: 500;
-    border-radius: 999px;
-    border: 1px solid transparent;
-    cursor: pointer;
-    user-select: none;
-    text-decoration: none;
-    transition:
-      background 160ms ease,
-      border-color 160ms ease,
-      box-shadow 160ms ease,
-      transform 120ms ease,
-      color 160ms ease;
-    color: #e5e7eb;
-    background: transparent;
-  }
+.mzc-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  background: radial-gradient(circle at top, rgba(59,130,246,0.2), transparent 60%);
+  transition: opacity 160ms ease;
+  pointer-events: none;
+}
 
-  .mzc-btn.ghost {
-    background: transparent;
-  }
+.mzc-btn:hover::before { opacity: 1; }
 
-  .mzc-btn::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    opacity: 0;
-    background: radial-gradient(circle at top, rgba(59,130,246,0.2), transparent 60%);
-    transition: opacity 160ms ease;
-    pointer-events: none;
-  }
+.mzc-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(15,23,42,0.7);
+  border-color: rgba(148,163,184,0.7);
+}
 
-  .mzc-btn:hover::before {
-    opacity: 1;
-  }
-  .mzc-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(15,23,42,0.7);
-    border-color: rgba(148,163,184,0.7);
-  }
-  .mzc-btn:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 6px rgba(15,23,42,0.9);
-  }
-  .mzc-btn.is-act {
-    background: radial-gradient(circle at top, #22d3ee, #3b82f6);
-    color: #0b1120;
-    border-color: rgba(248,250,252,0.9);
-    box-shadow:
-      0 0 0 1px rgba(15,23,42,0.9),
-      0 10px 22px rgba(59,130,246,0.7);
-  }
-  .mzc-btn.is-act::before {
-    opacity: 0;
-  }
+.mzc-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(15,23,42,0.9);
+}
 
+.mzc-btn.is-act {
+  background: radial-gradient(circle at top, #22d3ee, #3b82f6);
+  color: #0b1120;
+  border-color: rgba(248,250,252,0.9);
+  box-shadow:
+    0 0 0 1px rgba(15,23,42,0.9),
+    0 10px 22px rgba(59,130,246,0.7);
+}
+.mzc-btn.is-act::before { opacity: 0; }
+
+/* ===== Ghost (Descargar / Ver / Copiar) ===== */
+/* ВАЖНО: оставляем ТОЛЬКО ОДНО определение .ghost */
+.mzc-btn.ghost {
+  background: radial-gradient(circle at top, rgba(30,41,59,.95), rgba(15,23,42,.98));
+  border: 1px solid rgba(148,163,184,.55);
+  color:#e5e7eb;
+  box-shadow:
+    0 2px 0 rgba(255,255,255,.05) inset,
+    0 8px 18px rgba(0,0,0,.45);
+  font-weight: 600;
+}
+
+/* чтобы не было "двойного" свечения поверх градиента */
+.mzc-btn.ghost::before { opacity: 0 !important; }
+
+.mzc-btn.ghost:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 2px 0 rgba(255,255,255,.06) inset,
+    0 14px 28px rgba(0,0,0,.55);
+  border-color: rgba(191,219,254,.75);
+  background: rgba(30,64,175,.85);
+}
+
+.mzc-btn.ghost:active{
+  transform: translateY(0);
+  box-shadow:
+    0 1px 0 rgba(0,0,0,.6) inset,
+    0 3px 8px rgba(0,0,0,.6);
+}
+
+/* keep active visible */
+.mzc-btn.ghost.is-act{
+  background: radial-gradient(circle at top, #22d3ee, #3b82f6) !important;
+  border-color: rgba(248,250,252,0.95) !important;
+  color: #0b1120 !important;
+  box-shadow:
+    0 2px 0 rgba(255,255,255,.22) inset,
+    0 10px 24px rgba(37,99,235,.55) !important;
+  transform: none !important;
+}
+
+.mzc-btn.ghost.is-act:hover{
+  box-shadow:
+    0 2px 0 rgba(255,255,255,.25) inset,
+    0 16px 32px rgba(37,99,235,.7) !important;
+  transform: translateY(-1px) !important;
+}
   /* ——— ТЕЛО ПАНЕЛИ ——— */
   #mzp-body {
     margin-top: 14px;
@@ -516,6 +559,15 @@
   #mz-panel.mzc-wrap{ padding: 0 6px; }
   #mz-panel .mzc-card{ padding: 12px 12px 14px; }
 }
+
+.mzc-btn.is-live-on {
+  background: radial-gradient(circle at top, #ef4444, #b91c1c);
+  color: #fff;
+  border-color: rgba(255,255,255,0.6);
+  box-shadow:
+    0 0 0 1px rgba(15,23,42,0.9),
+    0 0 18px rgba(239,68,68,0.7);
+}
 </style>
 
 <div id="mz-panel-wrap">
@@ -541,20 +593,15 @@
       {% if m.slug == "live" and not show_live_tab %}
         {# скрываем кнопку live #}
       {% else %}
-        <a href="?tab={{ m.slug }}"
-           class="mz-fab-item{% if active_tab == m.slug %} is-act{% endif %}"
-           data-action="panel.tab"
-           data-tab="{{ m.slug }}"
-           data-curso="{{ curso.codigo }}">
-          <span class="txt">{{ m.label }}</span>
-
-          {% if m.slug == "chat" %}
-            <span class="mz-main-chat-badge" id="mz-main-chat-badge-mobile" style="display:none;">
-              <span class="dot"></span>
-              <span class="txt">0</span>
-            </span>
-          {% endif %}
-        </a>
+<a href="?tab={{ m.slug }}"
+   class="mzc-btn ghost{% if active_tab == m.slug %} is-act{% endif %}{% if m.slug == 'live' and curso.live_is_open %} is-live-on{% endif %}"
+   data-tab="{{ m.slug }}"
+   {% if m.slug == "live" %}
+     data-live-popup="{% url 'panel:curso_live_popup' curso.codigo %}"
+   {% endif %}
+>
+			  <span>{{ m.label }}</span>
+			</a>
       {% endif %}
     {% endfor %}
   </div>
@@ -587,11 +634,15 @@
 	  {% if m.slug == "live" and not show_live_tab %}
 		{# скрываем кнопку live, но сам таб продолжит работать по ?tab=live #}
 	  {% else %}
-		<a href="?tab={{ m.slug }}"
-		   class="mzc-btn ghost{% if active_tab == m.slug %} is-act{% endif %}"
-		   data-action="panel.tab"
-		   data-tab="{{ m.slug }}"
-		   data-curso="{{ curso.codigo }}">
+<a href="?tab={{ m.slug }}"
+   class="mzc-btn ghost {% if active_tab == m.slug %} is-act{% endif %} {% if m.slug == 'live' and curso.live_is_open %} is-live-on{% endif %}"
+   data-action="panel.tab"
+   data-tab="{{ m.slug }}"
+   data-curso="{{ curso.codigo }}"
+   {% if m.slug == "live" %}
+     data-live-popup="{% url 'panel:curso_live_popup' curso.codigo %}"
+   {% endif %}
+>
 		  <span>{{ m.label }}</span>
 
 		  {% if m.slug == "chat" %}
@@ -742,8 +793,111 @@ function setBadge(n){
   window.MEATZE.COURSE_CODE = "{{ curso.codigo }}";
   window.MEATZE.IS_TEACHER = {{ is_teacher|yesno:"true,false" }};
 </script>
+<script>
+(function(){
+  const liveBtns = Array.from(document.querySelectorAll('.mzc-btn[data-tab="live"]'));
+  if (!liveBtns.length) return;
 
+  async function checkLive(){
+    try{
+      const r = await fetch("{% url 'panel:curso_live_status' curso.id %}", {
+        cache: "no-store",
+        credentials: "same-origin"
+      });
+      if (!r.ok) return;
+      const data = await r.json();
 
+      liveBtns.forEach(btn => {
+        if (data.open) btn.classList.add("is-live-on");
+        else btn.classList.remove("is-live-on");
+      });
+    }catch(e){}
+  }
 
+  checkLive();
+  setInterval(checkLive, 4000);
+})();
+</script>
+<script>
+(function(){
+  const btns = Array.from(document.querySelectorAll('[data-live-popup]'));
+  if (!btns.length) return;
+
+  // ✅ endpoint закрытия эфира (только учитель реально пройдет проверку во view)
+  const closeUrl = "{% url 'panel:curso_live_close' curso.id %}";
+
+  function getCookie(name){
+    const v = `; ${document.cookie}`;
+    const parts = v.split(`; ${name}=`);
+    return parts.length === 2 ? parts.pop().split(';').shift() : '';
+  }
+
+  function post(url){
+    return fetch(url, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "X-CSRFToken": getCookie('csrftoken'),
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+      },
+      body: "1=1",
+    });
+  }
+
+  let liveWin = null;
+  let watchTimer = null;
+
+  function startWatch(){
+    if (watchTimer) return;
+    watchTimer = setInterval(() => {
+      if (!liveWin) return;
+      if (liveWin.closed) {
+        clearInterval(watchTimer);
+        watchTimer = null;
+        liveWin = null;
+
+        // ✅ закрыли окно — закрываем эфир на сервере
+        post(closeUrl).catch(()=>{});
+      }
+    }, 800);
+  }
+
+  function openLive(url){
+    const features = [
+      'popup=yes',
+      'width=1280',
+      'height=780',
+      'left=80',
+      'top=60'
+    ].join(',');
+
+    if (liveWin && !liveWin.closed) { liveWin.focus(); return; }
+
+    liveWin = window.open(url, 'MEATZE_LIVE', features);
+
+    if (!liveWin) {
+      alert("Браузер заблокировал всплывающее окно. Разреши pop-ups для этого сайта и нажми ещё раз.");
+      return;
+    }
+
+    liveWin.focus();
+    startWatch();
+  }
+
+  // capture=true чтобы перехватить раньше делегата data-action="panel.tab"
+  btns.forEach(el => {
+    el.addEventListener('click', (e) => {
+      const url = el.getAttribute('data-live-popup');
+      if (!url) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      openLive(url);
+    }, true);
+  });
+})();
+</script>
 
 {% endblock %}

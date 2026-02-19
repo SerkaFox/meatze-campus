@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'meatze/site.css' %}?v={% now 'U' %}">
+
+<div class="mz-page mz-auth-page">
+  <div class="mz-auth-card">
+    <div class="mz-auth-h" style="gap:10px; align-items:center;">
+      <div style="min-width:0;">
+        <div style="font-weight:900; word-break:break-word;">👁️ {{ name }}</div>
+        <div class="mz-help">Room {{ room.code }}</div>
+      </div>
+
+      <div style="margin-left:auto; display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+        <a class="mz-btn ghost sm" href="{% url 'short_room' room.code %}">← Volver</a>
+        <a class="mz-btn sm" href="{% url 'short_download' room.code file.id %}">⬇️ Descargar</a>
+      </div>
+    </div>
+
+    <div class="mz-auth-b">
+      <div style="border:1px solid rgba(255,255,255,.10); border-radius:16px; overflow:hidden; background:rgba(255,255,255,.03);">
+<iframe
+  src="{% url 'short_inline' room.code file.id %}"
+  style="width:100%; height:78vh; border:0;"
+></iframe>
+      </div>
+
+      <div class="mz-help" style="margin-top:10px;">
+        Si el navegador no puede mostrarlo, usa “Descargar”.
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

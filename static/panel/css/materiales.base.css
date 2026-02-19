@@ -312,56 +312,7 @@
   color: #e5e7eb;
 }
 
-/* ===== Action buttons (Descargar / Ver / Copiar) ===== */
-.mzc-btn.ghost{
-  background: radial-gradient(circle at top, rgba(30,41,59,.95), rgba(15,23,42,.98));
-  border: 1px solid rgba(148,163,184,.55);
-  color:#e5e7eb;
-  box-shadow:
-    0 2px 0 rgba(255,255,255,.05) inset,
-    0 8px 18px rgba(0,0,0,.45);
-  font-weight: 600;
-}
 
-.mzc-btn.ghost:hover{
-  transform: translateY(-2px);
-  box-shadow:
-    0 2px 0 rgba(255,255,255,.06) inset,
-    0 14px 28px rgba(0,0,0,.55);
-  border-color: rgba(191,219,254,.75);
-  background: rgba(30,64,175,.85);
-}
-
-.mzc-btn.ghost:active{
-  transform: translateY(0);
-  box-shadow:
-    0 1px 0 rgba(0,0,0,.6) inset,
-    0 3px 8px rgba(0,0,0,.6);
-}
-
-/* keep active visible */
-.mzc-btn.ghost.is-act{
-  background: radial-gradient(circle at top, #22d3ee, #3b82f6) !important;
-  border-color: rgba(248,250,252,0.95) !important;
-  color: #0b1120 !important;
-  box-shadow:
-    0 2px 0 rgba(255,255,255,.22) inset,
-    0 10px 24px rgba(37,99,235,.55) !important;
-  transform: none !important;
-}
-.mz-seg .mzc-btn.ghost.is-act{
-  background: radial-gradient(circle at top, #22d3ee, #3b82f6) !important;
-  border-color: rgba(248,250,252,0.95) !important;
-  color: #0b1120 !important;
-}
-.mzc-btn.ghost.is-act:hover{
-  background: radial-gradient(circle at top, #22d3ee, #3b82f6) !important;
-  border-color: rgba(248,250,252,0.95) !important;
-  color: #0b1120 !important;
-  box-shadow:
-    0 2px 0 rgba(255,255,255,.25) inset,
-    0 16px 32px rgba(37,99,235,.7) !important;
-  transform: translateY(-1px) !important;
 }
 
 /* ===== Upload CTA ===== */

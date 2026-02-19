@@ -1207,11 +1207,6 @@ def course_panel(request, codigo):
     # ───────────── ВКЛАДКА "TAREAS" ─────────────
     elif active_tab == "tareas":
 
-        if not is_teacher:
-            disabled = set(get_disabled_modules(curso, user) or [])
-            if disabled:
-                tasks_qs = tasks_qs.exclude(module_key__in=disabled)
-
         def _fmt_size(num):
             try:
                 n = float(num or 0)
@@ -1423,6 +1418,10 @@ def course_panel(request, codigo):
         else:
             # ✅ STUDENT видит опубликованные задачи
             tasks_qs = CourseTask.objects.filter(curso=curso, is_published=True)
+
+            disabled = set(get_disabled_modules(curso, user) or [])
+            if disabled:
+                tasks_qs = tasks_qs.exclude(module_key__in=disabled)
 
             if selected_mod == "none":
                 tasks_qs = tasks_qs.filter(module_key="")
@@ -1984,6 +1983,10 @@ def _deny_download(request, reason: str, status=403):
     # обычное поведение (чтобы не раскрывать лишнее)
     raise Http404
 
+import os
+from pathlib import Path
+from django.utils.http import http_date
+from .preview_docx import ensure_docx_preview_pdf, preview_pdf_path_for
 
 @login_required
 @xframe_options_sameorigin
@@ -2022,9 +2025,29 @@ def material_download(request, file_id: int):
 
     inline = request.GET.get("inline") == "1"
 
-    # ✅ если это check=1 — ничего не скачиваем, просто говорим "можно"
-    if request.GET.get("check") == "1":
-        return JsonResponse({"ok": True})
+    is_docx = ((getattr(f, "ext", "") or "").lower() == "docx") \
+              or ((getattr(f, "filename", "") or "").lower().endswith(".docx")) \
+              or ((f.file.name or "").lower().endswith(".docx"))
+
+    if inline and is_docx:
+        # ЛЕНИВЫЙ импорт — чтобы сайт не падал при импортах
+        from .preview_docx import ensure_docx_preview_pdf, preview_pdf_path_for
+
+        try:
+            pdf_abs = ensure_docx_preview_pdf(f.file.path, preview_pdf_path_for(f.file))
+            if os.path.exists(pdf_abs):
+                resp = FileResponse(open(pdf_abs, "rb"), content_type="application/pdf")
+                resp["Content-Disposition"] = 'inline; filename="preview.pdf"'
+                resp["Last-Modified"] = http_date(os.path.getmtime(pdf_abs))
+                resp["Cache-Control"] = "private, max-age=0, must-revalidate"
+                return resp
+        except Exception as e:
+            logger.exception("DOCX preview failed for file_id=%s path=%s", f.id, getattr(f.file, "path", None))
+            return HttpResponse(
+                "No se pudo generar vista previa DOCX (DOCX->PDF). Mira el log del servidor.",
+                content_type="text/plain",
+                status=500,
+            )
 
     ctype, _ = mimetypes.guess_type(f.filename or "")
     ctype = ctype or "application/octet-stream"

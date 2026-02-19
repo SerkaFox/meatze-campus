@@ -106,7 +106,7 @@ def materiales_upload_files_ajax(request):
 
     return JsonResponse({"ok": True, "folder_path": folder_path, "files": created})
     
-# panel/views_materiales_api.py
+
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
@@ -256,4 +256,48 @@ def materiales_download_zip(request):
 
     resp = HttpResponse(buf.getvalue(), content_type="application/zip")
     resp["Content-Disposition"] = f'attachment; filename="{out_name}"'
+    return resp
+    
+from django.http import FileResponse, Http404
+from django.utils.http import http_date
+import mimetypes
+import os
+
+
+def _is_docx(name: str) -> bool:
+    return (name or "").lower().endswith(".docx")
+
+@login_required
+def materiales_file(request, file_id: int):
+    cf = get_object_or_404(CursoFile, pk=file_id)
+
+    # твоя проверка прав (сейчас она уже есть для скачивания)
+    if not user_can_access_file(request.user, cf):
+        # если у тебя check=1 возвращает JSON — сохрани текущую логику
+        raise Http404()
+
+    inline = request.GET.get("inline") == "1"
+
+    # --- ВОТ НОВОЕ: docx preview через pdf ---
+    if inline and _is_docx(cf.file.name):
+        pdf_abs = ensure_docx_preview_pdf(
+            cf.file.path,
+            preview_pdf_path_for_filefield(cf.file),
+        )
+        f = open(pdf_abs, "rb")
+        resp = FileResponse(f, content_type="application/pdf")
+        resp["Content-Disposition"] = 'inline; filename="preview.pdf"'
+        resp["Cache-Control"] = "private, max-age=0, must-revalidate"
+        resp["Last-Modified"] = http_date(os.path.getmtime(pdf_abs))
+        return resp
+
+    # --- остальное: как было (pdf/img/обычная скачка) ---
+    content_type = cf.mime or mimetypes.guess_type(cf.file.name)[0] or "application/octet-stream"
+    resp = FileResponse(cf.file.open("rb"), content_type=content_type)
+
+    if inline:
+        resp["Content-Disposition"] = f'inline; filename="{os.path.basename(cf.file.name)}"'
+    else:
+        resp["Content-Disposition"] = f'attachment; filename="{os.path.basename(cf.file.name)}"'
+
     return resp
