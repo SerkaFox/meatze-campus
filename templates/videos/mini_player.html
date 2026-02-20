@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>MEATZE — Видео</title>
+  <title>MEATZE — Video</title>
 
   <!-- PWA basics -->
   <link rel="manifest" href="{% static 'pwa/manifest.webmanifest' %}">
@@ -45,22 +45,20 @@
         <div class="title" id="nowTitle">—</div>
         <div style="display:flex;gap:8px;align-items:center">
           <span class="pill" id="posInfo">00:00</span>
-          <button id="prevBtn">◀ Пред</button>
-          <button id="nextBtn">След ▶</button>
+          <button id="prevBtn">◀ Anterior</button>
+          <button id="nextBtn">Siguiente ▶</button>
         </div>
       </div>
     </div>
 
     <div class="list">
       <div class="row" style="border-bottom:1px solid #1f1f1f">
-        <div class="title">Плейлист</div>
-        <button id="installBtn" style="display:none">Установить (PWA)</button>
+        <div class="title">Lista</div>
+        <button id="installBtn" style="display:none">Instalar</button>
       </div>
       <div id="list"></div>
       <div class="hint">
-        Автопереход: когда видео заканчивается — включится следующее.<br>
-        Позиция запоминается (localStorage).<br>
-        Про «слушать с выключенным экраном»: это зависит от iOS/Android и часто работает только в установленном PWA/приложении.
+Auto-siguiente: Sí
       </div>
     </div>
 

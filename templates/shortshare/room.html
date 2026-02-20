@@ -277,19 +277,20 @@
   });
 
 })();
-</script>
-<script>
-function getCookie(name){
-  const v = document.cookie.split(";").map(s=>s.trim()).find(s=>s.startsWith(name+"="));
-  return v ? decodeURIComponent(v.split("=",2)[1]) : "";
-}
+</script><script>
+(() => {
+  function getCookie(name){
+    const v = document.cookie.split(";").map(s=>s.trim()).find(s=>s.startsWith(name+"="));
+    return v ? decodeURIComponent(v.split("=",2)[1]) : "";
+  }
+  const CSRF = getCookie("csrftoken");
 
-const CSRF = getCookie("csrftoken");
+  // ---------- FILE DELETE ----------
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-del]");
+    if(!btn) return;
 
-document.querySelectorAll("[data-del]").forEach(btn=>{
-  btn.addEventListener("click", async ()=>{
     const id = btn.dataset.del;
-
     const pin = prompt("Introduce la contraseña para eliminar (código de la room):");
     if(pin === null) return;
 
@@ -305,7 +306,6 @@ document.querySelectorAll("[data-del]").forEach(btn=>{
     });
 
     const j = await r.json().catch(()=>({}));
-
     if(!r.ok || !j.ok){
       alert(j.error || `Error (${r.status})`);
       return;
@@ -313,91 +313,112 @@ document.querySelectorAll("[data-del]").forEach(btn=>{
 
     location.reload();
   });
-});
-</script>
 
-<script>
-(() => {
-  function getCookie(name){
-    const v = document.cookie.split(";").map(s=>s.trim()).find(s=>s.startsWith(name+"="));
-    return v ? decodeURIComponent(v.split("=",2)[1]) : "";
-  }
-  const CSRF = getCookie("csrftoken");
+  // ---------- LINKS ----------
+  const linkUrl = document.getElementById("linkUrl");
+  const linkTitle = document.getElementById("linkTitle");
+  const linkAddBtn = document.getElementById("linkAddBtn");
+  const linkErr = document.getElementById("linkErr");
+  const linkList = document.getElementById("linkList");
 
-  // ---- tiny "pulse" animation ----
-  function pulseRow(row, ok=true){
-    if(!row) return;
-    row.animate([
-      { transform: "scale(1)", filter: "brightness(1)" },
-      { transform: "scale(1.01)", filter: ok ? "brightness(1.15)" : "brightness(0.9)" },
-      { transform: "scale(1)", filter: "brightness(1)" },
-    ], { duration: 260, easing: "ease-out" });
+  function showLinkErr(msg){
+    if(!linkErr) return;
+    linkErr.style.display = "block";
+    linkErr.textContent = msg;
+    setTimeout(()=>{ linkErr.style.display="none"; }, 6000);
   }
 
-  function setBusy(btn, busy){
-    if(!btn) return;
-    btn.disabled = !!busy;
-    btn.style.opacity = busy ? "0.65" : "";
-    btn.style.pointerEvents = busy ? "none" : "";
+  function escapeHtml(s){
+    return (s || "").replace(/[&<>"']/g, m => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[m]));
   }
 
-  // ---- Update ONE link countdown text immediately ----
-	function formatRemaining(sec){
-	  if(sec <= 0) return "expirado";
+  function formatRemaining(sec){
+    if(sec <= 0) return "expirado";
+    const d = Math.floor(sec / 86400);
+    const h = Math.floor((sec % 86400) / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    if(d > 0) return `${d}d ${h}h`;
+    if(h > 0) return `${h}h ${m}m`;
+    return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+  }
 
-	  const d = Math.floor(sec / 86400);
-	  const h = Math.floor((sec % 86400) / 3600);
-	  const m = Math.floor((sec % 3600) / 60);
-	  const s = sec % 60;
-
-	  if(d > 0){
-		return `${d}d ${h}h`;
-	  }
-	  if(h > 0){
-		return `${h}h ${m}m`;
-	  }
-	  return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-	}
-
-	function renderLinkCountdown(el, expTs){
-	  const now = Math.floor(Date.now()/1000);
-	  const sec = expTs - now;
-	  el.textContent = formatRemaining(sec);
-	  if(sec > 0 && sec < 120){
-	  el.style.color = "#f87171";   // красный
-	} else {
-	  el.style.color = "";
-	}
-	  
-	}
-
-	function linkTick(){
-	  const now = Math.floor(Date.now()/1000);
-	  document.querySelectorAll("[data-link-expires]").forEach(el=>{
-		const exp = parseInt(el.dataset.linkExpires || "0", 10);
-		const sec = exp - now;
-		el.textContent = formatRemaining(sec);
-	  });
-	}
+  function linkTick(){
+    const now = Math.floor(Date.now()/1000);
+    document.querySelectorAll("[data-link-expires]").forEach(el=>{
+      const exp = parseInt(el.dataset.linkExpires || "0", 10);
+      const sec = exp - now;
+      el.textContent = formatRemaining(sec);
+      if(sec > 0 && sec < 120) el.style.color = "#f87171";
+      else el.style.color = "";
+    });
+  }
   setInterval(linkTick, 1000);
   linkTick();
 
-  // ---- Extend link (no reload) ----
-  document.querySelectorAll("[data-link-ext]").forEach(btn=>{
-    btn.addEventListener("click", async ()=>{
-      const id = btn.dataset.linkExt;
-      const mins = parseInt(btn.dataset.mins || "30", 10);
+  function renderLinkCountdown(el, expTs){
+    const now = Math.floor(Date.now()/1000);
+    const sec = expTs - now;
+    el.textContent = formatRemaining(sec);
+    if(sec > 0 && sec < 120) el.style.color = "#f87171";
+    else el.style.color = "";
+  }
 
-      const pin = prompt("Introduce la contraseña para extender (código de la room):");
-      if(pin === null) return;
+  function renderLinkRow(obj){
+    if(!linkList) return;
+
+    const title = obj.title ? escapeHtml(obj.title) : escapeHtml(obj.url);
+    const url = escapeHtml(obj.url);
+    const exp = String(obj.expires_at);
+
+    const row = document.createElement("div");
+    row.className = "mz-link-row";
+    row.dataset.linkId = String(obj.id);
+    row.style.cssText = "display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding:10px 0; border-top:1px solid rgba(255,255,255,.08);";
+
+    row.innerHTML = `
+      <div style="min-width:0;">
+        <div style="font-weight:900; word-break:break-word;">
+          <a href="${url}" target="_blank" rel="noopener noreferrer" style="text-decoration:underline; color:#38bdf8;">
+            ${title}
+          </a>
+        </div>
+        ${obj.title ? `<div class="mz-help" style="word-break:break-word;">${url}</div>` : ``}
+        <div class="mz-help" data-link-expires="${exp}"></div>
+      </div>
+
+      <div style="text-align:right; flex:0 0 auto;">
+        <button class="mz-btn ghost sm" type="button" data-link-ext="${obj.id}" data-mins="30">+30 min</button>
+        <button class="mz-btn ghost sm" type="button" data-link-ext="${obj.id}" data-mins="1440">+1 día</button>
+        <button class="mz-btn ghost sm" type="button" data-link-del="${obj.id}">Eliminar</button>
+      </div>
+    `;
+
+    linkList.prepend(row);
+    const expEl = row.querySelector("[data-link-expires]");
+    if(expEl) renderLinkCountdown(expEl, obj.expires_at);
+  }
+
+  // ADD LINK
+  if(linkAddBtn){
+    linkAddBtn.addEventListener("click", async ()=>{
+      const urlVal = (linkUrl?.value || "").trim();
+      const titleVal = (linkTitle?.value || "").trim();
+
+      if(!urlVal){
+        showLinkErr("Pega un enlace primero.");
+        return;
+      }
 
       const fd = new FormData();
-      fd.append("pin", pin.trim());
-      fd.append("mins", String(mins));
+      fd.append("url", urlVal);
+      fd.append("title", titleVal);
 
-      const url = `${location.pathname}link/ext/${id}/`;
+      const url = `${location.pathname}link/add/`;
 
-      setBusy(btn, true);
+      linkAddBtn.disabled = true;
       try{
         const r = await fetch(url, {
           method: "POST",
@@ -407,42 +428,46 @@ document.querySelectorAll("[data-del]").forEach(btn=>{
 
         const j = await r.json().catch(()=>({}));
         if(!r.ok || !j.ok){
-          alert(j.error || `Error (${r.status})`);
-          pulseRow(btn.closest("[data-link-id]"), false);
+          showLinkErr(j.error || `Error (${r.status})`);
           return;
         }
 
-        // update dataset + immediately update text (no waiting for next tick)
-        const row = btn.closest("[data-link-id]");
-        const expEl = row?.querySelector("[data-link-expires]");
-        if(expEl){
-          expEl.dataset.linkExpires = String(j.expires_at);
-          renderLinkCountdown(expEl, j.expires_at);
-        }
+        if(linkUrl) linkUrl.value = "";
+        if(linkTitle) linkTitle.value = "";
 
-        pulseRow(row, true);
+        // убрать "No hay enlaces todavía."
+        const empty = linkList.querySelector(".mz-help");
+        if(empty && empty.textContent.includes("No hay enlaces")) empty.remove();
+
+        renderLinkRow(j);
       }catch(e){
         console.error(e);
-        alert("Network error");
-        pulseRow(btn.closest("[data-link-id]"), false);
+        showLinkErr("Network error");
       }finally{
-        setBusy(btn, false);
+        linkAddBtn.disabled = false;
       }
     });
-  });
+  }
 
-  // ---- delete link (как было) ----
-  document.querySelectorAll("[data-link-del]").forEach(btn=>{
-    btn.addEventListener("click", async ()=>{
-      const id = btn.dataset.linkDel;
-      const pin = prompt("Introduce la contraseña para eliminar (código de la room):");
-      if(pin === null) return;
+  // EXTEND LINK (delegation)
+  document.addEventListener("click", async (e)=>{
+    const btn = e.target.closest("[data-link-ext]");
+    if(!btn) return;
 
-      const fd = new FormData();
-      fd.append("pin", pin.trim());
+    const id = btn.dataset.linkExt;
+    const mins = parseInt(btn.dataset.mins || "30", 10);
 
-      const url = `${location.pathname}link/del/${id}/`;
+    const pin = prompt("Introduce la contraseña para extender (código de la room):");
+    if(pin === null) return;
 
+    const fd = new FormData();
+    fd.append("pin", pin.trim());
+    fd.append("mins", String(mins));
+
+    const url = `${location.pathname}link/ext/${id}/`;
+
+    btn.disabled = true;
+    try{
       const r = await fetch(url, {
         method: "POST",
         body: fd,
@@ -455,16 +480,50 @@ document.querySelectorAll("[data-del]").forEach(btn=>{
         return;
       }
 
-      // remove row with a small fade-out
-      const row = btn.closest("[data-link-id]");
-      if(row){
-        row.animate([{opacity:1},{opacity:0, transform:"translateY(-4px)"}], {duration:180, easing:"ease-out"})
-          .onfinish = ()=> row.remove();
+      const row = btn.closest("[data-link-id]") || btn.closest(".mz-link-row");
+      const expEl = row?.querySelector("[data-link-expires]");
+      if(expEl){
+        expEl.dataset.linkExpires = String(j.expires_at);
+        renderLinkCountdown(expEl, j.expires_at);
       }
+    }finally{
+      btn.disabled = false;
+    }
+  });
+
+  // DELETE LINK (delegation)
+  document.addEventListener("click", async (e)=>{
+    const btn = e.target.closest("[data-link-del]");
+    if(!btn) return;
+
+    const id = btn.dataset.linkDel;
+    const pin = prompt("Introduce la contraseña para eliminar (código de la room):");
+    if(pin === null) return;
+
+    const fd = new FormData();
+    fd.append("pin", pin.trim());
+
+    const url = `${location.pathname}link/del/${id}/`;
+
+    const r = await fetch(url, {
+      method: "POST",
+      body: fd,
+      headers: {"X-CSRFToken": CSRF},
     });
+
+    const j = await r.json().catch(()=>({}));
+    if(!r.ok || !j.ok){
+      alert(j.error || `Error (${r.status})`);
+      return;
+    }
+
+    const row = btn.closest("[data-link-id]") || btn.closest(".mz-link-row");
+    if(row){
+      row.animate([{opacity:1},{opacity:0, transform:"translateY(-4px)"}], {duration:180, easing:"ease-out"})
+        .onfinish = ()=> row.remove();
+    }
   });
 
 })();
 </script>
-
 {% endblock %}

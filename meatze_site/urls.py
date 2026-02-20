@@ -19,6 +19,7 @@ from api.views_horario_day import horario_day, horario_slot_delete, horario_day_
 urlpatterns = [
     path("me", api_auth.me_view),
     path("", home, name="home"),
+    path("videos/", include("api.videos.urls")),
     path("alumno/", include("panel.urls", namespace="panel")),
     path("acceder/", api_views.acceder, name="acceder"),
 
@@ -116,6 +117,8 @@ urlpatterns += [
 
     path("meatze/v5/user_display", api_profile.user_display),
     path("meatze/v5/admin/pending", views_temp.admin_pending_list),
+    
+    
 
     path("meatze/v5/admin/pending/<int:pending_id>/approve-teacher", views_temp.admin_pending_approve_teacher),
     path("meatze/v5/admin/pending/<int:pending_id>/mark-student", views_temp.admin_pending_mark_student),

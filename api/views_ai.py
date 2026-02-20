@@ -170,15 +170,27 @@ def duo_format_variant_a(answer: str) -> str:
 # -------------------------------------------------------------------
 # 2) Старый ai_ask для вкладки IA в курсе (оставляем)
 # -------------------------------------------------------------------
+import re
+import requests
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework import status
+
+def split_aula_docente(text: str):
+    m = re.search(r"\[AULA\]([\s\S]*?)(?:\[DOCENTE\]([\s\S]*))?$", text or "", re.I)
+    if not m:
+        return ((text or "").strip(), "")
+    return ((m.group(1) or "").strip(), (m.group(2) or "").strip())
+
 @api_view(["POST"])
 @permission_classes([AllowAny])
 @authentication_classes([])
 def ai_ask(request):
-    """
-    Старый эндпоинт генератора материалов для ДОЦЕНТОВ (вкладка IA внутри курса).
-    Его не трогаем — он живёт своей жизнью.
-    """
     data = request.data or {}
+
+    preset = (data.get("preset") or "").strip().lower()
+    wants_split = preset in ("quiz", "preguntas")
 
     topic = (data.get("topic_hint") or "").strip()
     query = (data.get("query") or "").strip()
@@ -193,6 +205,7 @@ def ai_ask(request):
         "Eres un asistente para docentes de formación profesional.\n"
         "Respondes SIEMPRE en español.\n"
     )
+
     if strict:
         system += (
             "Tu trabajo es ayudar SOLO dentro del ámbito del curso indicado. "
@@ -200,8 +213,17 @@ def ai_ask(request):
             "y redirige la respuesta al curso/módulo.\n"
         )
 
-    user_request = query or f"Ayuda docente sobre: {topic or 'el tema'}"
+    if wants_split:
+        system += (
+            "IMPORTANTE: Devuelve DOS BLOQUES.\n"
+            "[AULA]\n"
+            "Solo preguntas (sin respuestas).\n"
+            "[DOCENTE]\n"
+            "Respuestas/clave + breve justificación.\n"
+            "No mezcles respuestas dentro del bloque [AULA].\n"
+        )
 
+    user_request = query or f"Ayuda docente sobre: {topic or 'el tema'}"
     user = (
         "Ámbito didáctico del curso:\n"
         f"{scope_text or 'No disponible'}\n\n"
@@ -231,16 +253,21 @@ def ai_ask(request):
 
     answer = ""
     if isinstance(payload, dict):
-        answer = (
-            payload.get("message", {}).get("content")
-            or payload.get("response")
-            or ""
-        )
+        answer = payload.get("message", {}).get("content") or payload.get("response") or ""
 
-    if not answer:
-        answer = "Sin respuesta."
+    answer = (answer or "").strip() or "Sin respuesta."
 
-    return Response({"answer": answer})
+    resp_payload = {"answer": answer}
+
+    # опционально: отдаём split-поля (может пригодиться потом)
+    if wants_split:
+        aula, docente = split_aula_docente(answer)
+        resp_payload.update({
+            "classroom_text": aula,
+            "teacher_text": docente,
+        })
+
+    return Response(resp_payload)
 
 def _normalize_role(raw: str) -> str:
     r = (raw or "").strip().lower()
@@ -251,6 +278,8 @@ def _normalize_role(raw: str) -> str:
     if r in ("admin", "administrador", "coord", "coordinacion"):
         return "admin"
     return "visitor"
+
+
 
 def looks_like_ui_overview_question(q: str) -> bool:
     ql = (q or "").lower()

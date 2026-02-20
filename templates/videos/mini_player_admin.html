@@ -1,0 +1,363 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>MEATZE — Reproductor</title>
+  <style>
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#0b0b0b;color:#f2f2f2}
+    .wrap{max-width:1100px;margin:0 auto;padding:14px}
+
+    /* layout */
+    .top{margin-bottom:12px}
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:12px}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+
+    /* cards */
+    .card{background:#121212;border:1px solid #222;border-radius:14px;overflow:hidden}
+    .row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px;border-bottom:1px solid #1f1f1f}
+    .row:last-child{border-bottom:none}
+
+    /* player */
+    video{width:100%;display:block;background:#000}
+
+    /* typography */
+    .title{font-size:14px;opacity:.9}
+    .pill{font-size:12px;padding:6px 10px;border-radius:999px;background:#222;border:1px solid #333}
+    .hint{font-size:12px;opacity:.7;line-height:1.35}
+
+    /* playlist list */
+    .list .item{display:flex;gap:10px;padding:10px 12px;border-top:1px solid #1f1f1f;cursor:pointer}
+    .list .item:first-child{border-top:none}
+    .list .item.active{background:#1a1a1a}
+    .thumb{width:84px;height:48px;border-radius:10px;background:#000;flex:0 0 auto;overflow:hidden;display:flex;align-items:center;justify-content:center}
+    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+    .meta{min-width:0}
+    .meta .t{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .meta .d{font-size:12px;opacity:.65;margin-top:4px}
+
+    /* controls */
+    button{background:#2a2a2a;border:1px solid #3a3a3a;color:#fff;border-radius:10px;padding:8px 10px;cursor:pointer}
+    button:hover{background:#313131}
+    input[type="text"], input[type="file"], select{
+      background:#0f0f0f;border:1px solid #2a2a2a;color:#fff;border-radius:10px;padding:8px 10px
+    }
+    input[type="text"]{min-width:220px}
+    .actions{display:flex;gap:8px;align-items:center}
+    .danger{border-color:#5a2a2a}
+
+    .form{display:grid;grid-template-columns:1fr;gap:10px;padding:12px}
+    .msg{padding:10px 12px;border-top:1px solid #1f1f1f;font-size:13px;opacity:.9}
+    .msg.ok{color:#b7f7c8}
+    .msg.err{color:#ffb4b4}
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- TOP: Active playlist controls (full width) -->
+  <div class="top card">
+    <div class="row">
+      <div class="title">Lista activa</div>
+
+      <form method="get" action="" style="display:flex; gap:8px; align-items:center; margin:0">
+        <select name="pl" onchange="this.form.submit()">
+          {% for pl in playlists %}
+            <option value="{{ pl.id }}" {% if active_pl and pl.id == active_pl.id %}selected{% endif %}>
+              {{ pl.titulo }}
+            </option>
+          {% endfor %}
+        </select>
+      </form>
+
+      <form method="post" action="{% url 'playlist_create' %}" style="margin:0; display:flex; gap:8px; align-items:center">
+        {% csrf_token %}
+        <input type="text" name="titulo" placeholder="Nueva lista" />
+        <button type="submit">Crear</button>
+      </form>
+
+      {% if active_pl %}
+        <div class="actions">
+          <form method="post" action="{% url 'playlist_toggle_public' active_pl.id %}" style="margin:0">
+            {% csrf_token %}
+            <button type="submit">
+              {% if active_pl.is_public %}Ocultar enlace{% else %}Hacer pública{% endif %}
+            </button>
+          </form>
+
+          {% if active_pl.is_public %}
+            <span class="pill">
+              <a href="/videos/p/{{ active_pl.share_token }}/" target="_blank" style="color:#5da9ff;text-decoration:none">
+                /videos/p/{{ active_pl.share_token }}/
+              </a>
+            </span>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="row">
+      <div class="hint">
+        Consejo: sube los 2 vídeos en la <b>lista activa</b> y comparte el enlace público.
+        El invitado solo verá los vídeos de esa lista.
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="grid" style="margin-top:12px">
+
+    <!-- Player -->
+    <div class="card">
+      <video id="v" controls playsinline preload="metadata"></video>
+      <div class="row">
+        <div class="title" id="nowTitle">—</div>
+        <div class="actions">
+          <span class="pill" id="posInfo">00:00</span>
+          <button type="button" id="prevBtn">◀ Anterior</button>
+          <button type="button" id="nextBtn">Siguiente ▶</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column: playlist + upload + manage -->
+    <div class="card">
+
+      <div class="row">
+        <div class="title">Lista de reproducción</div>
+        <div class="pill">Auto-siguiente: Sí</div>
+      </div>
+
+      <div id="list" class="list"></div>
+
+<div class="row">
+  <div class="title">Subir vídeos a la lista activa</div>
+</div>
+
+<form class="form" method="post" action="{% url 'mini_player_upload' %}" enctype="multipart/form-data" id="uploadForm">
+  {% csrf_token %}
+  <input type="hidden" name="playlist_id" value="{% if active_pl %}{{ active_pl.id }}{% endif %}">
+
+  <input type="text" name="titulo" placeholder="Título (opcional, solo si subes 1 archivo)" />
+
+  <div id="dropzone"
+       style="border:1px dashed #3a3a3a;border-radius:12px;padding:14px;background:#0f0f0f;cursor:pointer;">
+    <div style="font-weight:700;margin-bottom:6px;">Arrastra y suelta vídeos aquí</div>
+    <div style="font-size:12px;opacity:.75;">o haz clic para seleccionar varios archivos</div>
+    <input id="fileInput" type="file" name="archivo" accept="video/*" multiple style="display:none" />
+  </div>
+
+  <div id="fileList" class="hint" style="margin-top:2px;"></div>
+
+  <button type="submit">Subir</button>
+
+  <div class="hint">
+    Consejo: archivos grandes → mejor por Wi-Fi. Si da 413/timeout, hay que subir límites en Nginx/Gunicorn.
+  </div>
+</form>
+
+<script>
+(() => {
+  const dz = document.getElementById("dropzone");
+  const input = document.getElementById("fileInput");
+  const list = document.getElementById("fileList");
+
+  function renderList(files){
+    if (!files || !files.length) { list.textContent = ""; return; }
+    const names = Array.from(files).map(f => `• ${f.name}`).join("\n");
+    list.textContent = `Archivos seleccionados (${files.length}):\n${names}`;
+    list.style.whiteSpace = "pre-line";
+  }
+
+  dz.addEventListener("click", () => input.click());
+
+  input.addEventListener("change", () => {
+    renderList(input.files);
+  });
+
+  function prevent(e){ e.preventDefault(); e.stopPropagation(); }
+
+  ["dragenter","dragover","dragleave","drop"].forEach(ev =>
+    dz.addEventListener(ev, prevent)
+  );
+
+  dz.addEventListener("dragover", () => {
+    dz.style.background = "#121212";
+  });
+  dz.addEventListener("dragleave", () => {
+    dz.style.background = "#0f0f0f";
+  });
+
+  dz.addEventListener("drop", (e) => {
+    dz.style.background = "#0f0f0f";
+    const files = e.dataTransfer.files;
+    if (!files || !files.length) return;
+
+    // Важно: присваиваем FileList в input (работает в современных браузерах)
+    input.files = files;
+    renderList(input.files);
+  });
+})();
+</script>
+
+      {% if messages %}
+        {% for m in messages %}
+          <div class="msg {% if m.tags %}{{ m.tags }}{% endif %}">{{ m }}</div>
+        {% endfor %}
+      {% endif %}
+
+      <div class="row">
+        <div class="title">Mis vídeos (biblioteca)</div>
+        {% if active_pl %}
+          <div class="pill">Añade a: <b>{{ active_pl.titulo }}</b></div>
+        {% endif %}
+      </div>
+
+      <div>
+        {% for v in videos_qs %}
+          <div class="row" style="border-top:1px solid #1f1f1f">
+            <div class="title" style="max-width:60%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              {{ v.titulo }}
+            </div>
+
+            <div class="actions">
+              {% if active_pl %}
+                <form method="post" action="{% url 'playlist_add' active_pl.id v.id %}" style="margin:0">
+                  {% csrf_token %}
+                  <button type="submit">Añadir</button>
+                </form>
+              {% endif %}
+
+              <form method="post" action="{% url 'mini_player_delete' v.id %}" style="margin:0">
+                {% csrf_token %}
+                <button type="submit" class="danger" onclick="return confirm('¿Eliminar este vídeo?');">
+                  Eliminar
+                </button>
+              </form>
+            </div>
+          </div>
+        {% empty %}
+          <div class="msg">No hay vídeos todavía.</div>
+        {% endfor %}
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const VIDEOS = {{ videos|safe }};
+  const v = document.getElementById('v');
+  const listEl = document.getElementById('list');
+  const nowTitle = document.getElementById('nowTitle');
+  const posInfo = document.getElementById('posInfo');
+
+  const KEY_IDX = "mz_player_idx";
+  const KEY_TIME_PREFIX = "mz_player_time_";
+
+  let idx = Number(localStorage.getItem(KEY_IDX) || 0);
+  idx = Math.max(0, Math.min(idx, VIDEOS.length - 1));
+
+  function fmt(sec){
+    sec = Math.max(0, Math.floor(sec || 0));
+    const m = String(Math.floor(sec/60)).padStart(2,'0');
+    const s = String(sec%60).padStart(2,'0');
+    return `${m}:${s}`;
+  }
+
+  function renderList(){
+    listEl.innerHTML = "";
+    if (!VIDEOS.length){
+      const empty = document.createElement("div");
+      empty.className = "msg";
+      empty.textContent = "No hay vídeos en la lista.";
+      listEl.appendChild(empty);
+      return;
+    }
+
+    VIDEOS.forEach((x,i) => {
+      const item = document.createElement("div");
+      item.className = "item" + (i===idx ? " active" : "");
+      item.onclick = () => load(i, true);
+
+      const thumb = document.createElement("div");
+      thumb.className = "thumb";
+      if (x.poster){
+        const img = document.createElement("img");
+        img.src = x.poster;
+        img.alt = x.title || "Vídeo";
+        thumb.appendChild(img);
+      } else {
+        thumb.textContent = "▶";
+      }
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      const t = document.createElement("div");
+      t.className = "t";
+      t.textContent = x.title || "Vídeo";
+      const d = document.createElement("div");
+      d.className = "d";
+      d.textContent = (i===idx) ? "Reproduciendo…" : "Toca para reproducir";
+      meta.appendChild(t);
+      meta.appendChild(d);
+
+      item.appendChild(thumb);
+      item.appendChild(meta);
+      listEl.appendChild(item);
+    });
+  }
+
+  function load(i, autoplay){
+    if (!VIDEOS.length) return;
+
+    idx = i;
+    localStorage.setItem(KEY_IDX, String(idx));
+
+    const x = VIDEOS[idx];
+    nowTitle.textContent = x.title || "Vídeo";
+    v.src = x.url;
+    if (x.poster) v.poster = x.poster;
+
+    renderList();
+
+    const saved = Number(localStorage.getItem(KEY_TIME_PREFIX + x.id) || 0);
+    v.onloadedmetadata = () => {
+      if (saved > 3 && saved < (v.duration || Infinity) - 2) v.currentTime = saved;
+      if (autoplay) v.play().catch(()=>{});
+    };
+  }
+
+  function next(){
+    if (!VIDEOS.length) return;
+    load((idx + 1) % VIDEOS.length, true);
+  }
+  function prev(){
+    if (!VIDEOS.length) return;
+    load((idx - 1 + VIDEOS.length) % VIDEOS.length, true);
+  }
+
+  v.addEventListener("ended", () => next());
+
+  let lastSave = 0;
+  v.addEventListener("timeupdate", () => {
+    const x = VIDEOS[idx];
+    if (!x) return;
+    posInfo.textContent = fmt(v.currentTime);
+    const t = Math.floor(v.currentTime);
+    if (t && t !== lastSave && t % 2 === 0) {
+      lastSave = t;
+      localStorage.setItem(KEY_TIME_PREFIX + x.id, String(v.currentTime));
+    }
+  });
+
+  document.getElementById("nextBtn").onclick = next;
+  document.getElementById("prevBtn").onclick = prev;
+
+  renderList();
+  if (VIDEOS.length) load(idx, false);
+</script>
+</body>
+</html>

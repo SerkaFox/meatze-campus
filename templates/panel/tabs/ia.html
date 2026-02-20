@@ -516,7 +516,6 @@
 
 
 </style>
-
 <script>
 (function(){
   const V5_API = "/meatze/v5";
@@ -528,7 +527,8 @@
 
   const root       = document.getElementById('mzt-ai');
   if (!root) return;
-  const toast = root.querySelector('#mzt-toast');
+
+  const toast      = root.querySelector('#mzt-toast');
   const presetsBox = root.querySelector('#mzt-presets');
   const topicInp   = root.querySelector('#mzt-topic');
   const useCourse  = root.querySelector('#mzt-use-course');
@@ -540,14 +540,13 @@
 
   const copyBtn    = root.querySelector('#mzt-copy');
   const fullBtn    = root.querySelector('#mzt-full');
-  const fsOverlay  = root.querySelector('#mzt-fullscreen');
-  const fsCloseBtn = root.querySelector('#mzt-full-close');
-  const fsCopyBtn  = root.querySelector('#mzt-full-copy');
-  const fsContent  = root.querySelector('#mzt-full-content');
 
-  let prevDocOverflow = '';
   let currentLevel = 'medio';
   const lvlBtns = root.querySelectorAll('.mzt-lvl');
+
+  // === state for split output ===
+  let activePreset = '';
+  let lastSplit = { aula: '', docente: '', raw: '' };
 
   // --- модули курса ---
   let modules = [];
@@ -596,38 +595,36 @@
     else if (!cur.includes(mod)) topicInp.value = `${cur} — ${mod}`;
   });
 
+  // ====== templates (с AULA/DOCENTE для quiz/preguntas) ======
   const templates = {
     actividades: `Genera 6 ideas de actividades (2 en clase, 2 para casa, 2 cooperativas) sobre el tema indicado. Incluye objetivo, materiales y tiempo.`,
-    preguntas:   `Crea un banco de 12 preguntas (6 tipo test con 4 opciones y respuesta correcta, 6 abiertas cortas) sobre el tema indicado.`,
+    preguntas: `Crea un banco de 12 preguntas sobre el tema indicado:
+- 6 tipo test (4 opciones) y 6 abiertas cortas.
+IMPORTANTE:
+1) NO incluyas respuestas dentro de las preguntas.
+2) Devuelve el resultado en DOS BLOQUES:
+[AULA]
+(PREGUNTAS solo)
+[DOCENTE]
+(Respuestas + clave + breve justificación)`,
     casos:       `Diseña 3 mini-proyectos o casos prácticos contextualizados al tema. Incluye descripción, entregables y criterios básicos de evaluación.`,
     guia:        `Escribe una guía de clase de 45–60 min: objetivos, activación, explicación, práctica guiada, cierre y tarea opcional.`,
     explicacion: `Explica el tema con lenguaje claro para nivel inicial, usando 2 analogías y 2 ejemplos resueltos paso a paso.`,
     rubrica:     `Construye una rúbrica de 4 niveles (Insuficiente, Básico, Avanzado, Excelente) con 4 criterios alineados al tema.`,
-    quiz:        `Genera un quiz de 10 preguntas tipo test con solución y breve justificación de la respuesta correcta.`,
+    quiz: `Genera un quiz de 10 preguntas tipo test (4 opciones) sobre el tema indicado.
+IMPORTANTE:
+1) NO incluyas respuestas dentro de las preguntas.
+2) Devuelve el resultado en DOS BLOQUES:
+[AULA]
+(Preguntas)
+[DOCENTE]
+(Clave de respuestas + breve justificación)`,
     glosario:    `Crea un glosario de 12 términos clave del tema con definiciones breves y un ejemplo por término.`,
     anuncio:     `Redacta un anuncio breve para el aula (tono cordial) informando de actividad o tarea relacionada con el tema.`,
     plan:        `Propón un plan de 1–2 semanas (4–6 sesiones): objetivos por sesión, actividades principales y evaluación formativa.`
   };
 
-  presetsBox && presetsBox.addEventListener('click', (e) => {
-    const b = e.target.closest('button[data-preset]');
-    if (!b) return;
-    input.value = templates[b.dataset.preset] || '';
-    presetsBox.querySelectorAll('button[data-preset]')
-      .forEach(btn => btn.classList.remove('is-act'));
-    b.classList.add('is-act');
-  });
-
-  lvlBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      lvlBtns.forEach(b => b.classList.remove('is-act'));
-      btn.classList.add('is-act');
-      currentLevel = btn.dataset.lvl || 'medio';
-    });
-  });
-
-  fetch(`${V5_API}/ai/warmup`, {method:'POST'}).catch(()=>{});
-
+  // ====== utils ======
   function setStatus(txt) {
     if (!statusEl) return;
     statusEl.textContent = txt;
@@ -642,11 +639,57 @@
     if (!toast) return;
     toast.textContent = msg || 'Respuesta lista.';
     toast.classList.add('is-show');
-    setTimeout(() => {
-      toast.classList.remove('is-show');
-    }, 2500);
+    setTimeout(() => toast.classList.remove('is-show'), 2500);
   }
 
+  function escapeHtml(s){
+    return (s||'')
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;');
+  }
+
+  function splitTeacherStudent(raw){
+    const t = (raw || '').trim();
+    // принимает только формат где [AULA] сначала, потом [DOCENTE]
+    const re = /\[AULA\]([\s\S]*?)(?:\[DOCENTE\]([\s\S]*))?$/i;
+    const m = t.match(re);
+    if (!m) return { aula: t, docente: '' };
+    return {
+      aula: (m[1] || '').trim(),
+      docente: (m[2] || '').trim(),
+    };
+  }
+
+  function renderOutput(raw){
+    lastSplit = { ...splitTeacherStudent(raw), raw: (raw || '') };
+
+    const aula = lastSplit.aula || (raw || '');
+    const docente = lastSplit.docente;
+
+    // По умолчанию показываем AULA, а ответы (DOCENTE) прячем под кнопкой
+    if (docente) {
+      out.innerHTML =
+        `<div style="white-space:pre-wrap">${escapeHtml(aula)}</div>
+         <div style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(148,163,184,.35)">
+           <button id="mzt-show-ans" class="mzc-btn ghost mzt-sm-btn" type="button">
+             Mostrar respuestas (solo docente)
+           </button>
+           <div id="mzt-ans" style="display:none; white-space:pre-wrap; margin-top:10px">
+             ${escapeHtml(docente)}
+           </div>
+         </div>`;
+
+      out.querySelector('#mzt-show-ans')?.addEventListener('click', () => {
+        const box = out.querySelector('#mzt-ans');
+        if (!box) return;
+        box.style.display = (box.style.display === 'none') ? 'block' : 'none';
+      });
+    } else {
+      // если нет блоков — просто показываем всё
+      out.textContent = raw || 'Sin respuesta.';
+    }
+  }
 
   async function copyTextFrom(el, button) {
     const text = (el && el.textContent) ? el.textContent : '';
@@ -677,23 +720,46 @@
     }
   }
 
+  // ===== presets click =====
+  presetsBox && presetsBox.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-preset]');
+    if (!b) return;
+
+    activePreset = (b.dataset.preset || '').trim();        // <= важно!
+    input.value = templates[activePreset] || '';
+
+    presetsBox.querySelectorAll('button[data-preset]')
+      .forEach(btn => btn.classList.remove('is-act'));
+    b.classList.add('is-act');
+  });
+
+  // ===== level buttons =====
+  lvlBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      lvlBtns.forEach(b => b.classList.remove('is-act'));
+      btn.classList.add('is-act');
+      currentLevel = btn.dataset.lvl || 'medio';
+    });
+  });
+
+  // warmup
+  fetch(`${V5_API}/ai/warmup`, {method:'POST'}).catch(()=>{});
+
+  // copy
   copyBtn && copyBtn.addEventListener('click', () => copyTextFrom(out, copyBtn));
-  fsCopyBtn && fsCopyBtn.addEventListener('click', () => copyTextFrom(fsContent, fsCopyBtn));
 
-	  fullBtn && fullBtn.addEventListener('click', () => {
-    const answer = out.textContent || '';
+  // ===== Vista para el aula (overlay) =====
+  fullBtn && fullBtn.addEventListener('click', () => {
+    // показываем строго AULA (если есть), иначе весь raw
+    const aulaText = (lastSplit && lastSplit.aula) ? lastSplit.aula : (out.textContent || '');
 
-    // запоминаем текущее состояние скролла
     const prevOverflow = document.body.style.overflow || '';
-
-    // блокируем прокрутку страницы
     document.body.style.overflow = 'hidden';
 
     const html = `
       <div id="mzt-ai-present-overlay"
            style="position:fixed; inset:0; background:#020617e6; z-index:999999;
                   display:flex; align-items:center; justify-content:center;">
-
         <div style="
               width:min(1400px,96vw);
               height:min(90vh,900px);
@@ -705,36 +771,18 @@
               flex-direction:column;
               gap:14px;
             ">
-
-          <div style="
-                display:flex;
-                justify-content:space-between;
-                align-items:center;
-                color:#e6f0ff;
-              ">
-            <div style="font-weight:800; font-size:22px;">
-              Vista para el aula
-            </div>
-
+          <div style="display:flex; justify-content:space-between; align-items:center; color:#e6f0ff;">
+            <div style="font-weight:800; font-size:22px;">Vista para el aula</div>
             <div style="display:flex; gap:8px;">
-<button id="mzt-ai-present-copy" class="mzt-ai-btn" data-action="ia.present.copy">Copiar</button>
-<button id="mzt-ai-present-close" class="mzt-ai-btn close" data-action="ia.present.close">Cerrar</button>
-
+              <button id="mzt-ai-present-copy" class="mzt-ai-btn" data-action="ia.present.copy">Copiar</button>
+              <button id="mzt-ai-present-close" class="mzt-ai-btn close" data-action="ia.present.close">Cerrar</button>
             </div>
           </div>
 
-          <div style="
-                flex:1;
-                overflow:auto;
-                font-size:22px;
-                line-height:1.55;
-                color:#f9fafb;
-                white-space:pre-wrap;
-                font-family:system-ui, sans-serif;
-              ">
-            ${answer.replace(/</g, "&lt;")}
-          </div>
-
+          <div id="mzt-ai-present-text" style="
+                flex:1; overflow:auto; font-size:22px; line-height:1.55;
+                color:#f9fafb; white-space:pre-wrap; font-family:system-ui, sans-serif;
+              ">${escapeHtml(aulaText)}</div>
         </div>
       </div>
     `;
@@ -751,13 +799,11 @@
     }
 
     btnClose?.addEventListener('click', closeOverlay);
-    overlay?.addEventListener('click', (e) => {
-      if (e.target === overlay) closeOverlay();
-    });
+    overlay?.addEventListener('click', (e) => { if (e.target === overlay) closeOverlay(); });
 
     btnCopy?.addEventListener('click', async () => {
       try {
-        await navigator.clipboard.writeText(answer);
+        await navigator.clipboard.writeText(aulaText);
         const old = btnCopy.textContent;
         btnCopy.textContent = 'Copiado ✓';
         setTimeout(() => btnCopy.textContent = old, 1200);
@@ -765,20 +811,7 @@
     });
   });
 
-
-
-
-  function closeFullscreen() {
-    if (!fsOverlay) return;
-    fsOverlay.style.display = 'none';
-    document.documentElement.style.overflow = prevDocOverflow || '';
-  }
-
-  fsCloseBtn && fsCloseBtn.addEventListener('click', closeFullscreen);
-  fsOverlay && fsOverlay.addEventListener('click', (e) => {
-    if (e.target === fsOverlay) closeFullscreen();
-  });
-
+  // ===== ask AI =====
   async function askAI() {
     const info = curso || {};
     const tUser = (topicInp.value || '').trim();
@@ -803,12 +836,8 @@
 
     const scopeParts = [];
     scopeParts.push('Curso: ' + (baseTopic || info.titulo || info.codigo || 'sin título'));
-    if (modulesList) {
-      scopeParts.push('Módulos del curso: ' + modulesList);
-    }
-    if (moduleName) {
-      scopeParts.push('Módulo objetivo: ' + moduleName);
-    }
+    if (modulesList) scopeParts.push('Módulos del curso: ' + modulesList);
+    if (moduleName) scopeParts.push('Módulo objetivo: ' + moduleName);
     const scopeText = scopeParts.join('\n');
 
     const bodyWP = {
@@ -821,14 +850,14 @@
       mode: 'teacher-assistant',
       module_name: moduleName || '',
       scope_text: scopeText,
-      level: currentLevel || 'medio'
+      level: currentLevel || 'medio',
+      preset: activePreset || ''   // <= ВАЖНО
     };
 
     out.textContent = '';
     sendBtn.disabled = true;
     setStatus('Conectando con el servidor IA…');
     out.textContent = 'Pensando…';
-    if (fsContent) fsContent.textContent = out.textContent;
 
     try {
       const resp = await fetch(`${V5_API}/ai/ask`, {
@@ -837,10 +866,12 @@
         body: JSON.stringify(bodyWP),
       });
       const r = await resp.json();
-      out.textContent = (r && r.answer) ? r.answer : 'Sin respuesta.';
-      if (fsContent) fsContent.textContent = out.textContent;
+      const answer = (r && r.answer) ? r.answer : 'Sin respuesta.';
+
+      renderOutput(answer);
+
       setStatus('Respuesta generada.');
-	  showToast('Respuesta lista para usar en clase.');
+      showToast('Respuesta lista para usar en clase.');
 
     } catch(e){
       out.textContent = e?.message || 'No se pudo generar respuesta.';
