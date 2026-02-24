@@ -215,6 +215,27 @@
 
     </div>
   </div>
+  
+  <script>
+(function(){
+  // Храним текущий "контекст помощи" для страницы
+  window.MEATZE = window.MEATZE || {};
+  window.MEATZE.HELP_UI = "";  // например: teacher_pin / student_create
+
+  // Кнопки
+  const btnPin  = document.getElementById("btn-send-pin");
+  const btnTemp = document.getElementById("btn-open-temp");
+
+  // При клике задаём контекст (и можешь сразу открывать help, если хочешь)
+  btnPin?.addEventListener("click", () => {
+    window.MEATZE.HELP_UI = "teacher_pin";
+  });
+
+  btnTemp?.addEventListener("click", () => {
+    window.MEATZE.HELP_UI = "student_create";
+  });
+})();
+</script>
 </section>
 {% endblock %}
 

@@ -15,3 +15,11 @@ urlpatterns = [
     # гостевая по ссылке: только выбранные видео
     path("p/<str:token>/", views.playlist_public, name="playlist_public"),
 ]
+urlpatterns += [
+    path("embed/<str:token>/", views.playlist_embed, name="playlist_embed"),
+    # ✅ help bindings admin
+    path("help/create/", views.helpbinding_create, name="helpbinding_create"),
+    path("help/<int:binding_id>/update/", views.helpbinding_update, name="helpbinding_update"),
+    path("help/<int:binding_id>/toggle/", views.helpbinding_toggle, name="helpbinding_toggle"),
+    path("help/<int:binding_id>/delete/", views.helpbinding_delete, name="helpbinding_delete"),
+]

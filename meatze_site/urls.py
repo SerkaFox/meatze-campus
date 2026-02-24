@@ -145,3 +145,9 @@ urlpatterns += [
     path("meatze/v5/admin/curso/<str:codigo>/horario/slot/<int:slot_id>/delete", horario_slot_delete, name="mz_horario_slot_delete"),
     path("room/", include("panel.shortshare.urls"), name="room"),
 ]
+from django.urls import path
+from api import help_views
+
+urlpatterns += [
+    path("meatze/v5/help/context", help_views.help_context, name="help_context"),
+]

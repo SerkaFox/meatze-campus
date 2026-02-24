@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{{ pl_title|default:"Ayuda" }}</title>
+
+  <style>
+    :root{
+      /* дефолт, пока не знаем размер видео */
+      --ar: 16/9;
+      --bar-h: 44px;
+    }
+    html,body{
+      height:100%;
+      margin:0;
+      background:#000;
+      color:#e5e7eb;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      overflow:hidden; /* ✅ никаких скроллов */
+    }
+
+    .wrap{
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+
+    /* зона под видео */
+    .stage{
+      flex:1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      background:#000;
+      padding: 0; /* важно */
+    }
+
+    /* контейнер фиксирует пропорцию */
+    .box{
+      width:100%;
+      height:100%;
+      max-height:100%;
+      max-width:100%;
+      aspect-ratio: var(--ar); /* ✅ держим ratio */
+      background:#000;
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+    }
+
+    video{
+      width:100%;
+      height:100%;
+      display:block;
+      background:#000;
+
+      /* РЕЖИМ 1: без обрезки, но возможны полосы */
+      object-fit: contain;
+
+      /* РЕЖИМ 2 (альтернатива): без полос, но с обрезкой */
+      /* object-fit: cover; */
+    }
+
+    .bar{
+      height: var(--bar-h);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 0 12px;
+      border-top:1px solid #1f2937;
+      background:#0b1220;
+      font-size:13px;
+      font-weight:700;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+  <div class="stage">
+    <div class="box">
+      <video
+        id="v"
+        controls
+        playsinline
+        autoplay
+        muted
+        loop
+        preload="metadata"
+      ></video>
+    </div>
+  </div>
+
+  <div class="bar" id="ttl">{{ pl_title|default:"Instrucción" }}</div>
+</div>
+
+<script>
+  const VIDEOS = {{ videos|safe }};
+  const v = document.getElementById('v');
+
+  // ✅ только 1 видео для help
+  const x = (VIDEOS && VIDEOS.length) ? VIDEOS[0] : null;
+  if (x){
+    v.src = x.url;
+    if (x.poster) v.poster = x.poster;
+  }
+
+  // ✅ после загрузки metadata знаем реальный aspect ratio
+  v.addEventListener('loadedmetadata', () => {
+    const w = v.videoWidth || 16;
+    const h = v.videoHeight || 9;
+
+    // обновляем CSS aspect-ratio под конкретный ролик
+    document.documentElement.style.setProperty('--ar', `${w}/${h}`);
+
+    // (опционально) минимизируем полосы: подстроим popup под пропорцию видео
+    // Работает только если окно реально popup и браузер разрешит resizeTo.
+    try{
+      const barH = 44; // должен совпадать с --bar-h
+      const outerW = window.outerWidth || window.innerWidth;
+      const outerH = window.outerHeight || window.innerHeight;
+
+      const chromeW = outerW - window.innerWidth;
+      const chromeH = outerH - window.innerHeight;
+
+      // целимся в ширину текущего окна, высоту пересчитываем
+      const targetInnerW = window.innerWidth;
+      const targetInnerH = Math.round(targetInnerW * (h / w)) + barH;
+
+      // ограничим чтобы не уехать за экран
+      const maxInnerH = Math.round(screen.availHeight * 0.92);
+      const finalInnerH = Math.min(targetInnerH, maxInnerH);
+
+      window.resizeTo(targetInnerW + chromeW, finalInnerH + chromeH);
+    }catch(e){}
+  });
+
+  // ✅ autoplay (на всякий случай)
+  v.play().catch(()=>{});
+</script>
+</body>
+</html>

@@ -7,25 +7,60 @@
   <title>MEATZE — Reproductor</title>
   <style>
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#0b0b0b;color:#f2f2f2}
-    .wrap{max-width:1100px;margin:0 auto;padding:14px}
+    .wrap{max-width:1180px;margin:0 auto;padding:14px}
 
-    /* layout */
     .top{margin-bottom:12px}
     .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:12px}
-    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+    @media(max-width:980px){.grid{grid-template-columns:1fr}}
 
-    /* cards */
     .card{background:#121212;border:1px solid #222;border-radius:14px;overflow:hidden}
     .row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px;border-bottom:1px solid #1f1f1f}
     .row:last-child{border-bottom:none}
 
-    /* player */
     video{width:100%;display:block;background:#000}
 
-    /* typography */
     .title{font-size:14px;opacity:.9}
     .pill{font-size:12px;padding:6px 10px;border-radius:999px;background:#222;border:1px solid #333}
     .hint{font-size:12px;opacity:.7;line-height:1.35}
+
+    button{background:#2a2a2a;border:1px solid #3a3a3a;color:#fff;border-radius:10px;padding:8px 10px;cursor:pointer}
+    button:hover{background:#313131}
+    button.ghost{background:transparent;border-color:#2a2a2a}
+    button.danger{border-color:#5a2a2a}
+    button.ok{border-color:#2a5a3a}
+    input[type="text"], input[type="file"], select{
+      background:#0f0f0f;border:1px solid #2a2a2a;color:#fff;border-radius:10px;padding:8px 10px
+    }
+    input[type="text"]{min-width:220px}
+    .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+    .msg{padding:10px 12px;border-top:1px solid #1f1f1f;font-size:13px;opacity:.95}
+    .msg.ok{color:#b7f7c8}
+    .msg.err{color:#ffb4b4}
+
+    /* ===== Help Admin Layout ===== */
+    .help-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:12px;margin-top:12px}
+    @media(max-width:980px){.help-grid{grid-template-columns:1fr}}
+
+    .form{display:grid;gap:10px;padding:12px}
+    .formgrid{display:grid;grid-template-columns:140px 1fr;gap:10px;align-items:center}
+    @media(max-width:720px){.formgrid{grid-template-columns:1fr}}
+    .lab{font-size:12px;opacity:.8}
+    .mini{font-size:12px;opacity:.75}
+    .tag{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid #333;background:#222;display:inline-block}
+
+    .hb-list{padding:10px;display:grid;gap:8px}
+    .hb-item{
+      border:1px solid #222;background:#0f0f0f;border-radius:12px;padding:10px;cursor:pointer;
+      display:grid;gap:6px;
+    }
+    .hb-item:hover{border-color:#2c2c2c}
+    .hb-item.active{outline:2px solid rgba(93,169,255,.45);border-color:#2b3b55}
+    .hb-top{display:flex;gap:10px;align-items:center;justify-content:space-between}
+    .hb-ttl{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .hb-meta{font-size:12px;opacity:.75}
+    .state.on{color:#b7f7c8}
+    .state.off{color:#ffb4b4}
 
     /* playlist list */
     .list .item{display:flex;gap:10px;padding:10px 12px;border-top:1px solid #1f1f1f;cursor:pointer}
@@ -36,27 +71,12 @@
     .meta{min-width:0}
     .meta .t{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .meta .d{font-size:12px;opacity:.65;margin-top:4px}
-
-    /* controls */
-    button{background:#2a2a2a;border:1px solid #3a3a3a;color:#fff;border-radius:10px;padding:8px 10px;cursor:pointer}
-    button:hover{background:#313131}
-    input[type="text"], input[type="file"], select{
-      background:#0f0f0f;border:1px solid #2a2a2a;color:#fff;border-radius:10px;padding:8px 10px
-    }
-    input[type="text"]{min-width:220px}
-    .actions{display:flex;gap:8px;align-items:center}
-    .danger{border-color:#5a2a2a}
-
-    .form{display:grid;grid-template-columns:1fr;gap:10px;padding:12px}
-    .msg{padding:10px 12px;border-top:1px solid #1f1f1f;font-size:13px;opacity:.9}
-    .msg.ok{color:#b7f7c8}
-    .msg.err{color:#ffb4b4}
   </style>
 </head>
 <body>
 <div class="wrap">
 
-  <!-- TOP: Active playlist controls (full width) -->
+  <!-- TOP: Active playlist controls -->
   <div class="top card">
     <div class="row">
       <div class="title">Lista activa</div>
@@ -99,16 +119,140 @@
 
     <div class="row">
       <div class="hint">
-        Consejo: sube los 2 vídeos en la <b>lista activa</b> y comparte el enlace público.
+        Consejo: sube vídeos en la <b>lista activa</b> y comparte el enlace público.
         El invitado solo verá los vídeos de esa lista.
       </div>
     </div>
   </div>
 
-  <!-- MAIN GRID -->
+  <!-- ===== HELP BINDINGS ADMIN (clean) ===== -->
+  <div class="help-grid">
+    <div class="card">
+      <div class="row">
+        <div class="title"><b>Ayuda</b> · página → vídeo</div>
+        {% if active_pl %}
+          <div class="pill">Playlist: <b>{{ active_pl.titulo }}</b></div>
+        {% else %}
+          <div class="pill">Elige una playlist arriba</div>
+        {% endif %}
+      </div>
+
+      {% if active_pl %}
+        <div class="row">
+          <div class="hint">
+            Ejemplos path: <span class="tag">/acceder/</span> <span class="tag">/alumno/curso/*/</span><br>
+            Ejemplos query_contains: <span class="tag">tab=materiales</span> <span class="tag">ui=admin_mod:teachers</span> (vacío = sin filtro)
+          </div>
+        </div>
+
+        <!-- ONE FORM: create/edit -->
+        <form id="hbForm" method="post" action="{% url 'helpbinding_create' %}" class="form" style="border-top:1px solid #1f1f1f">
+          {% csrf_token %}
+          <input type="hidden" name="playlist_id" value="{{ active_pl.id }}">
+          <input type="hidden" id="hb_id" value="">
+
+          <div class="formgrid">
+            <div class="lab">Rol</div>
+            <select name="role" id="hb_role" required>
+              {% for k, lbl in help_roles %}
+                <option value="{{ k }}">{{ lbl }}</option>
+              {% endfor %}
+            </select>
+
+            <div class="lab">Path</div>
+            <input name="path" id="hb_path" placeholder="/acceder/ o /alumno/curso/*/" required>
+
+            <div class="lab">Query contains</div>
+            <input name="query_contains" id="hb_query" placeholder="tab=tareas o ui=acceder:pin">
+
+            <div class="lab">Título</div>
+            <input name="title" id="hb_title" placeholder="(opcional)">
+
+            <div class="lab">Vídeo</div>
+            <select name="start_video_id" id="hb_vid">
+              <option value="">(auto)</option>
+              {% for v in pl_videos %}
+                <option value="{{ v.id }}">{{ v.titulo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="actions" style="margin-top:6px">
+            <button type="submit" class="ok" id="hb_saveBtn">Guardar</button>
+
+            <form method="post" action="#" id="hb_toggleForm" style="margin:0">
+              {% csrf_token %}
+              <button type="submit" class="ghost" id="hb_toggleBtn" disabled>Activar/Desactivar</button>
+            </form>
+
+            <form method="post" action="#" id="hb_deleteForm" style="margin:0">
+              {% csrf_token %}
+              <button type="submit" class="danger" id="hb_deleteBtn" disabled onclick="return confirm('¿Eliminar esta ayuda?');">Eliminar</button>
+            </form>
+
+            <button type="button" class="ghost" id="hb_clearBtn">Limpiar</button>
+
+            <span class="mini" id="hb_mode" style="margin-left:auto;opacity:.8">Modo: crear</span>
+          </div>
+
+          <div class="mini" style="margin-top:8px;">
+            Nota: aquí trabajamos con <b>1 vídeo por pantalla</b>. Si necesitas diferenciar sub-pantallas,
+            usa <span class="tag">query_contains</span> (ej: <span class="tag">tab=tareas</span> o <span class="tag">ui=acceder:temp</span>).
+          </div>
+        </form>
+
+      {% else %}
+        <div class="msg">Primero elige una playlist arriba (Lista activa).</div>
+      {% endif %}
+    </div>
+
+    <!-- Right: bindings list -->
+    <div class="card">
+      <div class="row">
+        <div class="title"><b>Asignaciones</b></div>
+        <div class="pill">{% if help_bindings %}{{ help_bindings|length }}{% else %}0{% endif %}</div>
+      </div>
+
+      {% if active_pl %}
+      <div class="hb-list" id="hbList">
+        {% for hb in help_bindings %}
+          <div class="hb-item"
+               data-id="{{ hb.id }}"
+               data-role="{{ hb.role }}"
+               data-path="{{ hb.path|escape }}"
+               data-query="{{ hb.query_contains|default_if_none:''|escape }}"
+               data-title="{{ hb.title|default_if_none:''|escape }}"
+               data-vid="{{ hb.start_video_id|default_if_none:'' }}"
+               data-active="{% if hb.is_active %}1{% else %}0{% endif %}">
+            <div class="hb-top">
+              <div class="hb-ttl">
+                {{ hb.title|default:"(Sin título)" }}
+              </div>
+              <div class="hb-meta">
+                <span class="state {% if hb.is_active %}on{% else %}off{% endif %}">
+                  {% if hb.is_active %}ON{% else %}OFF{% endif %}
+                </span>
+              </div>
+            </div>
+            <div class="hb-meta">
+              <span class="tag">{{ hb.role }}</span>
+              <span class="tag">{{ hb.path }}</span>
+              {% if hb.query_contains %}<span class="tag">{{ hb.query_contains }}</span>{% endif %}
+            </div>
+          </div>
+        {% empty %}
+          <div class="msg">No hay ayudas para esta playlist.</div>
+        {% endfor %}
+      </div>
+      {% else %}
+        <div class="msg">Elige una playlist para ver asignaciones.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- MAIN GRID: player + playlist/upload/library -->
   <div class="grid" style="margin-top:12px">
 
-    <!-- Player -->
     <div class="card">
       <video id="v" controls playsinline preload="metadata"></video>
       <div class="row">
@@ -121,7 +265,6 @@
       </div>
     </div>
 
-    <!-- Right column: playlist + upload + manage -->
     <div class="card">
 
       <div class="row">
@@ -131,75 +274,30 @@
 
       <div id="list" class="list"></div>
 
-<div class="row">
-  <div class="title">Subir vídeos a la lista activa</div>
-</div>
+      <div class="row">
+        <div class="title">Subir vídeos a la lista activa</div>
+      </div>
 
-<form class="form" method="post" action="{% url 'mini_player_upload' %}" enctype="multipart/form-data" id="uploadForm">
-  {% csrf_token %}
-  <input type="hidden" name="playlist_id" value="{% if active_pl %}{{ active_pl.id }}{% endif %}">
+      <form class="form" method="post" action="{% url 'mini_player_upload' %}" enctype="multipart/form-data" id="uploadForm">
+        {% csrf_token %}
+        <input type="hidden" name="playlist_id" value="{% if active_pl %}{{ active_pl.id }}{% endif %}">
+        <input type="text" name="titulo" placeholder="Título (opcional, solo si subes 1 archivo)" />
 
-  <input type="text" name="titulo" placeholder="Título (opcional, solo si subes 1 archivo)" />
+        <div id="dropzone"
+             style="border:1px dashed #3a3a3a;border-radius:12px;padding:14px;background:#0f0f0f;cursor:pointer;">
+          <div style="font-weight:700;margin-bottom:6px;">Arrastra y suelta vídeos aquí</div>
+          <div style="font-size:12px;opacity:.75;">o haz clic para seleccionar varios archivos</div>
+          <input id="fileInput" type="file" name="archivo" accept="video/*" multiple style="display:none" />
+        </div>
 
-  <div id="dropzone"
-       style="border:1px dashed #3a3a3a;border-radius:12px;padding:14px;background:#0f0f0f;cursor:pointer;">
-    <div style="font-weight:700;margin-bottom:6px;">Arrastra y suelta vídeos aquí</div>
-    <div style="font-size:12px;opacity:.75;">o haz clic para seleccionar varios archivos</div>
-    <input id="fileInput" type="file" name="archivo" accept="video/*" multiple style="display:none" />
-  </div>
+        <div id="fileList" class="hint" style="margin-top:2px;"></div>
 
-  <div id="fileList" class="hint" style="margin-top:2px;"></div>
+        <button type="submit">Subir</button>
 
-  <button type="submit">Subir</button>
-
-  <div class="hint">
-    Consejo: archivos grandes → mejor por Wi-Fi. Si da 413/timeout, hay que subir límites en Nginx/Gunicorn.
-  </div>
-</form>
-
-<script>
-(() => {
-  const dz = document.getElementById("dropzone");
-  const input = document.getElementById("fileInput");
-  const list = document.getElementById("fileList");
-
-  function renderList(files){
-    if (!files || !files.length) { list.textContent = ""; return; }
-    const names = Array.from(files).map(f => `• ${f.name}`).join("\n");
-    list.textContent = `Archivos seleccionados (${files.length}):\n${names}`;
-    list.style.whiteSpace = "pre-line";
-  }
-
-  dz.addEventListener("click", () => input.click());
-
-  input.addEventListener("change", () => {
-    renderList(input.files);
-  });
-
-  function prevent(e){ e.preventDefault(); e.stopPropagation(); }
-
-  ["dragenter","dragover","dragleave","drop"].forEach(ev =>
-    dz.addEventListener(ev, prevent)
-  );
-
-  dz.addEventListener("dragover", () => {
-    dz.style.background = "#121212";
-  });
-  dz.addEventListener("dragleave", () => {
-    dz.style.background = "#0f0f0f";
-  });
-
-  dz.addEventListener("drop", (e) => {
-    dz.style.background = "#0f0f0f";
-    const files = e.dataTransfer.files;
-    if (!files || !files.length) return;
-
-    // Важно: присваиваем FileList в input (работает в современных браузерах)
-    input.files = files;
-    renderList(input.files);
-  });
-})();
-</script>
+        <div class="hint">
+          Consejo: archivos grandes → mejor por Wi-Fi. Si da 413/timeout, hay que subir límites en Nginx/Gunicorn.
+        </div>
+      </form>
 
       {% if messages %}
         {% for m in messages %}
@@ -210,14 +308,14 @@
       <div class="row">
         <div class="title">Mis vídeos (biblioteca)</div>
         {% if active_pl %}
-          <div class="pill">Añade a: <b>{{ active_pl.titulo }}</b></div>
+          <div class="pill">Playlist: <b>{{ active_pl.titulo }}</b></div>
         {% endif %}
       </div>
 
       <div>
         {% for v in videos_qs %}
           <div class="row" style="border-top:1px solid #1f1f1f">
-            <div class="title" style="max-width:60%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            <div class="title" style="max-width:62%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
               {{ v.titulo }}
             </div>
 
@@ -227,11 +325,17 @@
                   {% csrf_token %}
                   <button type="submit">Añadir</button>
                 </form>
+
+                {# ✅ убрать видео из плейлиста #}
+                <form method="post" action="{% url 'playlist_remove' active_pl.id v.id %}" style="margin:0">
+                  {% csrf_token %}
+                  <button type="submit" class="ghost">Quitar</button>
+                </form>
               {% endif %}
 
               <form method="post" action="{% url 'mini_player_delete' v.id %}" style="margin:0">
                 {% csrf_token %}
-                <button type="submit" class="danger" onclick="return confirm('¿Eliminar este vídeo?');">
+                <button type="submit" class="danger" onclick="return confirm('¿Eliminar este vídeo de la biblioteca?');">
                   Eliminar
                 </button>
               </form>
@@ -243,11 +347,129 @@
       </div>
 
     </div>
-
   </div>
+
 </div>
 
 <script>
+/* ===== Dropzone multi upload UI ===== */
+(() => {
+  const dz = document.getElementById("dropzone");
+  const input = document.getElementById("fileInput");
+  const list = document.getElementById("fileList");
+  if (!dz || !input || !list) return;
+
+  function renderList(files){
+    if (!files || !files.length) { list.textContent = ""; return; }
+    const names = Array.from(files).map(f => `• ${f.name}`).join("\n");
+    list.textContent = `Archivos seleccionados (${files.length}):\n${names}`;
+    list.style.whiteSpace = "pre-line";
+  }
+
+  dz.addEventListener("click", () => input.click());
+  input.addEventListener("change", () => renderList(input.files));
+
+  function prevent(e){ e.preventDefault(); e.stopPropagation(); }
+  ["dragenter","dragover","dragleave","drop"].forEach(ev => dz.addEventListener(ev, prevent));
+
+  dz.addEventListener("dragover", () => dz.style.background = "#121212");
+  dz.addEventListener("dragleave", () => dz.style.background = "#0f0f0f");
+
+  dz.addEventListener("drop", (e) => {
+    dz.style.background = "#0f0f0f";
+    const files = e.dataTransfer.files;
+    if (!files || !files.length) return;
+    input.files = files;
+    renderList(input.files);
+  });
+})();
+</script>
+
+<script>
+/* ===== HelpBinding single-form editor ===== */
+(() => {
+  const form = document.getElementById("hbForm");
+  const list = document.getElementById("hbList");
+  if (!form || !list) return;
+
+  const csrf = form.querySelector('input[name="csrfmiddlewaretoken"]')?.value || "";
+
+  const elId    = document.getElementById("hb_id");
+  const elRole  = document.getElementById("hb_role");
+  const elPath  = document.getElementById("hb_path");
+  const elQuery = document.getElementById("hb_query");
+  const elTitle = document.getElementById("hb_title");
+  const elVid   = document.getElementById("hb_vid");
+
+  const mode    = document.getElementById("hb_mode");
+  const saveBtn = document.getElementById("hb_saveBtn");
+  const clearBtn= document.getElementById("hb_clearBtn");
+
+  const toggleForm = document.getElementById("hb_toggleForm");
+  const deleteForm = document.getElementById("hb_deleteForm");
+  const toggleBtn  = document.getElementById("hb_toggleBtn");
+  const deleteBtn  = document.getElementById("hb_deleteBtn");
+
+  const CREATE_URL = "{% url 'helpbinding_create' %}";
+
+  function setModeCreate(){
+    elId.value = "";
+    form.action = CREATE_URL;
+    mode.textContent = "Modo: crear";
+    saveBtn.textContent = "Crear";
+    toggleBtn.disabled = true;
+    deleteBtn.disabled = true;
+
+    // reset fields but keep role default
+    elPath.value = "";
+    elQuery.value = "";
+    elTitle.value = "";
+    elVid.value = "";
+
+    list.querySelectorAll(".hb-item").forEach(x => x.classList.remove("active"));
+  }
+
+  function setModeEdit(item){
+    const id = item.dataset.id;
+    elId.value = id;
+
+    form.action = `/videos/help/${id}/update/`;
+    mode.textContent = "Modo: editar";
+    saveBtn.textContent = "Guardar";
+
+    elRole.value = item.dataset.role || "guest";
+    elPath.value = item.dataset.path || "";
+    elQuery.value = item.dataset.query || "";
+    elTitle.value = item.dataset.title || "";
+    elVid.value = item.dataset.vid || "";
+
+    toggleForm.action = `/videos/help/${id}/toggle/`;
+    deleteForm.action = `/videos/help/${id}/delete/`;
+    toggleBtn.disabled = false;
+    deleteBtn.disabled = false;
+
+    list.querySelectorAll(".hb-item").forEach(x => x.classList.remove("active"));
+    item.classList.add("active");
+
+    const active = item.dataset.active === "1";
+    toggleBtn.textContent = active ? "Desactivar" : "Activar";
+  }
+
+  list.addEventListener("click", (e) => {
+    const item = e.target.closest(".hb-item");
+    if (!item) return;
+    setModeEdit(item);
+  });
+
+  clearBtn?.addEventListener("click", () => setModeCreate());
+
+  // init in create mode
+  setModeCreate();
+})();
+</script>
+
+<script>
+/* ===== Player list (as you had) ===== */
   const VIDEOS = {{ videos|safe }};
   const v = document.getElementById('v');
   const listEl = document.getElementById('list');
@@ -330,14 +552,8 @@
     };
   }
 
-  function next(){
-    if (!VIDEOS.length) return;
-    load((idx + 1) % VIDEOS.length, true);
-  }
-  function prev(){
-    if (!VIDEOS.length) return;
-    load((idx - 1 + VIDEOS.length) % VIDEOS.length, true);
-  }
+  function next(){ if (!VIDEOS.length) return; load((idx + 1) % VIDEOS.length, true); }
+  function prev(){ if (!VIDEOS.length) return; load((idx - 1 + VIDEOS.length) % VIDEOS.length, true); }
 
   v.addEventListener("ended", () => next());
 

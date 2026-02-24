@@ -2353,3 +2353,82 @@ html, body { max-width: 100%; overflow-x: hidden; }
   outline: 2px solid rgba(56, 189, 248, 0.9);
   outline-offset: 2px;
 }
+
+
+
+
+<style>
+  .mz-help-fab{
+    position: fixed;
+    right: 14px;
+    bottom: 14px;
+    z-index: 9999;
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    border: 1px solid rgba(148,163,184,0.55);
+    background: radial-gradient(circle at top, rgba(51,65,85,0.9), rgba(15,23,42,0.96));
+    color: #e5e7eb;
+    font-weight: 900;
+    font-size: 18px;
+    cursor: pointer;
+    box-shadow: 0 18px 45px rgba(15,23,42,0.85);
+    backdrop-filter: blur(10px);
+  }
+  .mz-help-fab:hover{ transform: translateY(-1px); }
+  .mz-help-fab:active{ transform: translateY(0); }
+
+  .mz-help-backdrop{
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 9997;
+    display: none;
+  }
+  .mz-help-drawer{
+    position: fixed;
+    top: 0; right: 0;
+    height: 100vh;
+    width: min(520px, 92vw);
+    z-index: 9998;
+    background: radial-gradient(circle at top, rgba(15,23,42,0.96), rgba(15,23,42,0.92));
+    border-left: 1px solid rgba(148,163,184,0.35);
+    box-shadow: -20px 0 60px rgba(0,0,0,.55);
+    transform: translateX(105%);
+    transition: transform 180ms ease;
+    display: flex;
+    flex-direction: column;
+  }
+  .mz-help-drawer.is-open{ transform: translateX(0); }
+  .mz-help-backdrop.is-open{ display:block; }
+
+  .mz-help-head{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding: 12px 12px;
+    border-bottom: 1px solid rgba(148,163,184,0.25);
+  }
+  .mz-help-head .ttl{ font-weight:900; letter-spacing:.02em; }
+  .mz-help-head .x{
+    width: 38px; height: 34px;
+    border-radius: 12px;
+    border: 1px solid rgba(148,163,184,0.35);
+    background: rgba(15,23,42,0.65);
+    color: #e5e7eb;
+    font-size: 20px;
+    cursor:pointer;
+  }
+  .mz-help-body{ position:relative; flex: 1 1 auto; }
+  .mz-help-body iframe{
+    width:100%; height:100%;
+    border:0;
+    display:none;
+  }
+  .mz-help-loading{
+    padding: 14px;
+    font-size: 13px;
+    opacity: .85;
+  }
+  .mz-help-empty{
+    padding: 14px;
+    font-size: 14px;
+  }
+</style>

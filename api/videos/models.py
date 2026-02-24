@@ -56,3 +56,42 @@ class PlaylistItem(models.Model):
     class Meta:
         ordering = ["orden", "id"]
         unique_together = ("playlist", "video")
+        
+# app/videos/models.py
+from django.db import models
+from django.conf import settings
+
+class HelpBinding(models.Model):
+    ROLE_CHOICES = [
+        ("guest", "Guest"),
+        ("student", "Student"),
+        ("teacher", "Teacher"),
+        ("admin", "Admin"),
+    ]
+
+    role = models.CharField(max_length=16, choices=ROLE_CHOICES)
+
+    # path может быть точным (/acceder/) или с * (/alumno/curso/*/)
+    path = models.CharField(max_length=255)
+
+    # необязательно, например: tab=materiales
+    query_contains = models.CharField(max_length=255, blank=True, default="")
+
+    title = models.CharField(max_length=255, blank=True, default="")
+    priority = models.PositiveIntegerField(default=100)
+    is_active = models.BooleanField(default=True)
+
+    playlist = models.ForeignKey("Playlist", on_delete=models.CASCADE, related_name="help_bindings")
+    start_video = models.ForeignKey("Video", null=True, blank=True, on_delete=models.SET_NULL)
+
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["priority", "id"]
+        indexes = [
+            models.Index(fields=["role", "is_active", "priority"]),
+            models.Index(fields=["path"]),
+        ]
+
+    def __str__(self):
+        return f"[{self.role}] {self.path} -> pl:{self.playlist_id}"
