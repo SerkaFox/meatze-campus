@@ -120,6 +120,7 @@
 
       <!-- FILE LIST -->
       {% if files %}
+	  <div id="fileList">
         {% for f in files %}
 		<div style="
 		  display:flex;
@@ -170,6 +171,7 @@
 		  </div>
 		</div>
         {% endfor %}
+		</div>
       {% else %}
         <div class="mz-help">
           Aún no hay archivos en esta room.
@@ -179,7 +181,127 @@
     </div>
   </div>
 </div>
+<script>
+(() => {
+  const roomCode = "{{ room.code }}";
+  const wsProto = (location.protocol === "https:") ? "wss" : "ws";
+  const wsUrl = `${wsProto}://${location.host}/ws/shortshare/${roomCode}/`;
+  let ws;
 
+  function humanSize(bytes){
+    const u=["B","KB","MB","GB"]; let i=0;
+    while(bytes>=1024 && i<u.length-1){ bytes/=1024; i++; }
+    return `${bytes.toFixed(i?1:0)} ${u[i]}`;
+  }
+
+  function escapeHtml(s){
+    return (s || "").replace(/[&<>"']/g, m => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[m]));
+  }
+
+  function renderFileRow(f){
+    const fileList = document.getElementById("fileList");
+    if(!fileList) return;
+
+    const name = escapeHtml(f.name);
+    const viewUrl = `${location.pathname}v/${f.id}/`;
+    const dlUrl = `${location.pathname}f/${f.id}/`;
+
+    const row = document.createElement("div");
+    row.dataset.fileId = String(f.id);
+    row.style.cssText = `
+      display:flex; justify-content:space-between; align-items:flex-start;
+      gap:12px; padding:12px 0; border-bottom:1px solid rgba(255,255,255,.08);
+    `;
+
+    row.innerHTML = `
+      <div style="min-width:0;">
+        <div style="display:flex; align-items:center; gap:8px; font-weight:900;">
+          <span title="Archivo">📄</span>
+          <a href="${dlUrl}" style="text-decoration:underline; color:#38bdf8; word-break:break-word;">
+            ${name}
+          </a>
+          <span class="mz-help" style="font-size:12px; opacity:.85;">(clic para descargar)</span>
+        </div>
+        <div class="mz-help">⏱ just now</div>
+      </div>
+
+      <div style="text-align:right; flex:0 0 auto; display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+          <a class="mz-btn ghost sm" href="${viewUrl}" title="Ver">👁️ Ver</a>
+          <a class="mz-btn sm" href="${dlUrl}" title="Descargar">⬇️ Descargar</a>
+          <button class="mz-btn ghost sm" type="button" data-del="${f.id}" title="Eliminar">🗑 Eliminar</button>
+        </div>
+        <div style="font-weight:800;">${humanSize(parseInt(f.size||0,10))}</div>
+        <div class="mz-help" data-expires="${f.expires_at}"></div>
+      </div>
+    `;
+
+    // убираем "Aún no hay..."
+    const empty = fileList.querySelector(".mz-help");
+    if(empty && empty.textContent.includes("Aún no hay archivos")) empty.remove();
+
+    fileList.prepend(row);
+  }
+
+  function removeFileRow(id){
+    const el = document.querySelector(`[data-file-id="${id}"]`);
+    if(el){
+      el.animate([{opacity:1},{opacity:0, transform:"translateY(-4px)"}], {duration:180, easing:"ease-out"})
+        .onfinish = ()=> el.remove();
+    }
+  }
+
+  function onWsMessage(msg){
+    if(!msg || !msg.type) return;
+
+    if(msg.type === "file.created" && msg.file){
+      // защита от дублей
+      if(document.querySelector(`[data-file-id="${msg.file.id}"]`)) return;
+      renderFileRow(msg.file);
+      return;
+    }
+
+    if(msg.type === "file.deleted"){
+      removeFileRow(msg.id);
+      return;
+    }
+
+	if(msg.type === "link.created" && msg.link){
+	  if(!window.mzShortshare?.renderLinkRow) return;
+	  if(document.querySelector(`[data-link-id="${msg.link.id}"]`)) return; // без дублей
+	  window.mzShortshare.renderLinkRow(msg.link);
+	  return;
+	}
+
+	if(msg.type === "link.deleted"){
+	  window.mzShortshare?.removeLinkRow?.(msg.id);
+	  return;
+	}
+
+	if(msg.type === "link.extended"){
+	  window.mzShortshare?.updateLinkExpiry?.(msg.id, msg.expires_at);
+	  return;
+	}
+  }
+
+  function connect(){
+    ws = new WebSocket(wsUrl);
+
+    ws.onmessage = (ev) => {
+      try { onWsMessage(JSON.parse(ev.data)); } catch(e) {}
+    };
+
+    ws.onclose = () => {
+      // авто-реконнект
+      setTimeout(connect, 1500);
+    };
+  }
+
+  connect();
+})();
+</script>
 <script>
 (() => {
 
@@ -375,7 +497,7 @@
 
     const row = document.createElement("div");
     row.className = "mz-link-row";
-    row.dataset.linkId = String(obj.id);
+    row.setAttribute("data-link-id", String(obj.id));
     row.style.cssText = "display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding:10px 0; border-top:1px solid rgba(255,255,255,.08);";
 
     row.innerHTML = `
@@ -400,7 +522,19 @@
     const expEl = row.querySelector("[data-link-expires]");
     if(expEl) renderLinkCountdown(expEl, obj.expires_at);
   }
+window.mzShortshare = window.mzShortshare || {};
+window.mzShortshare.renderLinkRow = renderLinkRow;
 
+window.mzShortshare.removeLinkRow = (id) => {
+  const row = document.querySelector(`[data-link-id="${id}"]`);
+  if(row) row.remove();
+};
+
+window.mzShortshare.updateLinkExpiry = (id, expires_at) => {
+  const row = document.querySelector(`[data-link-id="${id}"]`);
+  const expEl = row?.querySelector("[data-link-expires]");
+  if(expEl) expEl.dataset.linkExpires = String(expires_at);
+};
   // ADD LINK
   if(linkAddBtn){
     linkAddBtn.addEventListener("click", async ()=>{

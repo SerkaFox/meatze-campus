@@ -10,6 +10,7 @@ from datetime import timedelta
 import os
 import mimetypes
 import logging
+from .realtime import push
 logger = logging.getLogger(__name__)
 from django.utils.http import http_date
 from panel.preview_docx import ensure_docx_preview_pdf, preview_pdf_path_for
@@ -49,14 +50,19 @@ def upload(request, code):
         size=f.size,
         expires_at=timezone.now() + timedelta(days=7),
     )
-    return JsonResponse({
-        "ok": True,
-        "id": obj.id,
-        "name": obj.original_name,
-        "size": obj.size,
-        "uploaded_at": int(obj.uploaded_at.timestamp()),
-        "expires_at": int(obj.expires_at.timestamp()),
-    })
+    payload = {
+        "type": "file.created",
+        "file": {
+            "id": obj.id,
+            "name": obj.original_name,
+            "size": obj.size,
+            "uploaded_at": int(obj.uploaded_at.timestamp()),
+            "expires_at": int(obj.expires_at.timestamp()),
+        }
+    }
+    push(room.code, payload)
+
+    return JsonResponse({"ok": True, **payload["file"]})
 
 def download(request, code, file_id: int):
     room = get_object_or_404(ShortRoom, code=code)
@@ -78,20 +84,19 @@ from .models import ShortRoom, ShortFile
 @require_POST
 def delete_file(request, code, file_id: int):
     room = get_object_or_404(ShortRoom, code=code)
-
     pin = (request.POST.get("pin") or "").strip()
-
-    # contraseña = código de la room
     if pin != room.code:
         return JsonResponse({"ok": False, "error": "Contraseña incorrecta"}, status=403)
 
     obj = get_object_or_404(ShortFile, id=file_id, room=room)
+    fid = obj.id   # <-- ВОТ ЭТО
 
     try:
         obj.file.delete(save=False)
     finally:
         obj.delete()
 
+    push(room.code, {"type": "file.deleted", "id": fid})  # <-- А НЕ id()
     return JsonResponse({"ok": True})
     
 # shortshare/views.py
@@ -144,14 +149,19 @@ def add_link(request, code):
         expires_at=timezone.now() + timedelta(minutes=30),
     )
 
-    return JsonResponse({
-        "ok": True,
-        "id": obj.id,
-        "url": obj.url,
-        "title": obj.title,
-        "created_at": int(obj.created_at.timestamp()),
-        "expires_at": int(obj.expires_at.timestamp()),
-    })
+    payload = {
+        "type": "link.created",
+        "link": {
+            "id": obj.id,
+            "url": obj.url,
+            "title": obj.title,
+            "created_at": int(obj.created_at.timestamp()),
+            "expires_at": int(obj.expires_at.timestamp()),
+        }
+    }
+    push(room.code, payload)
+
+    return JsonResponse({"ok": True, **payload["link"]})
 
 @require_POST
 def delete_link(request, code, link_id: int):
@@ -161,7 +171,10 @@ def delete_link(request, code, link_id: int):
         return JsonResponse({"ok": False, "error": "Contraseña incorrecta"}, status=403)
 
     obj = get_object_or_404(ShortLink, id=link_id, room=room)
+    lid = obj.id
     obj.delete()
+
+    push(room.code, {"type": "link.deleted", "id": lid})
     return JsonResponse({"ok": True})
     
     
@@ -280,8 +293,11 @@ def extend_link(request, code, link_id: int):
     obj.expires_at = base + timedelta(minutes=mins)
     obj.save(update_fields=["expires_at"])
 
-    return JsonResponse({
-        "ok": True,
+    push(room.code, {
+        "type": "link.extended",
+        "id": obj.id,
         "expires_at": int(obj.expires_at.timestamp()),
         "mins": mins,
     })
+
+    return JsonResponse({"ok": True, "expires_at": int(obj.expires_at.timestamp()), "mins": mins})

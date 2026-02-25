@@ -17,6 +17,14 @@
 
   <!-- ЧАТ: было в оригинале -->
   <link rel="stylesheet" href="{% static 'meatze/chat_widget/chat-widget.css' %}">
+  
+<script>
+  window.MEATZE = window.MEATZE || {};
+  window.MEATZE.HELP_ATTENTION_ENABLED = true;       // включишь потом
+  window.MEATZE.HELP_ATTENTION_STRONG = true;        // сильная анимация
+  window.MEATZE.HELP_ATTENTION_STRICT = false;        // мигать только если реально есть help
+  window.MEATZE.HELP_ATTENTION_MAX_MS = 0;        // авто-стоп через 12с (12000 можно 0 = без лимита)
+</script>
 </head>
 
 <body>
@@ -162,7 +170,10 @@ menu.addEventListener('click', async function(e){
 {% block extra_js %}{% endblock %}
 
 <!-- ===== HELP (global) ===== -->
-<button type="button" id="mz-help-fab" class="mz-help-fab" aria-label="Ayuda" title="Ayuda">?</button>
+<button type="button" id="mz-help-fab" class="mz-help-fab" aria-label="Ayuda" title="Ayuda">
+  <span class="mz-help-icon">?</span>
+  <span id="mz-help-badge" class="mz-help-badge" aria-hidden="true">Ver video</span>
+</button>
 
 
 <div id="mz-help-backdrop" class="mz-help-backdrop" aria-hidden="true"></div>
@@ -291,6 +302,7 @@ function buildContextUrl(){
       showNoHelp(win);
       return;
     }
+	
 
     // Переходим в popup на готовый embed URL
     // (тут уже будет твой embed_player.html с looping/only_one и т.д.)
@@ -303,11 +315,86 @@ function buildContextUrl(){
       showNoHelp(win);
     }
   });
+    // ===== HELP ATTENTION (SAME SCOPE) =====
+  (function(){
+    if (!window.MEATZE || window.MEATZE.HELP_ATTENTION_ENABLED !== true) return;
+
+	function pageKey(){
+	  const path = location.pathname || "/";
+
+	  const sp = new URLSearchParams(location.search || "");
+	  const tab = (sp.get("tab") || "").trim();        // главное: tab
+	  // если нужно более granular — раскомментируй focus:
+	  // const focus = (sp.get("focus") || "").trim();
+	  // return `mz_help_seen::${path}::tab=${tab}::focus=${focus}`;
+
+	  const role = (window.MEATZE && window.MEATZE.ROLE) ? String(window.MEATZE.ROLE) : "";
+	  return `mz_help_seen::${role}::${path}::tab=${tab}`;
+	}
+	function markSeen(){
+	  try { localStorage.setItem(pageKey(), "1"); } catch(e) {}
+	}
+    const key = pageKey();
+    const seen = localStorage.getItem(key) === "1";
+
+    function enable(){
+      const strong = window.MEATZE.HELP_ATTENTION_STRONG === true;
+      btn.classList.add(strong ? 'is-attn-strong' : 'is-attn');
+
+      const badge = document.getElementById('mz-help-badge');
+      if (badge) badge.setAttribute('aria-hidden', 'false');
+    }
+
+    function disable(){
+      btn.classList.remove('is-attn');
+      btn.classList.remove('is-attn-strong');
+
+      const badge = document.getElementById('mz-help-badge');
+      if (badge) badge.setAttribute('aria-hidden', 'true');
+    }
+
+    async function shouldBlink(){
+      if (seen) return false;
+
+      if (window.MEATZE.HELP_ATTENTION_STRICT !== true) return true;
+
+      // strict: мигаем только если реально есть embed_url
+      try{
+        const r = await fetch(buildContextUrl(), { credentials:'include', cache:'no-store' });
+        if (!r.ok) return false;
+        const data = await r.json();
+        return !!(data && data.ok && data.embed_url);
+      }catch(e){
+        return false;
+      }
+    }
+
+    // при клике — отмечаем и отключаем (не ломает основной обработчик)
+    btn.addEventListener('click', function(){
+      try { localStorage.setItem(key, "1"); } catch(e) {}
+	  markSeen();
+      disable();
+    });
+
+    (async function init(){
+      const blink = await shouldBlink();
+      if (!blink) return;
+
+      enable();
+
+      const maxMs = Number(window.MEATZE.HELP_ATTENTION_MAX_MS || 0);
+      if (maxMs > 0){
+        setTimeout(() => disable(), maxMs);
+      }
+    })();
+  })();
 })();
 </script>
 
 </body>
 </html>
+
+
 <script>
   // ===== CHECKLIST PANEL: OFF =====
   window.MEATZE = window.MEATZE || {};

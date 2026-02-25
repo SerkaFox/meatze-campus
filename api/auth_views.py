@@ -130,14 +130,9 @@ def verify_pin(request):
         )
 
     # ищем/создаём пользователя
-    user = User.objects.filter(email=email).first()
+    user = User.objects.filter(username__iexact=email).first()
     if not user:
-        # создаём простого "alumno"
-        user = User.objects.create_user(
-            username=email,
-            email=email,
-            password=None,      # без пароля, будет логин через PIN
-        )
+        user = User.objects.create_user(username=email, email=email, password=None)
 
     # логиним по сессии (ВАЖНО: через HttpRequest)
     django_request = get_django_request(request)
@@ -216,13 +211,16 @@ def set_password(request):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
+
+        user = (
+            User.objects.filter(username__iexact=email).first()
+            or User.objects.filter(email__iexact=email).order_by("-id").first()
+        )
+        if not user:
             return Response(
                 {"message": "Usuario no encontrado."},
                 status=status.HTTP_404_NOT_FOUND,
-            )
+                )
 
         user.set_password(password)
         user.save()

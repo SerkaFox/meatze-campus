@@ -63,6 +63,7 @@ class CursoFile(models.Model):
     )
     folder_path = models.CharField(max_length=500, blank=True, default="", db_index=True)
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES, default=TIPO_ALUMNOS)
+    is_visible_to_students = models.BooleanField(default=False, db_index=True)
 
     # модуль (MF/UF или slug), как в старом фронте: module_key
     module_key = models.CharField(max_length=255, blank=True)

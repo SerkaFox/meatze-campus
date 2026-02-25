@@ -40,7 +40,7 @@ TIME_ZONE = "Europe/Madrid"
 USE_TZ = True
 
 # Application definition
-
+ASGI_APPLICATION = "meatze_site.asgi.application"
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'core',
     "api",
+    "channels",
     "panel",
     "api.videos",
     "panel.shortshare",
@@ -65,6 +66,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {"hosts": [os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")]},
+    }
+}
 
 ROOT_URLCONF = 'meatze_site.urls'
 LOGIN_URL = '/'
@@ -233,3 +240,4 @@ CSRF_TRUSTED_ORIGINS = [
 
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
+
