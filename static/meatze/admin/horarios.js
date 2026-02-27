@@ -587,6 +587,10 @@ if (autoStart){
   });
 }
 
+if (btnExportGraphic){
+  btnExportGraphic.addEventListener('click', exportWordGraphicAll);
+}
+
     if (fixedSave){
       fixedSave.addEventListener('click', async ()=>{
         fixedMsg.textContent = '';
