@@ -3,7 +3,8 @@
   if (window.__MZ_HORARIOS_V5__) return;
   window.__MZ_HORARIOS_V5__ = true;
 
-  const $ = s => document.querySelector(s);
+const $ = (s, r=document) => r.querySelector(s);
+
 const escapeHtml = (s) => (s ?? "").toString().replace(/[&<>"']/g, (m) => ({
   "&": "&amp;",
   "<": "&lt;",
@@ -12,6 +13,58 @@ const escapeHtml = (s) => (s ?? "").toString().replace(/[&<>"']/g, (m) => ({
   "'": "&#39;",
 }[m]));
 
+function normTxt(s){
+  return String(s||'')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
+// (фильтрация будет подключена ПОСЛЕ DOM-выборки, в wire())
+
+function filterCursoOptions(q){
+  if (!selCurso) return;
+
+  const needle = normTxt(q);
+  const opts = Array.from(selCurso.options);
+
+  let visible = 0;
+
+  opts.forEach(opt=>{
+    if (!opt.value) { // placeholder
+      opt.hidden = false;
+      return;
+    }
+    const hay = normTxt(opt.textContent);
+    const show = (!needle || hay.includes(needle));
+    opt.hidden = !show;
+    if (show) visible++;
+  });
+
+  // ✅ сделать список "видимым", пока есть фильтр
+  // 1 строка = placeholder + N вариантов
+  if (needle){
+    selCurso.size = Math.min(10, Math.max(2, visible + 1)); // 2..10 строк
+  } else {
+    selCurso.size = 1;
+  }
+
+  // если выбранный option стал hidden — сбрасываем
+  const selected = selCurso.options[selCurso.selectedIndex];
+  if (selected && selected.hidden){
+    selCurso.selectedIndex = 0;
+    selCurso.dispatchEvent(new Event('change', {bubbles:true}));
+  }
+}
+
+document.addEventListener('click', (e)=>{
+  if (!selCurso || !cursoFilter) return;
+  const inside = cursoFilter.contains(e.target) || selCurso.contains(e.target);
+  if (!inside){
+    selCurso.size = 1;
+  }
+});
   // === shared API/auth
   const API_BASE = ((window.wpApiSettings?.root)||'/').replace(/\/$/,'') + '/meatze/v5';
   const API_A = API_BASE + '/admin';
@@ -55,8 +108,8 @@ async function apiJSON(url, opt={}) {
   const autoHorasWrap = $('#mzh-auto-horas-wrap');
   const autoEnd       = $('#mzh-auto-end');
   const autoEndWrap   = $('#mzh-auto-end-wrap');
-
-  const selCurso = $('#mzh-curso');
+const cursoFilter = $('#mzh-curso-filter');
+const selCurso    = $('#mzh-curso');
   const selTipo  = $('#mzh-tipo');
   const ctxInfo  = $('#mzh-ctx');
   const gTitle   = $('#mzh-title');
@@ -475,109 +528,64 @@ function qp(){
 
   function wire(){
     // смена курса
-    selCurso.addEventListener('change', async ()=>{
-      const code = selCurso.value;
-      if (!code){
-        codigo = null;
-        cursoMeta = null;
-        clearGrid();
-        return;
-      }
-      const it = cursosByCode.get(code) || null;
-      openCurso(code, it);
-    });
-
-    if (autoHoras){
-      autoHoras.addEventListener('input', ()=> {
-        if (selTipo.value === 'practica') {
-          // поменяли часы → пересчитать дату конца
-          updateAutoPreview();
-        }
-      });
+  if (selCurso){
+  selCurso.addEventListener('change', async ()=>{
+    const code = selCurso.value;
+    if (!code){
+      codigo = null;
+      cursoMeta = null;
+      clearGrid();
+      return;
     }
+    const it = cursosByCode.get(code) || null;
+    openCurso(code, it);
+  });
+}
 
-    if (autoEnd){
-      autoEnd.addEventListener('change', recalcHorasFromEnd);
+if (cursoFilter){
+  cursoFilter.addEventListener('input', ()=> filterCursoOptions(cursoFilter.value));
+  cursoFilter.addEventListener('keydown', (e)=>{
+    if (e.key === 'Escape'){
+      cursoFilter.value = '';
+      filterCursoOptions('');
     }
+  });
+}
 
-
-    // смена ámbito (Curso / Práctica)
-    selTipo.addEventListener('change', async ()=> {
-      updateAmbitoUI();
-      selected.clear();
-      selCnt.textContent = '0';
-
-      if (selTipo.value === 'practica' && codigo){
-        await loadAlumnosForCurso(codigo);
-      }
-	const jumped = await autoJumpToFirstDate();
-	if (!jumped) await renderMonth();
-
-    });
-
-    // смена ученика в режиме práctica
-    if (selAlumno){
-      selAlumno.addEventListener('change', ()=>{
-        selected.clear();
-        selCnt.textContent = '0';
-  renderMonth();
-  autoJumpToFirstDate();
-      });
-    }
-
-    // стартовое состояние
+if (selTipo){
+  selTipo.addEventListener('change', async ()=> {
     updateAmbitoUI();
-    selCnt.textContent = '0';
+    selected.clear();
+    if (selCnt) selCnt.textContent = '0';
+
+    if (selTipo.value === 'practica' && codigo){
+      await loadAlumnosForCurso(codigo);
+    }
+    const jumped = await autoJumpToFirstDate();
+    if (!jumped) await renderMonth();
+  });
+}
+
+if (btnPrev){
+  btnPrev.addEventListener('click', ()=>{
+    month = new Date(month.getFullYear(), month.getMonth()-1, 1);
     renderMonth();
-    btnPrev.addEventListener('click', ()=>{
-      month = new Date(month.getFullYear(), month.getMonth()-1, 1);
-      renderMonth();
-    });
+  });
+}
 
-    btnNext.addEventListener('click', ()=>{
-      month = new Date(month.getFullYear(), month.getMonth()+1, 1);
-      renderMonth();
-    });
+if (btnNext){
+  btnNext.addEventListener('click', ()=>{
+    month = new Date(month.getFullYear(), month.getMonth()+1, 1);
+    renderMonth();
+  });
+}
 
-    if (btnExportGraphic) btnExportGraphic.addEventListener('click', exportWordGraphicAll);
-
-    // === GLOBAL no lectivos centro (por año)
-    if (fixedToggle && fixedPanel){
-      fixedToggle.addEventListener('click', async ()=>{
-        const now = new Date();
-        const y1 = now.getFullYear();
-        const y2 = y1 + 1;
-        if (fixedY1Lbl) fixedY1Lbl.textContent = y1;
-        if (fixedY2Lbl) fixedY2Lbl.textContent = y2;
-
-        await loadFixedNonlective();
-        const y1Arr = (FIXED_NONLECTIVE[String(y1)] || []).map(md=>{
-          const [mm,dd] = md.split('-'); return `${dd}/${mm}`;
-        });
-        const y2Arr = (FIXED_NONLECTIVE[String(y2)] || []).map(md=>{
-          const [mm,dd] = md.split('-'); return `${dd}/${mm}`;
-        });
-        if (fixedY1) fixedY1.value = compressDateList(y1Arr);
-        if (fixedY2) fixedY2.value = compressDateList(y2Arr);
-
-        fixedPanel.style.display =
-          (fixedPanel.style.display === 'none' || !fixedPanel.style.display)
-            ? 'block'
-            : 'none';
-      });
-    }
-
-    // автопанель всегда видна: сразу подтягиваем праздники и превью
-    if (autoPanel) {
-      (async ()=>{
-        try{
-          window.__MZ_HOLIDAYS_MAP__ = await loadHolidaysAndRenderList(autoStart.value || null);
-          await updateAutoPreview();
-        }catch(e){
-          console.warn('No se pudo cargar vista previa de festivos:', e);
-        }
-      })();
-    }
+if (autoStart){
+  autoStart.addEventListener('change', async ()=>{
+    window.__MZ_HOLIDAYS_MAP__ = await loadHolidaysAndRenderList(autoStart.value || null);
+    await updateAutoPreview();
+  });
+}
 
     if (fixedSave){
       fixedSave.addEventListener('click', async ()=>{

@@ -324,3 +324,73 @@
 #ui-teachers tr[data-editing="1"] td{
   background: rgba(59,130,246,.06);
 }
+
+
+/* ===== Teachers · table widths (WA narrow, Cursos wide) ===== */
+#ui-teachers .t-table-wrap{
+  min-width:0;
+  border-radius:14px;
+  overflow:hidden;
+}
+
+/* фиксированная раскладка — чтобы колонки держали ширины */
+#ui-teachers .mz-table{
+  width:100%;
+  table-layout:fixed;
+}
+
+/* 1) Nombre */
+#ui-teachers .mz-table th:nth-child(1),
+#ui-teachers .mz-table td:nth-child(1){
+  width: 26%;
+}
+
+/* 2) E-mail */
+#ui-teachers .mz-table th:nth-child(2),
+#ui-teachers .mz-table td:nth-child(2){
+  width: 26%;
+  word-break: break-all;
+}
+
+/* 3) WhatsApp — узко и предсказуемо */
+#ui-teachers .mz-table th:nth-child(3),
+#ui-teachers .mz-table td:nth-child(3){
+  width: 130px;              /* ✅ узкая колонка */
+  white-space: nowrap;
+}
+
+/* 4) Cursos — самая широкая */
+#ui-teachers .mz-table th:nth-child(4),
+#ui-teachers .mz-table td:nth-child(4){
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  word-break: break-word;
+}
+
+/* 5) Acciones — фикс */
+#ui-teachers .mz-table th:nth-child(5),
+#ui-teachers .mz-table td:nth-child(5){
+  width: 170px;
+  white-space: nowrap;
+}
+
+/* ===== Nombre column stacked layout ===== */
+
+#ui-teachers .t-name{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  line-height:1.2;
+}
+
+#ui-teachers .t-name-edit{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+#ui-teachers .t-name-edit .mz-inp{
+  width:100%;
+  min-width:0;
+}

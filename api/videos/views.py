@@ -1,20 +1,38 @@
+# api/videos/views.py
+from __future__ import annotations
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.db.models import Max
 from django.contrib.auth.decorators import login_required
-from .models import Video, Playlist, PlaylistItem, HelpBinding
+from django.http import HttpResponseForbidden
+
+from api.videos.models import Video, Playlist, PlaylistItem, HelpBinding
+
+
+# -----------------------------
+# access policy (single-owner)
+# -----------------------------
+def _admin_only(request):
+    """
+    В режиме "без owner" это обязательно, иначе любой залогиненный увидит/удалит всё.
+    """
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("Solo para administradores.")
+    return None
+
 
 def _get_active_playlist(request, playlists_qs):
     """
     Выбираем активный плейлист:
     1) из GET ?pl=
     2) иначе из session
-    3) иначе первый плейлист пользователя
+    3) иначе первый плейлист
     """
     pl_id = request.GET.get("pl")
-    if pl_id:
+    if pl_id and str(pl_id).isdigit():
         request.session["videos_active_pl"] = int(pl_id)
     else:
         pl_id = request.session.get("videos_active_pl")
@@ -22,15 +40,25 @@ def _get_active_playlist(request, playlists_qs):
     pl = None
     if pl_id:
         pl = playlists_qs.filter(id=pl_id).first()
+
     if not pl:
         pl = playlists_qs.first()
         if pl:
             request.session["videos_active_pl"] = pl.id
+
     return pl
 
+
+# -----------------------------
+# admin mini player
+# -----------------------------
 @login_required
 def mini_player(request):
-    playlists = Playlist.objects.filter(owner=request.user).order_by("-creado", "-id")
+    deny = _admin_only(request)
+    if deny:
+        return deny
+
+    playlists = Playlist.objects.all().order_by("-creado", "-id")
     active_pl = _get_active_playlist(request, playlists)
 
     # Видео для выбранного плейлиста
@@ -39,54 +67,108 @@ def mini_player(request):
                  .select_related("video")
                  .filter(playlist=active_pl, video__activo=True)
                  .order_by("orden", "id"))
-        qs_videos = [it.video for it in items]
+        pl_videos = [it.video for it in items]
     else:
-        qs_videos = []
+        pl_videos = []
 
     out = [{
         "id": v.id,
         "title": v.titulo,
         "url": v.url,
         "poster": v.poster.url if v.poster else "",
-    } for v in qs_videos]
+    } for v in pl_videos]
 
-    # Для админ-списка удаления/добавления можно показать все твои видео:
-    my_all_videos = Video.objects.filter(owner=request.user, activo=True).order_by("orden", "id")
+    # библиотека (все активные видео)
+    my_all_videos = Video.objects.filter(activo=True).order_by("orden", "id")
+
+    # help bindings для активного плейлиста
+    bindings = []
+    if active_pl:
+        bindings = (HelpBinding.objects
+                    .filter(playlist=active_pl)
+                    .select_related("start_video")
+                    .order_by("priority", "id"))
 
     return render(request, "videos/mini_player_admin.html", {
         "videos": out,                  # то, что играет в плеере (текущий плейлист)
-        "videos_qs": my_all_videos,     # все твои видео (для управления)
+        "videos_qs": my_all_videos,     # библиотека
         "playlists": playlists,
         "active_pl": active_pl,
+
+        # help-admin context
+        "help_bindings": bindings,
+        "help_roles": HelpBinding.ROLE_CHOICES,
+        "pl_videos": pl_videos,  # чтобы выбрать start_video из видео плейлиста
     })
 
+
+# -----------------------------
+# playlists admin actions
+# -----------------------------
 @login_required
 @require_POST
 def playlist_create(request):
+    deny = _admin_only(request)
+    if deny:
+        return deny
+
     titulo = (request.POST.get("titulo") or "Lista").strip()
-    pl = Playlist.objects.create(owner=request.user, titulo=titulo, is_public=False)
+    pl = Playlist.objects.create(titulo=titulo, is_public=False)
     request.session["videos_active_pl"] = pl.id
     messages.success(request, f"Lista creada: {pl.titulo}")
     return redirect(f"/videos/mini-player/?pl={pl.id}")
 
+
 @login_required
 @require_POST
 def playlist_toggle_public(request, playlist_id: int):
-    pl = get_object_or_404(Playlist, id=playlist_id, owner=request.user)
+    deny = _admin_only(request)
+    if deny:
+        return deny
+
+    pl = get_object_or_404(Playlist, id=playlist_id)
     pl.is_public = not pl.is_public
     pl.save(update_fields=["is_public"])
     return redirect(f"/videos/mini-player/?pl={pl.id}")
 
-from django.db.models import Max
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
-from django.contrib import messages
-from django.shortcuts import redirect
-from .models import Video, Playlist, PlaylistItem
 
 @login_required
 @require_POST
+def playlist_add(request, playlist_id: int, video_id: int):
+    deny = _admin_only(request)
+    if deny:
+        return deny
+
+    pl = get_object_or_404(Playlist, id=playlist_id)
+    v = get_object_or_404(Video, id=video_id)
+
+    last = PlaylistItem.objects.filter(playlist=pl).aggregate(Max("orden")).get("orden__max") or 0
+    PlaylistItem.objects.get_or_create(playlist=pl, video=v, defaults={"orden": last + 1})
+    return redirect(f"/videos/mini-player/?pl={pl.id}")
+
+
+@login_required
+@require_POST
+def playlist_remove(request, playlist_id: int, video_id: int):
+    deny = _admin_only(request)
+    if deny:
+        return deny
+
+    pl = get_object_or_404(Playlist, id=playlist_id)
+    PlaylistItem.objects.filter(playlist=pl, video_id=video_id).delete()
+    return redirect(f"/videos/mini-player/?pl={pl.id}")
+
+
+# -----------------------------
+# video admin actions
+# -----------------------------
+@login_required
+@require_POST
 def video_upload(request):
+    deny = _admin_only(request)
+    if deny:
+        return deny
+
     titulo = (request.POST.get("titulo") or "").strip()
     files = request.FILES.getlist("archivo")
     playlist_id = request.POST.get("playlist_id")
@@ -96,17 +178,16 @@ def video_upload(request):
         return redirect("mini_player")
 
     pl = None
-    if playlist_id:
-        pl = Playlist.objects.filter(id=playlist_id, owner=request.user).first()
+    if playlist_id and str(playlist_id).isdigit():
+        pl = Playlist.objects.filter(id=int(playlist_id)).first()
 
     # стартовый order для библиотеки
-    last_order = Video.objects.filter(owner=request.user).aggregate(Max("orden")).get("orden__max") or 0
+    last_order = Video.objects.aggregate(Max("orden")).get("orden__max") or 0
 
     created = 0
     for f in files:
         last_order += 1
         v = Video.objects.create(
-            owner=request.user,
             titulo=(titulo if (titulo and len(files) == 1) else f.name),
             archivo=f,
             orden=last_order,
@@ -129,28 +210,18 @@ def video_upload(request):
     messages.success(request, f"Subidos {created} vídeo(s).")
     return redirect("mini_player")
 
-@login_required
-@require_POST
-def playlist_add(request, playlist_id: int, video_id: int):
-    pl = get_object_or_404(Playlist, id=playlist_id, owner=request.user)
-    v = get_object_or_404(Video, id=video_id, owner=request.user)
-    last = PlaylistItem.objects.filter(playlist=pl).aggregate(Max("orden")).get("orden__max") or 0
-    PlaylistItem.objects.get_or_create(playlist=pl, video=v, defaults={"orden": last + 1})
-    return redirect(f"/videos/mini-player/?pl={pl.id}")
-
-@login_required
-@require_POST
-def playlist_remove(request, playlist_id: int, video_id: int):
-    pl = get_object_or_404(Playlist, id=playlist_id, owner=request.user)
-    PlaylistItem.objects.filter(playlist=pl, video_id=video_id).delete()
-    return redirect(f"/videos/mini-player/?pl={pl.id}")
 
 @login_required
 @require_POST
 def video_delete(request, video_id: int):
-    v = get_object_or_404(Video, id=video_id, owner=request.user)
+    deny = _admin_only(request)
+    if deny:
+        return deny
+
+    v = get_object_or_404(Video, id=video_id)
     storage = v.archivo.storage
     path = v.archivo.name
+
     with transaction.atomic():
         v.delete()
         if path:
@@ -158,12 +229,17 @@ def video_delete(request, video_id: int):
                 storage.delete(path)
             except Exception:
                 pass
+
     messages.success(request, "Vídeo eliminado.")
     return redirect("mini_player")
 
 
+# -----------------------------
+# public playlist view
+# -----------------------------
 def playlist_public(request, token: str):
     pl = get_object_or_404(Playlist, share_token=token, is_public=True)
+
     items = (PlaylistItem.objects
              .select_related("video")
              .filter(playlist=pl, video__activo=True)
@@ -176,16 +252,8 @@ def playlist_public(request, token: str):
         "poster": it.video.poster.url if it.video.poster else "",
     } for it in items]
 
-    # Можно использовать твой текущий mini_player.html
     return render(request, "videos/mini_player.html", {"videos": out})
-    
-# app/videos/views.py
-from django.shortcuts import render, get_object_or_404
-from .models import Playlist, PlaylistItem
 
-# app/videos/views.py
-from django.shortcuts import render, get_object_or_404
-from .models import Playlist, PlaylistItem
 
 def playlist_embed(request, token: str):
     pl = get_object_or_404(Playlist, share_token=token, is_public=True)
@@ -198,7 +266,7 @@ def playlist_embed(request, token: str):
     start_vid = (request.GET.get("vid") or "").strip()
     autoplay  = (request.GET.get("autoplay") == "1")
 
-    # ✅ only_one: либо явно only=1, либо автоматически если передан vid
+    # only_one: либо явно only=1, либо автоматически если передан vid
     only_one = (request.GET.get("only") == "1") or (start_vid.isdigit())
 
     if only_one and start_vid.isdigit():
@@ -218,60 +286,23 @@ def playlist_embed(request, token: str):
         "pl_title": pl.titulo,
         "only_one": only_one,
     })
-    
-@login_required
-def mini_player(request):
-    playlists = Playlist.objects.filter(owner=request.user).order_by("-creado", "-id")
-    active_pl = _get_active_playlist(request, playlists)
 
-    # Видео для выбранного плейлиста
-    if active_pl:
-        items = (PlaylistItem.objects
-                 .select_related("video")
-                 .filter(playlist=active_pl, video__activo=True)
-                 .order_by("orden", "id"))
-        qs_videos = [it.video for it in items]
-    else:
-        qs_videos = []
 
-    out = [{
-        "id": v.id,
-        "title": v.titulo,
-        "url": v.url,
-        "poster": v.poster.url if v.poster else "",
-    } for v in qs_videos]
-
-    my_all_videos = Video.objects.filter(owner=request.user, activo=True).order_by("orden", "id")
-
-    # ✅ привязки help для активного плейлиста
-    bindings = []
-    if active_pl:
-        bindings = HelpBinding.objects.filter(
-            playlist=active_pl,
-            playlist__owner=request.user,
-        ).select_related("start_video").order_by("priority", "id")
-
-    return render(request, "videos/mini_player_admin.html", {
-        "videos": out,
-        "videos_qs": my_all_videos,
-        "playlists": playlists,
-        "active_pl": active_pl,
-
-        # ✅ help-admin context
-        "help_bindings": bindings,
-        "help_roles": HelpBinding.ROLE_CHOICES,
-        "pl_videos": qs_videos,  # чтобы выбрать start_video из видео плейлиста
-    })
-    
-from django.views.decorators.http import require_POST
-from django.shortcuts import redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-
+# -----------------------------
+# help bindings admin
+# -----------------------------
 @login_required
 @require_POST
 def helpbinding_create(request):
+    deny = _admin_only(request)
+    if deny:
+        return deny
+
     playlist_id = request.POST.get("playlist_id")
-    pl = get_object_or_404(Playlist, id=playlist_id, owner=request.user)
+    if not playlist_id or not str(playlist_id).isdigit():
+        return redirect("mini_player")
+
+    pl = get_object_or_404(Playlist, id=int(playlist_id))
 
     role = (request.POST.get("role") or "guest").strip()
     path = (request.POST.get("path") or "").strip()
@@ -281,11 +312,10 @@ def helpbinding_create(request):
 
     start_video_id = request.POST.get("start_video_id") or ""
     start_video = None
-    if start_video_id:
-        # стартовое видео должно принадлежать тому же owner
-        start_video = Video.objects.filter(id=start_video_id, owner=request.user).first()
+    if start_video_id and str(start_video_id).isdigit():
+        start_video = Video.objects.filter(id=int(start_video_id)).first()
 
-    if not path.startswith("/"):
+    if path and not path.startswith("/"):
         path = "/" + path
 
     HelpBinding.objects.create(
@@ -304,11 +334,11 @@ def helpbinding_create(request):
 @login_required
 @require_POST
 def helpbinding_update(request, binding_id: int):
-    hb = get_object_or_404(
-        HelpBinding,
-        id=binding_id,
-        playlist__owner=request.user
-    )
+    deny = _admin_only(request)
+    if deny:
+        return deny
+
+    hb = get_object_or_404(HelpBinding, id=binding_id)
 
     hb.role = (request.POST.get("role") or hb.role).strip()
     hb.path = (request.POST.get("path") or hb.path).strip()
@@ -317,8 +347,8 @@ def helpbinding_update(request, binding_id: int):
     hb.priority = int(request.POST.get("priority") or hb.priority)
 
     start_video_id = request.POST.get("start_video_id") or ""
-    if start_video_id:
-        hb.start_video = Video.objects.filter(id=start_video_id, owner=request.user).first()
+    if start_video_id and str(start_video_id).isdigit():
+        hb.start_video = Video.objects.filter(id=int(start_video_id)).first()
     else:
         hb.start_video = None
 
@@ -332,11 +362,11 @@ def helpbinding_update(request, binding_id: int):
 @login_required
 @require_POST
 def helpbinding_toggle(request, binding_id: int):
-    hb = get_object_or_404(
-        HelpBinding,
-        id=binding_id,
-        playlist__owner=request.user
-    )
+    deny = _admin_only(request)
+    if deny:
+        return deny
+
+    hb = get_object_or_404(HelpBinding, id=binding_id)
     hb.is_active = not hb.is_active
     hb.save(update_fields=["is_active"])
     return redirect(f"/videos/mini-player/?pl={hb.playlist_id}")
@@ -345,11 +375,11 @@ def helpbinding_toggle(request, binding_id: int):
 @login_required
 @require_POST
 def helpbinding_delete(request, binding_id: int):
-    hb = get_object_or_404(
-        HelpBinding,
-        id=binding_id,
-        playlist__owner=request.user
-    )
+    deny = _admin_only(request)
+    if deny:
+        return deny
+
+    hb = get_object_or_404(HelpBinding, id=binding_id)
     pl_id = hb.playlist_id
     hb.delete()
     return redirect(f"/videos/mini-player/?pl={pl_id}")

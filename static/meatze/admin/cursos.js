@@ -418,7 +418,7 @@ async function loadList(){
     function buildTeacherChips(teachers, assignedSet){
       chipsBox.replaceChildren();
       for (const t of (teachers||[])){
-        const id = normId(t.id ?? t.user_id ?? t.uid ?? t.uid_str);
+        const id = normId(t.user_id ?? t.uid ?? t.uid_str ?? t.id);
         if (!id) continue;
         const name = t.display_name || t.email || ('ID '+id);
         const btn = document.createElement('button');
@@ -504,7 +504,7 @@ async function loadList(){
       caMsg.style.color = '#0b6d22';
       await updateAssignedTeachers();
     });
-
+document.dispatchEvent(new CustomEvent('mz:teachers-updated'));
     // init data
     loadList();
     updateCounters();

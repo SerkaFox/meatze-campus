@@ -20,132 +20,179 @@
     </div>
 
     {# 2) meta/badges #}
-<div class="mz-file-bottom">
-  <div class="mz-file-meta">
-    <span class="mz-file-pill">{{ f.ext|upper }}</span>
-    <span class="mz-mat-dot"></span>
-    <span class="mz-file-pill">{{ f.fmt_size }}</span>
-    <span class="mz-mat-dot"></span>
-    <span class="mz-file-pill">{{ f.uploaded_by.get_full_name|default:f.uploaded_by.email }}</span>
+    <div class="mz-file-bottom">
+      <div class="mz-file-meta">
+        <span class="mz-file-pill">{{ f.ext|upper }}</span>
+        <span class="mz-mat-dot"></span>
+        <span class="mz-file-pill">{{ f.fmt_size }}</span>
+        <span class="mz-mat-dot"></span>
+        <span class="mz-file-pill">{{ f.uploaded_by.get_full_name|default:f.uploaded_by.email }}</span>
 
-    {% if f.module_key %}
-      <span class="mz-mat-tag">{{ f.module_key }}</span>
-    {% else %}
-      <span class="mz-mat-tag muted">Sin módulo</span>
-    {% endif %}
+        {% if f.module_key %}
+          <span class="mz-mat-tag">{{ f.module_key }}</span>
+        {% else %}
+          <span class="mz-mat-tag muted">Sin módulo</span>
+        {% endif %}
 
-    {% if not is_teacher %}
-      {% if f.is_downloaded %}
-        <span class="mz-chip-mini mz-file-chip">Descargado</span>
-      {% else %}
-        <span class="mz-chip-mini mz-file-chip is-undl">No descargado</span>
-      {% endif %}
-    {% endif %}
+        {% if not is_teacher %}
+          {% if f.is_downloaded %}
+            <span class="mz-chip-mini mz-file-chip">Descargado</span>
+          {% else %}
+            <span class="mz-chip-mini mz-file-chip is-undl">No descargado</span>
+          {% endif %}
+        {% endif %}
 
-    {% if is_teacher and f.share_alumnos %}
-      <span class="mz-chip-mini">Visible para alumnos</span>
-    {% endif %}
-  </div>
+        {% if is_teacher and f.share_alumnos %}
+          <span class="mz-chip-mini">Visible para alumnos</span>
+        {% endif %}
+      </div>
 
-  <div class="mz-file-actions">
+      <div class="mz-file-actions">
 
-  {# --- MOBILE: icon buttons --- #}
-  <div class="mz-file-actions-icons">
-    <a class="mz-icbtn" data-action="materials.download"
-       href="{% url 'panel:material_download' f.id %}"
-       target="_blank" rel="noopener"
-       title="Descargar" aria-label="Descargar">⬇️</a>
+        {# --- MOBILE: icon buttons --- #}
+        <div class="mz-file-actions-icons">
+          <a class="mz-icbtn" data-action="materials.download"
+             href="{% url 'panel:material_download' f.id %}"
+             target="_blank" rel="noopener"
+             title="Descargar" aria-label="Descargar">⬇️</a>
 
-    <a class="mz-icbtn"
-       data-preview
-       data-ext="{{ f.ext|lower }}"
-       data-name="{{ f.display_name|escape }}"
-       href="{% url 'panel:material_download' f.id %}?inline=1"
-       title="Ver" aria-label="Ver">👁️</a>
+          <a class="mz-icbtn"
+             data-preview
+             data-ext="{{ f.ext|lower }}"
+             data-name="{{ f.display_name|escape }}"
+             href="{% url 'panel:material_download' f.id %}?inline=1"
+             title="Ver" aria-label="Ver">👁️</a>
 
-    {% if is_teacher %}
-      <button class="mz-icbtn" type="button"
-              data-action="materials.copy_public_link"
-              data-share-url="{% url 'panel:material_share_link_create' f.id %}"
-              title="Copiar enlace" aria-label="Copiar enlace">🔗</button>
+          {% if is_teacher %}
+            <button class="mz-icbtn" type="button"
+                    data-action="materials.copy_public_link"
+                    data-share-url="{% url 'panel:material_share_link_create' f.id %}"
+                    title="Copiar enlace" aria-label="Copiar enlace">🔗</button>
 
-      {% if audience != 'alumnos' %}
-        <form method="post" style="margin:0" data-ajax="share-toggle" data-file-id="{{ f.id }}">
-          {% csrf_token %}
-          <input type="hidden" name="share_id" value="{{ f.id }}">
-          <button class="mz-icbtn" type="submit"
-                  title="{% if f.share_alumnos %}Ocultar de alumnos{% else %}Mostrar a alumnos{% endif %}"
-                  aria-label="Visibilidad alumnos">
-            {% if f.share_alumnos %}🙈{% else %}👥{% endif %}
-          </button>
-        </form>
-      {% endif %}
+            {% if audience != 'alumnos' %}
+              <form method="post" style="margin:0" data-ajax="share-toggle" data-file-id="{{ f.id }}">
+                {% csrf_token %}
+                <input type="hidden" name="share_id" value="{{ f.id }}">
 
-      {% if f.tipo == "docentes" %}
-        <form method="post" style="margin:0" data-ajax="copy-private" data-file-id="{{ f.id }}">
-          {% csrf_token %}
-          <input type="hidden" name="copy_id" value="{{ f.id }}">
-          <button class="mz-icbtn" type="submit" title="Copiar a privados" aria-label="Copiar a privados">📄</button>
-        </form>
-      {% endif %}
+                {# ✅ CONTEXTO (чтобы POST не сбрасывал вкладку/папку) #}
+<input type="hidden" name="tab" value="materiales">
+<input type="hidden" name="aud" value="{{ audience|default:'alumnos' }}">
+<input type="hidden" name="p" value="{{ current_path|default:'' }}">
+<input type="hidden" name="sort" value="{{ sort|default:'new' }}">
+<input type="hidden" name="view" value="{{ view|default:'tree' }}">
 
-      <form method="post" style="margin:0" data-ajax="file-delete" data-file-id="{{ f.id }}"
-            onsubmit="return confirm('¿Eliminar este archivo?');">
-        {% csrf_token %}
-        <input type="hidden" name="delete_id" value="{{ f.id }}">
-        <button class="mz-icbtn mz-icbtn-danger" type="submit" title="Eliminar" aria-label="Eliminar">🗑️</button>
-      </form>
-    {% endif %}
-  </div>
+                <button class="mz-icbtn" type="submit"
+                        title="{% if f.share_alumnos %}Ocultar de alumnos{% else %}Mostrar a alumnos{% endif %}"
+                        aria-label="Visibilidad alumnos">
+                  {% if f.share_alumnos %}🙈{% else %}👥{% endif %}
+                </button>
+              </form>
+            {% endif %}
 
-  {# --- DESKTOP: cloud buttons --- #}
-  <div class="mz-file-actions-cloud">
-	<a class="mzc-btn ghost"
-	   data-action="materials.download"
-	   href="{% url 'panel:material_download' f.id %}"
-	   target="_blank" rel="noopener">Descargar</a>
+            {% if f.tipo == "docentes" %}
+              <form method="post" style="margin:0" data-ajax="copy-private" data-file-id="{{ f.id }}">
+                {% csrf_token %}
+                <input type="hidden" name="copy_id" value="{{ f.id }}">
 
-    <a class="mzc-btn ghost"
-       data-preview
-       data-ext="{{ f.ext|lower }}"
-       data-name="{{ f.display_name|escape }}"
-       href="{% url 'panel:material_download' f.id %}?inline=1">Ver</a>
+                {# ✅ CONTEXTO #}
+<input type="hidden" name="tab" value="materiales">
+<input type="hidden" name="aud" value="{{ audience|default:'alumnos' }}">
+<input type="hidden" name="p" value="{{ current_path|default:'' }}">
+<input type="hidden" name="sort" value="{{ sort|default:'new' }}">
+<input type="hidden" name="view" value="{{ view|default:'tree' }}">
 
-    {% if is_teacher %}
-      <button class="mzc-btn ghost" type="button"
-              data-action="materials.copy_public_link"
-              data-share-url="{% url 'panel:material_share_link_create' f.id %}">
-        Copiar enlace
-      </button>
+                <button class="mz-icbtn" type="submit" title="Copiar a privados" aria-label="Copiar a privados">📄</button>
+              </form>
+            {% endif %}
 
-      {% if audience != 'alumnos' %}
-        <form method="post" style="margin:0" data-ajax="share-toggle" data-file-id="{{ f.id }}">
-          {% csrf_token %}
-          <input type="hidden" name="share_id" value="{{ f.id }}">
-          <button class="mzc-btn ghost" type="submit">
-            {% if f.share_alumnos %}Ocultar de alumnos{% else %}Mostrar a alumnos{% endif %}
-          </button>
-        </form>
-      {% endif %}
+            <form method="post" style="margin:0" data-ajax="file-delete" data-file-id="{{ f.id }}"
+                  onsubmit="return confirm('¿Eliminar este archivo?');">
+              {% csrf_token %}
+              <input type="hidden" name="delete_id" value="{{ f.id }}">
 
-      {% if f.tipo == "docentes" %}
-        <form method="post" style="margin:0" data-ajax="copy-private" data-file-id="{{ f.id }}">
-          {% csrf_token %}
-          <input type="hidden" name="copy_id" value="{{ f.id }}">
-          <button class="mzc-btn ghost" type="submit">Copiar a privados</button>
-        </form>
-      {% endif %}
+              {# ✅ CONTEXTO #}
+<input type="hidden" name="tab" value="materiales">
+<input type="hidden" name="aud" value="{{ audience|default:'alumnos' }}">
+<input type="hidden" name="p" value="{{ current_path|default:'' }}">
+<input type="hidden" name="sort" value="{{ sort|default:'new' }}">
+<input type="hidden" name="view" value="{{ view|default:'tree' }}">
 
-      <form method="post" style="margin:0" data-ajax="file-delete" data-file-id="{{ f.id }}"
-            onsubmit="return confirm('¿Eliminar este archivo?');">
-        {% csrf_token %}
-        <input type="hidden" name="delete_id" value="{{ f.id }}">
-        <button class="mzc-btn ghost" type="submit">Eliminar</button>
-      </form>
-    {% endif %}
-  </div>
+              <button class="mz-icbtn mz-icbtn-danger" type="submit" title="Eliminar" aria-label="Eliminar">🗑️</button>
+            </form>
+          {% endif %}
+        </div>
 
-</div>
-</div>
+        {# --- DESKTOP: cloud buttons --- #}
+        <div class="mz-file-actions-cloud">
+          <a class="mzc-btn ghost"
+             data-action="materials.download"
+             href="{% url 'panel:material_download' f.id %}"
+             target="_blank" rel="noopener">Descargar</a>
+
+          <a class="mzc-btn ghost"
+             data-preview
+             data-ext="{{ f.ext|lower }}"
+             data-name="{{ f.display_name|escape }}"
+             href="{% url 'panel:material_download' f.id %}?inline=1">Ver</a>
+
+          {% if is_teacher %}
+            <button class="mzc-btn ghost" type="button"
+                    data-action="materials.copy_public_link"
+                    data-share-url="{% url 'panel:material_share_link_create' f.id %}">
+              Copiar enlace
+            </button>
+
+            {% if audience != 'alumnos' %}
+              <form method="post" style="margin:0" data-ajax="share-toggle" data-file-id="{{ f.id }}">
+                {% csrf_token %}
+                <input type="hidden" name="share_id" value="{{ f.id }}">
+
+                {# ✅ CONTEXTO #}
+<input type="hidden" name="tab" value="materiales">
+<input type="hidden" name="aud" value="{{ audience|default:'alumnos' }}">
+<input type="hidden" name="p" value="{{ current_path|default:'' }}">
+<input type="hidden" name="sort" value="{{ sort|default:'new' }}">
+<input type="hidden" name="view" value="{{ view|default:'tree' }}">
+
+                <button class="mzc-btn ghost" type="submit">
+                  {% if f.share_alumnos %}Ocultar de alumnos{% else %}Mostrar a alumnos{% endif %}
+                </button>
+              </form>
+            {% endif %}
+
+            {% if f.tipo == "docentes" %}
+              <form method="post" style="margin:0" data-ajax="copy-private" data-file-id="{{ f.id }}">
+                {% csrf_token %}
+                <input type="hidden" name="copy_id" value="{{ f.id }}">
+
+<input type="hidden" name="tab" value="materiales">
+<input type="hidden" name="aud" value="{{ audience|default:'alumnos' }}">
+<input type="hidden" name="p" value="{{ current_path|default:'' }}">
+<input type="hidden" name="sort" value="{{ sort|default:'new' }}">
+<input type="hidden" name="view" value="{{ view|default:'tree' }}">
+
+                <button class="mzc-btn ghost" type="submit">Copiar a privados</button>
+              </form>
+            {% endif %}
+
+            <form method="post" style="margin:0" data-ajax="file-delete" data-file-id="{{ f.id }}"
+                  onsubmit="return confirm('¿Eliminar este archivo?');">
+              {% csrf_token %}
+              <input type="hidden" name="delete_id" value="{{ f.id }}">
+
+              {# ✅ CONTEXTO #}
+<input type="hidden" name="tab" value="materiales">
+<input type="hidden" name="aud" value="{{ audience|default:'alumnos' }}">
+<input type="hidden" name="p" value="{{ current_path|default:'' }}">
+<input type="hidden" name="sort" value="{{ sort|default:'new' }}">
+<input type="hidden" name="view" value="{{ view|default:'tree' }}">
+
+              <button class="mzc-btn ghost" type="submit">Eliminar</button>
+            </form>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
   </div>
 </div>

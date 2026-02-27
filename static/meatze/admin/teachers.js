@@ -17,6 +17,7 @@
 
   // === panel init (lazy)
   let teachersReady = false;
+  let refreshTeachersList = null;  
   async function initTeachersOnce(){
 // ===== Dropdown manager (one-open-at-a-time) =====
 let openDD = null;
@@ -56,6 +57,7 @@ document.addEventListener('keydown', (e)=>{
     teachersReady = true;
     const esc = s => (s??'').toString().replace(/[&<>"]/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));
     const escAttr = s => esc(s).replace(/"/g,'&quot;');
+	
     const nrm = s => (s ?? '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 	const debounce = (fn, ms=150)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
 
@@ -64,7 +66,21 @@ document.addEventListener('keydown', (e)=>{
     const clearBtn = $('#mzt-clear');
     const msg = $('#mzt-msg');
     let allItems = [];
+	const cursosText = (it) => {
+	  const arr = Array.isArray(it?.cursos) ? it.cursos : [];
+	  if (!arr.length) return '—';
+	  // компактно: "IFCT0309, TEST2000"
+	  return arr.map(x => x?.codigo).filter(Boolean).join(', ') || '—';
+	};
 
+	const cursosTitle = (it) => {
+	  const arr = Array.isArray(it?.cursos) ? it.cursos : [];
+	  if (!arr.length) return '';
+	  // tooltip: "IFCT0309 — Título"
+	  return arr
+		.map(x => `${x.codigo}${x.titulo ? ' — ' + x.titulo : ''}`)
+		.join('\n');
+	};
     // ==========================
     // PENDIENTES POR CORREO
     // ==========================
@@ -164,21 +180,36 @@ document.addEventListener('keydown', (e)=>{
         list.innerHTML = `<tr><td colspan="5">${esc(e.message||'Error')}</td></tr>`;
       }
     }
-
+  refreshTeachersList = refreshList; 
 function rowView(it){
   const tr = document.createElement('tr');
-  const pref = [it.first_name, it.last_name1, it.last_name2].filter(Boolean).join(' ').trim();
-  const name = pref || (it.display_name||'').trim() || (it.email||'');
+
+  const full = [
+    it.first_name,
+    it.last_name1,
+    it.last_name2
+  ].filter(Boolean);
+
+  const nameBlock = full.length
+    ? `
+      <div class="t-name">
+        ${full.map(x => `<div>${esc(x)}</div>`).join('')}
+      </div>
+    `
+    : esc(it.email||'');
+
+  const cTxt = cursosText(it);
+  const cTip = cursosTitle(it);
 
   tr.innerHTML = `
-    <td>${esc(name)}</td>
+    <td>${nameBlock}</td>
     <td>${esc(it.email||'')}</td>
     <td>${esc(it.wa || '')}</td>
-    <td>${esc(it.bio||'')}</td>
+    <td title="${escAttr(cTip)}">${esc(cTxt)}</td>
     <td style="white-space:nowrap; text-align:right">
       <div class="t-actions">
-        <button class="t-ico" type="button" title="Editar" aria-label="Editar" data-edit>✏️</button>
-        <button class="t-ico danger" type="button" title="Quitar" aria-label="Quitar" data-del>🗑️</button>
+        <button class="t-ico" type="button" data-edit>✏️</button>
+        <button class="t-ico danger" type="button" data-del>🗑️</button>
       </div>
     </td>
   `;
@@ -195,38 +226,61 @@ function rowEdit(it){
   const tr = document.createElement('tr');
   tr.dataset.editing = '1';
 
+  const cTxt = cursosText(it);
+  const cTip = cursosTitle(it);
+
   tr.innerHTML = `
-    <td><input class="mz-inp" data-first placeholder="Nombre" value="${escAttr(it.first_name||'')}"></td>
-    <td><input class="mz-inp" data-email placeholder="E-mail *" value="${escAttr(it.email||'')}"></td>
-    <td><input class="mz-inp" data-wa placeholder="600123123" value="${escAttr(it.wa||'')}"></td>
-    <td><input class="mz-inp" data-bio placeholder="Descripción" value="${escAttr(it.bio||'')}"></td>
+    <td>
+      <div class="t-name-edit">
+        <input class="mz-inp" data-first placeholder="Nombre"
+               value="${escAttr(it.first_name||'')}">
+
+        <input class="mz-inp" data-last1 placeholder="1º apellido"
+               value="${escAttr(it.last_name1||'')}">
+
+        <input class="mz-inp" data-last2 placeholder="2º apellido"
+               value="${escAttr(it.last_name2||'')}">
+      </div>
+    </td>
+
+    <td>
+      <input class="mz-inp"
+             value="${escAttr(it.email||'')}"
+             disabled
+             style="opacity:.6; cursor:not-allowed">
+    </td>
+
+    <td>
+      <input class="mz-inp" data-wa placeholder="600123123"
+             value="${escAttr(it.wa||'')}">
+    </td>
+
+    <td title="${escAttr(cTip)}">
+      ${esc(cTxt)}
+    </td>
+
     <td style="white-space:nowrap; text-align:right">
       <div class="t-actions">
-        <button class="t-ico ok" type="button" title="Guardar" aria-label="Guardar" data-save>💾</button>
-        <button class="t-ico" type="button" title="Cancelar" aria-label="Cancelar" data-cancel>✖️</button>
-        <button class="t-ico danger" type="button" title="Quitar" aria-label="Quitar" data-del>🗑️</button>
+        <button class="t-ico ok" type="button" data-save>💾</button>
+        <button class="t-ico" type="button" data-cancel>✖️</button>
+        <button class="t-ico danger" type="button" data-del>🗑️</button>
       </div>
     </td>
   `;
-tr.addEventListener('keydown', (e)=>{
-  if (e.key === 'Enter'){
-    e.preventDefault();
-    tr.querySelector('[data-save]')?.click();
-  }
-  if (e.key === 'Escape'){
-    e.preventDefault();
-    tr.querySelector('[data-cancel]')?.click();
-  }
-});
+
+  tr.addEventListener('keydown', (e)=>{
+    if (e.key === 'Enter'){ e.preventDefault(); tr.querySelector('[data-save]')?.click(); }
+    if (e.key === 'Escape'){ e.preventDefault(); tr.querySelector('[data-cancel]')?.click(); }
+  });
 
   const getBody = ()=>({
-    id: it.id, // важно для update
-    email:      tr.querySelector('[data-email]').value.trim().toLowerCase(),
-    wa:         tr.querySelector('[data-wa]').value.trim(),
+    id: it.id,
+    // ✅ ВАЖНО: email не берём из input (он disabled) — шлём исходный
+    email: (it.email || '').trim().toLowerCase(),
+    wa: tr.querySelector('[data-wa]').value.trim(),
     first_name: tr.querySelector('[data-first]').value.trim(),
-    last_name1: it.last_name1 || '',
-    last_name2: it.last_name2 || '',
-    bio:        tr.querySelector('[data-bio]').value
+    last_name1: tr.querySelector('[data-last1]').value.trim(),
+    last_name2: tr.querySelector('[data-last2]').value.trim(),
   });
 
   tr.querySelector('[data-cancel]').onclick = ()=> tr.replaceWith(rowView(it));
@@ -235,11 +289,10 @@ tr.addEventListener('keydown', (e)=>{
   tr.querySelector('[data-save]').onclick = async ()=>{
     const body = getBody();
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)){
+    if (!body.email){
       alert('E-mail inválido'); return;
     }
 
-    // опционально: простая валидация WA (если ввели — 9 цифр)
     if (body.wa && !/^\d{9}$/.test(body.wa)){
       alert('WhatsApp debe tener 9 dígitos'); return;
     }
@@ -252,7 +305,15 @@ tr.addEventListener('keydown', (e)=>{
       });
       await refreshList();
     }catch(err){
-      alert(err.message || 'Error');
+      const m = String(err?.message || '');
+      if (m.includes('email_change_forbidden')){
+        alert(
+          'No se puede cambiar el e-mail de un docente existente.\n\n' +
+          'Solución: elimínalo de la lista y vuelve a añadirlo con el nuevo e-mail.'
+        );
+        return;
+      }
+      alert(m || 'Error');
     }
   };
 
@@ -279,7 +340,10 @@ tr.addEventListener('keydown', (e)=>{
       const q = nrm(searchIn?.value || '');
       if (!q) { drawRows(allItems); return; }
       const filtered = allItems.filter(it=>{
-        const hay = [it.display_name, it.first_name, it.last_name1, it.last_name2, it.email, it.wa, it.bio].map(nrm).join(' ');
+        const hay = [
+  it.display_name, it.first_name, it.last_name1, it.last_name2, it.email, it.wa,
+  cursosText(it)
+].map(nrm).join(' ');
         return hay.includes(q);
       });
       drawRows(filtered);
@@ -296,7 +360,6 @@ tr.addEventListener('keydown', (e)=>{
         first_name: $('#mzt-first').value.trim(),
         last_name1: $('#mzt-last1').value.trim(),
         last_name2: $('#mzt-last2').value.trim(),
-        bio:        $('#mzt-bio').value,
 		  wa:         $('#mzt-wa').value.trim()
       };
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)){
@@ -309,7 +372,6 @@ tr.addEventListener('keydown', (e)=>{
 		$('#mzt-first').value = '';
 		$('#mzt-last1').value = '';
 		$('#mzt-last2').value = '';
-		$('#mzt-bio').value = '';
 
         msg.innerHTML = '<span class="mz-help" style="color:#0b6d22">Guardado.</span>';
         refreshList();
@@ -329,6 +391,22 @@ tr.addEventListener('keydown', (e)=>{
   document.addEventListener('mz:admin-auth', (e)=>{ if (e?.detail?.ok) initTeachersOnce(); });
 
   // 3) ленивый init при показе панели «Docentes»
-  document.getElementById('ui-teachers')
-    ?.addEventListener('mz:pane:show', (ev)=>{ if (ev?.detail?.mod==='teachers') initTeachersOnce(); });
+document.getElementById('ui-teachers')
+  ?.addEventListener('mz:pane:show', (ev)=>{
+    if (ev?.detail?.mod !== 'teachers') return;
+    if (!tok()) return;
+
+    // если панель уже инициализировалась — просто обновим данные
+    if (teachersReady && typeof refreshTeachersList === 'function'){
+      refreshTeachersList();
+      return;
+    }
+
+    // иначе — первая инициализация
+    initTeachersOnce();
+  });
+  
+  document.addEventListener('mz:teachers-updated', ()=>{
+  if (teachersReady && refreshTeachersList) refreshTeachersList();
+});
 })();

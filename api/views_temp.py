@@ -1,23 +1,31 @@
-from rest_framework.permissions import AllowAny, AllowAny
-from rest_framework.response import Response
-from rest_framework import status
-from api.models import UserProfile
-from panel.models import Curso, TempAccess
-from api.models import Enrol
-from rest_framework.decorators import api_view, permission_classes, authentication_classes
-from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from api.utils_temp import CsrfExemptSessionAuthentication
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from django.views.decorators.csrf import csrf_exempt
-from api.models import Curso, Enrol
-
 from api.utils_temp import (
+    ensure_teacher_of_course,
     is_teacher, two_digit_code,
     local_from_name, domain_from_course,
-    ensure_teacher_of_course,
 )
+from api.models import Curso, Enrol, UserProfile
+from api.utils_temp import CsrfExemptSessionAuthentication
 from django.contrib.auth import get_user_model
+from django.contrib.auth import login as django_login
+from django.contrib.auth.backends import ModelBackend
+from django.views.decorators.csrf import csrf_exempt
+from panel.models import Curso, TempAccess
+from rest_framework import status
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.permissions import AllowAny, AllowAny, IsAuthenticated
+from rest_framework.response import Response
 
+def build_me(user):
+    return {
+        "id": user.id,
+        "email": user.email or "",
+        "first_name": user.first_name or "",
+        "last_name": user.last_name or "",
+        "is_teacher": bool(getattr(user, "is_staff", False)),
+        "has_password": bool(user.has_usable_password()),
+    }
+    
 User = get_user_model()
 def split_full_name(full_name: str):
     parts = [p for p in (full_name or "").strip().split() if p]
@@ -298,7 +306,7 @@ def auth_temp_claim(request):
     )
     # можно ещё раскидать first_name/last_name, но не обязательно
     first, last1, last2 = split_full_name(full_name)
-
+    
     profile, _ = UserProfile.objects.get_or_create(user=user)
     profile.first_name = first
     profile.last_name1 = last1
@@ -312,7 +320,13 @@ def auth_temp_claim(request):
         defaults={"role": "student"},
     )
 
-    return Response({"ok": True, "email": email})
+    django_request = getattr(request, "_request", request)
+
+    # важно: указать backend (иначе иногда "backend isn't set")
+    user.backend = "django.contrib.auth.backends.ModelBackend"
+    django_login(django_request, user)
+
+    return Response({"ok": True, "email": email, "me": build_me(user)})
 # POST /meatze/v5/teacher/alumno/reset_pass
 @csrf_exempt
 @api_view(["POST"])

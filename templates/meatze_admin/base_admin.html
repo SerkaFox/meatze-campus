@@ -7,7 +7,7 @@
 
 {% block extra_head %}
 
-<link rel="stylesheet" href="{% static 'meatze/admin/teachers.css' %}">
+<link rel="stylesheet" href="{% static 'meatze/admin/teachers.css' %}?v={% now 'U' %}">
 <link rel="stylesheet" href="{% static 'meatze/admin/subs.css' %}">
 <link rel="stylesheet" href="{% static 'meatze/admin/horarios.css' %}">
 <link rel="stylesheet" href="{% static 'meatze/admin/cursos.css' %}">
@@ -95,8 +95,7 @@
 </script>
 <script src="{% static 'meatze/admin/admin-core.js' %}
 "></script>
-<script src="{% static 'meatze/admin/teachers.js' %}
-"></script>
+<script src="{% static 'meatze/admin/teachers.js' %}?v={% now 'U' %}"></script>
 <script src="{% static 'meatze/admin/cursos.js' %}
 "></script>
 <script src="{% static 'meatze/admin/horarios.js' %}?v={% now 'U' %}"></script>

@@ -161,6 +161,11 @@
     return kids;
   }
 
+if (form.dataset.ajax === 'copy-alumnos') {
+  // успех -> просто toast, НЕ трогаем DOM (исходник должен остаться)
+  toast('Duplicado en "Para alumnos" ✓', true);
+  return;
+}
   form.addEventListener('submit', async (e)=>{
     const url = (urlInp?.value || '').trim();
     if(!url) return; // пусть твоя валидация/UX решает

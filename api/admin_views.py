@@ -23,68 +23,60 @@ def _check_admin(request):
 
 # ========== DOCENTES ==========
 
+from django.db import transaction
+from .models import UserProfile
+from django.db import transaction
+from .models import UserProfile
+
 @api_view(["GET", "POST"])
 def admin_teachers(request):
-    """
-    GET  /meatze/v5/admin/teachers
-    POST /meatze/v5/admin/teachers   (upsert по email)
-    """
     err = _check_admin(request)
     if err:
         return err
 
     if request.method == "GET":
-        teachers = User.objects.filter(is_teacher=True).order_by("first_name", "last_name")
+        qs = UserProfile.objects.select_related("user").filter(is_teacher=True).order_by("first_name", "last_name1", "last_name2")
         items = []
-        for u in teachers:
-            # делим last_name на 2 части (как в WP)
-            ln1 = ""
-            ln2 = ""
-            if u.last_name:
-                parts = u.last_name.split()
-                if parts:
-                    ln1 = parts[0]
-                    ln2 = " ".join(parts[1:])
+        for p in qs:
+            u = p.user
             items.append({
                 "id": u.id,
-                "email": u.email,
-                "first_name": u.first_name or "",
-                "last_name1": ln1,
-                "last_name2": ln2,
-                "display_name": u.get_full_name() or u.email,
-                "bio": getattr(u, "bio", "") or "",
+                "email": u.email or "",
+                "first_name": p.first_name or "",
+                "last_name1": p.last_name1 or "",
+                "last_name2": p.last_name2 or "",
+                "display_name": p.display_name or u.get_full_name() or u.email,
+                "bio": p.bio or "",
+                "wa": p.wa or "",
             })
         return Response({"items": items})
 
-    # POST: создать/обновить по email
     data = request.data or {}
     email = (data.get("email") or "").strip().lower()
     if not email:
         return Response({"error": "email_required"}, status=400)
 
     first = (data.get("first_name") or "").strip()
-    ln1 = (data.get("last_name1") or "").strip()
-    ln2 = (data.get("last_name2") or "").strip()
-    bio = (data.get("bio") or "").strip()
+    ln1   = (data.get("last_name1") or "").strip()
+    ln2   = (data.get("last_name2") or "").strip()
+    bio   = (data.get("bio") or "").strip()
+    wa    = (data.get("wa") or "").strip()
 
-    last_name = " ".join(p for p in [ln1, ln2] if p).strip()
+    with transaction.atomic():
+        user, _ = User.objects.get_or_create(email=email, defaults={"username": email})
+        prof, _ = UserProfile.objects.get_or_create(user=user)
 
-    user, _created = User.objects.get_or_create(email=email, defaults={
-        "username": email,
-    })
-    # обновляем поля
-    if first:
-        user.first_name = first
-    if last_name:
-        user.last_name = last_name
-    user.is_teacher = True
-    if hasattr(user, "bio"):
-        user.bio = bio
-    user.save()
+        prof.first_name = first
+        prof.last_name1 = ln1
+        prof.last_name2 = ln2
+        prof.bio = bio
+        prof.wa = wa
+        prof.is_teacher = True
+        # display_name сам соберётся в save()
+        prof.save()
 
     return Response({"ok": True, "id": user.id})
     
-
 @api_view(["POST"])
 def admin_teacher_update(request, pk: int):
     """
@@ -123,12 +115,15 @@ def admin_teacher_update(request, pk: int):
     return Response({"ok": True})
 
 
+from django.db import transaction
+from django.utils import timezone
+from .models import UserProfile, Enrol
+from django.db import transaction
+from django.utils import timezone
+from .models import UserProfile, Enrol
+
 @api_view(["POST"])
 def admin_teacher_delete(request, pk: int):
-    """
-    POST /meatze/v5/admin/teachers/<id>/delete
-    Важно: лучше НЕ удалять юзера, а просто снять флаг is_teacher.
-    """
     err = _check_admin(request)
     if err:
         return err
@@ -138,8 +133,22 @@ def admin_teacher_delete(request, pk: int):
     except User.DoesNotExist:
         return Response({"error": "not_found"}, status=404)
 
-    user.is_teacher = False
-    user.save()
+    with transaction.atomic():
+        # снять teacher
+        UserProfile.objects.filter(user=user).update(is_teacher=False)
+
+        # убрать преподавательские enrol
+        Enrol.objects.filter(user=user, role="teacher").delete()
+
+        # (опционально) освободить email, чтобы можно было создать нового юзера с этим email
+        old_email = (user.email or "").strip().lower()
+        if old_email:
+            stamp = timezone.now().strftime("%Y%m%d%H%M%S")
+            user.email = f"deleted+{user.id}.{stamp}@invalid.local"
+            if user.username and "@" in user.username:
+                user.username = user.email
+            user.save(update_fields=["email", "username"])
+
     return Response({"ok": True})
 # ========== CURSOS (ADMIN) ==========
 
@@ -319,3 +328,88 @@ def admin_cursos_assign(request):
         )
 
     return Response({"ok": True, "assigned": len(teacher_ids_int)})
+
+
+from django.db.models import Q
+
+@api_view(["GET"])
+def admin_debug_user(request):
+    """
+    GET /meatze/v5/admin/debug/user?email=a@b.com
+    Показывает всех пользователей с таким email (или близко) + их enrols.
+    """
+    err = _check_admin(request)
+    if err:
+        return err
+
+    email = (request.GET.get("email") or "").strip().lower()
+    if not email:
+        return Response({"error": "email_required"}, status=400)
+
+    # На случай пробелов/регистра и т.п.
+    users = User.objects.filter(email__iexact=email).order_by("id")
+
+    items = []
+    for u in users:
+        enrols = Enrol.objects.filter(user=u).order_by("codigo", "role")
+        items.append({
+            "id": u.id,
+            "email": u.email,
+            "username": getattr(u, "username", ""),
+            "is_teacher": getattr(u, "is_teacher", None),
+            "first_name": u.first_name or "",
+            "last_name": u.last_name or "",
+            "enrols": [{"codigo": e.codigo, "role": e.role, "id": e.id} for e in enrols],
+        })
+
+    return Response({"email": email, "count": len(items), "users": items})
+    
+# api/admin_views.py
+from django.utils import timezone
+from django.db import transaction
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from django.contrib.auth import get_user_model
+
+from .models import Enrol, UserProfile, PendingRole
+
+User = get_user_model()
+
+@api_view(["POST"])
+def admin_user_purge(request, pk:int):
+    err = _check_admin(request)
+    if err:
+        return err
+
+    hard = bool((request.data or {}).get("hard"))  # если захочешь прям delete()
+
+    try:
+        user = User.objects.get(pk=pk)
+    except User.DoesNotExist:
+        return Response({"error":"not_found"}, status=404)
+
+    with transaction.atomic():
+        # 1) убираем все enrol-ы
+        Enrol.objects.filter(user=user).delete()
+
+        # 2) снимаем teacher в профиле (или удаляем профиль целиком)
+        UserProfile.objects.filter(user=user).update(is_teacher=False)
+
+        # 3) убираем pending роли (по желанию)
+        PendingRole.objects.filter(user=user).delete()
+
+        if hard:
+            # ВНИМАНИЕ: удалит user и каскадом всё, что на него ссылается
+            user.delete()
+            return Response({"ok": True, "hard_deleted": True})
+
+        # 4) освобождаем email (иначе новый user с этим email не создастся)
+        old_email = (user.email or "").strip().lower()
+        stamp = timezone.now().strftime("%Y%m%d%H%M%S")
+        user.email = f"deleted+{user.id}.{stamp}@invalid.local"
+        # если username = email — тоже меняем
+        if (user.username or "").strip() == "" or "@" in (user.username or ""):
+            user.username = user.email
+        user.save(update_fields=["email", "username"])
+
+    return Response({"ok": True, "freed_email": old_email, "user_id": pk})

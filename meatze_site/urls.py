@@ -15,7 +15,6 @@ from api.views_events import log_learning_event, admin_lanbide_activity, admin_l
 
 from api.views_horario_day import horario_day, horario_slot_delete, horario_day_delete
 
-
 urlpatterns = [
     path("me", api_auth.me_view),
     path("", home, name="home"),
@@ -53,6 +52,7 @@ urlpatterns = [
     path("meatze/v5/auth/request_pin", api_auth.request_pin),
     path("meatze/v5/auth/verify_pin", api_auth.verify_pin),
 
+
     path("meatze/v5/teacher/temp/create", views_temp.teacher_temp_create),
     path("meatze/v5/teacher/temp/list", views_temp.teacher_temp_list),
     path("meatze/v5/teacher/temp/rotate", views_temp.teacher_temp_rotate),
@@ -68,6 +68,7 @@ urlpatterns = [
     path("meatze/v5/ai/help", ai_help),
     
     # docentes
+    
     path("meatze/v5/admin/teachers", api_views.admin_teachers_upsert),
     path("meatze/v5/admin/teachers/<int:user_id>", api_views.admin_teacher_update),
     path("meatze/v5/admin/teachers/<int:user_id>/delete", api_views.admin_teacher_delete),

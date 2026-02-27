@@ -364,19 +364,39 @@ def _split_last_name(last_name: str):
 @require_admin_token
 @require_http_methods(["GET"])
 def admin_teachers_list(request):
-    """
-    GET /meatze/v5/admin/teachers
-    Список преподавателей для панели Docentes.
-    Берём всех пользователей с is_staff=True.
-    """
     qs = (
         User.objects.filter(is_staff=True)
         .select_related("profile")
         .order_by("first_name", "last_name", "email")
     )
 
+    users = list(qs)
+    user_ids = [u.id for u in users]
+
+    # все назначения teacher по этим пользователям
+    enrols = (
+        Enrol.objects
+        .filter(user_id__in=user_ids, role="teacher")
+        .values_list("user_id", "codigo")
+    )
+
+    by_user = {}
+    codigos = set()
+    for uid, codigo in enrols:
+        codigo = (codigo or "").strip().upper()
+        if not codigo:
+            continue
+        by_user.setdefault(uid, []).append(codigo)
+        codigos.add(codigo)
+
+    # подтянем названия курсов
+    titulo_by_codigo = dict(
+        Curso.objects.filter(codigo__in=list(codigos))
+        .values_list("codigo", "titulo")
+    )
+
     items = []
-    for u in qs:
+    for u in users:
         profile = getattr(u, "profile", None)
         wa = (profile.wa if profile else "") or ""
         first_name = (profile.first_name if profile and profile.first_name else u.first_name or "").strip()
@@ -387,7 +407,9 @@ def admin_teachers_list(request):
             if profile and profile.display_name
             else (u.get_full_name() or u.username or u.email)
         )
-        bio = (profile.bio if profile else "") or ""
+
+        cods = by_user.get(u.id, []) or []
+        cursos = [{"codigo": c, "titulo": (titulo_by_codigo.get(c) or "")} for c in sorted(set(cods))]
 
         items.append({
             "id": u.id,
@@ -397,10 +419,13 @@ def admin_teachers_list(request):
             "last_name1": last_name1,
             "last_name2": last_name2,
             "display_name": display_name,
-            "bio": bio,
+            "cursos": cursos,          # ✅ НОВОЕ
         })
 
     return JsonResponse({"items": items})
+    
+    
+from django.db import transaction, IntegrityError
 
 @require_admin_token
 @csrf_exempt
@@ -414,7 +439,7 @@ def admin_teachers_upsert(request):
     except json.JSONDecodeError:
         return JsonResponse({"ok": False, "message": "json_invalid"}, status=400)
 
-    user_id = data.get("id")  # ✅ важное
+    user_id = data.get("id")
     email = (data.get("email") or "").strip().lower()
     if not email:
         return JsonResponse({"ok": False, "message": "email_required"}, status=400)
@@ -422,36 +447,73 @@ def admin_teachers_upsert(request):
     first_name = (data.get("first_name") or "").strip()
     last1 = (data.get("last_name1") or "").strip()
     last2 = (data.get("last_name2") or "").strip()
-    bio = (data.get("bio") or "").strip()
-    wa  = (data.get("wa") or "").strip()  # ✅ важное
+    bio  = (data.get("bio") or "").strip()
+    wa   = (data.get("wa") or "").strip()
     full_last = " ".join(p for p in [last1, last2] if p).strip()
 
     with transaction.atomic():
-        # 1) если пришёл id — это UPDATE конкретного юзера
         user = None
+
+        # =========================
+        # A) UPDATE по ID
+        # =========================
         if user_id:
             user = User.objects.filter(pk=int(user_id)).first()
             if not user:
                 return JsonResponse({"ok": False, "message": "not_found"}, status=404)
 
-            # конфликт email только если меняем email на чужой
-            if email and (user.email or "").lower() != email:
-                conflict = User.objects.filter(email=email).exclude(pk=user.pk).first()
-                if conflict:
-                    return JsonResponse({"ok": False, "message": "email_in_use"}, status=409)
-                user.email = email
-                user.username = email  # у тебя username=email
+            current_email = ((user.email or user.username or "")).strip().lower()
 
-        # 2) иначе — CREATE / PROMOTE
+            # ❌ запрещаем менять email (и НЕ трогаем username)
+            if email and email != current_email:
+                return JsonResponse({
+                    "ok": False,
+                    "message": "email_change_forbidden",
+                    "detail": (
+                        "No se puede cambiar el e-mail de un docente existente. "
+                        "Elimínalo y vuelve a añadirlo con el nuevo e-mail."
+                    )
+                }, status=409)
+
+        # =========================
+        # B) UPSERT по email (CREATE/PROMOTE)
+        # =========================
         if not user:
-            existing = User.objects.filter(email=email).first()
-            if existing:
-                # если уже docente — просто обновим (а не 409)
-                user = existing
-            else:
-                user = User.objects.create(email=email, username=email)
+            # 1) сначала ищем по username=email (это твой уникальный ключ)
+            user = User.objects.filter(username__iexact=email).first()
 
-        # делаем docente
+            # 2) если не нашли — ищем по email
+            if not user:
+                user = User.objects.filter(email__iexact=email).first()
+
+            # 3) если нашли по email, но username другой — НЕ пытаемся менять username
+            #    это и вызывает UniqueViolation. Лучше вернуть 409 с инструкцией.
+            if user and (user.username or "").strip().lower() != email:
+                return JsonResponse({
+                    "ok": False,
+                    "message": "username_mismatch",
+                    "detail": (
+                        "Ese e-mail ya existe en el sistema con otro identificador. "
+                        "Para cambiarlo, elimina el usuario anterior (purge) y vuelve a crearlo."
+                    )
+                }, status=409)
+
+            # 4) если всё ещё нет — создаём (с защитой от гонки)
+            if not user:
+                try:
+                    user = User.objects.create(username=email, email=email)
+                except IntegrityError:
+                    # на случай параллельного запроса — ещё раз читаем
+                    user = User.objects.filter(username__iexact=email).first()
+                    if not user:
+                        raise
+
+            # 5) если user найден по username=email, но email у него был "deleted+...@invalid"
+            #    можно спокойно вернуть email обратно (email не уникальный обычно)
+            if (user.email or "").strip().lower() != email:
+                user.email = email
+
+        # --- дальше обновляем поля преподавателя ---
         user.first_name = first_name
         user.last_name = full_last
         user.is_staff = True
@@ -462,15 +524,15 @@ def admin_teachers_upsert(request):
         profile.last_name1 = last1
         profile.last_name2 = last2
         profile.bio = bio
-        profile.wa = wa  # ✅ сохранится + нормализуется в save()
-        # display_name можно не трогать — твой save() сам соберёт если пусто
+        profile.wa = wa
         if (data.get("display_name") or "").strip():
             profile.display_name = (data.get("display_name") or "").strip()
+        profile.is_teacher = True if hasattr(profile, "is_teacher") else getattr(profile, "is_teacher", False)
         profile.save()
 
     return JsonResponse({"ok": True, "id": user.id})
-
-
+    
+    
 @require_admin_token
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -654,7 +716,7 @@ def admin_cursos_upsert(request):
                 # переносим записи CursoFile без копирования файла на диск
                 src_qs = (CursoFile.objects
                           .filter(curso=src)
-                          .only("tipo", "module_key", "title", "file", "size", "ext", "share_alumnos", "uploaded_by"))
+                          .only("tipo", "module_key", "title", "file", "size", "ext", "share_alumnos", "uploaded_by", "folder_path"))
 
                 batch = []
                 for f in src_qs:
@@ -667,6 +729,7 @@ def admin_cursos_upsert(request):
                         size=f.size,
                         ext=f.ext,
                         share_alumnos=f.share_alumnos,
+                        folder_path=f.folder_path,
                     )
                     nf.file.name = f.file.name  # ✅ та же ссылка
                     batch.append(nf)

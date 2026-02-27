@@ -675,3 +675,20 @@
 
 /* на всякий случай */
 body{ overflow-x:hidden; }
+
+.mzh-search-dd{
+  position:relative;
+  margin-top:6px;
+  background:#0f1115; border:1px solid #2a2f3a; border-radius:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.35);
+  overflow:hidden;
+}
+.mzh-search-item{
+  padding:10px 12px; cursor:pointer; display:flex; gap:10px; align-items:flex-start;
+  border-top:1px solid rgba(255,255,255,.06);
+}
+.mzh-search-item:first-child{ border-top:none; }
+.mzh-search-item:hover{ background:rgba(255,255,255,.06); }
+.mzh-search-item .d{ font-weight:900; white-space:nowrap; }
+.mzh-search-item .t{ font-size:12px; opacity:.85; line-height:1.25; }
+.mzh-search-empty{ padding:10px 12px; opacity:.7; }

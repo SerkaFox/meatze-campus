@@ -3,9 +3,18 @@
   <div class="mz-card">
 	<h3 style="margin:0 0 8px">Seleccionar curso y ámbito</h3>
 	<div class="mz-row" style="grid-template-columns:2fr 1fr">
-	  <label><span class="mz-help">Curso</span>
-		<select id="mzh-curso" class="mz-sel"><option value="">—</option></select>
-	  </label>
+<label style="grid-column:1 / -1">
+  <span class="mz-help">Filtrar curso</span>
+  <input id="mzh-curso-filter" class="mz-inp" placeholder="IFCT0309, marketing, ventas…">
+</label>
+
+<label>
+  <span class="mz-help">Curso</span>
+  <select id="mzh-curso" class="mz-sel">
+    <option value="">— Selecciona curso —</option>
+  </select>
+</label>
+
 	  <label><span class="mz-help">Ámbito</span>
 		<select id="mzh-tipo" class="mz-sel">
 		  <option value="curso">Curso</option>

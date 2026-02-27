@@ -1081,7 +1081,8 @@ async function uploadFilesToFolder(fileList, targetPath){
 
   const fd = new FormData();
   fd.append('action', 'upload_files_ajax');          // ✅ если бэк ждёт action
-  fd.append('folder_path', targetPath || '');        // ✅ куда грузим
+  fd.append('folder_path', targetPath || '');    
+  fd.append('audience', (window.__MZ_AUD__ || 'alumnos'));  // ✅ куда грузим
 
   // если твой endpoint требует код курса — ок, но лучше брать из data-атрибута страницы
   // fd.append('course_code', window.__MZ_CURSO_CODE__ || 'IFCT0309');
@@ -2078,3 +2079,96 @@ function mzIsDownloadForbidden(j, status){
   ].includes(r);
 }
 window.mzIsDownloadForbidden = mzIsDownloadForbidden;
+
+
+(function initShareToggleAjax(){
+  if (window.__MZ_SHARE_TOGGLE__) return;
+  window.__MZ_SHARE_TOGGLE__ = true;
+
+  document.addEventListener('submit', async (e)=>{
+    const form = e.target.closest('form[data-ajax="share-toggle"]');
+    if(!form) return;
+
+    e.preventDefault();
+
+    const csrftoken = getCookie('csrftoken');
+
+    let r, txt, j = {};
+    try{
+      r = await fetch(window.location.pathname + window.location.search, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'X-CSRFToken': csrftoken,
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: new FormData(form)
+      });
+
+      txt = await r.text();
+      try { j = txt ? JSON.parse(txt) : {}; } catch(_){}
+
+      if(!r.ok || !j.ok) throw new Error(j.error || j.message || ('HTTP ' + r.status));
+    }catch(err){
+      console.error(err);
+      alert('No se pudo cambiar visibilidad: ' + (err.message || err));
+      return;
+    }
+
+    const fileId = String(j.file_id || form.dataset.fileId || '').trim();
+    const row =
+      document.querySelector(`.mz-tree-file[data-file-id="${CSS.escape(fileId)}"]`) ||
+      document.querySelector(`.mz-tree-file[data-drag-file="${CSS.escape(fileId)}"]`);
+
+    if(!row) return;
+
+    // ✅ 1) обновляем "Visible para alumnos" плашку
+    const want = !!j.share_alumnos;
+	// ✅ 3) обновляем mz-mat-tag (module_key) туда-обратно
+	if (j.module_key !== undefined){
+	  const tag = row.querySelector('.mz-mat-tag, .mz-tree-modtag');
+	  const mk = (j.module_key || '').trim();
+
+	  if(tag){
+		tag.textContent = mk ? mk : 'Sin módulo';
+		tag.classList.toggle('muted', !mk);
+	  }
+	}
+    let chip = row.querySelector('.mz-file-meta .mz-chip-mini[data-share-chip]');
+    if(!chip && want){
+      chip = document.createElement('span');
+      chip.className = 'mz-chip-mini';
+      chip.setAttribute('data-share-chip','1');
+      chip.textContent = 'Visible para alumnos';
+      row.querySelector('.mz-file-meta')?.appendChild(chip);
+    }
+    if(chip){
+      if(want){
+        chip.textContent = 'Visible para alumnos';
+        chip.hidden = false;
+      }else{
+        chip.remove(); // проще убрать полностью
+      }
+    }
+
+	// ✅ 4) обновляем кнопку (mobile icon OR desktop text)
+	const btn = form.querySelector('button[type="submit"]');
+	if(btn){
+	  const isIcon = (btn.textContent || '').includes('🙈') || (btn.textContent || '').includes('👥');
+
+	  if(isIcon){
+		btn.textContent = want ? '🙈' : '👥';
+	  }else{
+		btn.textContent = want ? 'Ocultar de alumnos' : 'Mostrar a alumnos';
+	  }
+
+	  btn.title = want ? 'Ocultar de alumnos' : 'Mostrar a alumnos';
+	  btn.setAttribute('aria-label', want ? 'Ocultar de alumnos' : 'Mostrar a alumnos');
+	}
+
+    // ✅ ВАЖНО: НИЧЕГО НЕ УДАЛЯЕМ И НЕ ПЕРЕНОСИМ
+    // максимум — пересинхроним карточки/поиск
+    window.mzMaterialsSyncCardsFromTree?.();
+    window.mzMaterialsReindexSearch?.();
+  });
+})();

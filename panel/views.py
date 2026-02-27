@@ -271,6 +271,7 @@ def parent_path(p: str) -> str:
 def leaf_name(p: str) -> str:
     p = (p or "").strip().strip("/")
     return p.split("/")[-1] if p else ""
+    
 @login_required
 @require_profile_complete
 def course_panel(request, codigo):
@@ -406,9 +407,13 @@ def course_panel(request, codigo):
 
     # ───────────── ВКЛАДКА "MATERIALES" ─────────────
     if active_tab == "materiales":
-        audience = request.GET.get("aud", "alumnos")  # alumnos/docentes/mis
         selected_mod = ""
-        sort = (request.GET.get("sort") or "new").strip()  # new/old/az/za
+        audience = (request.GET.get("aud") or request.POST.get("audience") or "alumnos").strip()
+
+        sort = (request.GET.get("sort") or request.POST.get("sort") or "new").strip()
+        if sort not in {"new", "old", "az", "za"}:
+            sort = "new"
+        context["sort"] = sort
         if sort not in {"new", "old", "az", "za"}:
             sort = "new"
         context["sort"] = sort
@@ -420,7 +425,7 @@ def course_panel(request, codigo):
             disabled = set(get_disabled_modules(curso, user) or [])
         context["disabled_modules"] = disabled  # если нужно в шаблон
 
-        current_path = _normalize_path(request.GET.get("p") or "")
+        current_path = _normalize_path(request.GET.get("p") or request.POST.get("folder_path") or "")
         context["current_path"] = current_path
         folders_qs = CursoFolder.objects.filter(curso=curso, is_deleted=False)
 
@@ -581,7 +586,7 @@ def course_panel(request, codigo):
             )
             
         # ===== TREE VIEW (folders + files) =====
-        view = (request.GET.get("view") or "tree").strip()
+        view = (request.GET.get("view") or request.POST.get("view") or "tree").strip()
         if view not in {"tree", "cards"}:
             view = "tree"
         context["view"] = view
@@ -695,6 +700,23 @@ def course_panel(request, codigo):
         if (not is_teacher) and disabled:
             files_qs = files_qs.exclude(module_key__in=disabled)
         files_qs = files_qs.filter(folder_path=current_path)
+
+        def tipo_from_audience(aud: str, user):
+            aud = (aud or "").strip()
+            if aud == "docentes":
+                return CursoFile.TIPO_DOCENTES
+            if aud == "mis":
+                return CursoFile.TIPO_PRIVADO
+            return CursoFile.TIPO_ALUMNOS
+
+        def _post_ctx():
+            aud = (request.POST.get("aud") or audience or "alumnos").strip()
+            p   = _normalize_path(request.POST.get("p") or current_path or "")
+            s   = (request.POST.get("sort") or sort or "new").strip()
+            v   = (request.POST.get("view") or view or "tree").strip()
+            if s not in {"new","old","az","za"}: s = "new"
+            if v not in {"tree","cards"}: v = "tree"
+            return aud, p, s, v
 
         # --- teacher POST ops (upload/delete/share/copy) ---
         if request.method == "POST" and is_teacher:
@@ -886,6 +908,10 @@ def course_panel(request, codigo):
                 folder_path = _normalize_path(request.POST.get("folder_path") or current_path or "")
                 files = request.FILES.getlist("files")
 
+                # ✅ тип берём из audience (а не hardcode)
+                aud_post = (request.POST.get("audience") or request.GET.get("aud") or audience or "alumnos").strip()
+                tipo = tipo_from_audience(aud_post, user)
+
                 if not files:
                     return JsonResponse({"ok": False, "error": "no_files"}, status=400)
 
@@ -894,7 +920,7 @@ def course_panel(request, codigo):
                     obj = CursoFile(
                         curso=curso,
                         uploaded_by=user,
-                        tipo=CursoFile.TIPO_ALUMNOS,  # или вычисли по audience
+                        tipo=tipo,
                         folder_path=folder_path,
                         title=f.name,
                         size=f.size,
@@ -904,15 +930,14 @@ def course_panel(request, codigo):
                     obj.file = f
                     obj.save()
 
-                    # вернём html элемента файла, чтобы UI обновился без reload
                     html = render_to_string(
                         "panel/partials/materiales_tree_file.html",
-                        {"f": obj, "is_teacher": True, "audience": audience},
+                        {"f": obj, "is_teacher": True, "audience": aud_post},
                         request=request
                     )
                     created_items.append({"id": obj.id, "file_html": html})
 
-                return JsonResponse({"ok": True, "files": created_items})            
+                return JsonResponse({"ok": True, "files": created_items})          
                         
                 
                 
@@ -1029,8 +1054,8 @@ def course_panel(request, codigo):
                 if request.headers.get("x-requested-with") == "XMLHttpRequest":
                     return JsonResponse({"ok": False, "error": "file_not_found"}, status=404)
 
-                return redirect(f"{request.path}?tab=materiales&aud={audience}&sort={sort}&p={current_path}")
-                
+                    return redirect(f"{request.path}?tab=materiales&aud={audience}&sort={sort}&p={current_path}")
+                    
             if action == "upload_folder_bundle":
                 files = request.FILES.getlist('files')
                 rels  = request.POST.getlist('paths')
@@ -1038,7 +1063,8 @@ def course_panel(request, codigo):
                 if len(files) != len(rels):
                     return JsonResponse({"ok": False, "error": "bad_payload"}, status=400)
 
-                tipo = CursoFile.TIPO_ALUMNOS  # или из GET/POST
+                aud_post = (request.POST.get("audience") or request.GET.get("aud") or audience or "alumnos").strip()
+                tipo = tipo_from_audience(aud_post, user)
 
                 created_files = 0
                 created_folders = set()
@@ -1048,12 +1074,10 @@ def course_panel(request, codigo):
                     if not rel:
                         continue
 
-                    # "Root/Sub/a.pdf" => folder="Root/Sub"
                     folder = rel.rsplit("/", 1)[0] if "/" in rel else ""
                     folder = normalize_path(folder)
 
                     if folder and folder not in created_folders:
-                        # создаём цепочку родителей тоже
                         cur = ""
                         for seg in folder.split("/"):
                             cur = f"{cur}/{seg}" if cur else seg
@@ -1075,15 +1099,34 @@ def course_panel(request, codigo):
                     created_files += 1
 
                 return JsonResponse({"ok": True, "files_created": created_files, "folders": len(created_folders)})
-
-            # share/unshare
+                # share/unshare (teacher)
             if "share_id" in request.POST:
                 fid = request.POST.get("share_id")
                 cf = CursoFile.objects.filter(pk=fid, curso=curso).first()
-                if cf:
-                    cf.share_alumnos = not cf.share_alumnos
-                    cf.save(update_fields=["share_alumnos"])
-                return redirect(f"{request.path}?tab=materiales&aud={audience}&sort={sort}")
+                if not cf:
+                    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                        return JsonResponse({"ok": False, "error": "file_not_found"}, status=404)
+                    return redirect(f"{request.path}?tab=materiales&aud={audience}&sort={sort}&p={current_path}&view={view}")
+
+                cf.share_alumnos = not bool(cf.share_alumnos)
+                cf.save(update_fields=["share_alumnos"])
+
+                # ✅ AJAX: НЕ редиректим, а отдаём состояние
+                if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                    return JsonResponse({
+                        "ok": True,
+                        "file_id": cf.id,
+                        "share_alumnos": bool(cf.share_alumnos),
+                        "tipo": cf.tipo,
+                        "folder_path": (cf.folder_path or ""),
+                    })
+
+                # fallback: обычный редирект
+                aud2 = (request.POST.get("aud") or audience or "alumnos").strip()
+                p2   = _normalize_path(request.POST.get("p") or current_path or "")
+                s2   = (request.POST.get("sort") or sort or "new").strip()
+                v2   = (request.POST.get("view") or view or "tree").strip()
+                return redirect(f"{request.path}?tab=materiales&aud={aud2}&sort={s2}&p={p2}&view={v2}")
 
             # copy to privados
             if "copy_id" in request.POST:
@@ -1095,6 +1138,7 @@ def course_panel(request, codigo):
                         uploaded_by=user,
                         tipo=CursoFile.TIPO_PRIVADO,
                         module_key=src.module_key,
+                        folder_path=src.folder_path,   # ✅ ВАЖНО: чтобы копия не улетала в корень
                         title=src.title,
                         file=src.file,
                         size=src.size,
@@ -1102,7 +1146,11 @@ def course_panel(request, codigo):
                         share_alumnos=False,
                     )
                     new.save()
-                return redirect(f"{request.path}?tab=materiales&aud={audience}&sort={sort}")
+
+                aud2, p2, s2, v2 = _post_ctx()
+                return redirect(f"{request.path}?tab=materiales&aud={aud2}&sort={s2}&p={p2}&view={v2}")
+                            
+            
 
         # ===== counts for filters BEFORE module filter =====
         from collections import Counter
