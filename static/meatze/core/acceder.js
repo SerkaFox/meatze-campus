@@ -76,12 +76,31 @@
     const u = new URL(location.href);
     return u.searchParams.get('next') || '';
   }
+  
 function finishAuthRedirect() {
   const u = new URL(location.href);
-  if (u.searchParams.get('tab') === 'profile') return; // на профиле НЕ редиректим
 
-  const next = u.searchParams.get('next') || '';
-  location.replace(next || '/alumno/');
+  const nextRaw = u.searchParams.get('next') || '';
+  const targetRaw = nextRaw || '/alumno/';
+
+  let target;
+  try {
+    target = new URL(targetRaw, location.origin);
+  } catch (_) {
+    target = new URL('/alumno/', location.origin);
+  }
+
+  // ✅ анти-петля: никогда не редиректим обратно на /acceder
+  if (target.pathname.startsWith('/acceder')) {
+    location.replace('/alumno/');
+    return;
+  }
+
+  // ✅ убираем tab=profile и прочие tab из next
+  target.searchParams.delete('tab');
+
+  const finalUrl = target.pathname + (target.search ? target.search : '') + (target.hash || '');
+  location.replace(finalUrl || '/alumno/');
 }
 
 
@@ -623,22 +642,25 @@ function setTab(tab){
   }
 }
 
+
 async function loadProfile(){
   const msgTop = document.getElementById('mz-prof-msg');
 
-const fFirst = document.getElementById('prof-first');
-const fLast1 = document.getElementById('prof-last1');
-const fLast2 = document.getElementById('prof-last2');
-const fDisp  = document.getElementById('prof-display');
-const fBio   = document.getElementById('prof-bio');
+  const fFirst = document.getElementById('prof-first');
+  const fLast1 = document.getElementById('prof-last1');
+  const fLast2 = document.getElementById('prof-last2');
+  const fDisp  = document.getElementById('prof-display');
+  const fBio   = document.getElementById('prof-bio');
 
   if (!fFirst || !fLast1) return;
 
   msgTop && (msgTop.textContent = 'Cargando…');
 
+  let pr = null;
+
   try{
-    const p = await api(V5 + '/me/profile');     // ✅ КАК В ОРИГИНАЛЕ
-    const pr = p.profile || p;
+    const p = await api(V5 + '/me/profile');
+    pr = p.profile || p;
 
     fFirst.value = pr.first_name   || '';
     fLast1.value = pr.last_name1   || '';
@@ -649,7 +671,10 @@ const fBio   = document.getElementById('prof-bio');
     msgTop && (msgTop.textContent = '');
   } catch(e){
     msgTop && (msgTop.textContent = e?.message || 'No se pudo cargar el perfil.');
+    return;
   }
+
+  await initTeacherCourses(pr);
 }
 
 
@@ -750,6 +775,97 @@ document.getElementById('btn-prof-save')?.addEventListener('click', saveProfile)
 	  setHelpUI('acc:login');
     setTab('login');
   }
+}
+
+async function initTeacherCourses(profile){
+  const box = document.getElementById('tc-box');
+  const q   = document.getElementById('tc-q');
+  const sel = document.getElementById('tc-sel');
+  const add = document.getElementById('tc-add');
+  const msg = document.getElementById('tc-msg');
+  const list= document.getElementById('tc-list');
+  if (!box || !sel || !add || !list) return;
+
+  const isTeacher = !!(profile && (profile.is_teacher === true || profile.is_teacher == 1));
+  if (!isTeacher) { box.style.display = 'none'; return; }
+  box.style.display = '';
+
+  let allCursos = []; // [{codigo,titulo}]
+  let my = (profile.teacher_courses || []).map(x => (x.codigo || '').toUpperCase());
+
+  function renderMy(items){
+    my = (items || []).map(x => (x.codigo || '').toUpperCase());
+    list.innerHTML = (items || []).map(it => `
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;
+           border:1px solid rgba(148,163,184,.25);border-radius:12px;padding:8px 10px;margin-top:8px">
+        <div style="min-width:0">
+          <div style="font-weight:800">${it.codigo}</div>
+          <div class="mz-help" style="margin:0;opacity:.85">${it.titulo || ''}</div>
+        </div>
+        <button class="mz-btn ghost sm" type="button" data-del="${it.codigo}">Quitar</button>
+      </div>
+    `).join('') || `<div class="mz-help" style="opacity:.8;margin-top:6px">Aún no estás suscrito.</div>`;
+  }
+
+  function renderAvail(){
+    const qq = (q?.value || '').trim().toLowerCase();
+    const filtered = allCursos
+      .filter(c => !my.includes((c.codigo||'').toUpperCase()))
+      .filter(c => !qq || (`${c.codigo} ${c.titulo||''}`.toLowerCase().includes(qq)));
+
+    sel.innerHTML = filtered.length
+      ? filtered.map(c => `<option value="${c.codigo}">${c.titulo ? `${c.titulo} — ${c.codigo}` : c.codigo}</option>`).join('')
+      : `<option value="" disabled selected>Sin resultados</option>`;
+  }
+
+  // грузим все курсы (у тебя уже есть endpoint)
+  try{
+    const r = await api(V5 + '/auth/temp_cursos');
+    allCursos = (r.items || []).map(x => ({
+      codigo: (x.codigo || '').toUpperCase(),
+      titulo: x.titulo || ''
+    }));
+  }catch(_){
+    allCursos = [];
+  }
+
+  renderMy(profile.teacher_courses || []);
+  renderAvail();
+
+  let t=null;
+  q?.addEventListener('input', () => { clearTimeout(t); t=setTimeout(renderAvail, 80); });
+
+  add.addEventListener('click', async () => {
+    const codigo = (sel.value || '').toUpperCase();
+    if (!codigo) return;
+    msg.textContent = '';
+    try{
+      const res = await api(V5 + '/me/profile', { method:'POST', body:{ teacher_add:[codigo] } });
+      const pr = res.profile || res;
+      renderMy(pr.teacher_courses || []);
+      renderAvail();
+      msg.textContent = 'Suscrito.';
+    }catch(e){
+      msg.textContent = e?.message || 'No se pudo suscribir.';
+    }
+  });
+
+  list.addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-del]');
+    if (!b) return;
+    const codigo = (b.getAttribute('data-del') || '').toUpperCase();
+    if (!codigo) return;
+    msg.textContent = '';
+    try{
+      const res = await api(V5 + '/me/profile', { method:'POST', body:{ teacher_remove:[codigo] } });
+      const pr = res.profile || res;
+      renderMy(pr.teacher_courses || []);
+      renderAvail();
+      msg.textContent = 'Eliminado.';
+    }catch(e2){
+      msg.textContent = e2?.message || 'No se pudo eliminar.';
+    }
+  });
 }
 
 

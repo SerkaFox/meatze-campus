@@ -180,7 +180,27 @@
       <label class="mz-label" for="prof-bio">Notas / bio</label>
       <textarea id="prof-bio" class="mz-inp" style="min-height:90px"></textarea>
     </div>
+<div id="tc-box" style="display:none;margin-top:12px">
+  <hr class="sep">
+  <div class="mz-label">Mis cursos (docente)</div>
+  <div class="mz-help">Añade o quita cursos para que aparezcan en tu panel.</div>
 
+  <label class="mz-help" style="margin-top:8px">Buscar curso</label>
+  <input id="tc-q" class="mz-inp" placeholder="Código o título…">
+
+  <label class="mz-help" style="margin-top:8px">Seleccionar</label>
+  <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+    <select id="tc-sel" class="mz-inp" style="flex:1;min-width:220px"></select>
+    <button id="tc-add" class="mz-btn" type="button">Suscribirme</button>
+  </div>
+
+  <div id="tc-msg" class="mz-help"></div>
+
+  <div style="margin-top:10px">
+    <div class="mz-help" style="opacity:.85">Ya suscrito:</div>
+    <div id="tc-list"></div>
+  </div>
+</div>
     <hr class="sep">
 
     <div>
@@ -260,5 +280,5 @@
 
 {% block extra_js %}
   <!-- ВАЖНО: путь -->
-  <script src="{% static 'meatze/core/acceder.js' %}?v={{ now|date:'U' }}"></script>
+  <script src="{% static 'meatze/core/acceder.js' %}?v={% now 'U' %}"></script>
 {% endblock %}

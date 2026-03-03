@@ -119,49 +119,65 @@
     menu.setAttribute('aria-hidden', v ? 'false' : 'true');
   }
 
-  // open/close menu
   btn.addEventListener('click', function(e){
     e.preventDefault();
     e.stopPropagation();
-    const open = btn.getAttribute('aria-expanded') !== 'true';
-    setOpen(open);
+    setOpen(btn.getAttribute('aria-expanded') !== 'true');
   });
 
   document.addEventListener('click', function(e){
     if (!wrap.contains(e.target)) setOpen(false);
   });
 
-  // actions
-menu.addEventListener('click', async function(e){
-  const item = e.target.closest('.mz-acc-item');
-  if (!item) return;
+  menu.addEventListener('click', async function(e){
+    const item = e.target.closest('.mz-acc-item');
+    if (!item) return;
 
-  const action = item.dataset.action || '';
+    const action = item.dataset.action || '';
+    if (!action) return;
 
-  // Если это <a> без action — НЕ мешаем браузеру перейти
-  if (!action) return;
+    e.preventDefault();
 
-  e.preventDefault();
+    if (action === 'profile') {
+      location.href = '/acceder/?tab=profile';
+      return;
+    }
 
-  if (action === 'profile') {
-    window.location.href = '/acceder/?tab=profile';
-    return;
-  }
-  if (action === 'panel') {
-    window.location.href = '/alumno/';
-    return;
-  }
-  if (action === 'logout') {
-    try {
-      await fetch('/meatze/v5/auth/logout', { method:'POST', credentials:'include' });
-    } catch(e) {}
-    window.location.href = '/';
-  }
-});
+    if (action === 'panel') {
+      location.href = '/alumno/';
+      return;
+    }
 
+    if (action === 'logout') {
+      try { await fetch('/meatze/v5/auth/logout', { method:'POST', credentials:'include' }); } catch(_){}
+      location.href = '/';
+    }
+  });
 })();
 </script>
+<script>
+(async function(){
+  // ✅ проверяем только внутри панели
+  if (!location.pathname.startsWith('/alumno')) return;
 
+  // ✅ и не трогаем /acceder
+  if (location.pathname.startsWith('/acceder')) return;
+
+  try{
+    const r = await fetch('/meatze/v5/me/profile', { credentials:'include', cache:'no-store' });
+    if (!r.ok) return;
+
+    const j = await r.json();
+    const pr = j.profile || j || {};
+
+    const needProfile = !String(pr.display_name || '').trim();
+    if (!needProfile) return;
+
+    const next = encodeURIComponent(location.pathname + location.search + location.hash);
+    location.replace('/acceder/?tab=profile&next=' + next);
+  }catch(_){}
+})();
+</script>
 <!-- ====== ЧАТ: как в оригинале ====== -->
 {% include "includes/chat_widget.html" %}
 <script src="{% static 'meatze/chat_widget/chat-widget.js' %}"></script>
