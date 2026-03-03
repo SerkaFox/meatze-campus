@@ -73,7 +73,48 @@
   font-weight:700;
   color:#334155;
 }
+.mz-access-info{
+  margin-bottom:18px;
+  padding:18px 20px;
+  border-radius:20px;
+  background:linear-gradient(145deg,#0f172a,#111c2f);
+  border:1px solid rgba(148,163,184,.25);
+  box-shadow:0 12px 32px rgba(0,0,0,.35);
+  color:#f1f5f9;
+}
 
+.mz-access-title{
+  font-size:22px;
+  font-weight:800;
+  margin-bottom:14px;
+}
+
+.mz-access-section{
+  margin-bottom:14px;
+}
+
+.mz-access-label{
+  font-size:15px;
+  font-weight:800;
+  margin-bottom:4px;
+  letter-spacing:.3px;
+}
+
+.mz-access-text{
+  font-size:15px;
+  line-height:1.5;
+  opacity:.95;
+}
+
+.mz-access-pin{
+  margin-top:10px;
+  padding:10px 12px;
+  border-radius:12px;
+  background:rgba(59,130,246,.15);
+  border:1px solid rgba(59,130,246,.35);
+  font-size:14px;
+  font-weight:600;
+}
 </style>
 <div class="mz-wrap">
 
@@ -98,21 +139,23 @@
 
     {% else %}
       <!-- 🟡 ЗАГЛУШКА -->
-      <div class="mz-empty">
-        <h4>⏳ Aún no estás inscrito en ningún curso</h4>
-        <p>
-          Tu acceso está activo, pero todavía no se te ha asignado ningún curso.
-        </p>
-        <p>
-          Cuando comience el curso o se complete la matrícula,
-          aparecerá automáticamente aquí.
-        </p>
+<div class="mz-access-info">
+  <div class="mz-access-text">
+    <b>Si eres docente:</b><br>
+    Tu correo debe ser <b>confirmado por un administrador</b>.
+    Después ve a <b>Datos personales</b> para suscribirte a cursos,
+    o espera a que el administrador te asigne uno.
+  </div>
 
-        <div class="mz-empty-hint">
-          Si crees que es un error, contacta con tu centro de formación.
-        </div>
-      </div>
-    {% endif %}
+  <hr class="sep" style="margin:14px 0">
+
+  <div class="mz-access-text">
+    <b>Si eres alumno:</b><br>
+    El acceso a cursos <b>no utiliza correo real</b>.
+    Solo puedes entrar mediante una <b>cuenta de estudiante</b>
+    creada con el <b>código del profesor</b>.
+  </div>
+</div>   {% endif %}
 
   </div>
 </div>
