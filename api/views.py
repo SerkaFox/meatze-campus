@@ -876,19 +876,16 @@ def admin_fixed_nonlective(request):
     CACHE_KEY = "mz_fixed_nonlective"
 
     if request.method == "GET":
-        # 1) пробуем взять из кеша
         years = cache.get(CACHE_KEY)
         if years is None:
-            # 2) если в кэше нет — берём из базы
             cfg = MZSetting.objects.filter(key="fixed_nonlective").first()
             years = (cfg.value if cfg else {}) or {}
             cache.set(CACHE_KEY, years, None)
 
-        # гарантируем dict[str, list[str]]
         norm = {}
-        for y, v in years.items():
+        for y, v in (years or {}).items():
             if isinstance(v, list):
-                norm[str(y)] = v
+                norm[str(y)] = [str(x).strip() for x in v if str(x).strip()]
             elif isinstance(v, str):
                 norm[str(y)] = [s.strip() for s in v.split(",") if s.strip()]
             else:
@@ -896,17 +893,18 @@ def admin_fixed_nonlective(request):
         return JsonResponse({"years": norm})
 
     # ----- POST -----
+    # ✅ 1) parse JSON body
+    try:
+        raw = (request.body or b"").decode("utf-8").strip()
+        payload = json.loads(raw) if raw else {}
+    except Exception:
+        return JsonResponse({"error": "invalid_json"}, status=400)
+
     years_raw = payload.get("years") or {}
     if not isinstance(years_raw, dict):
         return JsonResponse({"error": "years_invalid"}, status=400)
 
     def expand_token_to_dates(y: int, token: str) -> list[str]:
-        """
-        "13/01"
-        "01/08-31/08"
-        "10-20/09"
-        → список "MM-DD"
-        """
         token = token.strip()
         if not token:
             return []
@@ -922,8 +920,7 @@ def admin_fixed_nonlective(request):
                 return []
             if end < start:
                 return []
-            out = []
-            cur = start
+            out, cur = [], start
             while cur <= end:
                 out.append(cur.strftime("%m-%d"))
                 cur += timedelta(days=1)
@@ -940,8 +937,7 @@ def admin_fixed_nonlective(request):
                 return []
             if end < start:
                 return []
-            out = []
-            cur = start
+            out, cur = [], start
             while cur <= end:
                 out.append(cur.strftime("%m-%d"))
                 cur += timedelta(days=1)
@@ -979,12 +975,10 @@ def admin_fixed_nonlective(request):
 
         new_years[str(y)] = sorted(mmdd_set)
 
-    # сохраняем в базу
     MZSetting.objects.update_or_create(
         key="fixed_nonlective",
         defaults={"value": new_years},
     )
-    # и в кэш
     cache.set(CACHE_KEY, new_years, None)
 
     return JsonResponse({"ok": True, "years": new_years})

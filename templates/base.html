@@ -169,11 +169,11 @@ menu.addEventListener('click', async function(e){
 
 {% block extra_js %}{% endblock %}
 
-<!-- ===== HELP (global) ===== 
+<!-- ===== HELP (global) ===== -->
 <button type="button" id="mz-help-fab" class="mz-help-fab" aria-label="Ayuda" title="Ayuda">
   <span class="mz-help-icon">?</span>
   <span id="mz-help-badge" class="mz-help-badge" aria-hidden="true">Ver video</span>
-</button>-->
+</button>
 
 
 <div id="mz-help-backdrop" class="mz-help-backdrop" aria-hidden="true"></div>
@@ -192,15 +192,16 @@ menu.addEventListener('click', async function(e){
 function buildContextUrl(){
   const base = (window.MEATZE?.V5 || '/meatze/v5').replace(/\/$/, '');
   const dbg = new URLSearchParams(location.search).get("help_debug") === "1";
-  const path = curPathOnly();
-  const query = curQueryOnly();
 
-  const ui = (window.MEATZE && window.MEATZE.HELP_UI) ? String(window.MEATZE.HELP_UI) : "";
+  const path = location.pathname || "/";
+  const query = location.search ? location.search.slice(1) : "";
+
+  const ui = (window.MEATZE?.HELP_UI || "").trim(); // 👈 ВАЖНО
 
   return base + '/help/context'
     + '?path=' + encodeURIComponent(path)
     + '&query=' + encodeURIComponent(query)
-    + '&ui=' + encodeURIComponent(ui)           // ✅ ДОБАВИЛИ
+    + (ui ? ('&ui=' + encodeURIComponent(ui)) : '') // 👈 ВАЖНО
     + (dbg ? '&help_debug=1' : '');
 }
 

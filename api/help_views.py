@@ -46,6 +46,8 @@ def _match(binding_path: str, req_path: str) -> bool:
 @require_GET
 def help_context(request):
     raw = unquote((request.GET.get("path", "") or "").strip())
+    raw_ui = (request.GET.get("ui", "") or "").strip()
+    separate_query = (request.GET.get("query", "") or "").strip()
 
     # raw может быть: "/alumno/curso/IFCT0309/?tab=materiales" или "/alumno/curso/IFCT0309/"
     if "?" in raw:
@@ -53,19 +55,15 @@ def help_context(request):
     else:
         req_path, req_query = raw, ""
 
-    # ✅ query можно прислать отдельно (это важнее)
-    separate_query = (request.GET.get("query", "") or "").strip()
+    # ✅ если query отдельно — он важнее
     if separate_query:
         req_query = separate_query
 
-    # ✅ ui (контекст UI: admin_mod:teachers, acc:pin_modal, etc.)
-    raw_ui = (request.GET.get("ui", "") or "").strip()
-
-    # ✅ общая строка матчинга для query_contains
-    # (то, что мы ищем подстрокой)
-    req_query_full = (req_query or "").strip()
+    # ✅ query_full = query + ui (ui всегда как "ui=...")
+    req_query_full = (req_query or "")
     if raw_ui:
-        req_query_full = (req_query_full + "&ui=" + raw_ui) if req_query_full else ("ui=" + raw_ui)
+        add = "ui=" + raw_ui
+        req_query_full = (req_query_full + "&" + add) if req_query_full else add
 
     role = _role_from_request(request)
     dbg = _dbg_enabled(request)
@@ -85,16 +83,17 @@ def help_context(request):
     def pick(role_name: str):
         qs = (HelpBinding.objects
               .select_related("playlist", "start_video")
-              .filter(role=role_name, is_active=True)
-              .order_by("-priority", "-id"))
+              .filter(role=role_name, is_active=True))
 
         if dbg:
             log.warning("[help] scan role=%s candidates=%s", role_name, qs.count())
 
+        best = None
+        best_score = None
+
         for hb in qs:
             hp = (hb.path or "").strip()
-
-            if not _match(hp, req_path.strip()):
+            if not _match(hp, req_path):
                 if dbg:
                     log.warning("[help] skip id=%s no-match hb.path=%r req_path=%r", hb.id, hp, req_path)
                 continue
@@ -105,21 +104,23 @@ def help_context(request):
                     log.warning("[help] skip id=%s query-miss need=%r req_query_full=%r", hb.id, qc, req_query_full)
                 continue
 
-            if dbg:
-                log.warning(
-                    "[help] HIT id=%s role=%s title=%r path=%r query_contains=%r pl=%s token=%s start=%s",
-                    hb.id, hb.role, hb.title, hb.path, hb.query_contains,
-                    hb.playlist_id,
-                    hb.playlist.share_token if hb.playlist else None,
-                    hb.start_video_id
-                )
-            return hb
+            score = (
+                1 if qc else 0,
+                len(qc),
+                int(getattr(hb, "priority", 0) or 0),
+                hb.id,
+            )
 
-        return None
+            if best_score is None or score > best_score:
+                best = hb
+                best_score = score
+
+        if dbg and best:
+            log.warning("[help] HIT id=%s role=%s title=%r path=%r query_contains=%r score=%r",
+                        best.id, best.role, best.title, best.path, best.query_contains, best_score)
+        return best
 
     best = pick(role)
-
-    # fallback на guest
     if not best and role != "guest":
         best = pick("guest")
 
@@ -129,9 +130,7 @@ def help_context(request):
         return JsonResponse({"ok": False, "role": role})
 
     pl = best.playlist
-    token = pl.share_token
-
-    embed_url = f"/videos/embed/{token}/?autoplay=1"
+    embed_url = f"/videos/embed/{pl.share_token}/?autoplay=1"
     if best.start_video_id:
         embed_url += f"&vid={best.start_video_id}"
 

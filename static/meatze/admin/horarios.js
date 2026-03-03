@@ -590,7 +590,31 @@ if (autoStart){
 if (btnExportGraphic){
   btnExportGraphic.addEventListener('click', exportWordGraphicAll);
 }
+    // === GLOBAL no lectivos centro (por año)
+    if (fixedToggle && fixedPanel){
+      fixedToggle.addEventListener('click', async ()=>{
+        const now = new Date();
+        const y1 = now.getFullYear();
+        const y2 = y1 + 1;
+        if (fixedY1Lbl) fixedY1Lbl.textContent = y1;
+        if (fixedY2Lbl) fixedY2Lbl.textContent = y2;
 
+        await loadFixedNonlective();
+        const y1Arr = (FIXED_NONLECTIVE[String(y1)] || []).map(md=>{
+          const [mm,dd] = md.split('-'); return `${dd}/${mm}`;
+        });
+        const y2Arr = (FIXED_NONLECTIVE[String(y2)] || []).map(md=>{
+          const [mm,dd] = md.split('-'); return `${dd}/${mm}`;
+        });
+        if (fixedY1) fixedY1.value = compressDateList(y1Arr);
+        if (fixedY2) fixedY2.value = compressDateList(y2Arr);
+
+        fixedPanel.style.display =
+          (fixedPanel.style.display === 'none' || !fixedPanel.style.display)
+            ? 'block'
+            : 'none';
+      });
+    }
     if (fixedSave){
       fixedSave.addEventListener('click', async ()=>{
         fixedMsg.textContent = '';

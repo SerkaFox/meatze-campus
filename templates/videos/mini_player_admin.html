@@ -177,30 +177,34 @@
             </select>
           </div>
 
-          <div class="actions" style="margin-top:6px">
-            <button type="submit" class="ok" id="hb_saveBtn">Guardar</button>
+<div class="actions" style="margin-top:6px">
+  <button type="submit" class="ok" id="hb_saveBtn">Guardar</button>
 
-            <form method="post" action="#" id="hb_toggleForm" style="margin:0">
-              {% csrf_token %}
-              <button type="submit" class="ghost" id="hb_toggleBtn" disabled>Activar/Desactivar</button>
-            </form>
+  <button type="submit" class="ghost" id="hb_toggleBtn" form="hb_toggleForm" disabled>
+    Activar/Desactivar
+  </button>
 
-            <form method="post" action="#" id="hb_deleteForm" style="margin:0">
-              {% csrf_token %}
-              <button type="submit" class="danger" id="hb_deleteBtn" disabled onclick="return confirm('¿Eliminar esta ayuda?');">Eliminar</button>
-            </form>
+  <button type="submit" class="danger" id="hb_deleteBtn" form="hb_deleteForm" disabled
+          onclick="return confirm('¿Eliminar esta ayuda?');">
+    Eliminar
+  </button>
 
-            <button type="button" class="ghost" id="hb_clearBtn">Limpiar</button>
-
-            <span class="mini" id="hb_mode" style="margin-left:auto;opacity:.8">Modo: crear</span>
-          </div>
+  <button type="button" class="ghost" id="hb_clearBtn">Limpiar</button>
+  <span class="mini" id="hb_mode" style="margin-left:auto;opacity:.8">Modo: crear</span>
+</div>
 
           <div class="mini" style="margin-top:8px;">
             Nota: aquí trabajamos con <b>1 vídeo por pantalla</b>. Si necesitas diferenciar sub-pantallas,
             usa <span class="tag">query_contains</span> (ej: <span class="tag">tab=tareas</span> o <span class="tag">ui=acceder:temp</span>).
           </div>
         </form>
+<form id="hb_toggleForm" method="post" action="#" style="display:none;">
+  {% csrf_token %}
+</form>
 
+<form id="hb_deleteForm" method="post" action="#" style="display:none;">
+  {% csrf_token %}
+</form>
       {% else %}
         <div class="msg">Primero elige una playlist arriba (Lista activa).</div>
       {% endif %}

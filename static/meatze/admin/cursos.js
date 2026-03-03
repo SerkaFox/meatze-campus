@@ -11,7 +11,6 @@ const qs = (bust=false) => (bust ? `?_=${Date.now()}` : '');
     const r = await fetch(url, {...opt, cache:'no-store', headers:{...(opt.headers||{}), 'Cache-Control':'no-cache'}});
     const txt = await r.text(); let j=null;
     try{ j = txt ? JSON.parse(txt) : {}; }catch(_){ throw new Error(`HTTP ${r.status} — ${txt.slice(0,160)}`); }
-    try{ j = txt ? JSON.parse(txt) : {}; }catch(_){ throw new Error(`HTTP ${r.status} — ${txt.slice(0,160)}`); }
     if (!r.ok) throw new Error(j?.message || j?.code || `HTTP ${r.status}`);
     return j;
   }
@@ -53,6 +52,30 @@ let cloneFromCodigo = null;   // ✅ NEW
 
     const esc = s => (s ?? '').toString().replace(/[&<>"]/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));
     const normId = v => String(v ?? '').trim().replace(/\D+/g, '');
+
+	function teacherLabel(obj){
+	  const fn = (obj?.first_name || obj?.nombre || '').toString().trim();
+	  const ln1 = (obj?.last_name || obj?.last_name1 || obj?.apellidos || '').toString().trim();
+	  const ln2 = (obj?.last_name2 || '').toString().trim();
+	  const full = `${fn} ${ln1} ${ln2}`.replace(/\s+/g,' ').trim();
+
+	  const dn = (obj?.display_name || obj?.name || '').toString().trim();
+
+	  // display_name часто = username (sba1315). Берём его ТОЛЬКО если нет ФИО
+	  // или если он выглядит как нормальное имя (есть пробел / есть буквы и нет цифр в конце).
+	  const looksLikeHumanName =
+		dn.includes(' ') || (/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s.'-]{2,}$/.test(dn) && !/\d$/.test(dn));
+
+	  if (full) return full;
+	  if (dn && looksLikeHumanName) return dn;
+
+	  const email = (obj?.email || obj?.user_email || '').toString().trim();
+	  if (email) return email;
+
+	  const id = String(obj?.user_id ?? obj?.uid ?? obj?.uid_str ?? obj?.id ?? '').trim();
+	  return id ? `ID ${id}` : 'Docente';
+	}
+
 
     // refs
     const tabForm   = $('#mzc-tab-form');
@@ -420,7 +443,7 @@ async function loadList(){
       for (const t of (teachers||[])){
         const id = normId(t.user_id ?? t.uid ?? t.uid_str ?? t.id);
         if (!id) continue;
-        const name = t.display_name || t.email || ('ID '+id);
+        const name = teacherLabel(t);
         const btn = document.createElement('button');
         btn.type='button'; btn.className='mz-chip--block'; btn.dataset.id=id;
         btn.setAttribute('aria-pressed', assignedSet.has(id) ? 'true' : 'false');
@@ -442,7 +465,7 @@ async function loadList(){
       const box = $('#mzc-ca-assigned');
       if (!Array.isArray(enrolItems)||!enrolItems.length){ box.innerHTML='No hay docentes asignados.'; return; }
       const chips = enrolItems.map(it=>{
-        const name = (it.display_name || it.email || ('ID '+(it.uid_str || it.user_id))).toString();
+        const name = teacherLabel(it);
         return `<span style="display:inline-block;border:1px solid #e6eef6;border-radius:10px;padding:3px 8px;margin:2px;background:#fbfdff">${name}</span>`;
       }).join(' ');
       box.innerHTML = `<div>Asignados ahora: ${chips}</div>`;

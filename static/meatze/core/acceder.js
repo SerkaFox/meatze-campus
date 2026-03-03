@@ -48,13 +48,33 @@
 
   // ===== UI helpers =====
   const STEPS = ['#step-email', '#step-temp', '#step-temp-finish', '#step-setpass'];
-  function showStep(sel) {
-    for (const s of STEPS) {
-      const el = $(s);
-      if (!el) continue;
-      el.style.display = (s === sel) ? '' : 'none';
-    }
-  }
+	function setHelpUI(code){
+	  window.MEATZE = window.MEATZE || {};
+	  window.MEATZE.HELP_UI = code || "";
+	}
+
+	// в твоём acceder.js:
+	function showStep(sel) {
+	  for (const s of STEPS) {
+		const el = $(s);
+		if (!el) continue;
+		el.style.display = (s === sel) ? '' : 'none';
+	  }
+
+	  // 👇 ВАЖНО: help-контекст всегда соответствует текущему шагу
+	  const map = {
+		'#step-email':       'ui=acceder:login',
+		'#step-temp':        'ui=acceder:temp_open',
+		'#step-temp-finish': 'ui=acceder:temp_finish',
+		'#step-setpass':     'ui=acceder:setpass',
+	  };
+	  setHelpUI(map[sel] || 'ui=acceder:login');
+	}
+  
+  function setHelpUI(v){
+  window.MEATZE = window.MEATZE || {};
+  window.MEATZE.HELP_UI = v || '';
+}
 
   function qNext() {
     const u = new URL(location.href);
@@ -531,6 +551,8 @@ if (card) {
     $('#btn-resend')    ?.addEventListener('click', requestPIN);
     $('#btn-verify')    ?.addEventListener('click', verifyPIN);
     $('#btn-setpass')   ?.addEventListener('click', setPassword);
+	$('#btn-send-pin')?.addEventListener('click', () => setHelpUI('acc:pin_request'));
+	$('#btn-open-temp')?.addEventListener('click', () => setHelpUI('acc:temp_open'));
 
 
 // === ENTER to submit (login / pin / temp) ===
@@ -594,16 +616,9 @@ function setTab(tab){
 
   if (!login || !prof) return;
 
-  if (tab === 'profile') {
-    login.style.display = 'none';
-    prof.style.display = '';
-    if (title) title.textContent = 'Datos personales';
-  } else {
-    prof.style.display = 'none';
-    login.style.display = '';
-    if (title) title.textContent = 'Acceso';
+  if (tab === 'profile') setHelpUI('ui=acceder:profile');
+  else setHelpUI('ui=acceder:login');
   }
-}
 
 async function loadProfile(){
   const msgTop = document.getElementById('mz-prof-msg');
@@ -735,8 +750,10 @@ document.getElementById('btn-prof-back')?.addEventListener('click', (e) => {
 
   if (tab === 'profile') {
     setTab('profile');
+	setHelpUI('acc:profile');
     loadProfile();
   } else {
+	  setHelpUI('acc:login');
     setTab('login');
   }
 }

@@ -228,11 +228,11 @@
 
   // При клике задаём контекст (и можешь сразу открывать help, если хочешь)
   btnPin?.addEventListener("click", () => {
-    window.MEATZE.HELP_UI = "teacher_pin";
+    window.MEATZE.HELP_UI = "acceder:pin_request"; // для PIN
   });
 
   btnTemp?.addEventListener("click", () => {
-    window.MEATZE.HELP_UI = "student_create";
+    window.MEATZE.HELP_UI = "acceder:temp_open";   // для ученика
   });
 })();
 </script>
