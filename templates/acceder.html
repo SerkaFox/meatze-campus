@@ -188,16 +188,35 @@
       <div class="mz-help">Déjalo vacío si no quieres cambiarla.</div>
     </div>
 
-    <div class="mz-grid2">
-      <div>
-        <label class="mz-help" for="prof-pass1">Nueva contraseña</label>
-        <input id="prof-pass1" class="mz-inp" type="password" autocomplete="new-password">
-      </div>
-      <div>
-        <label class="mz-help" for="prof-pass2">Repetir contraseña</label>
-        <input id="prof-pass2" class="mz-inp" type="password" autocomplete="new-password">
-      </div>
+<div class="mz-grid2" style="margin-top:10px">
+  <div>
+    <label class="mz-label">Nueva contraseña</label>
+    <div class="mz-field">
+      <input id="prof-pass1" type="password" class="mz-inp">
+      <button class="mz-reveal" type="button" aria-label="Mostrar contraseña" data-target="#prof-pass1">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+      </button>
     </div>
+  </div>
+
+  <div>
+    <label class="mz-label">Repetir contraseña</label>
+    <div class="mz-field">
+      <input id="prof-pass2" type="password" class="mz-inp">
+      <button class="mz-reveal" type="button" aria-label="Mostrar contraseña" data-target="#prof-pass2">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
 
     <div id="mz-prof-pass-msg" class="mz-help"></div>
 
@@ -228,11 +247,11 @@
 
   // При клике задаём контекст (и можешь сразу открывать help, если хочешь)
   btnPin?.addEventListener("click", () => {
-    window.MEATZE.HELP_UI = "acceder:pin_request"; // для PIN
+    window.MEATZE.HELP_UI = "teacher_pin";
   });
 
   btnTemp?.addEventListener("click", () => {
-    window.MEATZE.HELP_UI = "acceder:temp_open";   // для ученика
+    window.MEATZE.HELP_UI = "student_create";
   });
 })();
 </script>

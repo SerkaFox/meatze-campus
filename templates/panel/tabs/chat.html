@@ -742,6 +742,51 @@
   display:flex;
   width: fit-content;
 }
+/* ===== Attach preview ===== */
+#mz-chat-root .mz-attach-preview{
+  margin: 6px 2px 0;
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(148,163,184,.45);
+  background: rgba(255,255,255,.06);
+  color: #e5e7eb;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  box-shadow: 0 10px 24px rgba(15,23,42,.35);
+}
+
+#mz-chat-root .mz-attach-preview .name{
+  font-weight:800;
+  font-size:13px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  max-width: 52ch;
+}
+
+#mz-chat-root .mz-attach-preview .meta{
+  font-size:12px;
+  color:#9ca3af;
+}
+
+#mz-chat-root .mz-attach-preview .sp{
+  flex:1 1 auto;
+}
+
+#mz-chat-root .mz-attach-preview .rm{
+  border:1px solid rgba(148,163,184,.45);
+  background: rgba(255,255,255,.08);
+  color:#e5e7eb;
+  border-radius: 12px;
+  padding: 4px 8px;
+  cursor:pointer;
+}
+
+#mz-chat-root .mz-attach-preview .rm:hover{
+  background: rgba(56,189,248,.14);
+  border-color: rgba(56,189,248,.55);
+}
 </style>
 
 
@@ -916,6 +961,7 @@ async function api(url, options = {}) {
 			<div class="mz-input">
 			  <button id="mz-emoji" class="mzc-btn ghost mz-input-btn" title="Añadir emoji rápido">🙂</button>
 			  <textarea id="mzi" class="mzc-inp mz-input-text" placeholder="Escribe un mensaje... (Ctrl/⌘+Enter para enviar)"></textarea>
+			  <div id="mz-attach-preview" class="mz-attach-preview" style="display:none"></div>
 			  <input id="mzf" type="file" style="display:none"
        accept="image/*,application/pdf,
                application/msword,
@@ -940,6 +986,53 @@ async function api(url, options = {}) {
     const $send = root.querySelector('#mz-send');
     const $att  = root.querySelector('#mz-attach');
     const $file = root.querySelector('#mzf');
+	const $ap = root.querySelector('#mz-attach-preview');
+
+function fmtBytes(n){
+  const u = ['B','KB','MB','GB'];
+  let i = 0, v = n || 0;
+  while (v >= 1024 && i < u.length-1){ v /= 1024; i++; }
+  return `${(i===0 ? v : v.toFixed(1))} ${u[i]}`;
+}
+
+function showAttachPreview(file){
+  if (!$ap) return;
+  if (!file){
+    $ap.style.display = 'none';
+    $ap.innerHTML = '';
+    return;
+  }
+  const safeName = escapeHtml(file.name || 'archivo');
+  const meta = `${fmtBytes(file.size)} · ${escapeHtml(file.type || 'unknown')}`;
+
+  $ap.innerHTML = `
+    <div>📎</div>
+    <div class="sp">
+      <div class="name" title="${safeName}">${safeName}</div>
+      <div class="meta">${meta}</div>
+    </div>
+    <button type="button" class="rm" data-act="rm-attach" title="Quitar archivo">✕</button>
+  `;
+  $ap.style.display = 'flex';
+}
+
+function clearAttachment(){
+  $file.value = '';
+  showAttachPreview(null);
+}
+
+// когда пользователь выбрал файл — сразу показать
+$file.addEventListener('change', ()=>{
+  const f = $file.files && $file.files[0];
+  showAttachPreview(f || null);
+});
+
+// кнопка убрать файл
+$ap?.addEventListener('click', (ev)=>{
+  const b = ev.target.closest('[data-act="rm-attach"]');
+  if (!b) return;
+  clearAttachment();
+});
     const $emo  = root.querySelector('#mz-emoji');
     const $unr  = root.querySelector('#mzcu-unread');
 	const $title = root.querySelector('#mz-chat-title');
@@ -1612,7 +1705,7 @@ if (hasFile){
 }
  
       $in.value = '';
-      $file.value = '';
+      clearAttachment(); 
 
       await fetchMore();
       await refreshReactions();

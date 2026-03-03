@@ -253,6 +253,16 @@
     }
   }
 
+function removeLinksEmpty(){
+  const linkList = document.getElementById("linkList");
+  if(!linkList) return;
+
+  // удаляем именно пустое сообщение
+  linkList.querySelectorAll(".mz-help").forEach(el=>{
+    if((el.textContent || "").includes("No hay enlaces")) el.remove();
+  });
+}
+
   function onWsMessage(msg){
     if(!msg || !msg.type) return;
 
@@ -271,6 +281,8 @@
 	if(msg.type === "link.created" && msg.link){
 	  if(!window.mzShortshare?.renderLinkRow) return;
 	  if(document.querySelector(`[data-link-id="${msg.link.id}"]`)) return; // без дублей
+
+	  removeLinksEmpty();                 // ✅ убрать “No hay enlaces todavía.”
 	  window.mzShortshare.renderLinkRow(msg.link);
 	  return;
 	}
@@ -490,7 +502,7 @@
 
   function renderLinkRow(obj){
     if(!linkList) return;
-
+    if(!obj || obj.id == null) return; // ✅ не рисуем мусор без id
     const title = obj.title ? escapeHtml(obj.title) : escapeHtml(obj.url);
     const url = escapeHtml(obj.url);
     const exp = String(obj.expires_at);
@@ -560,20 +572,20 @@ window.mzShortshare.updateLinkExpiry = (id, expires_at) => {
           headers: {"X-CSRFToken": CSRF},
         });
 
-        const j = await r.json().catch(()=>({}));
-        if(!r.ok || !j.ok){
-          showLinkErr(j.error || `Error (${r.status})`);
-          return;
-        }
+		const j = await r.json().catch(()=>({}));
+		if(!r.ok || !j.ok){
+		  showLinkErr(j.error || `Error (${r.status})`);
+		  return;
+		}
 
-        if(linkUrl) linkUrl.value = "";
-        if(linkTitle) linkTitle.value = "";
+		if(linkUrl) linkUrl.value = "";
+		if(linkTitle) linkTitle.value = "";
 
-        // убрать "No hay enlaces todavía."
-        const empty = linkList.querySelector(".mz-help");
-        if(empty && empty.textContent.includes("No hay enlaces")) empty.remove();
+		// убрать "No hay enlaces todavía."
+		const empty = linkList.querySelector(".mz-help");
+		if(empty && empty.textContent.includes("No hay enlaces")) empty.remove();
 
-        renderLinkRow(j);
+	
       }catch(e){
         console.error(e);
         showLinkErr("Network error");

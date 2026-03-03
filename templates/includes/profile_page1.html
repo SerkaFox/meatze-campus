@@ -17,7 +17,7 @@
 
 <div class="mz-grid2" style="margin-top:10px">
   <div>
-    <label class="mz-label" for="mz-prof-first">Nombre <span class="mz-req">*</span></label>
+    <label class="mz-label" for="mz-prof-first">Nombre rere<span class="mz-req">*</span></label>
     <input id="mz-prof-first" class="mz-inp" autocomplete="given-name" placeholder="Ej.: Ana">
   </div>
   <div>
@@ -46,15 +46,33 @@
 <hr style="border:none;border-top:1px solid rgba(255,255,255,.12);margin:14px 0">
 
 <div class="mz-help">Cambiar contraseña (opcional)</div>
-
 <div class="mz-grid2" style="margin-top:10px">
   <div>
-    <label class="mz-label" for="mz-prof-pass1">Nueva contraseña</label>
-    <input id="mz-prof-pass1" class="mz-inp" type="password" autocomplete="new-password">
+    <label class="mz-label">Nueva contraseña</label>
+    <div class="mz-field">
+      <input id="prof-pass1" type="password" class="mz-inp">
+      <button class="mz-reveal" type="button" aria-label="Mostrar contraseña" data-target="#prof-pass1">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+      </button>
+    </div>
   </div>
+
   <div>
-    <label class="mz-label" for="mz-prof-pass2">Repetir contraseña</label>
-    <input id="mz-prof-pass2" class="mz-inp" type="password" autocomplete="new-password">
+    <label class="mz-label">Repetir contraseña</label>
+    <div class="mz-field">
+      <input id="prof-pass2" type="password" class="mz-inp">
+      <button class="mz-reveal" type="button" aria-label="Mostrar contraseña" data-target="#prof-pass2">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -124,6 +142,40 @@
     cursor:not-allowed;
     transform:none !important;
   }
+  
+  .mz-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.mz-field .mz-inp {
+  width: 100%;
+  padding-right: 38px;
+}
+
+.mz-field .mz-reveal {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: .6;
+}
+
+.mz-field .mz-reveal:hover {
+  opacity: 1;
+}
+.mz-field{ position:relative; display:flex; align-items:center; }
+.mz-field .mz-inp{ width:100%; padding-right:44px; }
+.mz-field .mz-reveal{
+  position:absolute; right:8px;
+  width:34px; height:34px;
+  display:flex; align-items:center; justify-content:center;
+  background:none; border:none; cursor:pointer;
+  color:#e5e7eb; opacity:.7;
+}
+.mz-field .mz-reveal:hover{ opacity:1; }
 </style>
 
 <script>
@@ -212,5 +264,57 @@
 
   // OPTIONAL: если страница открылась из "forced redirect", можно подсветить сильнее
   // (например по ?forced=1) — оставил как идею.
+})();
+</script>
+<script>
+(function(){
+  function ensureReveal(inputId){
+    const inp = document.getElementById(inputId);
+    if (!inp) return;
+
+    // если уже есть кнопка — ничего не делаем
+    const wrap = inp.closest('.mz-field') || inp.parentElement;
+    if (!wrap) return;
+    if (wrap.querySelector('.mz-reveal')) return;
+
+    // гарантируем оболочку mz-field
+    let field = inp.closest('.mz-field');
+    if (!field){
+      field = document.createElement('div');
+      field.className = 'mz-field';
+      inp.parentNode.insertBefore(field, inp);
+      field.appendChild(inp);
+    }
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'mz-reveal';
+    btn.setAttribute('aria-label','Mostrar contraseña');
+
+    btn.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
+    `;
+
+    btn.addEventListener('click', () => {
+      inp.type = (inp.type === 'password') ? 'text' : 'password';
+      btn.setAttribute('aria-pressed', String(inp.type === 'text'));
+      inp.focus({preventScroll:true});
+    });
+
+    field.appendChild(btn);
+  }
+
+  // запускаем после рендера DOM
+  function init(){
+    ensureReveal('prof-pass1');
+    ensureReveal('prof-pass2');
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 })();
 </script>

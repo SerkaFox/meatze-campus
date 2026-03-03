@@ -115,33 +115,5 @@
     accent-color: var(--mz-primary, #0e73b8);
   }
 </style>
-<script>
-(function(){
-  window.MEATZE = window.MEATZE || {};
-  window.MEATZE.HELP_UI = window.MEATZE.HELP_UI || "";
 
-  function setUI(v){
-    window.MEATZE.HELP_UI = v || "";
-  }
-
-  function setMod(mod){
-    setUI("admin_mod:" + String(mod || ""));
-  }
-
-  // ✅ 1) СРАЗУ при загрузке выставляем дефолт
-  const last = localStorage.getItem('mz_admin_last') || 'cursos';
-  setMod(last);
-
-  // ✅ 2) Меняем при клике по pills
-  document.addEventListener("click", (e) => {
-    const b = e.target.closest("#adm-pills .pill[data-mod]");
-    if (!b) return;
-    setMod(b.dataset.mod);
-  });
-
-  // ✅ 3) Пока закрыто (gate) — отдельный контекст
-  const enter = document.getElementById("adm-enter-shared");
-  enter?.addEventListener("click", () => setUI("admin_gate"));
-})();
-</script>
 {% endblock %}

@@ -789,9 +789,15 @@ function setBadge(n){
 </script>
 <script src="{% static 'js/traffic.js' %}?v={% now 'U' %}"></script>
 <script>
+(function(){
   window.MEATZE = window.MEATZE || {};
-  window.MEATZE.COURSE_CODE = "{{ curso.codigo }}";
-  window.MEATZE.IS_TEACHER = {{ is_teacher|yesno:"true,false" }};
+  window.MEATZE.COURSE_CODE = "{{ curso.codigo|escapejs }}";
+  window.MEATZE.IS_TEACHER  = {{ is_teacher|yesno:"true,false" }};
+
+  // ✅ ключевое: контекст помощи СРАЗУ, даже если в URL нет ?tab=
+  const tab = "{{ active_tab|default:'info'|escapejs }}";
+  window.MEATZE.HELP_UI = "panel:tab:" + (tab || "info");
+})();
 </script>
 <script>
 (function(){
@@ -899,5 +905,22 @@ function setBadge(n){
   });
 })();
 </script>
-
+<script>
+  (function(){
+    window.MEATZE = window.MEATZE || {};
+    window.MEATZE.COURSE_CODE = "{{ curso.codigo|escapejs }}";
+    window.MEATZE.HELP_UI = "panel:tab:{{ active_tab|escapejs }}";
+  })();
+</script>
+<script>
+(function(){
+  try{
+    const u = new URL(location.href);
+    if (!u.searchParams.get('tab')) {
+      u.searchParams.set('tab', 'info');
+      history.replaceState(null, "", u.toString()); // ✅ без перезагрузки
+    }
+  }catch(_){}
+})();
+</script>
 {% endblock %}

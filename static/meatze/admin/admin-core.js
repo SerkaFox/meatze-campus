@@ -86,7 +86,8 @@ document.getElementById('adm-shell')?.classList.remove('is-locked');
 
       const last = localStorage.getItem('mz_admin_last') || 'cursos';
       showPanel(last);
-
+window.MEATZE = window.MEATZE || {};
+window.MEATZE.HELP_UI = "admin_mod:" + (last || "cursos");
       document.dispatchEvent(new CustomEvent('mz:admin-auth', {detail:{ok:true}}));
       return true;
     }catch(_){
@@ -186,7 +187,10 @@ try{
 window.addEventListener('resize', ()=>{
   const last = localStorage.getItem('mz_admin_last') || 'cursos';
   // просто переустановит underline по текущей активной pill
+  
   showPanel(last);
+  window.MEATZE = window.MEATZE || {};
+window.MEATZE.HELP_UI = "admin_mod:" + (mod || "cursos");
 }, {passive:true});
 
 
@@ -225,4 +229,60 @@ document.addEventListener('click', (e)=>{
   if (!sessionStorage.getItem(KEY) && rem && localStorage.getItem(KEY)) {
     sessionStorage.setItem(KEY, localStorage.getItem(KEY));
   }
+})();
+
+
+(function(){
+  window.MEATZE = window.MEATZE || {};
+
+  const KEY = "mz_help_ui_last";
+
+  function setUI(v){
+    window.MEATZE.HELP_UI = v || "";
+    try { localStorage.setItem(KEY, window.MEATZE.HELP_UI); } catch(_){}
+  }
+
+  function getUrlTab(){
+    try {
+      const u = new URL(location.href);
+      return u.searchParams.get("tab") || "";
+    } catch(_) { return ""; }
+  }
+
+  function detectActiveTabFromDom(){
+    // подстрой под твои вкладки:
+    // 1) aria-current
+    const a = document.querySelector('[data-tab][aria-current="true"]');
+    if (a) return a.getAttribute("data-tab") || "";
+    // 2) class active
+    const b = document.querySelector('[data-tab].active, [data-tab].is-active');
+    if (b) return b.getAttribute("data-tab") || "";
+    return "";
+  }
+
+  // ✅ 1) init on load
+  const urlTab = getUrlTab();
+  const domTab = detectActiveTabFromDom();
+  const saved = (function(){ try { return localStorage.getItem(KEY) || ""; } catch(_) { return ""; } })();
+
+  const initial = urlTab
+    ? `tab:${urlTab}`
+    : domTab
+      ? `tab:${domTab}`
+      : saved
+        ? saved
+        : "tab:info"; // <-- дефолт
+
+  setUI(initial);
+
+  // ✅ 2) update on tab clicks (делегирование)
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-tab]");
+    if (t){
+      const tab = t.getAttribute("data-tab") || "";
+      if (tab) setUI(`tab:${tab}`);
+      return;
+    }
+  });
+
 })();

@@ -71,10 +71,6 @@
 	  setHelpUI(map[sel] || 'ui=acceder:login');
 	}
   
-  function setHelpUI(v){
-  window.MEATZE = window.MEATZE || {};
-  window.MEATZE.HELP_UI = v || '';
-}
 
   function qNext() {
     const u = new URL(location.href);
@@ -605,7 +601,6 @@ bindEnterSubmit();
     $('#btn-temp-check')?.addEventListener('click', tempVerify);
     $('#btn-temp-finish')?.addEventListener('click', tempClaim);
     $('#btn-temp-cancel')?.addEventListener('click', () => showStep('#step-email'));
-	initProfileTabRouting();
 
   }
 // ===== PROFILE TAB =====
@@ -613,21 +608,29 @@ function setTab(tab){
   const login = document.getElementById('mz-tab-login');
   const prof  = document.getElementById('mz-tab-profile');
   const title = document.getElementById('mz-auth-title');
-
   if (!login || !prof) return;
 
-  if (tab === 'profile') setHelpUI('ui=acceder:profile');
-  else setHelpUI('ui=acceder:login');
+  if (tab === 'profile') {
+    login.style.display = 'none';
+    prof.style.display  = '';
+    if (title) title.textContent = 'Datos personales';
+    setHelpUI('ui=acceder:profile');
+  } else {
+    prof.style.display  = 'none';
+    login.style.display = '';
+    if (title) title.textContent = 'Acceso';
+    setHelpUI('ui=acceder:login');
   }
+}
 
 async function loadProfile(){
   const msgTop = document.getElementById('mz-prof-msg');
 
-  const fFirst = document.getElementById('prof-first');
-  const fLast1 = document.getElementById('prof-last1');
-  const fLast2 = document.getElementById('prof-last2');
-  const fDisp  = document.getElementById('prof-display');
-  const fBio   = document.getElementById('prof-bio');
+const fFirst = document.getElementById('prof-first');
+const fLast1 = document.getElementById('prof-last1');
+const fLast2 = document.getElementById('prof-last2');
+const fDisp  = document.getElementById('prof-display');
+const fBio   = document.getElementById('prof-bio');
 
   if (!fFirst || !fLast1) return;
 
@@ -651,24 +654,26 @@ async function loadProfile(){
 
 
 async function saveProfile(){
-  const msgTop = document.getElementById('mz-prof-msg');
-  const msgPass= document.getElementById('mz-prof-pass-msg');
+  const msgTop  = document.getElementById('mz-prof-msg');
+  const msgPass = document.getElementById('mz-prof-pass-msg');
 
   const fFirst = document.getElementById('prof-first');
   const fLast1 = document.getElementById('prof-last1');
   const fLast2 = document.getElementById('prof-last2');
   const fDisp  = document.getElementById('prof-display');
   const fBio   = document.getElementById('prof-bio');
-  const p1     = (document.getElementById('prof-pass1')?.value || '').trim();
-  const p2     = (document.getElementById('prof-pass2')?.value || '').trim();
+
+  const p1 = (document.getElementById('prof-pass1')?.value || '').trim();
+  const p2 = (document.getElementById('prof-pass2')?.value || '').trim();
 
   const btn = document.getElementById('btn-prof-save');
+
   if (!fFirst || !fLast1) return;
 
-  if (msgTop) msgTop.textContent = '';
+  if (msgTop)  msgTop.textContent = '';
   if (msgPass) msgPass.textContent = '';
 
-  // валидация пароля как в оригинале :contentReference[oaicite:3]{index=3}
+  // валидируем пароль
   if (p1 || p2){
     if (p1.length < 6){
       if (msgPass) msgPass.textContent = 'Contraseña mínima 6 caracteres.';
@@ -694,26 +699,24 @@ async function saveProfile(){
   }
 
   try{
-    // профиль
-    await api(V5 + '/me/profile', { method:'POST', body });  // :contentReference[oaicite:4]{index=4}
+    await api(V5 + '/me/profile', { method:'POST', body });
 
-    // пароль отдельно
     if (p1){
-      await api(V5 + '/me/password', { method:'POST', body:{ password: p1 } }); // :contentReference[oaicite:5]{index=5}
+      await api(V5 + '/me/password', { method:'POST', body:{ password: p1 } });
       if (msgPass) msgPass.textContent = 'Contraseña actualizada.';
     }
 
     if (msgTop) msgTop.textContent = 'Datos guardados.';
 
-    // очистим поля пароля
+    // очистка паролей
     const pass1 = document.getElementById('prof-pass1');
     const pass2 = document.getElementById('prof-pass2');
     if (pass1) pass1.value = '';
     if (pass2) pass2.value = '';
 
-  }catch(e){
+  } catch(e){
     if (msgTop) msgTop.textContent = e?.message || 'No se pudo guardar.';
-  }finally{
+  } finally{
     if (btn){
       btn.disabled = false;
       btn.textContent = 'Guardar cambios';
@@ -737,16 +740,7 @@ function initProfileTabRouting(){
   const u = new URL(location.href);
   const tab = u.searchParams.get('tab') || 'login';
 
-  // ✅ кнопка "Volver" в профиле → назад в /alumno/ (без tab)
-document.getElementById('btn-prof-back')?.addEventListener('click', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  e.stopImmediatePropagation();   // ✅ убивает другие обработчики на этой же кнопке
-  location.assign('/alumno/');    // ✅ всегда на /alumno/ без tab
-}, true);                         // ✅ capture: сработает раньше других
-
-
-  document.getElementById('btn-prof-save')?.addEventListener('click', saveProfile);
+document.getElementById('btn-prof-save')?.addEventListener('click', saveProfile);
 
   if (tab === 'profile') {
     setTab('profile');
