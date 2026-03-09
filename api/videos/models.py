@@ -33,19 +33,24 @@ class Video(models.Model):
 
 
 class Playlist(models.Model):
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="playlists")
-    titulo = models.CharField(max_length=255, default="Lista")
+    titulo = models.CharField(max_length=255)
     share_token = models.CharField(max_length=64, unique=True, blank=True)
-    is_public = models.BooleanField(default=False)  # публичная по токену
+    is_public = models.BooleanField(default=False)
     creado = models.DateTimeField(auto_now_add=True)
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="video_playlists",
+    )
 
     def save(self, *args, **kwargs):
         if not self.share_token:
+            import secrets
             self.share_token = secrets.token_urlsafe(24)
         super().save(*args, **kwargs)
-
-    def __str__(self):
-        return self.titulo
 
 
 class PlaylistItem(models.Model):

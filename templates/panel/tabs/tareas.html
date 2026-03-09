@@ -1,665 +1,2202 @@
 {# panel/tabs/tareas.html #}
 
+
 <style>
-#mz-preview.is-hidden{ display:none; }
-#mz-preview{ position:fixed; inset:0; z-index:9999; }
-#mz-preview .mz-prev-backdrop{ position:absolute; inset:0; background:rgba(2,6,23,.75); }
-#mz-preview .mz-prev-card{
-  position:relative;
-  width:min(1100px, 92vw);
-  height:min(86vh, 900px);
-  margin:6vh auto;
+/* ---- top bar ---- */
+#mz-tareas-tab .mz-ta-topbar{
+  position:sticky; top:0; z-index:20;
+  padding:10px 0 8px;
+  backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, rgba(2,6,23,.55), rgba(2,6,23,0));
+}
+#mz-tareas-tab .mz-ta-toprow{
+  display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+}
+#mz-tareas-tab .mz-ta-tabs{
+  display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+}
+#mz-tareas-tab .mz-ta-tabbtn{
+  border:1px solid rgba(148,163,184,.55);
+  background: rgba(15,23,42,.8);
+  color:#e5e7eb;
+  padding:7px 12px;
+  border-radius:999px;
+  font-size:.82rem;
+  cursor:pointer;
+  user-select:none;
+}
+#mz-tareas-tab .mz-ta-tabbtn.is-active{
+  border-color: rgba(56,189,248,.75);
+  box-shadow: 0 0 0 2px rgba(56,189,248,.12) inset;
+}
+#mz-tareas-tab .mz-ta-search{
+  flex:1 1 280px;
+  max-width:520px;
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+#mz-tareas-tab .mz-ta-search .mz-inp{ height:36px; padding:8px 10px; }
+
+#mz-tareas-tab .mz-ta-stats{
+  display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+  margin-left:auto;
+}
+
+/* ---- inbox list ---- */
+#mz-tareas-tab .mz-inbox{
+  margin-top:12px;
   border-radius:18px;
   border:1px solid rgba(148,163,184,.35);
-  background:rgba(15,23,42,.96);
-  box-shadow:0 24px 80px rgba(0,0,0,.55);
+  background: rgba(15,23,42,.55);
+  overflow:hidden;
+}
+#mz-tareas-tab .mz-inbox-head{
+  display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+  padding:10px 12px;
+  border-bottom:1px solid rgba(148,163,184,.22);
+  background: rgba(15,23,42,.82);
+}
+#mz-tareas-tab .mz-inbox-head .mz-inp{ height:36px; padding:8px 10px; }
+#mz-tareas-tab .mz-inbox-body{ padding:10px; display:grid; gap:10px; }
+
+#mz-tareas-tab .mz-inbox-item{
+  border-radius:16px;
+  border:1px solid rgba(148,163,184,.28);
+  background: radial-gradient(circle at top, rgba(2,6,23,.35), rgba(15,23,42,.86));
+  padding:12px;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+#mz-tareas-tab .mz-inbox-main{
+  min-width:260px;
+  flex:1 1 520px;
+}
+#mz-tareas-tab .mz-inbox-title{
+  margin:0;
+  font-weight:800;
+  color:#f9fafb;
+  font-size:.92rem;
+  line-height:1.2;
+}
+#mz-tareas-tab .mz-inbox-sub{
+  margin-top:6px;
+  display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+  color:#cbd5e1;
+  font-size:.82rem;
+}
+#mz-tareas-tab .mz-inbox-actions{
+  display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+  justify-content:flex-end;
+  margin-left:auto;
+}
+#mz-tareas-tab .mz-mini{
+  font-size:.78rem;
+  opacity:.85;
+}
+
+/* ---- hide blocks by mode ---- */
+#mz-tareas-tab[data-mode="inbox"] .mz-mode-tasks{ display:none; }
+#mz-tareas-tab[data-mode="tasks"] .mz-mode-inbox{ display:none; }
+
+#mz-grade.is-hidden{ display:none; }
+#mz-grade{
+  position:fixed; inset:0;
+  z-index:10000;
+}
+#mz-grade .mz-grade-backdrop{
+  position:absolute; inset:0;
+  background: rgba(2,6,23,.75);
+}
+#mz-grade .mz-grade-panel{
+  position:absolute; top:0; right:0;
+  width:min(980px, 96vw);
+  height:100vh;
+  background: rgba(15,23,42,.97);
+  border-left:1px solid rgba(148,163,184,.35);
+  box-shadow: -20px 0 70px rgba(0,0,0,.55);
   display:flex; flex-direction:column;
 }
-#mz-preview .mz-prev-head{
-  display:flex; justify-content:space-between; align-items:center; gap:10px;
-  padding:10px 12px; border-bottom:1px solid rgba(148,163,184,.25);
-}
-#mz-preview .mz-prev-title{ font-weight:750; color:#e5e7eb; font-size:.95rem; }
-#mz-preview .mz-prev-body{ flex:1; overflow:hidden; background:rgba(2,6,23,.35); }
-#mz-preview iframe{ width:100%; height:100%; border:0; }
-#mz-preview img{ max-width:100%; max-height:100%; display:block; margin:auto; }
-
-  /* ================================
-     MEATZE · TAB TAREAS
-     (в стиле Materiales/Alumnos)
-  ================================= */
-  #mz-tareas-tab .mz-ta-head{
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-start;
-    gap:10px;
-    margin-bottom:10px;
-  }
-  #mz-tareas-tab .mz-ta-title{
-    margin:0;
-    font-size:1rem;
-    font-weight:600;
-    letter-spacing:.04em;
-    text-transform:uppercase;
-  }
-  #mz-tareas-tab .mz-ta-sub{
-    margin:2px 0 0;
-    font-size:.82rem;
-    opacity:.85;
-  }
-  #mz-tareas-tab .mz-ta-badge{
-    font-size:.76rem;
-    padding:4px 9px;
-    border-radius:999px;
-    border:1px solid rgba(148,163,184,.7);
-    background:rgba(15,23,42,.9);
-    white-space:nowrap;
-  }
-
-  /* карточка задачи */
-  #mz-tareas-tab .mz-task{
-    border-radius:18px;
-    border:1px solid rgba(148,163,184,.45);
-    background: radial-gradient(circle at top, rgba(15,23,42,0.86), rgba(15,23,42,0.74));
-    box-shadow: 0 16px 40px rgba(15,23,42,.8);
-    padding:14px 14px 12px;
-    margin-top:12px;
-  }
-  #mz-tareas-tab .mz-task-top{
-    display:flex;
-    justify-content:space-between;
-    gap:10px;
-    flex-wrap:wrap;
-    align-items:flex-start;
-    border-bottom:1px solid rgba(148,163,184,.25);
-    padding-bottom:10px;
-    margin-bottom:10px;
-  }
-  #mz-tareas-tab .mz-task-name{
-    margin:0;
-    font-size:1.02rem;
-    font-weight:750;
-    color:#f9fafb;
-  }
-  #mz-tareas-tab .mz-task-desc{
-    margin:6px 0 0;
-    color:#cbd5e1;
-    font-size:.88rem;
-    line-height:1.35;
-    white-space:pre-wrap;
-  }
-  #mz-tareas-tab .mz-task-meta{
-    display:flex;
-    gap:6px;
-    flex-wrap:wrap;
-    align-items:center;
-    justify-content:flex-end;
-  }
-
-  /* чип статуса */
-  #mz-tareas-tab .mz-chip{
-    font-size:.76rem;
-    padding:4px 9px;
-    border-radius:999px;
-    border:1px solid rgba(148,163,184,.55);
-    background:rgba(15,23,42,.85);
-    color:#e5e7eb;
-    display:inline-flex;
-    gap:6px;
-    align-items:center;
-    white-space:nowrap;
-  }
-  #mz-tareas-tab .mz-chip.ok{
-    border-color:rgba(34,197,94,.55);
-  }
-  #mz-tareas-tab .mz-chip.warn{
-    border-color:rgba(56,189,248,.55);
-  }
-  #mz-tareas-tab .mz-chip.closed{
-    border-color:rgba(239,68,68,.55);
-  }
-
-  /* кнопки в стиле alumnos */
-  #mz-tareas-tab .mzc-btn{
-    position:relative;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    gap:6px;
-    padding:6px 16px;
-    font-size:.82rem;
-    font-weight:500;
-    border-radius:999px;
-    border:1px solid rgba(148,163,184,.7);
-    cursor:pointer;
-    user-select:none;
-    text-decoration:none;
-    background: radial-gradient(circle at top, rgba(56,189,248,.22), rgba(15,23,42,.96));
-    color:#e5e7eb;
-    transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease, transform 90ms ease;
-  }
-  #mz-tareas-tab .mzc-btn.ghost{
-    background: radial-gradient(circle at top, rgba(15,23,42,.9), rgba(30,64,175,.85));
-  }
-  #mz-tareas-tab .mzc-btn:disabled{
-    opacity:.55;
-    cursor:not-allowed;
-    transform:none;
-    box-shadow:none;
-  }
-  #mz-tareas-tab .mzc-btn:hover:not(:disabled){
-    transform: translateY(-1px);
-    box-shadow: 0 8px 20px rgba(15,23,42,.9), 0 0 0 1px rgba(15,23,42,1);
-    border-color: rgba(191,219,254,.9);
-  }
-
-  /* форма создания */
-  #mz-tareas-tab .mz-create{
-    margin-top:10px;
-    padding:12px;
-    border-radius:14px;
-    border:1px dashed rgba(148,163,184,.55);
-    background: rgba(15,23,42,.65);
-  }
-  #mz-tareas-tab .mz-grid{
-    display:grid;
-    grid-template-columns: 1.2fr 1.4fr;
-    gap:10px;
-  }
-  #mz-tareas-tab .mz-grid .full{ grid-column:1 / -1; }
-
-  #mz-tareas-tab .mz-inp, #mz-tareas-tab .mz-txt{
-    width:100%;
-    padding:10px 10px;
-    border-radius:12px;
-    border:1px solid rgba(148,163,184,.45);
-    background: rgba(2,6,23,.35);
-    color:#e5e7eb;
-    outline:none;
-    font-size:.88rem;
-  }
-  #mz-tareas-tab .mz-txt{ min-height: 92px; resize: vertical; }
-
-  /* список сдач (teacher) */
-  #mz-tareas-tab .mz-subwrap{
-    margin-top:10px;
-    border-radius:14px;
-    border:1px solid rgba(148,163,184,.35);
-    overflow:auto;
-    background: rgba(15,23,42,.82);
-  }
-  #mz-tareas-tab table.mz-subtbl{
-    width:100%;
-    border-collapse:collapse;
-    font-size:.86rem;
-  }
-  #mz-tareas-tab .mz-subtbl th, #mz-tareas-tab .mz-subtbl td{
-    padding:8px 10px;
-    border-bottom:1px solid rgba(30,64,175,.35);
-    vertical-align:middle;
-  }
-  #mz-tareas-tab .mz-subtbl thead tr{
-    background: rgba(15,23,42,.96);
-  }
-  #mz-tareas-tab .mz-subtbl th{
-    font-size:.78rem;
-    text-transform:uppercase;
-    letter-spacing:.08em;
-    opacity:.85;
-  }
-  #mz-tareas-tab .mz-subtbl tbody tr:nth-child(2n){
-    background: rgba(15,23,42,.9);
-  }
-  #mz-tareas-tab .mz-sub-actions{
-    display:flex;
-    gap:8px;
-    flex-wrap:wrap;
-    align-items:center;
-    justify-content:flex-end;
-  }
-  #mz-tareas-tab .mz-lock{
-    font-size:.78rem;
-    color:#9ca3af;
-  }
-
-  /* студент: блок результата */
-  #mz-tareas-tab .mz-result{
-    margin-top:10px;
-    padding:12px;
-    border-radius:14px;
-    border:1px solid rgba(148,163,184,.35);
-    background: rgba(15,23,42,.7);
-  }
-  #mz-tareas-tab .mz-grade{
-    font-size:1.4rem;
-    font-weight:800;
-    letter-spacing:.02em;
-    color:#e5e7eb;
-  }
-  #mz-tareas-tab .mz-feedback{
-    margin-top:8px;
-    color:#cbd5e1;
-    white-space:pre-wrap;
-    line-height:1.35;
-  }
-
-  @media (max-width: 860px){
-    #mz-tareas-tab .mz-grid{ grid-template-columns:1fr; }
-  }
-  /* collapse */
-#mz-tareas-tab .mz-task-body{ display:block; margin-top:10px; }
-#mz-tareas-tab .mz-task-card.is-collapsed .mz-task-body{ display:none; }
-#mz-tareas-tab .mz-collapse-ico{ font-weight:800; opacity:.9; }
-#mz-tareas-tab .mz-collapse-btn{ padding:6px 12px; }
-/* compact collapsed card */
-#mz-tareas-tab .mz-task-card.is-collapsed{
+#mz-grade .mz-grade-head{
+  display:flex; gap:10px; align-items:center; justify-content:space-between;
   padding:10px 12px;
+  border-bottom:1px solid rgba(148,163,184,.22);
+}
+#mz-grade .mz-grade-title{
+  font-weight:850;
+  color:#e5e7eb;
+  font-size:.95rem;
+  line-height:1.2;
+}
+#mz-grade .mz-grade-body{
+  flex:1;
+  display:grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap:10px;
+  padding:10px;
+  overflow:hidden;
+}
+#mz-grade .mz-grade-prev{
+  border-radius:16px;
+  border:1px solid rgba(148,163,184,.22);
+  background: rgba(2,6,23,.35);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  min-height:240px;
+}
+#mz-grade .mz-grade-prevhead{
+  padding:10px 12px;
+  border-bottom:1px solid rgba(148,163,184,.18);
+  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+}
+#mz-grade .mz-grade-prevbody{ flex:1; overflow:hidden; }
+#mz-grade iframe{ width:100%; height:100%; border:0; }
+#mz-grade .mz-grade-form{
+  border-radius:16px;
+  border:1px solid rgba(148,163,184,.22);
+  background: rgba(2,6,23,.22);
+  padding:12px;
+  overflow:auto;
+}
+#mz-grade .mz-grade-row{
+  display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+  margin-bottom:10px;
+}
+#mz-grade .mz-grade-quick{
+  display:flex; gap:6px; flex-wrap:wrap; align-items:center;
+}
+#mz-grade .mz-grade-quick button{
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.45);
+  background: rgba(15,23,42,.8);
+  color:#e5e7eb;
+  cursor:pointer;
+  font-size:.8rem;
+}
+#mz-grade .mz-grade-quick button:hover{
+  border-color: rgba(56,189,248,.7);
+}
+#mz-grade textarea.mz-txt{ min-height:140px; }
+
+@media (max-width: 920px){
+  #mz-grade .mz-grade-body{ grid-template-columns: 1fr; }
 }
 
-#mz-tareas-tab .mz-task-card.is-collapsed .mz-task-top{
-  border-bottom:0;
-  padding-bottom:0;
-  margin-bottom:0;
+#mz-tareas-tab .mz-subcards{
+  margin-top:10px;
+  display:grid;
+  gap:10px;
+}
+#mz-tareas-tab .mz-subcard{
+  border-radius:16px;
+  border:1px solid rgba(148,163,184,.28);
+  background: radial-gradient(circle at top, rgba(2,6,23,.35), rgba(15,23,42,.86));
+  padding:12px;
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  align-items:flex-start;
+}
+#mz-tareas-tab .mz-subcard-main{
+  min-width:260px;
+  flex: 1 1 520px;
+}
+#mz-tareas-tab .mz-subcard-title{
+  margin:0;
+  font-weight:850;
+  color:#f9fafb;
+  font-size:.92rem;
+  line-height:1.2;
+}
+#mz-tareas-tab .mz-subcard-meta{
+  margin-top:6px;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  align-items:center;
+  font-size:.82rem;
+  color:#cbd5e1;
+}
+#mz-tareas-tab .mz-subcard-comment{
+  margin-top:8px;
+  font-size:.82rem;
+  color:#9ca3af;
+  white-space:pre-wrap;
+  line-height:1.35;
+}
+#mz-tareas-tab .mz-subcard-actions{
+  margin-left:auto;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:flex-end;
+}
+#mz-tareas-tab .mz-subcard-grade{
+  width:100%;
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px solid rgba(148,163,184,.18);
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:flex-start;
+  justify-content:space-between;
+}
+#mz-tareas-tab .mz-gradebox{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+#mz-tareas-tab .mz-gradeval{
+  font-size:1.1rem;
+  font-weight:900;
+  color:#e5e7eb;
+}
+#mz-tareas-tab .mz-gradefb{
+  font-size:.82rem;
+  color:#9ca3af;
+  white-space:pre-wrap;
+  line-height:1.35;
 }
 
-#mz-tareas-tab .mz-task-card.is-collapsed .mz-task-desc{
+/* grid 3 per row */
+#mz-tareas-tab .mz-tasks-grid{
+  margin-top:12px;
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap:12px;
+  align-items:start;
+  align-content:start;
+}
+@media (max-width: 1100px){
+  #mz-tareas-tab .mz-tasks-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px){
+  #mz-tareas-tab .mz-tasks-grid{ grid-template-columns: 1fr; }
+}
+
+/* task card */
+#mz-tareas-tab .mz-task-card{
+  border-radius:18px;
+  border:1px solid rgba(148,163,184,.30);
+  background: radial-gradient(circle at top, rgba(2,6,23,.30), rgba(15,23,42,.88));
+  overflow:hidden;
+  height:auto;
+}
+
+/* header inside card (final version: compact for grid) */
+#mz-tareas-tab .mz-task-top{
+  padding:12px;
+  display:flex;
+  gap:10px;
+  flex-direction:column; /* IMPORTANT: makes it compact inside grid */
+  flex-wrap:wrap;
+  align-items:flex-start;
+}
+
+/* title/meta/body */
+#mz-tareas-tab .mz-task-name{
+  margin:0;
+  font-size:1rem;
+  font-weight:900;
+  color:#f8fafc;
+}
+#mz-tareas-tab .mz-task-meta{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+#mz-tareas-tab .mz-task-body{
+  padding:12px;
+  border-top:1px solid rgba(148,163,184,.14);
+}
+
+/* student inside task card */
+#mz-tareas-tab .mz-stu-box{
+  margin-top:10px;
+  border-radius:14px;
+  border:1px solid rgba(148,163,184,.22);
+  background: rgba(2,6,23,.25);
+  padding:12px;
+}
+
+/* min-width fixes */
+#mz-tareas-tab .mz-task-main{
+  min-width:0;        /* важно, чтобы текст нормально переносился */
+  flex:0 0 auto;      /* не растягиваться по высоте */
+}
+
+/* прибить старый flex:1 из row-layout */
+#mz-tareas-tab .mz-task-top > div[style*="flex:1"]{
+  flex:0 0 auto !important;
+  min-width:0 !important;
+}
+
+/* collapse реально прячет тело задачи */
+#mz-tareas-tab .mz-task-card.is-collapsed .mz-task-body{
   display:none;
 }
 
-#mz-tareas-tab .mz-task-card.is-collapsed .mz-task-name{
-  font-size:.95rem;
-  font-weight:700;
+/* строка-сводка в хедере */
+#mz-tareas-tab .mz-task-summary{
+  margin-top:8px;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+
+#mz-tareas-tab .mz-modbar{
+  margin-top:12px;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+#mz-tareas-tab .mz-modpill{
+  border:1px solid rgba(148,163,184,.35);
+  background: rgba(15,23,42,.55);
+  color:#e5e7eb;
+  padding:7px 12px;
+  border-radius:999px;
+  cursor:pointer;
+  font-size:.82rem;
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+#mz-tareas-tab .mz-modpill b{ font-weight:900; }
+#mz-tareas-tab .mz-modpill .mz-count{
+  opacity:.85;
+  border:1px solid rgba(148,163,184,.25);
+  padding:2px 8px;
+  border-radius:999px;
+  font-size:.78rem;
+}
+#mz-tareas-tab .mz-modpill.is-active{
+  border-color: rgba(56,189,248,.75);
+  box-shadow: 0 0 0 2px rgba(56,189,248,.12) inset;
+}
+
+#mz-tareas-tab .mz-create-compact{
+  border:1px solid rgba(148,163,184,.22);
+  border-radius:18px;
+  background: rgba(15,23,42,.45);
+  padding:12px;
+  margin-top:12px;
+}
+#mz-tareas-tab .mz-create-row{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+  margin-top:10px;
+}
+#mz-tareas-tab .mz-create-row:first-child{ margin-top:0; }
+#mz-tareas-tab .mz-create-row .mz-inp{ height:38px; padding:8px 10px; }
+#mz-tareas-tab .mz-create-row .grow{ flex:1 1 320px; min-width:240px; }
+#mz-tareas-tab .mz-create-row .file{ flex:1 1 260px; min-width:240px; }
+
+#mz-tareas-tab .mz-iconbtn{
+  width:36px;
+  height:36px;
+  padding:0;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:999px;
+}
+#mz-tareas-tab .mz-iconbtn svg{
+  width:18px;
+  height:18px;
+}
+/* ===== Drag&Drop file ===== */
+#mz-tareas-tab .mz-drop{
+  flex:1 1 260px;
+  min-width:240px;
+  border-radius:14px;
+  border:1px dashed rgba(148,163,184,.55);
+  background: rgba(2,6,23,.18);
+  padding:10px 12px;
+  display:flex;
+  gap:10px;
+  align-items:center;
+  cursor:pointer;
+  user-select:none;
+  transition: .15s ease;
+}
+#mz-tareas-tab .mz-drop:hover{
+  border-color: rgba(56,189,248,.75);
+  background: rgba(2,6,23,.24);
+}
+#mz-tareas-tab .mz-drop.is-dragover{
+  border-color: rgba(56,189,248,.95);
+  box-shadow: 0 0 0 3px rgba(56,189,248,.18) inset;
+  background: rgba(2,6,23,.30);
+}
+#mz-tareas-tab .mz-drop-ico{
+  width:34px;height:34px;
+  display:inline-flex;align-items:center;justify-content:center;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.35);
+  background: rgba(15,23,42,.65);
+  flex:0 0 auto;
+}
+#mz-tareas-tab .mz-drop-ico svg{ width:18px;height:18px; }
+#mz-tareas-tab .mz-drop-txt{ min-width:0; flex:1 1 auto; }
+#mz-tareas-tab .mz-drop-title{
+  font-weight:900;
+  color:#e5e7eb;
+  font-size:.86rem;
+  line-height:1.1;
+}
+#mz-tareas-tab .mz-drop-sub{
+  margin-top:2px;
+  color:#94a3b8;
+  font-size:.78rem;
+  line-height:1.2;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+#mz-tareas-tab .mz-drop-clear{
+  border:1px solid rgba(148,163,184,.35);
+  background: rgba(15,23,42,.65);
+  color:#e5e7eb;
+  border-radius:999px;
+  padding:6px 10px;
+  font-size:.78rem;
+}
+#mz-tareas-tab .mz-drop-clear:hover{
+  border-color: rgba(56,189,248,.75);
+}
+#mz-tareas-tab input.mz-drop-input{
+  position:absolute !important;
+  width:1px;height:1px;
+  opacity:0;
+  pointer-events:none;
+}
+
+/* ===== Inbox pills-only ===== */
+#mz-tareas-tab .mz-inbox-head{
+  padding:12px;
+}
+
+#mz-tareas-tab .mz-inbox-body{
+  padding:12px;
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:10px;
+  align-items:start;
+}
+@media (max-width: 900px){
+  #mz-tareas-tab .mz-inbox-body{ grid-template-columns: 1fr; }
+}
+
+#mz-tareas-tab .mz-inbox-item{
+  border-radius:16px;
+  border:1px solid rgba(148,163,184,.24);
+  background: radial-gradient(circle at top, rgba(2,6,23,.28), rgba(15,23,42,.90));
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  align-items:stretch;
+}
+
+#mz-tareas-tab .mz-inbox-main{
+  min-width:0;
+  flex:none;
+}
+
+#mz-tareas-tab .mz-inbox-title{
+  margin:0;
+  font-weight:900;
+  color:#f8fafc;
+  font-size:.92rem;
+  line-height:1.2;
+}
+
+#mz-tareas-tab .mz-inbox-task{
+  margin-top:4px;
+  color:#cbd5e1;
+  font-size:.84rem;
+  line-height:1.25;
+}
+
+#mz-tareas-tab .mz-inbox-sub{
+  margin-top:6px;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  align-items:center;
+  color:#94a3b8;
+  font-size:.78rem;
+}
+
+#mz-tareas-tab .mz-inbox-actions{
+  margin-left:0;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:flex-start;
+}
+
+/* ===== TAREAS: primary buttons (Crear / Enviar / Guardar) ===== */
+#mz-tareas-tab .mzc-btn:not(.ghost):not(.mz-iconbtn){
+  border: 1px solid rgba(191,219,254,.55);
+  background: radial-gradient(circle at top, rgba(34,211,238,.95), rgba(59,130,246,.95));
+  color: #0b1120;
+  font-weight: 800;
+  box-shadow:
+    0 0 0 1px rgba(15,23,42,.85),
+    0 12px 26px rgba(37,99,235,.45);
+}
+
+#mz-tareas-tab .mzc-btn:not(.ghost):not(.mz-iconbtn):hover{
+  transform: translateY(-1px);
+  border-color: rgba(248,250,252,.9);
+  box-shadow:
+    0 0 0 1px rgba(15,23,42,.85),
+    0 16px 34px rgba(37,99,235,.60);
+}
+
+#mz-tareas-tab .mzc-btn:not(.ghost):not(.mz-iconbtn):active{
+  transform: translateY(0);
+  box-shadow:
+    0 0 0 1px rgba(15,23,42,.9),
+    0 6px 14px rgba(37,99,235,.45);
+}
+
+#mz-tareas-tab .mzc-btn:not(.ghost):not(.mz-iconbtn)[disabled],
+#mz-tareas-tab .mzc-btn:not(.ghost):not(.mz-iconbtn).is-disabled{
+  opacity: .55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* если вдруг на каких-то местах есть <a class="mzc-btn"> */
+#mz-tareas-tab a.mzc-btn:not(.ghost):not(.mz-iconbtn){
+  text-decoration: none;
+}
+
+#mz-tareas-tab .mz-task-top{ position:relative; }
+
+#mz-tareas-tab .mz-collapse-btn{
+  position:absolute;
+  top:10px;
+  right:10px;
+  z-index:2;
+}
+
+/* 3 counters in pills */
+#mz-tareas-tab .mz-modpill .mz-counts{
+  display:flex; gap:6px; align-items:center;
+}
+#mz-tareas-tab .mz-modpill .mz-count{
+  opacity:.9;
+  border:1px solid rgba(148,163,184,.25);
+  padding:2px 8px;
+  border-radius:999px;
+  font-size:.78rem;
+}
+#mz-tareas-tab .mz-modpill .mz-count.warn{ border-color: rgba(251,191,36,.45); }
+#mz-tareas-tab .mz-modpill .mz-count.miss{ border-color: rgba(248,113,113,.45); }
+#mz-tareas-tab .mz-modpill .mz-count.ok{ border-color: rgba(34,197,94,.45); }
+
+/* ===== Student status badge (on task header) ===== */
+#mz-tareas-tab .mz-stu-badge{
+  display:inline-flex;
+  gap:6px;
+  align-items:center;
+  border:1px solid rgba(148,163,184,.30);
+  background: rgba(2,6,23,.25);
+  color:#e5e7eb;
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:.78rem;
+  font-weight:850;
+}
+#mz-tareas-tab .mz-stu-badge.ok{ border-color: rgba(34,197,94,.45); }
+#mz-tareas-tab .mz-stu-badge.warn{ border-color: rgba(251,191,36,.45); }
+#mz-tareas-tab .mz-stu-badge.miss{ border-color: rgba(248,113,113,.45); }
+#mz-tareas-tab .mz-stu-badge.closed{ border-color: rgba(148,163,184,.45); opacity:.9; }
+/* ===== Inbox: one-line row ===== */
+#mz-tareas-tab .mz-inbox-item{
+  display:flex;
+  flex-direction:row;      /* было column */
+  align-items:center;
+  gap:10px;
+}
+
+#mz-tareas-tab .mz-inbox-main{
+  flex:1 1 auto;
+  min-width:0;
+}
+
+#mz-tareas-tab .mz-inbox-line{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  min-width:0;
+  flex-wrap:nowrap;
+}
+
+#mz-tareas-tab .mz-inbox-taskline{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#e5e7eb;
+  font-weight:850;
+  font-size:.9rem;
+}
+
+#mz-tareas-tab .mz-inbox-meta{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex:0 0 auto;
+  white-space:nowrap;
+  color:#94a3b8;
+  font-size:.78rem;
+}
+
+#mz-tareas-tab .mz-inbox-actions{
+  margin-left:auto;
+  flex:0 0 auto;
+  justify-content:flex-end;
+}
+/* stack tools under collapse arrow (teacher) */
+#mz-tareas-tab .mz-collapse-btn{
+  position:absolute;
+  top:10px;
+  right:10px;
+  z-index:3;
+}
+#mz-tareas-tab .mz-task-tools{
+  position:absolute;
+  top:50px;           /* прямо под стрелкой */
+  right:10px;
+  z-index:3;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+/* anchor for absolute buttons */
+#mz-tareas-tab .mz-task-top{ position:relative; }
+
+/* стрелка всегда в правом верхнем углу карточки */
+#mz-tareas-tab .mz-collapse-btn{
+  position:absolute !important;
+  top:10px;
+  right:10px;
+  z-index:5;
+}
+
+/* колонка под стрелкой — тоже относительно mz-task-top */
+#mz-tareas-tab .mz-task-tools{
+  position:absolute;
+  top:50px;
+  right:10px;
+  z-index:5;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+/* ===== Attachments row (file + delete aligned) ===== */
+#mz-tareas-tab .mz-att-list{
+  margin-top:10px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+#mz-tareas-tab .mz-att-row{
+  display:flex;
+  gap:8px;
+  align-items:center;      /* ключевое */
+  flex-wrap:nowrap;
+}
+
+#mz-tareas-tab .mz-att-link{
+  display:inline-flex;     /* чтобы была “кнопка”, а не текстовый inline */
+  align-items:center;
+  max-width:100%;
+}
+
+#mz-tareas-tab .mz-att-del{
+  display:inline-flex;     /* чтобы form не вел себя как baseline-inline */
+  align-items:center;
   margin:0;
 }
 
+#mz-tareas-tab .mz-att-del .mz-iconbtn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  vertical-align:middle;
+  line-height:1;           /* убирает “прыжок” по высоте */
+}
+#mz-tareas-tab .mz-addfiles{
+  margin-top:10px;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+
+#mz-tareas-tab .mz-addfiles .mz-drop{
+  flex:1 1 320px;
+  min-width:240px;
+}
+
+#mz-tareas-tab .mz-addfiles .mzc-btn{
+  flex:0 0 auto;
+  white-space:nowrap;
+}
+/* ===== Auto-upload addfiles: stable layout ===== */
+#mz-tareas-tab .mz-addfiles{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:nowrap;      /* ключ: не переносим на широких */
+}
+
+@media (max-width: 760px){
+  #mz-tareas-tab .mz-addfiles{ flex-wrap:wrap; } /* на мобиле можно переносить */
+}
+
+#mz-tareas-tab .mz-addfiles .mz-drop{
+  flex:1 1 auto;
+  min-width:0;           /* ключ: позволяет ellipsis работать */
+}
+
+#mz-tareas-tab .mz-addfiles .mz-drop-txt{
+  min-width:0;           /* ключ */
+}
+
+/* прячем кнопку сабмита только там, где автоаплоад */
+#mz-tareas-tab .mz-addfiles[data-auto-upload="1"] button[type="submit"]{
+  display:none;
+}
+
+/* опционально: визуальный режим "идёт загрузка" */
+#mz-tareas-tab .mz-drop.is-uploading{
+  opacity:.75;
+  pointer-events:none;
+}
+
+/* filename inside "enunciado" button */
+#mz-tareas-tab .mz-filebtn{
+  max-width:100%;
+  min-width:0;
+}
+#mz-tareas-tab .mz-filebtn-name{
+  display:inline-block;
+  max-width:38ch;
+  vertical-align:bottom;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#mz-tareas-tab .mz-filebtn-size{ opacity:.9; }
+
+/* task open/close lock */
+#mz-tareas-tab .mz-lockbtn.is-open{
+  color:#22c55e;
+}
+
+#mz-tareas-tab .mz-lockbtn.is-open:hover{
+  color:#4ade80;
+  border-color:rgba(34,197,94,.6);
+}
+
+#mz-tareas-tab .mz-lockbtn.is-closed{
+  color:#ef4444;
+}
+
+#mz-tareas-tab .mz-lockbtn.is-closed:hover{
+  color:#f87171;
+  border-color:rgba(239,68,68,.6);
+}
+/* reserve right area for tools (lock/delete column) */
+#mz-tareas-tab .mz-task-main{
+  padding-right: 80px;   /* место под колонку иконок */
+}
+
+/* на всякий: чтобы chips не “подъезжали” под кнопки */
+#mz-tareas-tab .mz-task-meta,
+#mz-tareas-tab .mz-task-summary{
+  padding-right: 62px;
+}
+
+#mz-tareas-tab .mz-att-row{ min-width:0; }
+#mz-tareas-tab .mz-att-link{ min-width:0; flex:1 1 auto; } 
+#mz-tareas-tab .mz-att-del{ flex:0 0 auto; }    
+#mz-tareas-tab .mz-filebtn-name{ max-width:30ch; }
+/* FIX: одинаковая ширина внутренних блоков в карточке */
+#mz-tareas-tab .mz-task-top{
+  align-items:stretch;  
+}
+
+#mz-tareas-tab .mz-task-summary,
+#mz-tareas-tab .mz-task-main,
+#mz-tareas-tab .mz-task-meta,
+#mz-tareas-tab .mz-task-files{
+  width:100%;
+  min-width:0;
+}
+/* ===== FIX: filename never spills out of the pill ===== */
+
+/* ряд вложения должен уметь сжиматься */
+#mz-tareas-tab .mz-att-row{
+  min-width:0;
+}
+
+/* сама кнопка-файл занимает всё доступное место и режет текст */
+#mz-tareas-tab a.mz-filebtn,
+#mz-tareas-tab a.mz-att-link{
+  flex:1 1 auto;
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  justify-content:flex-start;
+}
+
+/* внутренности кнопки — тоже “сжимаемые” */
+#mz-tareas-tab .mz-filebtn-name{
+  display:inline-block;
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+/* размер пусть не ломает кнопку */
+#mz-tareas-tab .mz-filebtn-size{
+  flex:0 0 auto;
+  white-space:nowrap;
+  opacity:.9;
+}
+/* было 80px — попробуй меньше */
+#mz-tareas-tab .mz-task-main{ padding-right: 40px; }
+#mz-tareas-tab .mz-task-meta,
+#mz-tareas-tab .mz-task-summary{ padding-right: 0px; }
+/* ===== Upload layout ===== */
+
+#mz-tareas-tab .mz-upload{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+#mz-tareas-tab .mz-drop-files{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+#mz-tareas-tab .mz-drop-file{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border:1px solid rgba(148,163,184,.25);
+  border-radius:999px;
+  padding:6px 10px;
+  background:rgba(15,23,42,.6);
+}
+
+#mz-tareas-tab .mz-drop-file-name{
+  flex:1 1 auto;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+#mz-tareas-tab .mz-drop-file-size{
+  font-size:.78rem;
+  opacity:.75;
+}
+
+#mz-tareas-tab .mz-drop-file-del{
+  flex:0 0 auto;
+}
+
+
 </style>
 
-<div id="mz-tareas-tab">
+<div id="mz-tareas-tab"
+     data-mode="{% if is_teacher %}inbox{% else %}tasks{% endif %}"
+     data-is-teacher="{% if is_teacher %}1{% else %}0{% endif %}">
 
-  <div class="mz-ta-head">
-    <div>
-      <h4 class="mz-ta-title">Tareas</h4>
-      <p class="mz-ta-sub">El docente sube un ejercicio, el alumno puede enviar varias veces (intentos) y recibe nota.</p>
 
-    </div>
-    {% if tasks %}
-      <div class="mz-ta-badge">{{ tasks|length }} tarea{{ tasks|length|pluralize:"s" }}</div>
-    {% endif %}
-  </div>
+		  <div class="mz-ta-toprow">
 
-{% if is_teacher %}
-  <div class="mz-create">
-    <form method="post" enctype="multipart/form-data">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="task_create">
+			{% if is_teacher %}
+			  <div class="mz-ta-tabs">
+				<button class="mz-ta-tabbtn is-active" type="button" data-mode-btn="inbox">Bandeja de corrección</button>
+				<button class="mz-ta-tabbtn" type="button" data-mode-btn="tasks">Lista de tareas</button>
+			  </div>
 
-      <div class="mz-grid">
-        <div class="full">
-          <select class="mz-inp" name="module_key" required>
-            <option value="" selected disabled>— Selecciona módulo —</option>
-            {% for k, label in module_choices %}
-              <option value="{{ k }}">{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
+			<div class="mz-ta-stats">
+				<span class="mz-chip warn" id="mz-stat-pending">⏳ Pendientes: —</span>
+				<span class="mz-chip"
+					  id="mz-stat-missing"
+					  title="{{ missing_tooltip|default:''|escape }}">
+				  📭 Sin entregar: {{ missing_total|default:"—" }}
+				</span>
+				<span class="mz-chip ok" id="mz-stat-graded">✅ Calificadas: —</span>
+				
+				<span class="mz-chip" id="mz-stat-total">📦 Total: —</span>
+			  </div>
+			{% endif %}
 
-<div class="full" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+		  </div>
 
-  <label class="mz-chip" style="cursor:pointer">
-    <input type="checkbox" name="is_final_exam" id="mz-is-final-exam"
-           style="transform:translateY(1px);margin-right:8px">
-    Examen final (ANEXO VI)
-  </label>
+  {% if is_teacher %}
+	<div class="mz-mode-inbox">
+	  <div class="mz-inbox">
+		<div class="mz-inbox-head" style="display:block">
+		  <div class="mz-modbar" id="mz-inbox-modbar">
+			<button class="mz-modpill is-active" type="button" data-inbox-mod="__all__">
+			  <b>Todos</b>
+			  <span class="mz-count" id="mz-inbox-count-all">—</span>
+			</button>
+		  </div>
+		  <div class="mz-mini" id="mz-inbox-hint" style="margin-top:8px"></div>
+		</div>
 
-  <select class="mz-inp" name="convocatoria" id="mz-convocatoria"
-          style="max-width:220px" disabled>
-    <option value="">Auto</option>
-    <option value="1">1ª</option>
-    <option value="2">2ª</option>
-  </select>
-
-  {# ✅ скачать все модули #}
-  <a class="mzc-btn ghost mz-collapse-btn"
-     href="{% url 'panel:anexo_vi_docx' curso.codigo %}">
-    Descargar ANEXO VI (Todos)
-  </a>
-
-  {# ✅ скачать выбранный модуль (если фильтр включен) #}
-  {% if selected_mod and selected_mod != "none" %}
-    <a class="mzc-btn ghost"
-       href="{% url 'panel:anexo_vi_docx' curso.codigo %}?mod={{ selected_mod|urlencode }}">
-      Descargar ANEXO VI (Este módulo)
-    </a>
+		<div class="mz-inbox-body" id="mz-inbox-list">
+		  <div class="mz-lock">Cargando bandeja…</div>
+		</div>
+	  </div>
+	</div>
   {% endif %}
 
+  <div class="mz-mode-tasks">
 
+    {% if is_teacher %}
+      {# ---- твоя форма создания + фильтр по модулю ---- #}
+<div class="mz-create-compact">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="task_create">
 
+    <!-- Row 1: title + file -->
+    <div class="mz-create-row">
+      <input class="mz-inp grow" name="title" placeholder="Nombre del examen / tarea" required>
+      <div class="mz-drop" data-dropzone>
+  <input class="mz-drop-input" type="file" name="task_file" data-drop-input>
+  <span class="mz-drop-ico" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 21h14"/>
+    </svg>
+  </span>
+  <span class="mz-drop-txt">
+    <div class="mz-drop-title">Arrastra un archivo aquí</div>
+    <div class="mz-drop-sub" data-drop-label>o haz clic para elegir</div>
+  </span>
+  <button class="mz-drop-clear" type="button" data-drop-clear style="display:none">Quitar</button>
 </div>
+      <button class="mzc-btn" type="submit" style="margin-left:auto">Crear</button>
+    </div>
 
+    <!-- Row 2: ANEXO VI -->
+    <div class="mz-create-row">
+      <label class="mz-chip" style="cursor:pointer">
+        <input type="checkbox" name="is_final_exam" id="mz-is-final-exam"
+               style="transform:translateY(1px);margin-right:8px">
+        ANEXO VI (Examen final)
+      </label>
 
+      <select class="mz-inp" name="convocatoria" id="mz-convocatoria" style="max-width:220px" disabled>
+        <option value="">Auto</option>
+        <option value="1">1ª</option>
+        <option value="2">2ª</option>
+      </select>
+    </div>
+
+    <!-- Row 3: module -->
+    <div class="mz-create-row">
+      <select class="mz-inp grow" name="module_key" required>
+        <option value="" selected disabled>— Selecciona módulo —</option>
+        {% for k, label in module_choices %}
+          <option value="{{ k }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+  </form>
+</div>
 
 <script>
 (function(){
   const cb = document.getElementById('mz-is-final-exam');
   const sel = document.getElementById('mz-convocatoria');
   if(!cb || !sel) return;
-
-  function sync(){
-    sel.disabled = !cb.checked;
-    if(!cb.checked) sel.value = "";
-  }
-  cb.addEventListener('change', sync);
-  sync();
+  function sync(){ sel.disabled = !cb.checked; if(!cb.checked) sel.value = ""; }
+  cb.addEventListener('change', sync); sync();
 })();
 </script>
 
-        <div class="full">
-          <input class="mz-inp" name="title" placeholder="Título de la tarea" required>
-        </div>
+<!-- Module pills (built by JS from existing tasks) -->
+<div class="mz-modbar" id="mz-modbar">
+  <span class="mz-chip">Módulos con tareas:</span>
+  <button class="mz-modpill is-active" type="button" data-mod="__all__">
+    <b>Todos</b> <span class="mz-count" id="mz-modcount-all">—</span>
+  </button>
+</div>
 
-          <div>
-            <input class="mz-inp" type="file" name="task_file">
-          </div>
-
-          <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px">
-            <button class="mzc-btn" type="submit">Crear</button>
-          </div>
-        </div>
-      </form>
-    </div>
-	<div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-  <span class="mz-chip">Filtrar por módulo</span>
-
-  <select class="mz-inp" style="max-width:420px"
-          onchange="location = this.value">
-    <option value="?tab=tareas" {% if not selected_mod %}selected{% endif %}>Todos</option>
-
-    {% if has_none_mod %}
-      <option value="?tab=tareas&mod=none" {% if selected_mod == "none" %}selected{% endif %}>
-        Sin módulo
-      </option>
     {% endif %}
-
-    {% for k, label in module_choices %}
-      <option value="?tab=tareas&mod={{ k|urlencode }}" {% if selected_mod == k %}selected{% endif %}>
-        {{ label }}
-      </option>
-    {% endfor %}
-  </select>
-
-  {% if selected_mod %}
-    <a class="mzc-btn ghost" href="?tab=tareas">Quitar filtro</a>
-  {% endif %}
-</div>
-
-  {% endif %}
-
- {% if tasks %}
-  {% for t in tasks %}
-    <div class="mz-task mz-task-card {% if t.is_closed %}is-collapsed{% endif %}" data-task="{{ t.id }}">
-      <div class="mz-task-top">
-        <div style="min-width:260px;flex:1 1 520px">
-          <p class="mz-task-name">{{ t.title }}</p>
-
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
-  {% if t.module_label %}
-    <span class="mz-chip">📦 {{ t.module_label }}</span>
-  {% elif t.module_key %}
-    <span class="mz-chip">📦 {{ t.module_key }}</span>
-  {% endif %}
-
-  {% if t.is_final_exam %}
-    <span class="mz-chip ok">
-      🏁 Final
-      {% if t.convocatoria == 1 %} · 1ª
-      {% elif t.convocatoria == 2 %} · 2ª
-      {% else %} · Auto
-      {% endif %}
-    </span>
-  {% endif %}
-</div>
-
-          {% if t.description %}
-            <div class="mz-task-desc">{{ t.description }}</div>
-          {% endif %}
-        </div>
-
-        <div class="mz-task-meta">
-          {# кнопка сворачивания #}
-          <button type="button"
-                  class="mzc-btn ghost mz-collapse-btn"
-                  aria-expanded="{% if t.is_closed %}false{% else %}true{% endif %}">
-            <span class="mz-collapse-ico">{% if t.is_closed %}▸{% else %}▾{% endif %}</span>
-            <span class="mz-collapse-txt">
-				  {% if t.is_closed %}Ver{% else %}Ocultar{% endif %}
-				</span>
-          </button>
-
-          {% if t.is_closed %}
-            <span class="mz-chip closed">⛔ Cerrada</span>
-          {% else %}
-            <span class="mz-chip warn">📝 Abierta</span>
-          {% endif %}
-
-{% if t.file %}
-  <a class="mzc-btn ghost"
-     href="{% url 'panel:task_download' curso.codigo t.id %}">
-    Descargar enunciado{% if t.fmt_size %} · {{ t.fmt_size }}{% endif %}
-  </a>
-
-  <a class="mzc-btn ghost"
-     data-preview
-     data-name="Enunciado · {{ t.title|escape }}"
-     href="{% url 'panel:task_download' curso.codigo t.id %}?inline=1">
-    Ver
-  </a>
+{% if not is_teacher %}
+  <div class="mz-modbar" id="mz-stu-modbar">
+    <span class="mz-chip">Módulos:</span>
+    <button class="mz-modpill is-active" type="button" data-stu-mod="__all__">
+      <b>Todos</b> <span class="mz-count" id="mz-stu-modcount-all">—</span>
+    </button>
+  </div>
 {% endif %}
 
+{% if tasks %}
 
-          {% if is_teacher %}
-            <form method="post" style="display:inline">
-              {% csrf_token %}
-              <input type="hidden" name="action" value="task_toggle_close">
-              <input type="hidden" name="task_id" value="{{ t.id }}">
-              {% if t.is_closed %}
-                <button class="mzc-btn ghost" type="submit">Reabrir</button>
-              {% else %}
-                <button class="mzc-btn ghost" type="submit">Cerrar</button>
-              {% endif %}
-            </form>
-			<form method="post" style="display:inline" onsubmit="return confirm('¿Eliminar esta tarea y todas las entregas?');">
-				  {% csrf_token %}
-				  <input type="hidden" name="action" value="task_delete">
-				  <input type="hidden" name="task_id" value="{{ t.id }}">
-				  <button class="mzc-btn ghost" type="submit">Eliminar</button>
-				</form>
+  <div class="mz-tasks-grid" id="mz-tasks-grid">
+    {% for t in tasks %}
+      <div class="mz-task mz-task-card {% if t.is_closed %}is-collapsed{% endif %}"
+           data-task="{{ t.id }}"
+           data-task-module="{{ t.module_key|default_if_none:'' }}"
+           data-task-module-label="{{ t.module_label|default_if_none:''|escape }}"
+		   data-sub-total="{{ t.sub_total|default:0 }}"
+		   data-sub-graded="{{ t.sub_graded|default:0 }}"
+		   data-alumnos-total="{{ alumnos_total|default:0 }}"
+           data-task-title="{{ t.title|escape }}"
+		   data-missing-count="{{ t.missing_count|default:0 }}"
+		   data-missing-names="{{ t.missing_names_str|default:''|escape }}"
+           data-task-final="{% if t.is_final_exam %}1{% else %}0{% endif %}">
+			<div class="mz-task-top">
+			
+			  {% if is_teacher %}
+				<div class="mz-task-summary">
+				  <span class="mz-chip">📩 Entregas: {{ t.sub_total }} / {{ alumnos_total|default:"—" }}</span>
+				  <span class="mz-chip ok">✅ Calificadas: {{ t.sub_graded }}</span>
+				</div>
+			  {% endif %}
 
-          {% endif %}
-        </div>
-      </div>
+			  <div class="mz-task-main">	
+			  <p class="mz-task-name">{{ t.title }}</p>
+			  {% if not is_teacher %}
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">
+    {% if t.my_sub and t.my_sub.status == "graded" %}
+  <span class="mz-stu-badge ok">
+			✅ Calificado{% if t.my_sub.grade != None %}<span style="opacity:.9"> · {{ t.my_sub.grade }}</span>{% endif %}
+		  </span>
+		{% elif t.is_closed %}
+		  <span class="mz-stu-badge closed">⛔ Cerrada</span>
+		{% elif t.my_sub %}
+		  <span class="mz-stu-badge warn">⏳ En revisión</span>
+		{% else %}
+		  <span class="mz-stu-badge miss">📭 No iniciado</span>
+		{% endif %}
+  </div>
+{% endif %}
+		
 
-      <div class="mz-task-body">
-        {% if is_teacher %}
-          <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
-            <span class="mz-chip">📩 Entregas: {{ t.submissions.count }}</span>
-            <span class="mz-lock">La nota se guarda una sola vez y luego se bloquea.</span>
-          </div>
+				<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+				  {% if t.module_label %}
+					<span class="mz-chip">📦 {{ t.module_label }}</span>
+				  {% elif t.module_key %}
+					<span class="mz-chip">📦 {{ t.module_key }}</span>
+				  {% endif %}
 
-          {% if t.submissions.count %}
-            <div class="mz-subwrap">
-              <table class="mz-subtbl">
-                <thead>
-                  <tr>
-                    <th>Alumno</th>
-                    <th>Estado</th>
-                    <th>Enviado</th>
-                    <th>Entrega</th>
-                    <th style="text-align:right">Calificación</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for s in t.submissions.all %}
-                    <tr>
-                      <td>
-                        <div style="font-weight:700;color:#e5e7eb">
-                          {{ s.alumno.get_full_name|default:s.alumno.email }}
-                        </div>
-                        {% if s.comment %}
-                          <div style="font-size:.8rem;color:#9ca3af;white-space:pre-wrap">{{ s.comment }}</div>
-                        {% endif %}
-                      </td>
-
-                      <td>
-                        {% if s.status == "graded" %}
-                          <span class="mz-chip ok">✅ Calificado</span>
-                        {% else %}
-                          <span class="mz-chip warn">⏳ En revisión</span>
-                        {% endif %}
-                      </td>
-
-                      <td style="color:#cbd5e1;font-size:.82rem">{{ s.submitted_at }}</td>
-
-                      <td>
-                        <div class="mz-sub-actions">
-                          {% if s.file %}
-							<a class="mzc-btn ghost"
-							   href="{% url 'panel:submission_download' curso.codigo t.id s.id %}">
-							  Descargar{% if s.fmt_size %} · {{ s.fmt_size }}{% endif %}
-							</a>
-
-							<a class="mzc-btn ghost"
-							   data-preview
-							   data-name="Entrega · {{ s.alumno.get_full_name|default:s.alumno.email|escape }}"
-							   href="{% url 'panel:submission_download' curso.codigo t.id s.id %}?inline=1">
-							  Ver
-							</a>
-
-                          {% else %}
-                            <span class="mz-lock">—</span>
-                          {% endif %}
-                        </div>
-                      </td>
-
-                      <td style="text-align:right">
-                        {% if s.status == "graded" %}
-                          <div style="font-weight:800;color:#e5e7eb">{{ s.grade|default:"—" }}</div>
-                          {% if s.teacher_feedback %}
-                            <div style="margin-top:4px;color:#9ca3af;font-size:.8rem;white-space:pre-wrap;text-align:left">
-                              {{ s.teacher_feedback }}
-                            </div>
-                          {% endif %}
-                          <div class="mz-lock" style="margin-top:6px">Bloqueado</div>
-                        {% else %}
-                          <form method="post"
-                                style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;align-items:center">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="task_grade">
-                            <input type="hidden" name="sub_id" value="{{ s.id }}">
-                            <input class="mz-inp" name="grade" placeholder="0-10" style="width:90px">
-                            <input class="mz-inp" name="teacher_feedback" placeholder="Feedback" style="width:min(420px, 52vw)">
-                            <button class="mzc-btn" type="submit">Guardar</button>
-                          </form>
-                        {% endif %}
-                      </td>
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          {% else %}
-            <div class="mz-lock" style="margin-top:10px">Aún no hay entregas.</div>
-          {% endif %}
-
-        {% else %}
-			{# ───────── STUDENT VIEW ───────── #}
-
-			{# статус последней попытки (если есть) #}
-			{% if t.my_sub %}
-			  {% if t.my_sub.status == "graded" %}
-				<div class="mz-result">
-				  <div class="mz-chip ok" style="margin-bottom:10px">✅ Calificado (último intento)</div>
-				  <div class="mz-grade">Nota: {{ t.my_sub.grade|default:"—" }}</div>
-				  {% if t.my_sub.teacher_feedback %}
-					<div class="mz-feedback">Feedback: {{ t.my_sub.teacher_feedback }}</div>
+				  {% if t.is_final_exam %}
+					<span class="mz-chip ok">
+					  🏁 Final
+					  {% if t.convocatoria == 1 %} · 1ª
+					  {% elif t.convocatoria == 2 %} · 2ª
+					  {% else %} · Auto
+					  {% endif %}
+					</span>
 				  {% endif %}
 				</div>
-			  {% else %}
-				<div class="mz-result">
-				  <div class="mz-chip warn">⏳ En revisión (último intento)</div>
-				  <div class="mz-lock" style="margin-top:8px">
-					Puedes volver a subir un archivo si lo has corregido.
+
+				{% if t.description %}
+				  <div class="mz-task-desc">{{ t.description }}</div>
+				{% endif %}
+			  </div>
+
+<div class="mz-task-meta">
+
+  <button type="button" class="mzc-btn ghost mz-collapse-btn"
+          aria-expanded="{% if t.is_closed %}false{% else %}true{% endif %}">
+    <span class="mz-collapse-ico">{% if t.is_closed %}▸{% else %}▾{% endif %}</span>
+  </button>
+<div class="mz-task-files" data-task-files>
+
+{% if t.file %}
+  <div class="mz-file-sec">
+    <span class="mz-chip" style="opacity:.9">📌 Archivo principal</span>
+
+    <div class="mz-att-row">
+      <a class="mzc-btn ghost mz-att-link mz-filebtn"
+         data-preview
+         data-name="{{ t.file_name|default:'Archivo'|escape }} · {{ t.title|escape }}"
+         href="{% url 'panel:task_download' curso.codigo t.id %}?inline=1"
+         title="{{ t.file_name|default:'Archivo'|escape }}">
+        📄 <span class="mz-filebtn-name">{{ t.file_name|default:"Archivo" }}</span>
+      </a>
+
+      {% if is_teacher %}
+        <form method="post" enctype="multipart/form-data" class="mz-att-del" style="display:inline">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="task_replace_file">
+          <input type="hidden" name="task_id" value="{{ t.id }}">
+          <input type="file" name="task_file" id="mz-rep-{{t.id}}" style="display:none"
+                 onchange="this.form.submit()">
+
+          <button class="mzc-btn ghost mz-iconbtn"
+                  type="button"
+                  title="Cambiar archivo principal"
+                  aria-label="Cambiar archivo principal"
+                  onclick="document.getElementById('mz-rep-{{t.id}}').click()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 7h10"/><path d="M15 5l2 2-2 2"/>
+              <path d="M17 17H7"/><path d="M9 19l-2-2 2-2"/>
+            </svg>
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+
+  {% if t.attachments.all %}
+    <div class="mz-att-list">
+      <span class="mz-chip" style="opacity:.9">➕ Archivos adicionales</span>
+
+      {% for a in t.attachments.all %}
+        <div class="mz-att-row">
+          <a class="mzc-btn ghost mz-att-link"
+             data-preview
+             data-name="Adjunto · {{ a.filename|escape }}"
+             href="{% url 'panel:task_attach_download' curso.codigo t.id a.id %}?inline=1">
+            {{ a.filename }}{% if a.file_size %} · {{ a.file_size|filesizeformat }}{% endif %}
+          </a>
+
+          {% if is_teacher %}
+            <form method="post" class="mz-att-del" onsubmit="return confirm('¿Eliminar este adjunto?');">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="task_del_attach">
+              <input type="hidden" name="attach_id" value="{{ a.id }}">
+              <button class="mzc-btn ghost mz-iconbtn mz-delbtn" type="submit"
+                      title="Eliminar" aria-label="Eliminar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if is_teacher %}
+    <form method="post" enctype="multipart/form-data" class="mz-addfiles"
+          data-auto-upload="1" data-ajax-upload="1">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="task_add_files">
+      <input type="hidden" name="task_id" value="{{ t.id }}">
+
+      <div class="mz-drop" data-dropzone>
+        <input class="mz-drop-input" type="file" name="task_files" multiple data-drop-input>
+        <span class="mz-drop-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 21h14"/>
+          </svg>
+        </span>
+        <span class="mz-drop-txt">
+          <div class="mz-drop-title">Añadir archivos</div>
+          <div class="mz-drop-sub" data-drop-label>Arrastra archivos o haz clic</div>
+        </span>
+        <button class="mz-drop-clear" type="button" data-drop-clear style="display:none">Quitar</button>
+      </div>
+
+      <button class="mzc-btn ghost" type="submit">Subir archivos</button>
+    </form>
+  {% endif %}
+
+</div>
+
+  {% if is_teacher %}
+    <div class="mz-task-tools">
+      <form method="post" style="display:inline">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="task_toggle_close">
+        <input type="hidden" name="task_id" value="{{ t.id }}">
+<button class="mzc-btn ghost mz-iconbtn mz-lockbtn {% if t.is_closed %}is-closed{% else %}is-open{% endif %}"
+        type="submit"
+        title="{% if t.is_closed %}Reabrir tarea{% else %}Cerrar tarea{% endif %}"
+        aria-label="{% if t.is_closed %}Reabrir{% else %}Cerrar{% endif %}">
+
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+       stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7 10V8a5 5 0 0 1 10 0v2"/>
+    <rect x="5" y="10" width="14" height="11" rx="2"/>
+  </svg>
+
+</button>
+      </form>
+
+      <form method="post" style="display:inline"
+            onsubmit="return confirm('¿Eliminar esta tarea y todas las entregas?');">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="task_delete">
+        <input type="hidden" name="task_id" value="{{ t.id }}">
+        <button class="mzc-btn ghost mz-iconbtn" type="submit" title="Eliminar" aria-label="Eliminar">
+          					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					  <path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 16h10l1-16"/>
+					  <path d="M10 11v6"/><path d="M14 11v6"/>
+					</svg>
+        </button>
+      </form>
+    </div>
+  {% endif %}
+
+</div>
+          </div>
+
+          <div class="mz-task-body">
+            {% if is_teacher %}
+              <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
+                <span class="mz-chip">📩 Entregas: {{ t.submissions.count }}</span>
+                <span class="mz-lock">La nota se guarda una sola vez y luego se bloquea.</span>
+              </div>
+
+              {% if t.submissions.count %}
+			  <div class="mz-subcards">
+				{% for s in t.submissions.all %}
+
+					<div class="mz-subcard"
+						 data-subcard
+						 data-sub="{{ s.id }}"
+						 data-task="{{ t.id }}"
+						 data-status="{{ s.status }}"
+						 data-alumno="{{ s.alumno.get_full_name|default:s.alumno.email|escape }}"
+						 data-task-title="{{ t.title|escape }}"
+						 data-module="{{ t.module_key|default_if_none:'' }}"
+						 data-module-label="{{ t.module_label|default_if_none:''|escape }}"
+						 data-final="{% if t.is_final_exam %}1{% else %}0{% endif %}"
+						 data-submitted="{{ s.submitted_at|date:'d/m H:i' }}"
+						 data-grade-val="{{ s.grade|default_if_none:'' }}"
+						 data-feedback="{{ s.teacher_feedback|default_if_none:''|escape }}"
+						 data-file-ext="{{ s.ext|default_if_none:'' }}"
+						 {% if s.file %}
+						   data-file-download="{% url 'panel:submission_download' curso.codigo t.id s.id %}"
+						   data-file-inline="{% url 'panel:submission_download' curso.codigo t.id s.id %}?inline=1"
+						 {% endif %}>
+
+					<div class="mz-subcard-main">
+					  <p class="mz-subcard-title">
+						{{ s.alumno.get_full_name|default:s.alumno.email }}
+					  </p>
+
+					  <div class="mz-subcard-meta">
+						{% if s.status == "graded" %}
+						  <span class="mz-chip ok">
+							✅ Calificado{% if s.grade is not None %} · {{ s.grade }}{% endif %}
+						  </span>
+						{% else %}
+						  <span class="mz-chip warn">⏳ En revisión</span>
+						{% endif %}
+						<span class="mz-mini">🕒 {{ s.submitted_at|date:"d/m H:i" }}</span>
+
+						{% if t.module_label %}
+						  <span class="mz-chip">📦 {{ t.module_label }}</span>
+						{% elif t.module_key %}
+						  <span class="mz-chip">📦 {{ t.module_key }}</span>
+						{% endif %}
+
+						{% if t.is_final_exam %}
+						  <span class="mz-chip ok">🏁 ANEXO VI</span>
+						{% endif %}
+					  </div>
+
+					  {% if s.comment %}
+						<div class="mz-subcard-comment">{{ s.comment }}</div>
+					  {% endif %}
+					</div>
+
+					<div class="mz-subcard-actions">
+					  {% if s.file %}
+						<a class="mzc-btn ghost"
+						   href="{% url 'panel:submission_download' curso.codigo t.id s.id %}">
+						  Descargar{% if s.fmt_size %} · {{ s.fmt_size }}{% endif %}
+						</a>
+
+						<a class="mzc-btn ghost"
+						   data-preview
+						   data-name="Entrega · {{ s.alumno.get_full_name|default:s.alumno.email|escape }}"
+						   href="{% url 'panel:submission_download' curso.codigo t.id s.id %}?inline=1">
+						  Ver
+						</a>
+					  {% else %}
+						<span class="mz-lock">Sin archivo</span>
+					  {% endif %}
+
+					  <button class="mzc-btn {% if s.status == 'graded' %}ghost{% endif %}"
+							  type="button"
+							  data-grade="{{ s.id }}">
+						{% if s.status == 'graded' %}Ver nota{% else %}Calificar{% endif %}
+					  </button>
+					</div>
+
+					<div class="mz-subcard-grade">
+					  {% if s.status == "graded" %}
+						<div class="mz-gradebox">
+						  <div class="mz-gradeval">Nota: {{ s.grade|default:"—" }}</div>
+						  {% if s.teacher_feedback %}
+							<div class="mz-gradefb">{{ s.teacher_feedback }}</div>
+						  {% endif %}
+						  <div class="mz-lock">Bloqueado</div>
+						</div>
+					  {% else %}
+						<div class="mz-lock">Aún sin calificar.</div>
+					  {% endif %}
+					</div>
+
 				  </div>
+
+				{% endfor %}
+			  </div>
+			{% else %}
+			  <div class="mz-lock" style="margin-top:10px">Aún no hay entregas.</div>
+			{% endif %}
+			{% else %}
+			  {# ===== STUDENT VIEW (clean) ===== #}
+			  {% if t.is_closed %}
+				<div class="mz-stu-box">
+				  <div class="mz-chip closed">⛔ Cerrada</div>
+				  <div class="mz-lock" style="margin-top:8px">No se aceptan entregas.</div>
+				</div>
+
+			  {% elif t.my_sub and t.my_sub.status == "graded" %}
+				<div class="mz-stu-box">
+				  <div class="mz-lock" style="margin-top:10px">Ya está calificado. No puedes enviar más intentos.</div>
+
+				  {% if t.my_sub.file %}
+					<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+					  <a class="mzc-btn ghost" href="{% url 'panel:submission_download' curso.codigo t.id t.my_sub.id %}">Descargar entrega</a>
+					  <a class="mzc-btn ghost" data-preview
+						 data-name="Mi entrega · {{ t.title|escape }}"
+						 href="{% url 'panel:submission_download' curso.codigo t.id t.my_sub.id %}?inline=1">Ver</a>
+					</div>
+				  {% endif %}
+				</div>
+
+			  {% else %}
+				<div class="mz-stu-box">
+				  {% if t.my_sub %}
+					<div class="mz-chip warn">⏳ En revisión</div>
+					<div class="mz-lock" style="margin-top:8px">Puedes enviar otro intento mientras el docente no haya calificado.</div>
+				  {% else %}
+					<div class="mz-chip">📝 Enviar entrega</div>
+					<div class="mz-lock" style="margin-top:8px">Sube tu archivo. Puedes enviar varios intentos hasta que el docente califique.</div>
+				  {% endif %}
+
+				  <form method="post" enctype="multipart/form-data"
+						style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+					{% csrf_token %}
+					<input type="hidden" name="action" value="task_submit">
+					<input type="hidden" name="task_id" value="{{ t.id }}">
+
+<div class="mz-upload">
+
+  <div class="mz-drop mz-drop--multi" data-dropzone data-multi="1">
+    <input class="mz-drop-input" type="file" name="answer_files" multiple required data-drop-input>
+
+    <span class="mz-drop-ico" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 21h14"/>
+      </svg>
+    </span>
+
+    <span class="mz-drop-txt">
+      <div class="mz-drop-title">Sube tu entrega</div>
+      <div class="mz-drop-sub" data-drop-label>
+        Arrastra archivos o haz clic para elegir
+      </div>
+    </span>
+
+    <button class="mz-drop-clear" type="button" data-drop-clear style="display:none">
+      Vaciar
+    </button>
+  </div>
+
+  <!-- список файлов -->
+  <div class="mz-drop-files" data-drop-files></div>
+
+  <!-- добавить ещё -->
+  <button class="mzc-btn ghost mz-drop-add" type="button" data-drop-add style="display:none">
+    + Añadir más
+  </button>
+
+</div>
+					<input class="mz-inp" type="text" name="comment" placeholder="Comentario (opcional)"
+						   style="min-width:260px;flex:1 1 260px">
+					<button class="mzc-btn" type="submit">
+					  {% if t.my_sub %}Enviar otro intento{% else %}Enviar{% endif %}
+					</button>
+				  </form>
+
+				  {% if t.my_sub and t.my_sub.file %}
+					<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+					  <a class="mzc-btn ghost" href="{% url 'panel:submission_download' curso.codigo t.id t.my_sub.id %}">Descargar último intento</a>
+					  <a class="mzc-btn ghost" data-preview
+						 data-name="Mi último intento · {{ t.title|escape }}"
+						 href="{% url 'panel:submission_download' curso.codigo t.id t.my_sub.id %}?inline=1">Ver</a>
+					</div>
+				  {% endif %}
 				</div>
 			  {% endif %}
 			{% endif %}
-
-			{# форма сдачи: разрешаем несколько раз, пока не закрыта #}
-			{% if t.is_closed %}
-  <div class="mz-result">
-    <div class="mz-chip closed">⛔ Cerrada</div>
-    <div class="mz-lock" style="margin-top:8px">No se aceptan entregas.</div>
-  </div>
-
-{% elif t.my_sub and t.my_sub.status == "graded" %}
-  <div class="mz-result">
-    <div class="mz-chip ok">✅ Calificado</div>
-    <div class="mz-lock" style="margin-top:8px">
-      Ya está calificado. No puedes enviar más intentos.
-    </div>
-  </div>
-
-{% else %}
-  <div class="mz-result">
-    <div class="mz-chip warn">📝 Enviar entrega</div>
-
-    {% if t.my_sub %}
-      <div class="mz-lock" style="margin-top:6px">
-        Puedes enviar otro intento mientras el docente no haya calificado.
-      </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="mz-lock">No hay tareas todavía.</div>
     {% endif %}
 
-    <form method="post" enctype="multipart/form-data"
-          style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="task_submit">
-      <input type="hidden" name="task_id" value="{{ t.id }}">
-      <input class="mz-inp" type="file" name="answer_file" required style="min-width:240px">
-      <input class="mz-inp" type="text" name="comment" placeholder="Comentario (opcional)"
-             style="min-width:260px;flex:1 1 260px">
-      <button class="mzc-btn" type="submit">
-        {% if t.my_sub %}Enviar otro intento{% else %}Enviar{% endif %}
-      </button>
-    </form>
-  </div>
-{% endif %}
+  </div><!-- /.mz-mode-tasks -->
+</div><!-- /#mz-tareas-tab -->
 
 
-        {% endif %}
-      </div>
-    </div>
-  {% endfor %}
-{% else %}
-  <div class="mz-lock">No hay tareas todavía.</div>
-{% endif %}
+<div id="mz-grade" class="is-hidden" aria-hidden="true">
+  <div class="mz-grade-backdrop" data-close></div>
 
-</div>
-
-<div id="mz-preview" class="mz-prev is-hidden" aria-hidden="true">
-  <div class="mz-prev-backdrop" data-close></div>
-  <div class="mz-prev-card" role="dialog" aria-modal="true">
-    <div class="mz-prev-head">
-      <div class="mz-prev-title" id="mz-prev-title">Vista previa</div>
-      <div class="mz-prev-actions">
-        <a class="mzc-btn ghost" id="mz-prev-open" target="_blank" rel="noopener">Abrir</a>
+  <div class="mz-grade-panel" role="dialog" aria-modal="true" aria-label="Calificar entrega">
+    <div class="mz-grade-head">
+      <div class="mz-grade-title" id="mz-grade-title">Calificar</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="mzc-btn ghost" type="button" id="mz-grade-open" style="display:none">Abrir</button>
         <button class="mzc-btn ghost" type="button" data-close>Cerrar</button>
       </div>
     </div>
-    <div class="mz-prev-body" id="mz-prev-body">
-      <!-- сюда подставим iframe или img -->
+
+    <div class="mz-grade-body">
+      <div class="mz-grade-prev">
+        <div class="mz-grade-prevhead">
+          <span class="mz-chip" id="mz-grade-meta">—</span>
+          <span class="mz-mini" id="mz-grade-date"></span>
+        </div>
+        <div class="mz-grade-prevbody" id="mz-grade-prevbody">
+          <div class="mz-lock" style="padding:14px">Selecciona una entrega…</div>
+        </div>
+      </div>
+
+      <div class="mz-grade-form">
+        <form id="mz-grade-form" method="post">
+          {# csrf добавим клонированием из найденной формы на странице #}
+          <input type="hidden" name="action" value="task_grade">
+          <input type="hidden" name="sub_id" id="mz-grade-subid" value="">
+
+          <div class="mz-grade-row">
+            <input class="mz-inp" name="grade" id="mz-grade-input" placeholder="Nota 0-10" style="width:120px">
+            <div class="mz-grade-quick" aria-label="Notas rápidas">
+              <button type="button" data-q="0">0</button>
+              <button type="button" data-q="2">2</button>
+              <button type="button" data-q="5">5</button>
+              <button type="button" data-q="7">7</button>
+              <button type="button" data-q="8">8</button>
+              <button type="button" data-q="9">9</button>
+              <button type="button" data-q="10">10</button>
+            </div>
+          </div>
+
+          <textarea class="mz-txt" name="teacher_feedback" id="mz-grade-feedback" placeholder="Feedback (opcional)"></textarea>
+
+          <div class="mz-grade-row" style="justify-content:space-between;margin-top:10px">
+            <span class="mz-lock" id="mz-grade-status">⏳ Pendiente</span>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+              <button class="mzc-btn ghost" type="button" id="mz-grade-next">Guardar y siguiente</button>
+              <button class="mzc-btn" type="submit" id="mz-grade-save">Guardar</button>
+            </div>
+          </div>
+
+          <div class="mz-lock" id="mz-grade-msg" style="margin-top:10px"></div>
+        </form>
+      </div>
     </div>
   </div>
-
 </div>
+
+<script>
+(function(){
+  const root = document.getElementById('mz-tareas-tab');
+  if(!root) return;
+  const isTeacher = root.getAttribute('data-is-teacher') === '1';
+  if(isTeacher) return;
+
+  const bar = document.getElementById('mz-stu-statusbar');
+  const grid = document.getElementById('mz-tasks-grid');
+  if(!bar || !grid) return;
+
+  const cards = Array.from(grid.querySelectorAll('.mz-task-card[data-stu-status]'));
+
+  const count = (st) => cards.filter(c => (c.getAttribute('data-stu-status')||'') === st).length;
+
+  const setCnt = (id, n) => { const el = document.getElementById(id); if(el) el.textContent = String(n); };
+
+  setCnt('mz-stu-count-all', cards.length);
+  setCnt('mz-stu-count-missing', count('missing'));
+  setCnt('mz-stu-count-review', count('review'));
+  setCnt('mz-stu-count-graded', count('graded'));
+  setCnt('mz-stu-count-closed', count('closed'));
+
+  function applyFilter(st){
+    bar.querySelectorAll('[data-stu-filter]').forEach(b=>{
+      b.classList.toggle('is-active', (b.getAttribute('data-stu-filter')||'') === st);
+    });
+    cards.forEach(c=>{
+      const s = c.getAttribute('data-stu-status') || '';
+      c.style.display = (st === '__all__' || s === st) ? '' : 'none';
+    });
+  }
+
+  bar.addEventListener('click', (e)=>{
+    const b = e.target.closest('[data-stu-filter]');
+    if(!b) return;
+    applyFilter(b.getAttribute('data-stu-filter') || '__all__');
+  });
+
+  applyFilter('__all__');
+})();
+</script>
+<script>
+/* =========================================================
+   TAREAS: MODE SWITCH + INBOX BUILD + DRAWER GRADE
+   (без изменения бекенда: POST -> получаем HTML -> парсим -> заменяем строку)
+   ========================================================= */
+   
+(function(){
+  const root = document.getElementById('mz-tareas-tab');
+  if(!root) return;
+
+  const isTeacher = root.getAttribute('data-is-teacher') === '1';
+  if(!isTeacher){
+    // У ученика нет inbox/grade drawer логики — иначе статистика 0 и каша.
+    return;
+  }
+ 
+
+  const btns = root.querySelectorAll('[data-mode-btn]');
+  const setMode = (m) => {
+    root.setAttribute('data-mode', m);
+    btns.forEach(b => b.classList.toggle('is-active', b.getAttribute('data-mode-btn') === m));
+    try{ localStorage.setItem('mz_tasks_mode_v1', m); }catch(e){}
+  };
+  btns.forEach(b => b.addEventListener('click', () => setMode(b.getAttribute('data-mode-btn'))));
+  try{
+    const saved = localStorage.getItem('mz_tasks_mode_v1');
+    if(saved) setMode(saved);
+  }catch(e){}
+
+  // ---------- helpers ----------
+
+	const $ = (s, r=document) => r.querySelector(s);
+	const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+	const esc = (s)=> (s ?? '').toString();
+
+	function computeMissingFromTasks(){
+	  const taskCards = $$('div.mz-task-card[data-task][data-missing-count]');
+	  let missing = 0;
+	  taskCards.forEach(c => { missing += Number(c.getAttribute('data-missing-count') || 0); });
+	  return { missing };
+	}
+
+	const statMissing = $('#mz-stat-missing');
+  
+  // counters
+  const statPending = $('#mz-stat-pending');
+  const statGraded  = $('#mz-stat-graded');
+  const statTotal   = $('#mz-stat-total');
+
+  // inbox ui
+  const inboxList = $('#mz-inbox-list');
+	const hint = $('#mz-inbox-hint');
+	const inboxModbar = $('#mz-inbox-modbar');
+	const inboxCountAll = $('#mz-inbox-count-all');
+	let activeInboxMod = '__all__';
+
+  // drawer elements
+  const drawer = $('#mz-grade');
+  const gradeTitle = $('#mz-grade-title');
+  const gradeMeta  = $('#mz-grade-meta');
+  const gradeDate  = $('#mz-grade-date');
+  const gradePrevBody = $('#mz-grade-prevbody');
+  const gradeOpen = $('#mz-grade-open');
+  const gradeForm = $('#mz-grade-form');
+  const gradeSubId = $('#mz-grade-subid');
+  const gradeInput = $('#mz-grade-input');
+  const gradeFeedback = $('#mz-grade-feedback');
+  const gradeMsg = $('#mz-grade-msg');
+  const gradeStatus = $('#mz-grade-status');
+  const btnNext = $('#mz-grade-next');
+
+  let lastFocus = null;
+  let inboxCache = []; // normalized items
+  let currentIndex = -1;
+
+  function closeDrawer(){
+    if(!drawer) return;
+    drawer.classList.add('is-hidden');
+    drawer.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    gradePrevBody.innerHTML = '<div class="mz-lock" style="padding:14px">Selecciona una entrega…</div>';
+    gradeMsg.textContent = '';
+    currentIndex = -1;
+    if(lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
+    lastFocus = null;
+  }
+  function openDrawer(){
+    drawer.classList.remove('is-hidden');
+    drawer.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+    // фокус
+    const closeBtn = drawer.querySelector('[data-close]');
+    (closeBtn || gradeInput).focus();
+  }
+
+  if(drawer){
+    drawer.addEventListener('click', (e)=>{
+      if(e.target.matches('[data-close]') || e.target.closest('[data-close]')) closeDrawer();
+    });
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'Escape' && !drawer.classList.contains('is-hidden')) closeDrawer();
+    });
+  }
+
+  // ---------- build inbox from table Cards ----------
+function collectCards(){
+  const cards = $$('[data-subcard][data-sub][data-task]');
+  const items = cards.map(card => {
+    const status = card.getAttribute('data-status') || '';
+    const alumno = card.getAttribute('data-alumno') || '';
+    const taskTitle = card.getAttribute('data-task-title') || '';
+    const mod = card.getAttribute('data-module') || '';
+    const modLabel = card.getAttribute('data-module-label') || mod || '—';
+    const isFinal = card.getAttribute('data-final') === '1';
+    const submitted = card.getAttribute('data-submitted') || '';
+    const fileInline = card.getAttribute('data-file-inline') || '';
+    const fileDownload = card.getAttribute('data-file-download') || '';
+    const subId = card.getAttribute('data-sub') || '';
+    const taskId = card.getAttribute('data-task') || '';
+	
+
+    return {
+      card,
+      subId,
+      taskId,
+      status,
+      alumno,
+      taskTitle,
+      mod,
+      modLabel,
+      isFinal,
+      submitted,
+      fileInline,
+      fileDownload,
+	  gradeVal: card.getAttribute('data-grade-val') || '',
+	  feedback: card.getAttribute('data-feedback') || '',
+	  fileExt: (card.getAttribute('data-file-ext') || '').toLowerCase(),
+    };
+  });
+
+  const total = items.length;
+  const graded = items.filter(x => x.status === 'graded').length;
+  const pending = total - graded;
+
+  if(statTotal) statTotal.textContent = `📦 Total: ${total}`;
+  if(statGraded) statGraded.textContent = `✅ Calificadas: ${graded}`;
+  if(statPending) statPending.textContent = `⏳ Pendientes: ${pending}`;
+
+  const mm = computeMissingFromTasks();
+  if(statMissing) statMissing.textContent = `📭 Sin entregar: ${mm.missing}`;
+  buildInboxPills(items);
+  return items;
+}
+
+function shortLabel(label){
+  const s = (label || '').toString().trim();
+  if(!s) return 'Sin módulo';
+  const i = s.indexOf('-');
+  return (i > 0 ? s.slice(0, i) : s).trim();
+}let missCache = new Map(); // modKey -> {missing, names:Set}
+
+function buildInboxPills(items){
+  if(!inboxModbar) return;
+
+  // снести старые pills кроме Todos
+  inboxModbar.querySelectorAll('[data-inbox-mod]:not([data-inbox-mod="__all__"])').forEach(x => x.remove());
+
+  // ---- 1) собрать missing из task cards ----
+  const taskCards = $$('div.mz-task-card[data-task][data-task-module]');
+  const missMap = new Map(); // modKey -> {missing, names:Set}
+
+  taskCards.forEach(c => {
+    const modKey = (c.getAttribute('data-task-module') || '') || '__none__';
+    const mc = Number(c.getAttribute('data-missing-count') || 0);
+    const namesStr = (c.getAttribute('data-missing-names') || '').trim();
+
+    if(!missMap.has(modKey)) missMap.set(modKey, { missing:0, names:new Set() });
+    const row = missMap.get(modKey);
+    row.missing += mc;
+
+    if(namesStr){
+      namesStr.split(',').map(s=>s.trim()).filter(Boolean).forEach(n => row.names.add(n));
+    }
+  });
+
+  missCache = missMap; // ✅ чтобы renderInbox мог использовать
+
+  // ---- 2) stats по submissions (pending/graded/total) ----
+  const map = new Map(); // modKey -> {label,total,pending,graded}
+  let total = 0, totalPending = 0, totalGraded = 0, totalMissing = 0;
+
+  items.forEach(x => {
+    total++;
+
+    const key = x.mod || '__none__';
+    if(!map.has(key)){
+      map.set(key, {
+        label: shortLabel(x.modLabel || x.mod || ''),
+        total: 0,
+        pending: 0,
+        graded: 0,
+      });
+    }
+    const row = map.get(key);
+    row.total++;
+
+    if(x.status === 'graded'){
+      row.graded++;
+      totalGraded++;
+    }else{
+      row.pending++;
+      totalPending++;
+    }
+  });
+
+  // totals missing (сумма по модулям, как у тебя на карточках)
+  missMap.forEach(v => { totalMissing += (v.missing || 0); });
+
+  // ---- 3) Todos pill: 3 числа ----
+  if(inboxCountAll){
+    // вместо "0/3" будет "P0 S1 C3" (пример)
+    inboxCountAll.innerHTML = `
+      <span class="mz-counts">
+        <span class="mz-count warn" title="Pendientes (entregado pero sin calificar)">P ${totalPending}</span>
+        <span class="mz-count miss" title="Sin entregar (sin archivo)">S ${totalMissing}</span>
+        <span class="mz-count ok"   title="Calificadas">C ${totalGraded}</span>
+      </span>
+    `;
+  }
+// ✅ Todos: собрать имена по всем модулям
+const allNames = [];
+missMap.forEach(v => { v.names && v.names.forEach(n => allNames.push(n)); });
+
+const allNamesUniq = Array.from(new Set(allNames));
+const allNamesShort =
+  allNamesUniq.slice(0, 18).join(', ') +
+  (allNamesUniq.length > 18 ? `, … +${allNamesUniq.length-18}` : '');
+
+const todosBtn = inboxModbar.querySelector('[data-inbox-mod="__all__"]');
+if(todosBtn){
+  todosBtn.title =
+    `Pendientes = entregado pero sin calificar\n` +
+    `Sin entregar = alumnos sin entrega\n` +
+    `Calificadas = ya evaluadas\n\n` +
+    `Pendientes: ${totalPending}\n` +
+    `Sin entregar: ${totalMissing}\n` +
+    `Calificadas: ${totalGraded}` +
+    (totalMissing ? `\n\nQuién no entregó:\n${allNamesShort}` : '');
+}
+  // ---- 4) pills по модулям ----
+  Array.from(map.entries())
+    .sort((a,b) => b[1].total - a[1].total)
+    .forEach(([key, row]) => {
+      const miss = missMap.get(key) || {missing:0, names:new Set()};
+      const namesArr = Array.from(miss.names);
+      const namesShort = namesArr.slice(0, 14).join(', ') + (namesArr.length > 14 ? `, … +${namesArr.length-14}` : '');
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'mz-modpill';
+      btn.setAttribute('data-inbox-mod', key);
+
+      btn.innerHTML = `
+        <b>${esc(row.label)}</b>
+        <span class="mz-counts">
+          <span class="mz-count warn" title="Pendientes (entregado pero sin calificar)">P ${row.pending}</span>
+          <span class="mz-count miss" title="Sin entregar (sin archivo)">S ${miss.missing}</span>
+          <span class="mz-count ok"   title="Calificadas">C ${row.graded}</span>
+        </span>
+      `;
+
+      btn.title =
+        `Pendientes = entregado pero sin calificar\n` +
+        `Sin entregar = alumnos sin entrega\n` +
+        `Calificadas = ya evaluadas\n\n` +
+        `Pendientes: ${row.pending}\n` +
+        `Sin entregar: ${miss.missing}\n` +
+        `Calificadas: ${row.graded}` +
+        (miss.missing ? `\n\nQuién no entregó:\n${namesShort}` : '');
+
+      inboxModbar.appendChild(btn);
+    });
+}
+
+function renderInbox(){
+  if(!inboxList) return;
+
+  if(!inboxCache.length){
+    inboxList.innerHTML = '<div class="mz-lock">No hay entregas.</div>';
+    if(hint) hint.textContent = '';
+    return;
+  }
+
+  let list = inboxCache.slice();
+  const activeKey = (activeInboxMod === '__all__') ? '__all__' : activeInboxMod;
+
+  if(activeInboxMod !== '__all__'){
+    list = list.filter(x => (x.mod || '__none__') === activeInboxMod);
+  }
+
+  const pending = list.filter(x => x.status !== 'graded').length;
+  const graded  = list.filter(x => x.status === 'graded').length;
+
+  // missing для выбранного модуля
+  let missing = 0;
+  if(activeInboxMod === '__all__'){
+    missCache.forEach(v => { missing += (v.missing || 0); });
+  }else{
+    const mrow = missCache.get(activeInboxMod) || {missing:0};
+    missing = mrow.missing || 0;
+  }
+
+let namesShort = '';
+if(activeInboxMod === '__all__'){
+  const names = [];
+  missCache.forEach(v => { v.names && v.names.forEach(n => names.push(n)); });
+  const uniq = Array.from(new Set(names));
+  namesShort = uniq.slice(0, 18).join(', ') + (uniq.length > 18 ? `, … +${uniq.length-18}` : '');
+} else {
+  const mrow = missCache.get(activeInboxMod) || { names:new Set() };
+  const uniq = Array.from(mrow.names || []);
+  namesShort = uniq.slice(0, 18).join(', ') + (uniq.length > 18 ? `, … +${uniq.length-18}` : '');
+}
+
+if(hint){
+  const base = `Mostrando ${list.length} · pendientes: ${pending} · sin entregar: ${missing} · calificadas: ${graded}`;
+  hint.innerHTML = base + (missing ? `<div style="margin-top:6px;opacity:.9">👤 No entregó: ${esc(namesShort)}</div>` : '');
+}
+
+  if(!list.length){
+    inboxList.innerHTML = '<div class="mz-lock">No hay entregas en este módulo.</div>';
+    return;
+  }
+
+  inboxList.innerHTML = '';
+  list.forEach((x) => {
+    const isGraded = x.status === 'graded';
+
+    const el = document.createElement('div');
+    el.className = 'mz-inbox-item';
+    el.setAttribute('data-sub', x.subId);
+
+    const gradeTxt = (x.gradeVal !== '' && x.gradeVal != null) ? ` · ${esc(x.gradeVal)}` : '';
+const statusHtml = isGraded
+  ? `<span class="mz-chip ok">✅ Calificado${gradeTxt}</span>`
+  : `<span class="mz-chip warn">⏳ Pendiente</span>`;
+
+const viewUrl = x.fileInline || x.fileDownload || '';
+
+el.innerHTML = `
+  <div class="mz-inbox-main">
+    <div class="mz-inbox-line">
+      <div class="mz-inbox-taskline" title="${esc(x.taskTitle)}">${esc(x.taskTitle)}</div>
+      <div class="mz-inbox-meta">
+        <span class="mz-mini">🕒 ${esc(x.submitted)}</span>
+        ${statusHtml}
+        ${x.isFinal ? `<span class="mz-chip ok">🏁 ANEXO VI</span>` : ``}
+      </div>
+    </div>
+    <div class="mz-mini" style="margin-top:4px;opacity:.85">${esc(x.alumno)}</div>
+  </div>
+
+  <div class="mz-inbox-actions">
+    ${viewUrl
+      ? `<button class="mzc-btn ghost" type="button" data-open-any="${esc(viewUrl)}">Ver</button>`
+      : `<span class="mz-lock">Sin archivo</span>`}
+    <button class="mzc-btn ${isGraded ? 'ghost' : ''}" type="button" data-grade="${esc(x.subId)}">
+      ${isGraded ? 'Ver nota' : 'Calificar'}
+    </button>
+  </div>
+`;
+
+    inboxList.appendChild(el);
+  });
+}
+  // ---------- drawer load from item ----------
+  function findItemBySub(subId){
+    return inboxCache.find(x => x.subId === String(subId)) || null;
+  }
+
+function loadIntoDrawer(item){
+  if(!item) return;
+
+  gradeMsg.textContent = '';
+  gradeSubId.value = item.subId;
+
+  const meta = `${item.alumno} · ${item.taskTitle}`;
+  const isGraded = item.status === 'graded';
+
+  gradeTitle.textContent = isGraded ? `Revisar · ${meta}` : `Calificar · ${meta}`;
+  gradeMeta.textContent = `📦 ${item.modLabel || '—'}${item.isFinal ? ' · 🏁 ANEXO VI' : ''}`;
+  gradeDate.textContent = item.submitted ? `Enviado: ${item.submitted}` : '';
+
+  // сначала показать drawer, потом грузить превью
+  openDrawer();
+
+  // CSRF
+  const src = document.querySelector('input[name="csrfmiddlewaretoken"]');
+  const cur = gradeForm.querySelector('input[name="csrfmiddlewaretoken"]');
+  if(src){
+    if(cur) cur.value = src.value;
+    else gradeForm.insertBefore(src.cloneNode(true), gradeForm.firstChild);
+  }
+
+  // показать уже сохранённые значения
+  gradeInput.value = item.gradeVal || '';
+  gradeFeedback.value = item.feedback || '';
+
+  // если уже оценено — readonly
+  gradeInput.readOnly = isGraded;
+  gradeFeedback.readOnly = isGraded;
+
+  const saveBtn = document.getElementById('mz-grade-save');
+  const nextBtn = document.getElementById('mz-grade-next');
+
+  if(isGraded){
+    gradeStatus.textContent = '✅ Ya calificado (bloqueado en sistema)';
+    if(saveBtn) saveBtn.disabled = true;
+    if(nextBtn) nextBtn.disabled = true;
+  }else{
+    gradeStatus.textContent = '⏳ Pendiente';
+    if(saveBtn) saveBtn.disabled = false;
+    if(nextBtn) nextBtn.disabled = false;
+  }
+
+  // preview only for supported file types
+  gradePrevBody.innerHTML = '';
+  const previewable = ['pdf','png','jpg','jpeg','webp','gif','docx'];
+
+  if(item.fileInline && previewable.includes(item.fileExt)){
+    const ifr = document.createElement('iframe');
+    ifr.src = item.fileInline;
+    gradePrevBody.appendChild(ifr);
+    gradeOpen.style.display = '';
+    gradeOpen.onclick = () => window.open(item.fileInline, '_blank', 'noopener');
+  }else if(item.fileDownload){
+    gradePrevBody.innerHTML = '<div class="mz-lock" style="padding:14px">Vista previa no disponible para este tipo de archivo.</div>';
+    gradeOpen.style.display = '';
+    gradeOpen.onclick = () => window.open(item.fileDownload, '_blank', 'noopener');
+  }else{
+    gradePrevBody.innerHTML = '<div class="mz-lock" style="padding:14px">Sin archivo adjunto.</div>';
+    gradeOpen.style.display = 'none';
+    gradeOpen.onclick = null;
+  }
+}
+
+  function openDrawerForSub(subId, focusEl){
+    const item = findItemBySub(subId);
+    if(!item) return;
+
+    lastFocus = focusEl || document.activeElement;
+    // currentIndex for "Guardar y siguiente"
+    const visible = getVisibleSubIds();
+    currentIndex = visible.indexOf(String(subId));
+
+    loadIntoDrawer(item);
+  }
+
+	function getVisibleSubIds(){
+	  const inboxIds = $$('#mz-inbox-list .mz-inbox-item[data-sub]').map(x => x.getAttribute('data-sub'));
+	  if(inboxIds.length) return inboxIds;
+
+	  // fallback: все карточки на странице (tasks mode)
+	  return $$('[data-subcard][data-sub]').map(x => x.getAttribute('data-sub'));
+	}
+
+  // ---------- submit grading: fetch -> parse -> update row ----------
+  async function postGrade(form){
+    gradeMsg.textContent = 'Guardando…';
+    const fd = new FormData(form);
+
+    // simple validation
+    const g = (fd.get('grade') || '').toString().trim();
+    if(!g || isNaN(Number(g)) || Number(g) < 0 || Number(g) > 10){
+      gradeMsg.textContent = '⚠️ Nota inválida (0–10).';
+      return { ok:false };
+    }
+
+    const res = await fetch(window.location.href, {
+      method:'POST',
+      body: fd,
+      credentials:'same-origin',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+
+    const text = await res.text();
+    if(!res.ok) return { ok:false, text };
+
+    // parse html, find updated <tr data-sub="...">
+    const doc = new DOMParser().parseFromString(text, 'text/html');
+    const subId = String(fd.get('sub_id') || '');
+	const newCard = doc.querySelector(`[data-subcard][data-sub="${CSS.escape(subId)}"]`);
+	const curCard = document.querySelector(`[data-subcard][data-sub="${CSS.escape(subId)}"]`);
+	if(newCard && curCard){
+	  curCard.replaceWith(newCard);
+	}
+
+    // refresh cache + inbox UI
+    inboxCache = collectCards();
+    renderInbox();
+
+    gradeMsg.textContent = '✅ Guardado.';
+    return { ok:true };
+  }
+
+  // quick grade buttons
+  if(drawer){
+    drawer.querySelectorAll('[data-q]').forEach(b => {
+      b.addEventListener('click', () => {
+        gradeInput.value = b.getAttribute('data-q');
+        gradeInput.focus();
+      });
+    });
+  }
+
+  // submit handlers
+  if(gradeForm){
+    gradeForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      try{
+        const r = await postGrade(gradeForm);
+        if(!r.ok){
+          gradeMsg.textContent = '❌ Error al guardar. (Si quieres, te activo fallback con recarga)';
+        }else{
+          // after save: update drawer status to graded (визуально)
+          gradeStatus.textContent = '✅ Guardado (la página ya refleja el cambio en la fila)';
+        }
+      }catch(err){
+        gradeMsg.textContent = '❌ Error de red.';
+      }
+    });
+  }
+
+  // Guardar y siguiente
+  if(btnNext){
+    btnNext.addEventListener('click', async ()=>{
+      // 1) save
+      const r = await postGrade(gradeForm);
+      if(!r.ok) return;
+
+      // 2) next visible pending (по текущему виду)
+      const ids = getVisibleSubIds();
+      if(!ids.length){ closeDrawer(); return; }
+
+      let i = currentIndex;
+      // try next; if end -> close
+      for(let step=1; step<=ids.length; step++){
+        const ni = i + step;
+        if(ni >= ids.length) break;
+        const subId = ids[ni];
+        const item = findItemBySub(subId);
+        if(item && item.status !== 'graded'){ // после save cache уже обновлён
+          currentIndex = ni;
+          loadIntoDrawer(item);
+          return;
+        }
+      }
+      closeDrawer();
+    });
+  }
+
+  // inbox click handlers (delegate)
+  document.addEventListener('click', (e)=>{
+    // open from inbox
+    const gradeBtn = e.target.closest('[data-grade]');
+    if(gradeBtn){
+      const subId = gradeBtn.getAttribute('data-grade');
+      openDrawerForSub(subId, gradeBtn);
+      return;
+    }
+
+    // open from table button
+    const openBtn = e.target.closest('[data-open-grade]');
+    if(openBtn){
+      const subId = openBtn.getAttribute('data-sub');
+      openDrawerForSub(subId, openBtn);
+      return;
+    }
+
+    // inline preview from inbox (use your existing preview modal if you want; for now open drawer preview)
+const openAny = e.target.closest('[data-open-any]');
+if(openAny){
+  const url = openAny.getAttribute('data-open-any');
+  window.open(url, '_blank', 'noopener');
+  return;
+}
+  });
+
+  // filters rerender
+if(inboxModbar){
+  inboxModbar.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-inbox-mod]');
+    if(!b) return;
+
+    activeInboxMod = b.getAttribute('data-inbox-mod') || '__all__';
+
+    inboxModbar.querySelectorAll('[data-inbox-mod]').forEach(x => {
+      x.classList.toggle('is-active', x === b);
+    });
+
+    renderInbox();
+  });
+}
+
+  // initial build
+  inboxCache = collectCards();
+  renderInbox();
+
+})();
+</script>
 
 
 <script>
@@ -685,7 +2222,7 @@
     const ico = btn.querySelector('.mz-collapse-ico');
     const txt = btn.querySelector('.mz-collapse-txt');
     if(ico) ico.textContent = collapsed ? '▸' : '▾';
-    if(txt) txt.textContent = collapsed ? 'Ver' : 'Ocultar';
+    
   }
 
   // apply saved state
@@ -732,8 +2269,8 @@
     const u = (url || '').toLowerCase();
 
     // ✅ у тебя теперь inline=1 — считаем это pdf (или добавь data-ext как мы обсуждали)
-    const isPdf = u.includes('.pdf') || u.includes('inline=1');
-    const isImg = u.match(/\.(png|jpg|jpeg|webp|gif)(\?|$)/);
+    const isPdf = u.includes('.pdf');
+    const isImg = u.match(/\.(png|jpg|jpeg|webp|gif|docx)(\?|$)/);
 
     if(isPdf){
       const ifr = document.createElement('iframe');
@@ -774,11 +2311,473 @@
     if(e.key === 'Escape' && !modal.classList.contains('is-hidden')) closePreview();
   });
 
-  document.addEventListener('click', (e)=>{
-    const a = e.target.closest('a[data-preview]');
-    if(!a) return;
-    e.preventDefault();
-    openPreview(a.getAttribute('href'), a.getAttribute('data-name') || a.textContent.trim());
+	document.addEventListener('click', (e)=>{
+	  const a = e.target.closest('a[data-preview]');
+	  if(!a) return;
+	  e.preventDefault();
+	  openPreview(a.getAttribute('href'), a.getAttribute('data-name') || a.textContent.trim());
+	});
+})();
+</script>
+
+<script>
+(function(){
+  const root = document.getElementById('mz-tareas-tab');
+  if(!root) return;
+  const isTeacher = root.getAttribute('data-is-teacher') === '1';
+  if(!isTeacher) return;
+
+  const modbar = document.getElementById('mz-modbar');
+  const grid = document.getElementById('mz-tasks-grid');
+  if(!modbar || !grid) return;
+
+  const cards = Array.from(grid.querySelectorAll('.mz-task-card[data-task-module]'));
+
+  function shortLabel(label){
+    const s = (label || '').toString().trim();
+    if(!s) return 'Sin módulo';
+    // берем часть до тире
+    const i = s.indexOf('-');
+    return (i > 0 ? s.slice(0, i) : s).trim();
+  }
+
+  // build stats per module
+  const map = new Map(); // mod -> {count, label}
+  let total = 0;
+
+  cards.forEach(c => {
+    total++;
+    const mod = c.getAttribute('data-task-module') || '';
+    const label = c.getAttribute('data-task-module-label') || mod || '';
+    const key = mod || '__none__';
+
+    if(!map.has(key)){
+      map.set(key, { count:0, label: shortLabel(label || mod) });
+    }
+    map.get(key).count++;
   });
+
+  // update "Todos" count
+  const allCountEl = document.getElementById('mz-modcount-all');
+  if(allCountEl) allCountEl.textContent = total;
+
+  // render pills
+  const entries = Array.from(map.entries())
+    .sort((a,b)=> b[1].count - a[1].count);
+
+  entries.forEach(([key, info]) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'mz-modpill';
+    btn.setAttribute('data-mod', key);
+    btn.innerHTML = `<b>${info.label}</b><span class="mz-count">${info.count}</span>`;
+    modbar.appendChild(btn);
+  });
+
+  function setActive(mod){
+    modbar.querySelectorAll('.mz-modpill').forEach(b=>{
+      b.classList.toggle('is-active', (b.getAttribute('data-mod')||'') === mod);
+    });
+
+    cards.forEach(c => {
+      const cm = c.getAttribute('data-task-module') || '';
+      const key = cm || '__none__';
+      const show = (mod === '__all__') ? true : (key === mod);
+      c.style.display = show ? '' : 'none';
+    });
+  }
+
+  // click
+  modbar.addEventListener('click', (e)=>{
+    const b = e.target.closest('.mz-modpill');
+    if(!b) return;
+    setActive(b.getAttribute('data-mod'));
+  });
+
+  // default
+  setActive('__all__');
+})();
+</script>
+
+
+<script>
+(function(){
+  const root = document.getElementById('mz-tareas-tab');
+  if(!root) return;
+  if(window.__MZ_DROPZONE_TAREAS__) return;
+  window.__MZ_DROPZONE_TAREAS__ = true;
+
+  // --- helpers (HOISTED) ---
+  function fmtSize(bytes){
+    let n = Number(bytes || 0);
+    const u = ["B","KB","MB","GB","TB"];
+    let i = 0;
+    while(n >= 1024 && i < u.length-1){ n /= 1024; i++; }
+    return (i===0 ? `${Math.floor(n)} ${u[i]}` : `${n.toFixed(1)} ${u[i]}`);
+  }
+  function setLabel(zone, text){
+    const lab = zone.querySelector('[data-drop-label]');
+    if(lab) lab.textContent = text || '';
+  }
+
+  // --- multi-file state ---
+  function getMultiState(zone){
+    if(!zone.__mzFiles) zone.__mzFiles = [];
+    return zone.__mzFiles;
+  }
+
+  function rebuildInputFiles(inp, filesArr){
+    try{
+      const dt = new DataTransfer();
+      filesArr.forEach(f => dt.items.add(f));
+      inp.files = dt.files;
+    }catch(e){
+      // ok: some browsers block it
+    }
+  }
+
+  function renderFilesList(zone){
+    const inp = zone.querySelector('[data-drop-input]');
+    const box = zone.closest('.mz-upload')?.querySelector('[data-drop-files]');
+    const btnAdd = zone.querySelector('[data-drop-add]');
+    const btnClear = zone.querySelector('[data-drop-clear]');
+    const isMultiUI = zone.getAttribute('data-multi') === '1' && inp && inp.multiple;
+
+    if(!box || !inp || !isMultiUI) return;
+
+    const filesArr = getMultiState(zone);
+
+    if(!filesArr.length){
+      box.style.display = 'none';
+      if(btnAdd) btnAdd.style.display = 'none';
+      if(btnClear) btnClear.style.display = 'none';
+      return;
+    }
+
+    box.style.display = '';
+    if(btnAdd) btnAdd.style.display = '';
+    if(btnClear) btnClear.style.display = '';
+
+    box.innerHTML = '';
+    filesArr.forEach((f, idx) => {
+      const row = document.createElement('div');
+      row.className = 'mz-drop-file';
+      row.innerHTML = `
+        <div class="mz-drop-file-name" title="${(f.name||'Archivo')}">${(f.name||'Archivo')}</div>
+        <div class="mz-drop-file-size">${fmtSize(f.size||0)}</div>
+        <div class="mz-drop-file-del">
+          <button class="mzc-btn ghost mz-iconbtn" type="button" data-drop-del="${idx}" aria-label="Quitar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      `;
+      box.appendChild(row);
+    });
+  }
+
+  function syncZone(zone){
+    const inp = zone.querySelector('[data-drop-input]');
+    const clear = zone.querySelector('[data-drop-clear]');
+    if(!inp) return;
+
+    const isMultiUI = zone.getAttribute('data-multi') === '1' && inp.multiple;
+
+    if(isMultiUI){
+      const filesArr = getMultiState(zone);
+      if(filesArr.length){
+        const totalBytes = filesArr.reduce((a,f)=>a+(f.size||0),0);
+        setLabel(zone, `${filesArr.length} archivos · ${fmtSize(totalBytes)} (clic para añadir)`);
+      }else{
+        setLabel(zone, 'Arrastra archivos o haz clic para elegir');
+      }
+      renderFilesList(zone);
+      return;
+    }
+
+    // single-file
+    const f = inp.files && inp.files[0];
+    if(f){
+      setLabel(zone, `${f.name} · ${fmtSize(f.size)} (clic para cambiar)`);
+      if(clear) clear.style.display = '';
+    }else{
+      const title = zone.querySelector('.mz-drop-title');
+      const isStudent = title && title.textContent.toLowerCase().includes('entrega');
+      setLabel(zone, isStudent ? 'Arrastra aquí o haz clic para elegir' : 'o haz clic para elegir');
+      if(clear) clear.style.display = 'none';
+    }
+  }
+
+  function addFilesToZone(zone, incomingFiles){
+    const inp = zone.querySelector('[data-drop-input]');
+    if(!inp) return;
+
+    const isMultiUI = zone.getAttribute('data-multi') === '1' && inp.multiple;
+
+    if(!isMultiUI){
+      // replace
+      try{
+        const dt = new DataTransfer();
+        dt.items.add(incomingFiles[0]);
+        inp.files = dt.files;
+      }catch(e){}
+      syncZone(zone);
+      autoSubmitIfNeeded(inp, zone);
+      return;
+    }
+
+    const filesArr = getMultiState(zone);
+    incomingFiles.forEach(f => {
+      if(!f) return;
+      const key = `${f.name}__${f.size}`;
+      const exists = filesArr.some(x => `${x.name}__${x.size}` === key);
+      if(!exists) filesArr.push(f);
+    });
+
+    rebuildInputFiles(inp, filesArr);
+    syncZone(zone);
+    autoSubmitIfNeeded(inp, zone);
+  }
+
+  // --- your existing auto-upload functions (kept) ---
+  async function ajaxSubmitForm(form){
+    const res = await fetch(window.location.href, {
+      method: 'POST',
+      body: new FormData(form),
+      credentials: 'same-origin',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    });
+    const html = await res.text();
+    if(!res.ok) throw new Error('upload failed');
+    return html;
+  }
+
+  function replaceFilesBlockFromHTML(taskId, html){
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+
+    const curTask = document.querySelector(`.mz-task-card[data-task="${CSS.escape(taskId)}"]`);
+    const newTask = doc.querySelector(`.mz-task-card[data-task="${CSS.escape(taskId)}"]`);
+    if(!curTask || !newTask) return false;
+
+    const curBlk = curTask.querySelector('[data-task-files]');
+    const newBlk = newTask.querySelector('[data-task-files]');
+
+    if(curBlk && newBlk){
+      curBlk.replaceWith(newBlk);
+      return true;
+    }
+    return false;
+  }
+
+  async function autoSubmitIfNeeded(inp, zone){
+    const form = inp.closest('form');
+    if(!form) return;
+
+    const enabled = form.getAttribute('data-auto-upload') === '1' || inp.hasAttribute('data-auto-upload');
+    if(!enabled) return;
+
+    if(!inp.files || !inp.files.length) return;
+    if(form.__mzSubmitting) return;
+    form.__mzSubmitting = true;
+
+    zone.classList.add('is-uploading');
+    setLabel(zone, 'Subiendo…');
+
+    try{
+      if(form.getAttribute('data-ajax-upload') === '1'){
+        const taskId = (form.querySelector('input[name="task_id"]') || {}).value || '';
+        const html = await ajaxSubmitForm(form);
+
+        if(taskId) replaceFilesBlockFromHTML(taskId, html);
+
+        inp.value = '';
+        zone.classList.remove('is-uploading');
+        syncZone(zone);
+        if(window.mzDropzoneRescanTareas) window.mzDropzoneRescanTareas(document);
+
+        form.__mzSubmitting = false;
+        return;
+      }
+
+      setTimeout(() => {
+        try{ form.requestSubmit ? form.requestSubmit() : form.submit(); }
+        catch(e){ form.submit(); }
+      }, 60);
+
+    }catch(err){
+      form.__mzSubmitting = false;
+      zone.classList.remove('is-uploading');
+      syncZone(zone);
+      setLabel(zone, '❌ Error al subir (reintenta)');
+    }
+  }
+
+  function attach(zone){
+    const inp = zone.querySelector('[data-drop-input]');
+    const clear = zone.querySelector('[data-drop-clear]');
+    const addBtn = zone.querySelector('[data-drop-add]');
+    const filesBox = zone.querySelector('[data-drop-files]');
+    if(!inp) return;
+
+    // click -> open picker (ignore clicks on controls)
+    zone.addEventListener('click', (e) => {
+      if(e.target.closest('[data-drop-clear]')) return;
+      if(e.target.closest('[data-drop-del]')) return;
+      if(e.target.closest('[data-drop-add]')) return;
+      inp.click();
+    });
+
+    if(addBtn){
+      addBtn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        inp.click();
+      });
+    }
+
+    if(filesBox){
+      filesBox.addEventListener('click', (e)=>{
+        const b = e.target.closest('[data-drop-del]');
+        if(!b) return;
+        e.stopPropagation();
+        const idx = Number(b.getAttribute('data-drop-del'));
+        const filesArr = getMultiState(zone);
+        if(Number.isFinite(idx) && idx >= 0 && idx < filesArr.length){
+          filesArr.splice(idx, 1);
+          rebuildInputFiles(inp, filesArr);
+          syncZone(zone);
+        }
+      });
+    }
+
+    if(clear){
+      clear.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isMultiUI = zone.getAttribute('data-multi') === '1' && inp.multiple;
+        if(isMultiUI){
+          zone.__mzFiles = [];
+          rebuildInputFiles(inp, []);
+        }
+        inp.value = '';
+        syncZone(zone);
+      });
+    }
+
+    inp.addEventListener('change', () => {
+      const fs = Array.from(inp.files || []);
+      if(fs.length) addFilesToZone(zone, fs);
+      else syncZone(zone);
+    });
+
+    // dnd
+    const stop = (e) => { e.preventDefault(); e.stopPropagation(); };
+    ['dragenter','dragover'].forEach(ev => {
+      zone.addEventListener(ev, (e)=>{
+        stop(e);
+        zone.classList.add('is-dragover');
+      });
+    });
+    ['dragleave','drop'].forEach(ev => {
+      zone.addEventListener(ev, (e)=>{
+        stop(e);
+        zone.classList.remove('is-dragover');
+      });
+    });
+    zone.addEventListener('drop', (e)=>{
+      const dt = e.dataTransfer;
+      if(!dt || !dt.files || !dt.files.length) return;
+      addFilesToZone(zone, Array.from(dt.files));
+    });
+
+    syncZone(zone);
+  }
+
+  function bindZoneOnce(zone){
+    if(zone.__mzDropBound) return;
+    zone.__mzDropBound = true;
+    attach(zone);
+  }
+
+  window.mzDropzoneRescanTareas = function(scope){
+    const rootScope = scope || root;
+    rootScope.querySelectorAll('[data-dropzone]').forEach(z => bindZoneOnce(z));
+  };
+
+  window.mzDropzoneRescanTareas(root);
+})();
+</script>
+
+<script>
+(function(){
+  const root = document.getElementById('mz-tareas-tab');
+  if(!root) return;
+  const isTeacher = root.getAttribute('data-is-teacher') === '1';
+  if(isTeacher) return;
+
+  const modbar = document.getElementById('mz-stu-modbar');
+  const grid = document.getElementById('mz-tasks-grid');
+  if(!modbar || !grid) return;
+
+  const cards = Array.from(grid.querySelectorAll('.mz-task-card[data-task-module]'));
+
+  function shortLabel(label){
+    const s = (label || '').toString().trim();
+    if(!s) return 'Sin módulo';
+    const i = s.indexOf('-');
+    return (i > 0 ? s.slice(0, i) : s).trim();
+  }
+
+  // build map
+  const map = new Map(); // mod -> {count,label}
+  let total = 0;
+
+  cards.forEach(c=>{
+    total++;
+    const mod = c.getAttribute('data-task-module') || '';
+    const label = c.getAttribute('data-task-module-label') || mod || '';
+    const key = mod || '__none__';
+    if(!map.has(key)) map.set(key, {count:0, label: shortLabel(label || mod)});
+    map.get(key).count++;
+  });
+
+  const allCountEl = document.getElementById('mz-stu-modcount-all');
+  if(allCountEl) allCountEl.textContent = total;
+
+  // render pills (кроме Todos)
+  Array.from(map.entries())
+    .sort((a,b)=> b[1].count - a[1].count)
+    .forEach(([key, info])=>{
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'mz-modpill';
+      btn.setAttribute('data-stu-mod', key);
+      btn.innerHTML = `<b>${info.label}</b><span class="mz-count">${info.count}</span>`;
+      modbar.appendChild(btn);
+    });
+
+  function setActive(mod){
+    modbar.querySelectorAll('.mz-modpill').forEach(b=>{
+      b.classList.toggle('is-active', (b.getAttribute('data-stu-mod')||'') === mod);
+    });
+
+    cards.forEach(c=>{
+      const cm = c.getAttribute('data-task-module') || '';
+      const key = cm || '__none__';
+      c.style.display = (mod === '__all__' || key === mod) ? '' : 'none';
+    });
+  }
+
+  modbar.addEventListener('click', (e)=>{
+    const b = e.target.closest('.mz-modpill[data-stu-mod]');
+    if(!b) return;
+    setActive(b.getAttribute('data-stu-mod'));
+  });
+
+  // по умолчанию: Todos
+  setActive('__all__');
+
+  // если хочешь автоселект первого модуля вместо Todos — раскомментируй:
+  // const first = modbar.querySelector('.mz-modpill[data-stu-mod]:not([data-stu-mod="__all__"])');
+  // if(first) setActive(first.getAttribute('data-stu-mod'));
 })();
 </script>

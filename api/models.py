@@ -134,6 +134,11 @@ class Curso(models.Model):
     # новые поля для админ-панели
     modules = models.JSONField(default=list, blank=True)
     horas_total = models.PositiveIntegerField(default=0)
+    use_global_nonlective = models.BooleanField(default=True)
+
+    # личные дни центра для этого курса:
+    # {"2025":"01/01, 02/01-03/01", "2026":"..."}  (как сейчас у FIXED_NONLECTIVE)
+    nonlective_years = models.JSONField(default=dict, blank=True)
     TIPO_FORMACION_CHOICES = [
         ("ocupacional", "Ocupacional"),
         ("continua", "Continua"),

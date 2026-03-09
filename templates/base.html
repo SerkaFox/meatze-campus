@@ -1,8 +1,4 @@
 {% load static %}
-<link rel="icon" href="{% static 'files/logo.png' %}?v={% now 'U' %}" type="image/png">
-<link rel="shortcut icon" href="{% static 'files/logo.png' %}?v={% now 'U' %}" type="image/png">
-<link rel="apple-touch-icon" href="{% static 'files/logo.png' %}?v={% now 'U' %}">
-<link rel="icon" href="{% static 'favicon.png' %}">
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -10,12 +6,18 @@
   <title>{% block title %}MEATZE{% endblock %}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <link rel="icon" href="{% static 'files/logo.png' %}?v={% now 'U' %}" type="image/png">
+  <link rel="shortcut icon" href="{% static 'files/logo.png' %}?v={% now 'U' %}" type="image/png">
+  <link rel="apple-touch-icon" href="{% static 'files/logo.png' %}?v={% now 'U' %}">
+  <link rel="icon" href="{% static 'favicon.png' %}">
+
+  {% if not request.GET.next %}
+  <link rel="canonical" href="https://meatzeaula.es{{ request.path }}">
+  {% endif %}
+
   {% block extra_head %}{% endblock %}
 
-  <!-- ТВОЙ site.css находится в static/meatze/ -->
   <link rel="stylesheet" href="{% static 'meatze/site.css' %}?v={% now 'U' %}">
-
-  <!-- ЧАТ: было в оригинале -->
   <link rel="stylesheet" href="{% static 'meatze/chat_widget/chat-widget.css' %}">
   
 <script>
@@ -407,9 +409,16 @@ function buildContextUrl(){
   })();
 })();
 </script>
+<footer class="mz-footer" style="margin-top:40px;padding:16px;text-align:center;font-size:13px;color:#8b9bb4;border-top:1px solid rgba(148,163,184,.2);">
+  <a href="https://meatzeaula.es/privacy/" style="color:#94a3b8;text-decoration:underline;">
+    Privacy Policy
+  </a>
+  <span style="margin:0 10px;">•</span>
+  <a href="https://meatzeaula.es/terms/" style="color:#94a3b8;text-decoration:underline;">
+    Terms of Service
+  </a>
+</footer>
 
-</body>
-</html>
 
 
 <script>
@@ -580,3 +589,5 @@ function buildContextUrl(){
   setInterval(() => tick().catch(()=>{}), POLL_MS);
 })();
 </script>
+</body>
+</html>

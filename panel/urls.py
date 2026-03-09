@@ -9,7 +9,7 @@ from .views_attendance import (
     teacher_attendance_pending,
     teacher_attendance_decide,
 )
-from .AnexoVI import anexo_vi_doc
+
 
 app_name = "panel"
 
@@ -30,7 +30,6 @@ urlpatterns = [
     path("curso/<str:codigo>/tareas/anexo-vi.docx", reports.teacher_anexo_vi_report_doc, name="anexo_vi_docx"),
     path("meatze/v5/teacher/attendance/pending", teacher_attendance_pending),
     path("meatze/v5/teacher/attendance/decide", teacher_attendance_decide),
-    path("anexo_vi/<str:codigo>/<int:alumno_id>/", anexo_vi_doc, name="anexo_vi"),
 ]
 
 # panel/urls.py
@@ -61,4 +60,86 @@ urlpatterns += [
     path("curso/<int:curso_id>/live/ping/", views_live.curso_live_ping, name="curso_live_ping"),
     path("curso/<int:curso_id>/live/close/", views_live.curso_live_close, name="curso_live_close"),
     path("curso/<str:codigo>/live/popup/", views_live.curso_live_popup, name="curso_live_popup"),
+    path("curso/<str:codigo>/tarea/<int:task_id>/attach/<int:attach_id>/download/",
+     views.task_attach_download, name="task_attach_download"),
 ]
+from .views_materiales_upload import (
+    materiales_upload_init,
+    materiales_upload_chunk,
+    materiales_upload_complete,
+)
+
+urlpatterns += [
+    path(
+        "curso/<str:codigo>/materiales/upload/init/",
+        materiales_upload_init,
+        name="materiales_upload_init",
+    ),
+    path(
+        "curso/<str:codigo>/materiales/upload/chunk/",
+        materiales_upload_chunk,
+        name="materiales_upload_chunk",
+    ),
+    path(
+        "curso/<str:codigo>/materiales/upload/complete/",
+        materiales_upload_complete,
+        name="materiales_upload_complete",
+    ),
+]
+
+from .views_materiales_upload import (
+    materiales_upload_init,
+    materiales_upload_chunk,
+    materiales_upload_complete,
+    materiales_import_google_drive,
+    materiales_import_google_drive_folder,
+    materiales_drive_list_folder,
+    materiales_drive_create_folder,
+)
+
+from .views_materiales_fs_ops import materiales_move_folder
+
+urlpatterns += [
+    path(
+        "curso/<str:codigo>/materiales/upload/init/",
+        materiales_upload_init,
+        name="materiales_upload_init",
+    ),
+    path(
+        "curso/<str:codigo>/materiales/upload/chunk/",
+        materiales_upload_chunk,
+        name="materiales_upload_chunk",
+    ),
+    path(
+        "curso/<str:codigo>/materiales/upload/complete/",
+        materiales_upload_complete,
+        name="materiales_upload_complete",
+    ),
+    path(
+        "curso/<str:codigo>/materiales/drive/import/",
+        materiales_import_google_drive,
+        name="materiales_import_google_drive",
+    ),
+    path(
+        "curso/<str:codigo>/materiales/drive/import-folder/",
+        materiales_import_google_drive_folder,
+        name="materiales_import_google_drive_folder",
+    ),
+    path(
+        "curso/<str:codigo>/materiales/fs/move-folder/",
+        materiales_move_folder,
+        name="materiales_move_folder",
+    ),
+    path(
+    "curso/<str:codigo>/materiales/drive/list-folder/",
+    materiales_drive_list_folder,
+    name="materiales_drive_list_folder",
+    ),
+    path(
+    "curso/<str:codigo>/materiales/drive/create-folder/",
+    materiales_drive_create_folder,
+    name="materiales_drive_create_folder",
+    ),
+]
+
+

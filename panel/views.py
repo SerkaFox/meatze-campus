@@ -1,5 +1,5 @@
 from .decorators import require_profile_complete
-from .models import CursoFile, CursoFolder, MaterialDownload, MaterialReceipt, CursoPhysicalConfig, AttendanceSession, CourseTask, TaskSubmission, PublicShareLink, CursoPhysicalItem
+from .models import CursoFile, CursoFolder, MaterialDownload, MaterialReceipt, CursoPhysicalConfig, AttendanceSession, CourseTask, TaskSubmission, PublicShareLink, CursoPhysicalItem, CourseTaskAttachment
 from .utils import curso_modules_choices, curso_module_label, extract_convocatoria, resolve_convocatoria 
 from .views_attendance import _current_slot
 from api.models import Curso, Enrol, Horario
@@ -41,6 +41,7 @@ import logging
 logger = logging.getLogger(__name__)
 User = get_user_model()
 
+GOOGLE_DRIVE_FOLDER_MIME = "application/vnd.google-apps.folder"
 
 TEACHER_MODULES = [
     {"slug": "info",       "label": "Información"},
@@ -109,8 +110,33 @@ def _ensure_module_folders(curso, tmp_mods, user):
             path=path,
             defaults={"title": path.split("/")[-1], "created_by": user, "is_locked": True}
         )
+import re
+from django.utils.text import slugify
 
+def safe_part(s: str, max_len=60) -> str:
+    s = (s or "").strip()
+    if not s:
+        return "sin_nombre"
+    # slugify: латиница + дефисы; безопасно для файлов
+    out = slugify(s)
+    if not out:
+        # если полностью кириллица и slugify дал пусто — чистим вручную
+        out = re.sub(r"[^A-Za-z0-9_-]+", "_", s).strip("_") or "nombre"
+    return out[:max_len]
+    
+from django.http import FileResponse, Http404
 
+def task_attach_download(request, codigo, task_id, attach_id):
+    a = CourseTaskAttachment.objects.select_related("task","task__curso").filter(
+        pk=attach_id, task_id=task_id, task__curso__codigo=codigo
+    ).first()
+    if not a or not a.file:
+        raise Http404()
+
+    inline = request.GET.get("inline") == "1"
+    resp = FileResponse(a.file.open("rb"), as_attachment=not inline, filename=a.filename)
+    return resp
+    
 def _download_url(url: str):
     p = urlparse(url)
     if p.scheme not in ("http", "https"):
@@ -404,6 +430,9 @@ def course_panel(request, codigo):
     }
     context["IS_TEACHER"] = request.user.groups.filter(name="Docente").exists()
     context["USER_ID"] = request.user.id
+    context["google_drive_client_id"] = getattr(settings, "GOOGLE_DRIVE_CLIENT_ID", "")
+    context["google_drive_api_key"] = getattr(settings, "GOOGLE_DRIVE_API_KEY", "")
+    context["google_drive_app_id"] = getattr(settings, "GOOGLE_DRIVE_APP_ID", "")
 
     # ───────────── ВКЛАДКА "MATERIALES" ─────────────
     if active_tab == "materiales":
@@ -722,6 +751,62 @@ def course_panel(request, codigo):
         if request.method == "POST" and is_teacher:
             action = (request.POST.get("action") or "").strip()
             
+            
+            if action == "materials_clear":
+                mode = (request.POST.get("mode") or "all").strip()   # all | current
+                aud_post = (request.POST.get("audience") or audience or "alumnos").strip()
+
+                allowed_aud = {"alumnos", "docentes", "mis"}
+                if aud_post not in allowed_aud:
+                    aud_post = "alumnos"
+
+                def _qs_for_audience(base_qs, aud_value):
+                    if aud_value == "alumnos":
+                        return base_qs.filter(tipo=CursoFile.TIPO_ALUMNOS)
+                    elif aud_value == "docentes":
+                        return base_qs.filter(tipo=CursoFile.TIPO_DOCENTES)
+                    elif aud_value == "mis":
+                        return base_qs.filter(tipo=CursoFile.TIPO_PRIVADO, uploaded_by=user)
+                    return base_qs.none()
+
+                with transaction.atomic():
+                    base_files = CursoFile.objects.filter(curso=curso)
+
+                    if mode == "current":
+                        files_qs = _qs_for_audience(base_files, aud_post)
+                    else:
+                        mode = "all"
+                        files_qs = base_files
+
+                    file_ids = list(files_qs.values_list("id", flat=True))
+
+                    deleted_files = len(file_ids)
+
+                    # 1) public links на эти файлы
+                    deleted_links, _ = PublicShareLink.objects.filter(file_id__in=file_ids).delete()
+
+                    # 2) удаляем записи файлов, НЕ трогая физический storage
+                    files_qs.delete()
+
+                    deleted_folders = 0
+
+                    # 3) если это полный сброс курса — убираем все custom-папки
+                    # locked модульные папки оставляем
+                    if mode == "all":
+                        deleted_folders = CursoFolder.objects.filter(
+                            curso=curso,
+                            is_deleted=False,
+                            is_locked=False,
+                        ).update(is_deleted=True)
+
+                    return JsonResponse({
+                        "ok": True,
+                        "mode": mode,
+                        "audience": aud_post,
+                        "deleted_files": deleted_files,
+                        "deleted_links": deleted_links,
+                        "deleted_folders": deleted_folders,
+                    })
             
             if action == "folder_delete":
                 path = _normalize_path(request.POST.get("path") or "")
@@ -1272,9 +1357,13 @@ def course_panel(request, codigo):
         context["module_choices"] = module_choices
 
         # выбранный модуль из GET (Todos / конкретный / none)
-        selected_mod = (request.GET.get("mod") or "").strip()  # "" = Todos
+        selected_mod = (request.GET.get("mod") or "").strip()
+        # если пришёл "MF0219_2 - Texto..." — берём только ключ до " - "
+        if " - " in selected_mod:
+            selected_mod = selected_mod.split(" - ", 1)[0].strip()
+            context["selected_mod"] = selected_mod
         context["selected_mod"] = selected_mod
-
+        context["alumnos_total"] = Enrol.objects.filter(codigo=curso.codigo, role="student").count()
         # валидные ключи
         valid_mod_keys = {k for k, _ in module_choices}
 
@@ -1288,6 +1377,7 @@ def course_panel(request, codigo):
             title = (request.POST.get("title") or "").strip()
             description = (request.POST.get("description") or "").strip()
             f = request.FILES.get("task_file")
+            files = request.FILES.getlist("task_files") 
             module_key = (request.POST.get("module_key") or "").strip()
 
             # NEW:
@@ -1316,6 +1406,23 @@ def course_panel(request, codigo):
                     is_final_exam=is_final_exam,
                     convocatoria=convocatoria,
                 )
+                if files:
+                    f0 = files[0]
+                    t.file = f0
+                    t.file_name = f0.name
+                    t.file_size = f0.size
+                    t.ext = (f0.name.rsplit(".", 1)[-1].lower() if "." in f0.name else "")
+                    t.save(update_fields=["file","file_name","file_size","ext"])
+
+                # все файлы -> attachments
+                for f in files:
+                    CourseTaskAttachment.objects.create(
+                        task=t,
+                        file=f,
+                        file_name=f.name,
+                        file_size=f.size,
+                        ext=(f.name.rsplit(".", 1)[-1].lower() if "." in f.name else "")
+                    )
                 if f:
                     t.file = f
                     t.file_name = f.name
@@ -1325,6 +1432,30 @@ def course_panel(request, codigo):
 
             return redirect(f"{request.path}?tab=tareas")
 
+        if request.method == "POST" and is_teacher and request.POST.get("action") == "task_add_files":
+            task_id = request.POST.get("task_id")
+            t = CourseTask.objects.filter(pk=task_id, curso=curso).first()
+            if not t:
+                return redirect(f"{request.path}?tab=tareas")
+
+            files = request.FILES.getlist("task_files")
+            for f in files:
+                CourseTaskAttachment.objects.create(
+                    task=t, file=f, file_name=f.name, file_size=f.size,
+                    ext=(f.name.rsplit(".", 1)[-1].lower() if "." in f.name else "")
+                )
+            return redirect(f"{request.path}?tab=tareas")
+            
+        if request.method == "POST" and is_teacher and request.POST.get("action") == "task_del_attach":
+            attach_id = request.POST.get("attach_id")
+            a = CourseTaskAttachment.objects.select_related("task").filter(
+                pk=attach_id, task__curso=curso
+            ).first()
+            if a:
+                if a.file:
+                    a.file.delete(save=False)
+                a.delete()
+            return redirect(f"{request.path}?tab=tareas")
 
         # ── TEACHER: закрыть/открыть задачу
         if request.method == "POST" and is_teacher and request.POST.get("action") == "task_toggle_close":
@@ -1355,55 +1486,111 @@ def course_panel(request, codigo):
 
             return redirect(f"{request.path}?tab=tareas")
 
-
-        # ── STUDENT: отправить работу (можно несколько раз)
         # ── STUDENT: отправить работу (много попыток ДО оценки)
         if request.method == "POST" and (not is_teacher) and request.POST.get("action") == "task_submit":
+            import zipfile
+            from io import BytesIO
+            from django.core.files.base import ContentFile
+
             task_id = request.POST.get("task_id")
-            f = request.FILES.get("answer_file")
+            files = request.FILES.getlist("answer_files")   # <-- было answer_file
             comment = (request.POST.get("comment") or "").strip()
 
             task = CourseTask.objects.filter(pk=task_id, curso=curso, is_published=True).first()
 
-            if task and (not task.is_closed) and f:
-                sub = TaskSubmission.objects.filter(task=task, alumno=user).first()
+            # базовые проверки
+            if not task or task.is_closed or not files:
+                return redirect(f"{request.path}?tab=tareas")
 
-                # ✅ если уже оценено — блокируем любые новые попытки
-                if sub and sub.status == TaskSubmission.STATUS_GRADED:
-                    return redirect(f"{request.path}?tab=tareas")
+            sub = TaskSubmission.objects.filter(task=task, alumno=user).first()
 
-                # иначе: обновляем существующую сдачу или создаём новую
-                if sub:
-                    if sub.file:
-                        try:
-                            sub.file.delete(save=False)
-                        except Exception:
-                            pass
+            # ✅ если уже оценено — блокируем любые новые попытки
+            if sub and sub.status == TaskSubmission.STATUS_GRADED:
+                return redirect(f"{request.path}?tab=tareas")
 
-                    sub.file = f
-                    sub.file_name = f.name
-                    sub.file_size = f.size
-                    sub.ext = (f.name.rsplit(".", 1)[-1].lower() if "." in f.name else "")
-                    sub.comment = comment
-                    sub.status = TaskSubmission.STATUS_SUBMITTED
-                    sub.submitted_at = timezone.now()
-                    sub.save()
-                else:
-                    TaskSubmission.objects.create(
-                        task=task,
-                        alumno=user,
-                        file=f,
-                        file_name=f.name,
-                        file_size=f.size,
-                        ext=(f.name.rsplit(".", 1)[-1].lower() if "." in f.name else ""),
-                        comment=comment,
-                        status=TaskSubmission.STATUS_SUBMITTED,
-                        submitted_at=timezone.now(),
-                    )
+            # --- собрать файл для сохранения ---
+            if len(files) == 1:
+                stored = files[0]
+                file_name = stored.name
+                file_size = stored.size
+                ext = (file_name.rsplit(".", 1)[-1].lower() if "." in file_name else "")
+            else:
+                buf = BytesIO()
+                with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as z:
+                    for f in files:
+                        # чтобы не тащить папки/пути
+                        safe_name = (f.name or "archivo").split("/")[-1].split("\\")[-1]
+                        z.writestr(safe_name, f.read())
+                buf.seek(0)
+
+                exam_part = safe_part(task.title, 70)
+                mod_part  = safe_part(task.module_key or task.module_label or "mod", 20)
+
+                student_name = ""
+                try:
+                    student_name = user.get_full_name()
+                except Exception:
+                    student_name = ""
+
+                stu_part = safe_part(student_name or (user.email or f"alumno{user.id}"), 40)
+
+                zip_name = f"{exam_part}__{mod_part}__{stu_part}.zip"
+                stored = ContentFile(buf.read(), name=zip_name)
+                file_name = zip_name
+                file_size = stored.size
+                ext = "zip"
+
+            # иначе: обновляем существующую сдачу или создаём новую
+            if sub:
+                if sub.file:
+                    try:
+                        sub.file.delete(save=False)
+                    except Exception:
+                        pass
+
+                sub.file = stored
+                sub.file_name = file_name
+                sub.file_size = file_size
+                sub.ext = ext
+                sub.comment = comment
+                sub.status = TaskSubmission.STATUS_SUBMITTED
+                sub.submitted_at = timezone.now()
+                sub.save()
+            else:
+                TaskSubmission.objects.create(
+                    task=task,
+                    alumno=user,
+                    file=stored,
+                    file_name=file_name,
+                    file_size=file_size,
+                    ext=ext,
+                    comment=comment,
+                    status=TaskSubmission.STATUS_SUBMITTED,
+                    submitted_at=timezone.now(),
+                )
 
             return redirect(f"{request.path}?tab=tareas")
+        # ── TEACHER: заменить файл enunciado (без удаления задачи)
+        if request.method == "POST" and is_teacher and request.POST.get("action") == "task_replace_file":
+            task_id = request.POST.get("task_id")
+            f = request.FILES.get("task_file")
 
+            t = CourseTask.objects.filter(pk=task_id, curso=curso).first()
+            if t and f:
+                # удалить старый файл
+                if t.file:
+                    try:
+                        t.file.delete(save=False)
+                    except Exception:
+                        pass
 
+                t.file = f
+                t.file_name = f.name
+                t.file_size = f.size
+                t.ext = (f.name.rsplit(".", 1)[-1].lower() if "." in f.name else "")
+                t.save(update_fields=["file", "file_name", "file_size", "ext"])
+
+            return redirect(f"{request.path}?tab=tareas")
 
         # ── TEACHER: поставить оценку (ТОЛЬКО 1 РАЗ, потом блок)
         if request.method == "POST" and is_teacher and request.POST.get("action") == "task_grade":
@@ -1430,39 +1617,97 @@ def course_panel(request, codigo):
 
             return redirect(f"{request.path}?tab=tareas")
 
-        # ── queries + контекст
         if is_teacher:
+            # 1) студенты курса
+            enrols = (
+                Enrol.objects
+                .filter(codigo=curso.codigo, role="student")
+                .select_related("user", "user__profile")
+            )
+
+            student_ids = []
+            student_name = {}
+
+            for e in enrols:
+                sid = e.user_id
+                student_ids.append(sid)
+
+                u = e.user
+                # имя: profile.display_name -> profile.build_display_name -> email -> username/id
+                prof = getattr(u, "profile", None)
+                nm = ""
+                if prof:
+                    nm = (prof.display_name or prof.build_display_name() or "").strip()
+                if not nm:
+                    nm = (getattr(u, "email", "") or getattr(u, "username", "") or f"ID {sid}").strip()
+
+                student_name[sid] = nm
+
+            all_students_set = set(student_ids)
+            context["alumnos_total"] = len(student_ids)
+
+            # 2) задачи + submissions
             tasks_qs = CourseTask.objects.filter(curso=curso)
 
             if selected_mod == "none":
                 tasks_qs = tasks_qs.filter(module_key="")
             elif selected_mod:
-                # защита от мусора в url
                 if selected_mod in valid_mod_keys:
                     tasks_qs = tasks_qs.filter(module_key=selected_mod)
                 else:
-                    # если пришёл невалидный ключ — считаем как Todos
                     selected_mod = ""
                     context["selected_mod"] = ""
 
             tasks = list(
-                tasks_qs.order_by("-created_at")
-                .prefetch_related(
+                tasks_qs.order_by("-created_at").prefetch_related(
                     Prefetch(
                         "submissions",
-                        queryset=TaskSubmission.objects.select_related("alumno").order_by("status", "-submitted_at")
+                        queryset=TaskSubmission.objects.select_related("alumno", "alumno__profile")
+                        .order_by("status", "-submitted_at"),
                     )
                 )
             )
 
+            # 3) missing per task
+            missing_total_sum = 0                 # сумма по задачам (может "двоить" одного и того же студента)
+            missing_unique_all = set()            # уникальные студенты, кто НЕ сдал хотя бы одну задачу
+            missing_lines = []
 
             for t in tasks:
+                subs = list(t.submissions.all())
+
+                submitted_ids = {s.alumno_id for s in subs if s.alumno_id}
+                missing_ids = sorted(all_students_set - submitted_ids)
+                missing_unique_all.update(missing_ids)
+
+                missing_names = [student_name.get(sid, f"ID {sid}") for sid in missing_ids]
+
+                t.sub_total = len(subs)
+                t.sub_graded = sum(1 for s in subs if s.status == TaskSubmission.STATUS_GRADED)
+                t.missing_count = len(missing_ids)
+
+                # короткий список имён, чтобы не раздувать HTML
+                max_names = 18
+                short = missing_names[:max_names]
+                if len(missing_names) > max_names:
+                    short.append(f"… +{len(missing_names) - max_names}")
+                t.missing_names_str = ", ".join(short)
+
+                if t.missing_count:
+                    missing_total_sum += t.missing_count
+                    missing_lines.append(f"{t.title}: {t.missing_names_str}")
+
                 t.fmt_size = _fmt_size(getattr(t, "file_size", 0))
-                for s in t.submissions.all():
+                for s in subs:
                     s.fmt_size = _fmt_size(getattr(s, "file_size", 0))
 
+            # 🔥 ВАЖНО:
+            # - missing_total_sum = "сколько НЕ сдано всего" (по задачам)
+            # - missing_total_unique = "сколько людей НЕ сдало хотя бы одну"
+            context["missing_total_sum"] = missing_total_sum
+            context["missing_total"] = len(missing_unique_all)  # чтобы в шапке было "1", как ты ожидаешь
+            context["missing_tooltip"] = "\n".join(missing_lines) if missing_lines else "Todos han entregado."
             context["tasks"] = tasks
-
         else:
             # ✅ STUDENT видит опубликованные задачи
             tasks_qs = CourseTask.objects.filter(curso=curso, is_published=True)

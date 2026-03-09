@@ -77,3 +77,227 @@
 .mzc-btn.danger:hover{
   background: rgba(239,68,68,.12) !important;
 }
+
+/* Google Drive launcher modal — поверх всего */
+/* =========================
+   Google Drive launcher
+   real viewport modal
+   ========================= */
+
+#mz-gdrive-launcher{
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+#mz-gdrive-launcher.is-hidden{
+  display: none !important;
+}
+
+#mz-gdrive-launcher .mz-prev-backdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, .72);
+  backdrop-filter: blur(8px);
+}
+
+#mz-gdrive-launcher .mz-prev-card{
+  position: relative;
+  z-index: 1;
+
+  width: min(920px, calc(100vw - 40px));
+  margin: auto;
+
+  max-height: min(760px, calc(100vh - 40px));
+  overflow: hidden;
+
+  border-radius: 26px;
+  border: 1px solid rgba(148,163,184,.22);
+  background:
+    radial-gradient(circle at top left, rgba(59,130,246,.14), rgba(15,23,42,.96) 42%),
+    linear-gradient(180deg, rgba(15,23,42,.985), rgba(2,6,23,.985));
+  box-shadow: 0 30px 100px rgba(0,0,0,.48);
+
+  display: flex;
+  flex-direction: column;
+}
+
+#mz-gdrive-launcher .mz-prev-head{
+  flex: 0 0 auto;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(148,163,184,.14);
+  background: transparent;
+}
+
+#mz-gdrive-launcher .mz-prev-title{
+  font-size: 28px;
+  line-height: 1.1;
+  font-weight: 900;
+  color: #f8fafc;
+}
+
+#mz-gdrive-launcher .mz-prev-actions{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#mz-gdrive-launcher .mz-prev-body{
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 20px !important;
+}
+
+#mz-gdrive-launcher .mz-gdrv-wrap{
+  display: grid;
+  gap: 18px;
+}
+
+#mz-gdrive-launcher .mz-gdrv-note{
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(148,163,184,.14);
+  background: rgba(15,23,42,.38);
+  color: #cbd5e1;
+  line-height: 1.45;
+}
+
+#mz-gdrive-launcher .mz-gdrv-section-title{
+  font-size: 15px;
+  font-weight: 900;
+  color: #f8fafc;
+  margin-bottom: 10px;
+}
+
+#mz-gdrive-launcher #mz-gdrive-kind{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#mz-gdrive-launcher #mz-gdrive-kind .mzc-btn{
+  min-width: 140px;
+  justify-content: center;
+}
+
+#mz-gdrive-launcher .mz-gdrv-dest{
+  display: grid;
+  gap: 12px;
+}
+
+#mz-gdrive-launcher .mz-gdrv-dest .mz-rec-row{
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 12px;
+  align-items: start;
+
+  border: 1px solid rgba(148,163,184,.18);
+  border-radius: 18px;
+  padding: 16px 18px;
+  background: rgba(15,23,42,.44);
+  transition: border-color .18s ease, background .18s ease;
+}
+
+#mz-gdrive-launcher .mz-gdrv-dest .mz-rec-row:hover{
+  border-color: rgba(96,165,250,.40);
+  background: rgba(30,41,59,.72);
+}
+
+#mz-gdrive-launcher .mz-gdrv-dest .mz-rec-row input[type="radio"]{
+  margin-top: 4px;
+}
+
+#mz-gdrive-launcher .mz-gdrv-dest-title{
+  color: #f8fafc;
+  font-weight: 900;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+#mz-gdrive-launcher .mz-gdrv-dest-sub{
+  margin-top: 4px;
+  color: #94a3b8;
+  line-height: 1.35;
+}
+
+#mz-gdrive-launcher #mz-gdrive-folder-select{
+  width: 100%;
+  min-width: 0;
+  margin-top: 12px;
+}
+
+#mz-gdrive-launcher .mz-gdrv-footer{
+  flex: 0 0 auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+
+  padding: 18px 20px 20px;
+  border-top: 1px solid rgba(148,163,184,.14);
+}
+
+#mz-gdrive-launcher .mz-gdrv-final{
+  color: #cbd5e1;
+  font-size: 15px;
+}
+
+#mz-gdrive-launcher .mz-gdrv-final b{
+  color: #f8fafc;
+}
+
+#mz-gdrive-launcher .mz-gdrv-footer .mz-prev-actions{
+  margin-left: auto;
+}
+
+body.mz-modal-open{
+  overflow: hidden !important;
+}
+
+@media (max-width: 760px){
+  #mz-gdrive-launcher{
+    padding: 10px;
+  }
+
+  #mz-gdrive-launcher .mz-prev-card{
+    width: calc(100vw - 20px);
+    max-height: calc(100vh - 20px);
+    border-radius: 20px;
+  }
+
+  #mz-gdrive-launcher .mz-prev-title{
+    font-size: 24px;
+  }
+
+  #mz-gdrive-launcher .mz-gdrv-dest .mz-rec-row{
+    grid-template-columns: 20px 1fr;
+    padding: 14px;
+  }
+
+  #mz-gdrive-launcher .mz-gdrv-dest-title{
+    font-size: 16px;
+  }
+
+  #mz-gdrive-launcher .mz-gdrv-footer{
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #mz-gdrive-launcher .mz-gdrv-footer .mz-prev-actions{
+    margin-left: 0;
+    width: 100%;
+  }
+
+  #mz-gdrive-launcher .mz-gdrv-footer .mz-prev-actions .mzc-btn{
+    flex: 1 1 auto;
+  }
+}

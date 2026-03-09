@@ -121,6 +121,15 @@
     <div class="mz-tree-main">
 		<div class="mz-tree-title">
 <div class="mz-tree-title-row">
+{% if is_teacher and not node.is_locked %}
+<button type="button"
+        class="mz-tree-drag"
+        draggable="true"
+        data-drag-folder="{{ node.path|escape }}"
+        title="Mover carpeta">
+  <span class="mz-dots"></span>
+</button>
+{% endif %}
   <span class="mz-tree-folder"
         data-role="folder-name"
         title="{{ node.name|default:''|escape }}">
@@ -160,6 +169,15 @@
                   title="Nueva subcarpeta"
                   data-action="folder.create.here"
                   data-parent="{{ node.path|escape }}">📁＋</button>
+		  <button type="button"
+					  class="mz-gdrive-mini"
+					  data-action="folder.upload.google"
+					  data-parent="{{ node.path|escape }}"
+					  
+					  title="Importar desde Google Drive aquí"
+					  aria-label="Importar desde Google Drive aquí">
+				<span class="mz-gdrive-mini-ico">☁️</span>
+			  </button>
 
           {% if not node.is_locked %}
             <form method="post" style="margin:0" data-ajax="folder-delete" data-path="{{ node.path }}" onsubmit="return false;">

@@ -83,16 +83,22 @@ Se admiten rangos: <b>01/08-31/08</b>, <b>10-20/09</b>.
 
           Se aplican a <b>todos</b> los cursos.
         </div>
-        <div class="mz-row" style="grid-template-columns:1fr 1fr;gap:8px">
-          <label>
-            <span class="mz-help">Año <span id="mzh-fixed-y1-label"></span></span>
-            <input id="mzh-fixed-y1" class="mz-inp" placeholder="13/01, 15/01">
-          </label>
-          <label>
-            <span class="mz-help">Año <span id="mzh-fixed-y2-label"></span></span>
-            <input id="mzh-fixed-y2" class="mz-inp" placeholder="10/01, 20/06">
-          </label>
-        </div>
+<div class="mz-row" style="grid-template-columns:1fr 1fr 1fr;gap:8px">
+  <label>
+    <span class="mz-help">Año <span id="mzh-fixed-y0-label"></span></span>
+    <input id="mzh-fixed-y0" class="mz-inp" placeholder="13/01, 15/01">
+  </label>
+
+  <label>
+    <span class="mz-help">Año <span id="mzh-fixed-y1-label"></span></span>
+    <input id="mzh-fixed-y1" class="mz-inp" placeholder="13/01, 15/01">
+  </label>
+
+  <label>
+    <span class="mz-help">Año <span id="mzh-fixed-y2-label"></span></span>
+    <input id="mzh-fixed-y2" class="mz-inp" placeholder="10/01, 20/06">
+  </label>
+</div>
         <div class="mz-fixed-actions">
           <button id="mzh-fixed-save" class="mz-btn" type="button" data-action="horarios.fixed.save">
   Guardar días no lectivos
@@ -100,6 +106,66 @@ Se admiten rangos: <b>01/08-31/08</b>, <b>10-20/09</b>.
           <span id="mzh-fixed-msg" class="mz-help"></span>
         </div>
       </div>
+	  
+	  <!-- === DÍAS NO LECTIVOS DEL CURSO (override) === -->
+<button id="mzh-course-fixed-toggle" class="mz-btn link" type="button"
+        data-action="horarios.course_fixed.toggle" style="margin-top:6px">
+  Días no lectivos de ESTE curso
+</button>
+
+<div id="mzh-course-fixed-panel" class="mz-card mz-fixed-card"
+     style="display:none;margin-top:8px">
+  <div class="mz-help" style="margin-bottom:8px">
+    Aquí puedes elegir si el curso usa los días <b>globales del centro</b>
+    o un listado <b>exclusivo</b> (solo para este curso).
+  </div>
+
+  <div class="mz-row" style="grid-template-columns: 1.2fr .8fr; gap:10px; align-items:end">
+    <label class="mz-help mz-auto-flag" style="display:flex;gap:8px;align-items:center;margin:0">
+      <input id="mzh-course-use-global" type="checkbox" checked>
+      Usar lista global del centro
+    </label>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+      <button id="mzh-course-copy-global" class="mz-btn" type="button"
+              data-action="horarios.course_fixed.copy_global">
+        Copiar desde global
+      </button>
+    </div>
+  </div>
+
+  <div id="mzh-course-fixed-fields" style="margin-top:8px">
+    <div class="mz-help" style="margin-bottom:4px">
+      Días no lectivos <b>del curso</b> por año (formato <b>DD/MM</b>, separados por coma).
+      Se admiten rangos: <b>01/08-31/08</b>, <b>10-20/09</b>.
+    </div>
+
+    <div class="mz-row" style="grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <label>
+        <span class="mz-help">Año <span id="mzh-course-y0-label"></span></span>
+        <input id="mzh-course-y0" class="mz-inp" placeholder="13/01, 15/01">
+      </label>
+
+      <label>
+        <span class="mz-help">Año <span id="mzh-course-y1-label"></span></span>
+        <input id="mzh-course-y1" class="mz-inp" placeholder="13/01, 15/01">
+      </label>
+
+      <label>
+        <span class="mz-help">Año <span id="mzh-course-y2-label"></span></span>
+        <input id="mzh-course-y2" class="mz-inp" placeholder="10/01, 20/06">
+      </label>
+    </div>
+
+    <div class="mz-fixed-actions" style="margin-top:8px">
+      <button id="mzh-course-fixed-save" class="mz-btn" type="button"
+              data-action="horarios.course_fixed.save">
+        Guardar días del curso
+      </button>
+      <span id="mzh-course-fixed-msg" class="mz-help"></span>
+    </div>
+  </div>
+</div>
     </div>
 
     <!-- панель параметров автозаполнения, всегда открыта -->

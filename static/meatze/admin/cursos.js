@@ -424,7 +424,117 @@ if (searchIn){
     tSearch = setTimeout(applyCursosFilter, 80);
   });
 }
+function normTxt(s){
+  return String(s||'')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim();
+}
 
+function filterSelectOptions(selectEl, q){
+  if (!selectEl) return { visible:0, firstValue:'' };
+
+  const needle = normTxt(q);
+  const opts = Array.from(selectEl.options);
+
+  let visible = 0;
+  let firstVisibleOpt = null;
+
+  opts.forEach(opt=>{
+    if (!opt.value){
+      // placeholder всегда видим
+      opt.hidden = false;
+      opt.style.display = '';
+      return;
+    }
+
+    const hay = normTxt(opt.textContent);
+    const hide = !!needle && !hay.includes(needle);
+
+    // ✅ надёжное скрытие
+    opt.hidden = hide;
+    opt.style.display = hide ? 'none' : '';
+
+    if (!hide){
+      visible++;
+      if (!firstVisibleOpt) firstVisibleOpt = opt;
+    }
+  });
+
+  return {
+    visible,
+    firstValue: firstVisibleOpt?.value || ''
+  };
+}
+
+function wireAssignCursoSearch(){
+  const inp  = document.getElementById('mzc-ca-curso-search');
+  const sel  = document.getElementById('mzc-ca-curso');
+  const meta = document.getElementById('mzc-ca-curso-search-meta'); // если захочешь
+  if (!inp || !sel) return;
+
+  let lastAutoPick = '';      // чтобы не дёргать change одинаковым значением
+  let t = null;
+
+  const run = ()=>{
+    const q = inp.value || '';
+    const { visible, firstValue } = filterSelectOptions(sel, q);
+
+    // необязательно: чуть “жизни”
+    if (meta){
+      meta.textContent = q.trim()
+        ? `Encontrados: ${visible}`
+        : '';
+    }
+
+    // ✅ авто-выбор первого найденного
+    // Условия:
+    // 1) есть запрос
+    // 2) есть хотя бы 1 видимый пункт
+    // 3) текущий выбранный либо пустой, либо скрыт, либо не совпадает с первым найденным
+    const cur = sel.value || '';
+    const curOpt = sel.options[sel.selectedIndex];
+    const curHidden = !!(curOpt && (curOpt.hidden || curOpt.style.display === 'none'));
+
+    if (normTxt(q) && firstValue){
+      const shouldPick =
+        !cur || curHidden || (cur !== firstValue);
+
+      if (shouldPick && lastAutoPick !== firstValue){
+        sel.value = firstValue;
+        lastAutoPick = firstValue;
+
+        // имитируем “пользователь выбрал”
+        sel.dispatchEvent(new Event('change', { bubbles:true }));
+      }
+    } else {
+      // если очистили поиск — не трогаем выбор, но сбрасываем guard
+      lastAutoPick = '';
+    }
+  };
+
+  // debounce, чтобы не спамить change на каждом символе
+  inp.addEventListener('input', ()=>{
+    clearTimeout(t);
+    t = setTimeout(run, 80);
+  });
+
+  inp.addEventListener('keydown', (e)=>{
+    if (e.key === 'Escape'){
+      inp.value = '';
+      run();
+      inp.blur();
+    }
+  });
+
+  // если список курсов перерисовался — пере-фильтруем и автоподхватим
+  const mo = new MutationObserver(()=> run());
+  mo.observe(sel, { childList:true });
+
+  // первый прогон (если там уже есть текст / автозаполнение браузера)
+  run();
+}
 
 async function loadList(){
   try{
@@ -531,6 +641,7 @@ document.dispatchEvent(new CustomEvent('mz:teachers-updated'));
     // init data
     loadList();
     updateCounters();
+	wireAssignCursoSearch();  
   }
 
   // 1) init сразу, если токен уже есть (перезагрузка)

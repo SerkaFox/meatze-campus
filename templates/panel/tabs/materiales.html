@@ -13,18 +13,27 @@
     <p class="mz-mat-sub">Archivos y recursos asociados al curso.</p>
   </div>
 
-  <div class="mz-mat-head-right">
-    <div class="mz-mat-count" id="mz-files-count">
-      0 archivos
-    </div>
+	<div class="mz-mat-head-right">
+	  <div class="mz-mat-count" id="mz-files-count">
+		0 archivos
+	  </div>
 
-    <button type="button" class="mzc-btn ghost mz-mat-zipall"
-            data-action="materials.zip.all"
-            data-codigo="{{ curso.codigo }}"
-            data-aud="{{ audience }}">
-      ⬇️ Descargar TODO (ZIP)
-    </button>
-  </div>
+	  <button type="button" class="mzc-btn ghost mz-mat-zipall"
+			  data-action="materials.zip.all"
+			  data-codigo="{{ curso.codigo }}"
+			  data-aud="{{ audience }}">
+		⬇️ Descargar TODO (ZIP)
+	  </button>
+
+	  {% if is_teacher %}
+		<button type="button"
+				class="mzc-btn ghost danger"
+				data-action="materials.clear.ask"
+				data-aud="{{ audience }}">
+		  🧹 Vaciar materiales
+		</button>
+	  {% endif %}
+	</div>
 </div>
 
   {# ---- верхний бар: alumnos / docentes / mis ---- #}
@@ -48,6 +57,10 @@
   {# ---- форма загрузки (только преподаватель) ---- #}
   {% if is_teacher %}
     <div class="mz-upl-wrap" data-focus="upload">
+	<div id="mz-gdrive-cfg"
+     data-client-id="{{ google_drive_client_id }}"
+     data-api-key="{{ google_drive_api_key }}"
+     data-app-id="{{ google_drive_app_id }}"></div>
       <form id="mz-upload-form" method="post" enctype="multipart/form-data" class="mz-upl">
         {% csrf_token %}
         <input type="hidden" name="upload" value="1">
@@ -231,6 +244,9 @@
 					data-parent="">
 			  Nueva carpeta
 			</button>
+				  <button type="button" class="mzc-btn ghost" data-action="folder.upload.google">
+ Desde Google Drive
+</button>
 		  {% endif %}
 		</div>
       </div>
@@ -242,43 +258,60 @@
   </div>
 
   {# ---- así lo ven los alumnos ---- #}
-  {% if is_teacher %}
-    <div class="mz-rec-card" style="border-color:rgba(191,219,254,0.35);background:radial-gradient(circle at top left, rgba(59,130,246,0.18), rgba(15,23,42,0.92));">
-      <h4 class="mz-rec-title">Así lo ven los alumnos</h4>
-      <p class="mz-rec-sub">Lista rápida de materiales visibles para alumnos (sin cambiar de pestañas).</p>
-    </div>
+{% if is_teacher %}
+  <details class="mz-rec-card mz-collapsible"
+           style="border-color:rgba(191,219,254,0.35);background:radial-gradient(circle at top left, rgba(59,130,246,0.18), rgba(15,23,42,0.92));">
+    <summary class="mz-collapsible-summary">
+      <div>
+        <h4 class="mz-rec-title" style="margin:0">Así lo ven los alumnos</h4>
+        <p class="mz-rec-sub" style="margin:4px 0 0">
+          Lista rápida de materiales visibles para alumnos (sin cambiar de pestañas).
+        </p>
+      </div>
 
-    {% if student_visible_files %}
-      <ul class="mz-mat-list" style="margin-top:10px">
-        {% for f in student_visible_files %}
-          <li class="mz-mat-item" style="border-color:rgba(34,211,238,0.35)">
-            <div class="mz-mat-main">
-              <p class="mz-mat-title-file" style="margin-bottom:4px">
-                <a href="{% url 'panel:material_download' f.id %}"
-											   data-action="materials.download"
-											   target="_blank" rel="noopener">
-                  {{ f.display_name }}
-                </a>
-              </p>
-              <div class="mz-mat-meta">
-                <span>{{ f.ext|upper }}</span>
-                <span class="mz-mat-dot"></span>
-                <span>{{ f.fmt_size }}</span>
-                <span class="mz-mat-dot"></span>
-                {% if f.module_key %}
-                  <span class="mz-mat-tag">{{ f.module_key }}</span>
-                {% else %}
-                  <span class="mz-mat-tag muted">Sin módulo</span>
-                {% endif %}
+      <span class="mz-collapsible-meta">
+        {% if student_visible_files %}
+          {{ student_visible_files|length }} archivo{{ student_visible_files|length|pluralize:"s" }}
+        {% else %}
+          0 archivos
+        {% endif %}
+      </span>
+    </summary>
+
+    <div class="mz-collapsible-body">
+      {% if student_visible_files %}
+        <ul class="mz-mat-list" style="margin-top:10px">
+          {% for f in student_visible_files %}
+            <li class="mz-mat-item" style="border-color:rgba(34,211,238,0.35)">
+              <div class="mz-mat-main">
+                <p class="mz-mat-title-file" style="margin-bottom:4px">
+                  <a href="{% url 'panel:material_download' f.id %}"
+                     data-action="materials.download"
+                     target="_blank" rel="noopener">
+                    {{ f.display_name }}
+                  </a>
+                </p>
+                <div class="mz-mat-meta">
+                  <span>{{ f.ext|upper }}</span>
+                  <span class="mz-mat-dot"></span>
+                  <span>{{ f.fmt_size }}</span>
+                  <span class="mz-mat-dot"></span>
+                  {% if f.module_key %}
+                    <span class="mz-mat-tag">{{ f.module_key }}</span>
+                  {% else %}
+                    <span class="mz-mat-tag muted">Sin módulo</span>
+                  {% endif %}
+                </div>
               </div>
-            </div>
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <div class="mzc-note">Ahora mismo no hay archivos visibles para alumnos.</div>
-    {% endif %}
-  {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="mzc-note" style="margin-top:10px">Ahora mismo no hay archivos visibles para alumnos.</div>
+      {% endif %}
+    </div>
+  </details>
+{% endif %}
 
   {# ---- физический материал (оставляем как есть) ---- #}
   {% if is_teacher %}
@@ -404,7 +437,82 @@
     <div class="mz-prev-body" id="mz-prev-body"></div>
   </div>
 </div>
+<div id="mz-gdrive-launcher" class="is-hidden" aria-hidden="true">
+  <div class="mz-prev-backdrop" data-close></div>
 
+  <div class="mz-prev-card" role="dialog" aria-modal="true">
+    <div class="mz-prev-body">
+      <div class="mz-gdrv-wrap">
+        <div class="mz-gdrv-note">
+          <b>Importa archivos o carpetas</b> directamente desde Google Drive a MEATZE.
+          <div style="margin-top:6px; opacity:.9">
+            Los documentos de Google se convertirán automáticamente cuando sea necesario.
+          </div>
+        </div>
+
+        <div>
+          <div class="mz-gdrv-section-title">Qué quieres importar</div>
+          <div id="mz-gdrive-kind">
+            <button type="button" class="mzc-btn ghost is-act" data-kind="file">📄 Archivo</button>
+            <button type="button" class="mzc-btn ghost" data-kind="folder">📁 Carpeta</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="mz-gdrv-section-title">Destino en MEATZE</div>
+
+          <div class="mz-gdrv-dest">
+            <label class="mz-rec-row" style="cursor:pointer">
+              <input type="radio" name="mz_gdrive_dest_mode" value="root">
+              <div>
+                <div class="mz-gdrv-dest-title">🏠 Raíz</div>
+                <div class="mz-gdrv-dest-sub">Guardar en la raíz del curso</div>
+              </div>
+            </label>
+
+            <label class="mz-rec-row" style="cursor:pointer">
+              <input type="radio" name="mz_gdrive_dest_mode" value="current" checked>
+              <div>
+                <div class="mz-gdrv-dest-title">📂 Carpeta actual</div>
+                <div class="mz-gdrv-dest-sub" id="mz-gdrive-current-path-label">Raíz</div>
+              </div>
+            </label>
+
+            <label class="mz-rec-row" style="cursor:pointer">
+              <input type="radio" name="mz_gdrive_dest_mode" value="custom">
+              <div style="width:100%">
+                <div class="mz-gdrv-dest-title">🗂️ Otra carpeta</div>
+                <div class="mz-gdrv-dest-sub">Elige cualquier carpeta existente</div>
+
+                <select id="mz-gdrive-folder-select" class="mz-upl-input">
+                  <option value="">Raíz</option>
+                </select>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mz-gdrv-footer">
+      <div class="mz-gdrv-final">
+        <b>Destino final:</b> <span id="mz-gdrive-dest-preview">Raíz</span>
+      </div>
+
+      <div class="mz-prev-actions">
+        <button class="mzc-btn ghost" type="button" data-close>Cancelar</button>
+        <button class="mzc-btn" type="button" id="mz-gdrive-launch-confirm">Continuar con Google Drive</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script id="mz-gdrive-folders-json" type="application/json">
+[
+  {"path":"","label":"Raíz"}
+  {% for node in tree_nodes %}
+    ,{"path":"{{ node.path|escapejs }}","label":"{{ node.path|escapejs }}"}
+  {% endfor %}
+</script>
 <script>
   window.__MZ_ZIP_URL__ = "{% url 'panel:materiales_download_zip' %}";
   window.__MZ_CURSO_CODIGO__ = "{{ curso.codigo|escapejs }}";
@@ -412,6 +520,8 @@
 </script>
 
 <script src="{% static 'panel/js/materiales.js' %}?v={% now 'U' %}"></script>
-<script src="{% static 'panel/js/materiales_fs.js' %}?v={% now 'U' %}"></script>
-<script src="{% static 'panel/js/materiales_physical.js' %}?v={% now 'U' %}"></script>
 
+<script src="{% static 'panel/js/materiales_physical.js' %}?v={% now 'U' %}"></script>
+<script src="{% static 'panel/js/materiales_gdrive.js' %}?v={% now 'U' %}"></script>
+<script src="{% static 'panel/js/materiales_fs_move.js' %}?v={% now 'U' %}"></script>
+<script src="{% static 'panel/js/materiales_fs.js' %}?v={% now 'U' %}"></script>

@@ -12,11 +12,41 @@ from api import views_ai
 from api import notify_views
 from api.views_ai import ai_ask, ai_warmup, ai_help
 from api.views_events import log_learning_event, admin_lanbide_activity, admin_lanbide_daily
-
+from django.contrib.sitemaps.views import sitemap
+from django.contrib.sitemaps import Sitemap
+from django.urls import reverse
 from api.views_horario_day import horario_day, horario_slot_delete, horario_day_delete
+class StaticViewSitemap(Sitemap):
+    priority = 0.8
+    changefreq = "weekly"
+
+    def items(self):
+        return [
+            "home",
+            "privacy_policy",
+            "terms_of_service",
+        ]
+
+    def location(self, item):
+        return reverse(item)
+
+sitemaps = {
+    "static": StaticViewSitemap(),
+}
+
+from django.http import JsonResponse
+
+def api_root(request):
+    return JsonResponse({
+        "api": "MEATZE API",
+        "version": "v5"
+    })
+    
+    
 
 urlpatterns = [
     path("me", api_auth.me_view),
+    path("meatze/v5", api_root),
     path("", home, name="home"),
     path("videos/", include("api.videos.urls")),
     path("alumno/", include("panel.urls", namespace="panel")),
@@ -119,7 +149,8 @@ urlpatterns += [
     path("meatze/v5/user_display", api_profile.user_display),
     path("meatze/v5/admin/pending", views_temp.admin_pending_list),
     
-    
+    path("privacy/", api_views.privacy_policy, name="privacy_policy"),
+    path("terms/", api_views.terms_of_service, name="terms_of_service"),
 
     path("meatze/v5/admin/pending/<int:pending_id>/approve-teacher", views_temp.admin_pending_approve_teacher),
     path("meatze/v5/admin/pending/<int:pending_id>/mark-student", views_temp.admin_pending_mark_student),
@@ -141,14 +172,18 @@ urlpatterns += [
 ]
 
 urlpatterns += [
+    path("meatze/v5/admin/curso/<str:codigo>/nonlective", api_views.admin_curso_nonlective),
+    path("meatze/v5/admin/curso/<str:codigo>/nonlective/effective", api_views.admin_curso_nonlective_effective),
     path("meatze/v5/admin/curso/<str:codigo>/horario/day", horario_day, name="mz_horario_day"),
     path("meatze/v5/admin/curso/<str:codigo>/horario/day/delete", horario_day_delete, name="mz_horario_day_delete"),
     path("meatze/v5/admin/curso/<str:codigo>/horario/slot/<int:slot_id>/delete", horario_slot_delete, name="mz_horario_slot_delete"),
     path("room/", include("panel.shortshare.urls"), name="room"),
+    path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="django.contrib.sitemaps.views.sitemap",),
 ]
-from django.urls import path
 from api import help_views
 
 urlpatterns += [
+    path("help/context", help_views.help_context, name="help_context_legacy"),
     path("meatze/v5/help/context", help_views.help_context, name="help_context"),
 ]
+

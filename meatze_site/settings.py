@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "channels",
     "panel",
     "api.videos",
+    'django.contrib.sitemaps',
     "panel.shortshare",
     'rest_framework',
 ]
@@ -155,9 +156,6 @@ STATIC_ROOT = BASE_DIR / "static"
 # MEATZE admin panel password
 MEATZE_ADMIN_PASS = os.getenv("MEATZE_ADMIN_PASS", "")
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://meatzed.zaindari.eus",
-]
 
 MEATZE_DOCX_LOGOS = {
     "lanbide": "/home/iaadmin/meatze/files/lanbide.png",
@@ -233,11 +231,14 @@ LOGGING = {
     "jitsi": {"handlers": ["console"], "level": "WARNING"},
   }
 }
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://meatzeaula.es",
-]
+SESSION_COOKIE_DOMAIN = ".meatzeaula.es"
+CSRF_COOKIE_DOMAIN = ".meatzeaula.es"
 
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 
+GOOGLE_DRIVE_API_KEY = os.getenv("GOOGLE_DRIVE_API_KEY", "")
+GOOGLE_DRIVE_CLIENT_ID = os.getenv("GOOGLE_DRIVE_CLIENT_ID", "")
+GOOGLE_DRIVE_APP_ID = os.getenv("GOOGLE_DRIVE_APP_ID", "")

@@ -177,6 +177,8 @@ const selCurso    = $('#mzh-curso');
   const btnExportGraphic = $('#mzh-export-graphic');
   const fixedToggle = $('#mzh-fixed-toggle');
   const fixedPanel  = $('#mzh-fixed-panel');
+  const fixedY0     = $('#mzh-fixed-y0');
+  const fixedY0Lbl  = $('#mzh-fixed-y0-label');
   const fixedY1     = $('#mzh-fixed-y1');
   const fixedY2     = $('#mzh-fixed-y2');
   const fixedY1Lbl  = $('#mzh-fixed-y1-label');
@@ -361,10 +363,10 @@ function studentLabel(it){
 		return out;
 	  }
 
-		function compressDateList(list) {
+		function compressDateList(list, year) {
 		  if (!Array.isArray(list) || !list.length) return "";
+		  year = Number(year) || new Date().getFullYear();
 
-		  const year = new Date().getFullYear();
 		  const dates = list.map(s => {
 			const [dd, mm] = s.split('/');
 			return new Date(year, +mm-1, +dd);
@@ -388,18 +390,11 @@ function studentLabel(it){
 			if (d.getTime() === prev.getTime()) {
 			  end = d;
 			} else {
-			  if (start.getTime() === end.getTime())
-				out.push(fmt(start));
-			  else
-				out.push(`${fmt(start)}-${fmt(end)}`);
-
+			  out.push(start.getTime() === end.getTime() ? fmt(start) : `${fmt(start)}-${fmt(end)}`);
 			  start = end = d;
 			}
 		  }
-		  if (start.getTime() === end.getTime())
-			out.push(fmt(start));
-		  else
-			out.push(`${fmt(start)}-${fmt(end)}`);
+		  out.push(start.getTime() === end.getTime() ? fmt(start) : `${fmt(start)}-${fmt(end)}`);
 
 		  return out.join(', ');
 		}
@@ -593,22 +588,30 @@ if (btnExportGraphic){
     // === GLOBAL no lectivos centro (por año)
     if (fixedToggle && fixedPanel){
       fixedToggle.addEventListener('click', async ()=>{
-        const now = new Date();
-        const y1 = now.getFullYear();
-        const y2 = y1 + 1;
-        if (fixedY1Lbl) fixedY1Lbl.textContent = y1;
-        if (fixedY2Lbl) fixedY2Lbl.textContent = y2;
+		const now = new Date();
+		const y1 = now.getFullYear();
+		const y0 = y1 - 1;
+		const y2 = y1 + 1;
 
-        await loadFixedNonlective();
-        const y1Arr = (FIXED_NONLECTIVE[String(y1)] || []).map(md=>{
-          const [mm,dd] = md.split('-'); return `${dd}/${mm}`;
-        });
-        const y2Arr = (FIXED_NONLECTIVE[String(y2)] || []).map(md=>{
-          const [mm,dd] = md.split('-'); return `${dd}/${mm}`;
-        });
-        if (fixedY1) fixedY1.value = compressDateList(y1Arr);
-        if (fixedY2) fixedY2.value = compressDateList(y2Arr);
+		if (fixedY0Lbl) fixedY0Lbl.textContent = y0;
+		if (fixedY1Lbl) fixedY1Lbl.textContent = y1;
+		if (fixedY2Lbl) fixedY2Lbl.textContent = y2;
 
+		await loadFixedNonlective();
+
+		const y0Arr = (FIXED_NONLECTIVE[String(y0)] || []).map(md=>{
+		  const [mm,dd] = md.split('-'); return `${dd}/${mm}`;
+		});
+		const y1Arr = (FIXED_NONLECTIVE[String(y1)] || []).map(md=>{
+		  const [mm,dd] = md.split('-'); return `${dd}/${mm}`;
+		});
+		const y2Arr = (FIXED_NONLECTIVE[String(y2)] || []).map(md=>{
+		  const [mm,dd] = md.split('-'); return `${dd}/${mm}`;
+		});
+
+		if (fixedY0) fixedY0.value = compressDateList(y0Arr, y0);
+		if (fixedY1) fixedY1.value = compressDateList(y1Arr, y1);
+		if (fixedY2) fixedY2.value = compressDateList(y2Arr, y2);
         fixedPanel.style.display =
           (fixedPanel.style.display === 'none' || !fixedPanel.style.display)
             ? 'block'
@@ -619,18 +622,24 @@ if (btnExportGraphic){
       fixedSave.addEventListener('click', async ()=>{
         fixedMsg.textContent = '';
         try{
-          const now = new Date();
-          const y1 = now.getFullYear();
-          const y2 = y1 + 1;
-          const map = {};
+			const now = new Date();
+			const y1 = now.getFullYear();
+			const y0 = y1 - 1;
+			const y2 = y1 + 1;
 
-          const y1List = parseYearFieldExpanded(fixedY1?.value || '', y1);
-          const y2List = parseYearFieldExpanded(fixedY2?.value || '', y2);
+			// стартуем с текущей карты (чтобы не убить другие года)
+			const map = {...(FIXED_NONLECTIVE || {})};
 
-          map[String(y1)] = y1List.join(', ');
-          map[String(y2)] = y2List.join(', ');
+			const y0List = parseYearFieldExpanded(fixedY0?.value || '', y0);
+			const y1List = parseYearFieldExpanded(fixedY1?.value || '', y1);
+			const y2List = parseYearFieldExpanded(fixedY2?.value || '', y2);
 
-          await saveFixedNonlective(map);
+			// сохраняем в твоём текущем формате: "DD/MM, DD/MM-..."
+			map[String(y0)] = y0List.join(', ');
+			map[String(y1)] = y1List.join(', ');
+			map[String(y2)] = y2List.join(', ');
+
+			await saveFixedNonlective(map);
           fixedMsg.textContent = 'Guardado correctamente para todos los cursos.';
           fixedMsg.style.color = '#0b6d22';
 		  // авто-скрытие панели после сохранения
@@ -2700,41 +2709,44 @@ function renderMonthsTable(cells){
 
 
 function legendHTML(){
-  let html = '<div class="legend-mfs">';
+  // единая таблица
+  let rows = '';
 
-  // =========================
-  // ✅ FALLBACK: НЕТ MF/UF → рисуем по обычным модулям (OTRO / Module 1/2/3...)
-  // =========================
-  if (usePlainModulesLegend) {
+  const boxRow = (bg, titleHtml, rangeHtml, bodyHtml) => `
+    <tr style="page-break-inside:avoid;">
+	<td bgcolor="${bg}" style="
+	  background-color:${bg};
+	  border:1px solid #cbd5e1;
+	  padding:6pt 8pt;
+	  vertical-align:top;
+	  line-height:1.15;
+	  mso-line-height-rule:exactly;
+	">
+        <div style="font-weight:700;font-size:11pt;line-height:1.2">${titleHtml}</div>
+        ${rangeHtml ? `<div style="margin-top:2pt;font-size:10pt;line-height:1.25">${rangeHtml}</div>` : ``}
+        ${bodyHtml ? `<div style="margin-top:6pt;font-size:10pt;line-height:1.25">${bodyHtml}</div>` : ``}
+      </td>
+    </tr>
+  `;
 
+  // ================
+  // FALLBACK: без MF/UF (обычные модули)
+  // ================
+  if (usePlainModulesLegend){
     orderedPlainMods.forEach(mod=>{
       const color = colorForKey(mod.key);
       const rMOD  = moduleDateRangeMod.get(mod.key);
       const ti    = moduleTimeInfoMod.get(mod.key);
 
       const labelRaw = String(mod.label || '').trim();
-      let titleCore  = labelRaw || mod.key;
-
+      let titleCore  = (labelRaw || mod.key);
       const horasMOD = Number(mod.horas || 0) || 0;
       if (horasMOD > 0) titleCore += ` (${horasMOD} horas)`;
 
-      const rangoMOD = rMOD ? `Del ${esDateDMY(rMOD.start)} al ${esDateDMY(rMOD.end)}` : '';
+      const range = rMOD ? `Del ${esDateDMY(rMOD.start)} al ${esDateDMY(rMOD.end)}` : '';
 
-      html += `
-        <table width="100%" cellspacing="0" cellpadding="6"
-               style="margin-bottom:6mm;border:1px solid #ccc;border-collapse:collapse;"
-               bgcolor="${color}">
-          <tr bgcolor="${color}">
-            <td bgcolor="${color}" style="font-weight:bold;font-size:11pt;">
-              <div>${esc(titleCore)}</div>
-              ${rangoMOD ? `<div style="font-weight:normal;">${esc(rangoMOD)}</div>` : ''}
-            </td>
-          </tr>
-          <tr bgcolor="${color}">
-            <td bgcolor="${color}" style="font-size:10pt;">
-      `;
-
-      // “Неполные дни” (как у UF): выводим только если день НЕ равен fullDayMin
+      // “неполные дни”
+      let body = '';
       if (ti && ti.spansByDate && ti.spansByDate.size){
         let fullDayMin = 0;
         ti.spansByDate.forEach(spans=>{
@@ -2743,172 +2755,111 @@ function legendHTML(){
           if (mm > fullDayMin) fullDayMin = mm;
         });
 
-        const fechas = Array.from(ti.spansByDate.keys()).sort();
-        const first  = fechas[0];
-        const last   = fechas[fechas.length - 1];
 
-        function dayLine(d){
-          const spans = ti.spansByDate.get(d) || [];
-          if (!spans.length) return '';
 
-          let mins = 0;
-          spans.forEach(([a,b])=>{ mins += minutesBetween(a,b); });
+		const fechas = Array.from(ti.spansByDate.keys()).sort();
 
-          if (fullDayMin && mins === fullDayMin) return '';
+		const lines = [];
+		for (const d of fechas){
+		  const html = dayLine(d);
+		  if (html) lines.push(html);
+		}
 
-          const horas = (mins/60).toFixed(1).replace('.',',');
-          const intervalos = spans.map(([a,b]) => `de ${a} a ${b}`).join(' y ');
-
-          return `
-            <div style="margin-left:12px;font-size:9.5pt;">
-              El ${esDateDMY(d)} el horario será de ${horas} horas (${intervalos})
-            </div>`;
-        }
-
-        let extraHTML = '';
-        extraHTML += dayLine(first);
-        if (last !== first) extraHTML += dayLine(last);
-
-        if (extraHTML.trim()){
-          html += extraHTML;
-        }
+		// лимит, чтобы не раздувать легенду
+		const LIMIT = 6;
+		if (lines.length > LIMIT){
+		  const rest = lines.length - LIMIT;
+		  body += lines.slice(0, LIMIT).join('');
+		  body += `<div style="margin-left:6pt;opacity:.8">… y ${rest} día(s) más con horario especial</div>`;
+		} else {
+		  body += lines.join('');
+		}
       }
 
-      html += `
-            </td>
-          </tr>
-        </table>
-      `;
+      rows += boxRow(
+        color,
+        esc(titleCore),
+        range ? esc(range) : '',
+        body
+      );
     });
 
-    html += '</div>';
-    return html;
+    return `
+<table width="100%" cellspacing="0" cellpadding="0"
+  style="width:100%;border-collapse:collapse;table-layout:fixed;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+  ${rows}
+</table>`;
   }
 
-  // =========================
-  // ✅ NORMAL: MF -> UF (как у тебя)
-  // =========================
+  // ================
+  // NORMAL: MF → UF
+  // ================
   orderedMF.forEach(mfKey=>{
     const mfMeta   = modsAll.find(m=>m.key===mfKey) || {label: mfKey, horas:0};
     const color    = colorForKey(mfKey);
     const rMF      = moduleDateRangeMF.get(mfKey);
+
     const horasFromUFs = horasMFDesdeUF.get(mfKey) || 0;
     const horasMFProp  = Number(mfMeta.horas || 0) || 0;
-    let horasMFShow    = 0;
+    const horasMFShow  = (horasFromUFs > 0) ? horasFromUFs
+                      : (horasMFProp > 0)  ? horasMFProp
+                      : (horasMF.get(mfKey) || 0);
 
-    if (horasFromUFs > 0) {
-      horasMFShow = horasFromUFs;
-    } else if (horasMFProp > 0) {
-      horasMFShow = horasMFProp;
-    } else {
-      horasMFShow = horasMF.get(mfKey) || 0;
-    }
+    let titleCore = (String(mfMeta.label || '').trim() || mfKey);
+    if (horasMFShow > 0) titleCore += ` (${horasMFShow} horas)`;
 
-    const mfLabelRaw = String(mfMeta.label || '').trim();
-    let mfTitleCore  = mfLabelRaw || mfKey;
+    const range = rMF ? `Del ${esDateDMY(rMF.start)} al ${esDateDMY(rMF.end)}` : '';
 
-    if (horasMFShow > 0) {
-      mfTitleCore += ` (${horasMFShow} horas)`;
-    }
-
-    const rangoMF = rMF
-      ? `Del ${esDateDMY(rMF.start)} al ${esDateDMY(rMF.end)}`
-      : '';
-
-    const tituloMFHtml = esc(mfTitleCore);
-    const rangoMFHtml  = rangoMF ? esc(rangoMF) : '';
-
-    html += `
-      <table width="100%" cellspacing="0" cellpadding="6"
-             style="margin-bottom:6mm;border:1px solid #ccc;border-collapse:collapse;"
-             bgcolor="${color}">
-        <tr bgcolor="${color}">
-          <td bgcolor="${color}" style="font-weight:bold;font-size:11pt;">
-            <div>${tituloMFHtml}</div>
-            ${rangoMFHtml ? `<div style="font-weight:normal;">${rangoMFHtml}</div>` : ''}
-          </td>
-        </tr>
-        <tr bgcolor="${color}">
-          <td bgcolor="${color}" style="font-size:10pt;">
-    `;
+    // тело: UF-и + (если UF-ов нет) “неполные дни” MF
+    let body = '';
 
     const ufs = modsAll.filter(m => m.type === 'UF' && m.group === mfKey);
     const hasUFs = ufs.length > 0;
 
-    // ✅ MF "неполные дни" показываем ТОЛЬКО если нет UF-ов
-    if (!hasUFs) {
+    if (!hasUFs){
       const tiMF = moduleTimeInfoMF.get(mfKey);
       if (tiMF && tiMF.spansByDate && tiMF.spansByDate.size){
         const fechasMF = Array.from(tiMF.spansByDate.keys()).sort();
+        let freq = new Map(), fullDayMinMF = 0, maxCountMF = 0;
 
-        let freq = new Map();
-        let fullDayMinMF = 0;
-        let maxCountMF = 0;
-
-        fechasMF.forEach(d => {
+        fechasMF.forEach(d=>{
           const spans = tiMF.spansByDate.get(d) || [];
           if (!spans.length) return;
-          let mm = 0;
-          spans.forEach(([a,b]) => { mm += minutesBetween(a,b); });
-
-          const now = (freq.get(mm) || 0) + 1;
+          let mm=0; spans.forEach(([a,b])=> mm += minutesBetween(a,b));
+          const now = (freq.get(mm)||0)+1;
           freq.set(mm, now);
           if (now > maxCountMF){ maxCountMF = now; fullDayMinMF = mm; }
         });
-
         if (!fullDayMinMF && freq.size){
           fullDayMinMF = Array.from(freq.keys()).sort((a,b)=>b-a)[0];
         }
 
-        function mfDayLine(d){
+        const mfDayLine = (d)=>{
           const spans = tiMF.spansByDate.get(d) || [];
           if (!spans.length) return '';
-
-          let mins = 0;
-          spans.forEach(([a,b]) => { mins += minutesBetween(a,b); });
+          let mins=0; spans.forEach(([a,b])=> mins += minutesBetween(a,b));
           if (fullDayMinMF && mins === fullDayMinMF) return '';
-
           const horas = (mins/60).toFixed(1).replace('.',',');
           const intervalos = spans.map(([a,b]) => `de ${a} a ${b}`).join(' y ');
+          return `<div style="margin-left:1pt;">El ${esDateDMY(d)} el horario será de ${horas} horas (${esc(intervalos)})</div>`;
+        };
 
-          return `
-            <div style="margin-left:12px;font-size:9.5pt;">
-              El ${esDateDMY(d)} el horario será de ${horas} horas (${intervalos})
-            </div>`;
-        }
-
-        const firstMF = fechasMF[0];
-        const lastMF  = fechasMF[fechasMF.length - 1];
-
-        let mfExtra = '';
-        mfExtra += mfDayLine(firstMF);
-        if (lastMF !== firstMF) mfExtra += mfDayLine(lastMF);
-
-        if (mfExtra.trim()){
-          html += mfExtra;
-        }
+        const first = fechasMF[0], last = fechasMF[fechasMF.length-1];
+        body += mfDayLine(first);
+        if (last !== first) body += mfDayLine(last);
       }
     }
 
-    // UFs
     ufs.forEach(uf=>{
       const rUF = moduleDateRangeMod.get(uf.key);
       const ti  = moduleTimeInfoMod.get(uf.key);
 
-      const ufLabelRaw = String(uf.label || '').trim();
-      const horasUF    = Number(uf.horas || 0) || 0;
+      let ufTitle = (String(uf.label||'').trim() || uf.key);
+      const horasUF = Number(uf.horas || 0) || 0;
+      if (horasUF > 0) ufTitle += ` (${horasUF} horas)`;
 
-      let ufTitleCore  = ufLabelRaw || uf.key;
-      if (horasUF > 0) {
-        ufTitleCore += ` (${horasUF} horas)`;
-      }
-
-      html += `
-        <div style="margin:4px 0;font-size:10pt;">
-          <b>${esc(ufTitleCore)}</b><br>
-          ${rUF ? `Del ${esDateDMY(rUF.start)} al ${esDateDMY(rUF.end)}` : ''}
-        </div>
-      `;
+      body += `<div style="margin-top:0pt;"><b>${esc(ufTitle)}</b></div>`;
+      if (rUF) body += `<div>Del ${esDateDMY(rUF.start)} al ${esDateDMY(rUF.end)}</div>`;
 
       if (ti && ti.spansByDate && ti.spansByDate.size){
         let fullDayMin = 0;
@@ -2918,48 +2869,86 @@ function legendHTML(){
           if (mm > fullDayMin) fullDayMin = mm;
         });
 
-        const fechas = Array.from(ti.spansByDate.keys()).sort();
-        const first  = fechas[0];
-        const last   = fechas[fechas.length - 1];
+// 1) Определяем "нормальную" длительность как MODE (самая частая)
+const fechas = Array.from(ti.spansByDate.keys()).sort();
 
-        function dayLine(d){
-          const spans = ti.spansByDate.get(d)||[];
-          if (!spans.length) return '';
+const freq = new Map(); // mins -> count
+const minsByDate = new Map(); // date -> mins
+fechas.forEach(d=>{
+  const spans = ti.spansByDate.get(d) || [];
+  let mm = 0;
+  spans.forEach(([a,b])=>{ mm += minutesBetween(a,b); });
+  minsByDate.set(d, mm);
+  freq.set(mm, (freq.get(mm)||0)+1);
+});
 
-          let mins = 0;
-          spans.forEach(([a,b])=>{ mins += minutesBetween(a,b); });
-          if (fullDayMin && mins === fullDayMin) return '';
+// выбрать mins с максимальной частотой (при равенстве — больше минут)
+let normalMins = null, bestCnt = -1;
+freq.forEach((cnt, mm)=>{
+  if (cnt > bestCnt || (cnt === bestCnt && (normalMins==null || mm > normalMins))){
+    bestCnt = cnt;
+    normalMins = mm;
+  }
+});
 
-          const horas = (mins/60).toFixed(1).replace('.',',');
-          const intervalos = spans
-            .map(([a,b]) => `de ${a} a ${b}`)
-            .join(' y ');
+const dayLine = (d)=>{
+  const spans = ti.spansByDate.get(d)||[];
+  if (!spans.length) return '';
+  const mins = minsByDate.get(d) || 0;
 
-          return `
-            <div style="margin-left:12px;font-size:9.5pt;">
-              El ${esDateDMY(d)} el horario será de ${horas} horas (${intervalos})
-            </div>`;
-        }
+  // ✅ печатаем только если отличается от нормы
+  if (normalMins != null && mins === normalMins) return '';
 
-        let extraHTML = '';
-        extraHTML += dayLine(first);
-        if (last !== first) extraHTML += dayLine(last);
+  const horas = (mins/60).toFixed(1).replace('.',',');
+  const intervalos = spans.map(([a,b]) => `de ${a} a ${b}`).join(' y ');
+  return `<div style="margin-left:6pt;">El ${esDateDMY(d)} el horario será de ${horas} horas (${esc(intervalos)})</div>`;
+};
 
-        if (extraHTML.trim()){
-          html += extraHTML;
-        }
+// 2) Список исключений
+let exDates = fechas.filter(d => {
+  const mins = minsByDate.get(d) || 0;
+  return normalMins != null ? (mins !== normalMins) : (mins > 0);
+});
+
+// 3) Чтобы твой "отличительный" день точно попал в видимую часть:
+//    сначала покажем редкие длительности, потом остальное
+exDates.sort((a,b)=>{
+  const ma = minsByDate.get(a) || 0;
+  const mb = minsByDate.get(b) || 0;
+  const ca = freq.get(ma) || 0;
+  const cb = freq.get(mb) || 0;
+  if (ca !== cb) return ca - cb;      // редкие первыми
+  if (ma !== mb) return ma - mb;      // меньшие/большие дальше
+  return a.localeCompare(b);
+});
+
+const lines = exDates.map(d => dayLine(d)).filter(Boolean);
+
+// лимит
+const LIMIT = 10; // можно 6, но 10 обычно лучше для легенды
+if (lines.length > LIMIT){
+  const rest = lines.length - LIMIT;
+  body += lines.slice(0, LIMIT).join('');
+  body += `<div style="margin-left:6pt;opacity:.8">… y ${rest} día(s) más con horario especial</div>`;
+} else {
+  body += lines.join('');
+}
       }
     });
 
-    html += `
-          </td>
-        </tr>
-      </table>
-    `;
+    rows += boxRow(
+      color,
+      esc(titleCore),
+      range ? esc(range) : '',
+      body
+    );
   });
 
-  html += '</div>';
-  return html;
+  return `
+<table width="100%" cellspacing="0" cellpadding="0"
+  style="width:100%;border-collapse:collapse;table-layout:fixed;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+  ${rows}
+</table>`;
 }
 
 
@@ -3198,12 +3187,26 @@ img.month{
   </style>
 </head>
 <body>
+<!--MZ_MARKER_TEST_123-->
   <div class="doc WordSection1">
     <div class="page">
 	  ${headerTableHtml}
 	  ${monthsTableHtml || '<p>No hay datos.</p>'}
 	</div>
 
+<!-- ✅ ЖЁСТКИЙ разрыв страницы для LibreOffice/Word -->
+<p style="page-break-before:always; mso-page-break-before:always; margin:0; line-height:0;">
+  &nbsp;
+</p>
+
+<!-- страница легенды -->
+<div class="page pb">
+  <h2 class="legend-page-title">Leyenda de módulos</h2>
+  <div class="mz-legend">
+    ${legendHTML()}
+  </div>
+</div>
+	
   </div>
 </body>
 </html>`;
@@ -3729,5 +3732,238 @@ window.__MZ_DAYMODAL_OPEN__ = async function(dateYMD){
 
 
 
+
+})();
+
+(() => {
+  'use strict';
+
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+  // --- helpers ---
+  function getCodigo(){
+    const sel = $('#mzh-curso');
+    return ((sel && sel.value) || '').trim().toUpperCase();
+  }
+
+  // если ты уже где-то хранишь токен — подцепится. иначе оставь пустым.
+  const ADM = (sessionStorage.getItem('mz_admin') || window.MZ_ADMIN_TOKEN || window.MEATZE_ADMIN_PASS || '').trim();
+
+  function apiUrl(path){
+    // подстрой под свой base: у тебя API_BASE используется в других местах
+    // здесь делаю относительно текущего домена
+    let url = path;
+    if (ADM) url += (url.includes('?') ? '&' : '?') + 'adm=' + encodeURIComponent(ADM);
+    return url;
+  }
+
+  async function apiJSON(url, opt={}){
+    const headers = opt.headers || {};
+    if (ADM) headers['X-MZ-Admin'] = ADM;
+    const r = await fetch(url, {
+      ...opt,
+      headers,
+      cache: 'no-store',
+    });
+    const txt = await r.text();
+    let j = null;
+    try { j = txt ? JSON.parse(txt) : null; } catch(e){ /* ignore */ }
+    if (!r.ok) {
+      const err = (j && (j.error || j.message)) || (txt || 'request_failed');
+      const ex = new Error(err);
+      ex.status = r.status;
+      ex.payload = j;
+      throw ex;
+    }
+    return j;
+  }
+
+  function mmddToDdmm(mmdd){
+    // "03-24" -> "24/03"
+    const m = String(mmdd||'').split('-');
+    if (m.length !== 2) return '';
+    const mo = m[0].padStart(2,'0');
+    const d  = m[1].padStart(2,'0');
+    return `${d}/${mo}`;
+  }
+
+  function yearsToInput(yearsObj, year){
+    const arr = (yearsObj && yearsObj[String(year)]) || [];
+    // arr: ["03-24","03-25"] -> "24/03, 25/03"
+    return arr.map(mmddToDdmm).filter(Boolean).join(', ');
+  }
+
+  // --- UI refs ---
+  const btnToggle = $('#mzh-course-fixed-toggle');
+  const panel = $('#mzh-course-fixed-panel');
+  const chkUseGlobal = $('#mzh-course-use-global');
+  const btnCopyGlobal = $('#mzh-course-copy-global');
+  const btnSave = $('#mzh-course-fixed-save');
+  const msg = $('#mzh-course-fixed-msg');
+
+  const y0Lbl = $('#mzh-course-y0-label');
+  const y1Lbl = $('#mzh-course-y1-label');
+  const y2Lbl = $('#mzh-course-y2-label');
+  const y0Inp = $('#mzh-course-y0');
+  const y1Inp = $('#mzh-course-y1');
+  const y2Inp = $('#mzh-course-y2');
+
+  if(!btnToggle || !panel || !chkUseGlobal || !btnCopyGlobal || !btnSave) return;
+
+  // годы как в твоей логике: прошлый/текущий/следующий
+  // (ты раньше хотел 3 отсека: прошлый/текущий/следующий)
+  const now = new Date();
+  const Y1 = now.getFullYear();      // текущий
+  const Y0 = Y1 - 1;                 // прошлый
+  const Y2 = Y1 + 1;                 // следующий
+
+  y0Lbl.textContent = String(Y0);
+  y1Lbl.textContent = String(Y1);
+  y2Lbl.textContent = String(Y2);
+
+  function setMsg(text, isBad=false){
+    msg.textContent = text || '';
+    msg.style.color = isBad ? '#8a1233' : '';
+  }
+
+  function setFieldsEnabled(enabled){
+    // если use_global=true — поля скрываем/дизейблим
+    const wrap = $('#mzh-course-fixed-fields');
+    if (wrap) wrap.style.opacity = enabled ? '1' : '.55';
+    [y0Inp,y1Inp,y2Inp,btnCopyGlobal].forEach(el => {
+      if(!el) return;
+      el.disabled = !enabled;
+    });
+  }
+
+  async function loadCourseNonlective(){
+    const codigo = getCodigo();
+    if(!codigo){
+      setMsg('Selecciona un curso.', true);
+      return;
+    }
+    setMsg('Cargando…');
+
+    const url = apiUrl(`/meatze/v5/admin/curso/${encodeURIComponent(codigo)}/nonlective`);
+    const data = await apiJSON(url);
+
+    const useGlobal = !!data.use_global;
+    chkUseGlobal.checked = useGlobal;
+
+    // years del curso (mm-dd lists)
+    const years = data.years || {};
+    y0Inp.value = yearsToInput(years, Y0);
+    y1Inp.value = yearsToInput(years, Y1);
+    y2Inp.value = yearsToInput(years, Y2);
+
+    setFieldsEnabled(!useGlobal);
+    setMsg('OK');
+  }
+
+
+  async function copyFromGlobal(){
+    const codigo = getCodigo();
+    if(!codigo){
+      setMsg('Selecciona un curso.', true);
+      return;
+    }
+    setMsg('Copiando desde global…');
+
+    const url = apiUrl(`/meatze/v5/admin/curso/${encodeURIComponent(codigo)}/nonlective`);
+    const data = await apiJSON(url);
+
+    const g = data.global_years || {};
+    y0Inp.value = yearsToInput(g, Y0);
+    y1Inp.value = yearsToInput(g, Y1);
+    y2Inp.value = yearsToInput(g, Y2);
+
+    // при копировании логично сразу включить "персональные"
+    chkUseGlobal.checked = false;
+    setFieldsEnabled(true);
+
+    setMsg('Copiado. Ahora puedes editar y guardar.');
+  }
+
+  async function saveCourseNonlective(){
+    const codigo = getCodigo();
+    if(!codigo){
+      setMsg('Selecciona un curso.', true);
+      return;
+    }
+
+    const useGlobal = !!chkUseGlobal.checked;
+    setMsg('Guardando…');
+
+    const payload = {
+      use_global: useGlobal,
+      years: {
+        [String(Y0)]: y0Inp.value,
+        [String(Y1)]: y1Inp.value,
+        [String(Y2)]: y2Inp.value,
+      }
+    };
+
+    const url = apiUrl(`/meatze/v5/admin/curso/${encodeURIComponent(codigo)}/nonlective`);
+    const data = await apiJSON(url, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload),
+    });
+
+    setFieldsEnabled(!useGlobal);
+    setMsg(useGlobal ? 'Guardado: usando lista global.' : 'Guardado: lista exclusiva del curso.');
+    return data;
+  }
+
+  // --- события ---
+	btnToggle.addEventListener('click', async () => {
+	  const open = panel.style.display !== 'none';
+	  panel.style.display = open ? 'none' : 'block';
+
+	  if (!open) {
+		try {
+		  await loadCourseNonlective();
+
+		  const ctx = $('#mzh-ctx');
+		  if (ctx) {
+			const isGlobal = chkUseGlobal.checked;
+			ctx.textContent = isGlobal
+			  ? 'No lectivos: global del centro'
+			  : 'No lectivos: exclusivos del curso';
+		  }
+
+		} catch(e){
+		  setMsg(String(e.message||e), true);
+		}
+	  }
+	});
+
+  chkUseGlobal.addEventListener('change', () => {
+    setFieldsEnabled(!chkUseGlobal.checked);
+    if (chkUseGlobal.checked) setMsg('El curso usará la lista global. Guarda para aplicar.');
+    else setMsg('El curso usará lista exclusiva. Puedes copiar desde global o editar.');
+  });
+
+  btnCopyGlobal.addEventListener('click', async () => {
+    try { await copyFromGlobal(); }
+    catch(e){ setMsg(String(e.message||e), true); }
+  });
+
+  btnSave.addEventListener('click', async () => {
+    try { await saveCourseNonlective(); }
+    catch(e){ setMsg(String(e.message||e), true); }
+  });
+
+  // важно: когда меняешь курс — обновляем панель, если она открыта
+  const cursoSel = $('#mzh-curso');
+  if (cursoSel){
+    cursoSel.addEventListener('change', async () => {
+      if (panel.style.display !== 'none'){
+        try { await loadCourseNonlective(); }
+        catch(e){ setMsg(String(e.message||e), true); }
+      }
+    });
+  }
 
 })();

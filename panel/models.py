@@ -43,7 +43,6 @@ def curso_file_upload_path(instance, filename):
     codigo = (instance.curso.codigo or "curso").replace("/", "_")
     return f"curso_files/{codigo}/{filename}"
 
-
 class CursoFile(models.Model):
     TIPO_ALUMNOS = "alumnos"
     TIPO_DOCENTES = "docentes"
@@ -65,19 +64,17 @@ class CursoFile(models.Model):
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES, default=TIPO_ALUMNOS)
     is_visible_to_students = models.BooleanField(default=False, db_index=True)
 
-    # модуль (MF/UF или slug), как в старом фронте: module_key
     module_key = models.CharField(max_length=255, blank=True)
 
     title = models.CharField(max_length=255, blank=True)
     file = models.FileField(upload_to=curso_file_upload_path)
 
-    size = models.PositiveIntegerField(default=0)
+    size = models.BigIntegerField(default=0)
     ext = models.CharField(max_length=16, blank=True)
 
-    # видно ли этот ресурс ученикам, если он из зоны DOCENTES/PRIVADO
     share_alumnos = models.BooleanField(default=False)
 
-    locked = models.BooleanField(default=False)  # если пригодится «нельзя удалить»
+    locked = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -96,18 +93,13 @@ class CursoFile(models.Model):
         return self.file.name.rsplit("/", 1)[-1]
 
     def can_see(self, user, is_teacher: bool):
-        """Проверка доступа на просмотр."""
         if is_teacher:
-            # преподаватель видит всё по курсу
             return True
-
-        # ученик
         if self.tipo == self.TIPO_ALUMNOS:
             return True
         if self.share_alumnos and self.tipo in (self.TIPO_DOCENTES, self.TIPO_PRIVADO):
             return True
         return False
-
 TEACHER_MODULES = [
     {"slug": "info",       "label": "Información"},
     {"slug": "materiales", "label": "Materiales"},
@@ -253,6 +245,32 @@ class CourseTask(models.Model):
     def filename(self):
         return self.file_name or (self.file.name.rsplit("/", 1)[-1] if self.file else "")
 
+
+# models.py
+
+def task_attach_upload_path(instance, filename):
+    # instance.task.curso.codigo etc
+    return task_upload_path(instance.task, filename)  # если твой task_upload_path уже ок
+    # или сделай отдельный путь: f"tasks/{instance.task.curso.codigo}/{instance.task_id}/{filename}"
+
+class CourseTaskAttachment(models.Model):
+    task = models.ForeignKey(
+        "CourseTask",
+        on_delete=models.CASCADE,
+        related_name="attachments",
+    )
+    file = models.FileField(upload_to=task_attach_upload_path)
+    file_name = models.CharField(max_length=255, blank=True, default="")
+    file_size = models.BigIntegerField(default=0)
+    ext = models.CharField(max_length=16, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    @property
+    def filename(self):
+        return self.file_name or (self.file.name.rsplit("/", 1)[-1] if self.file else "")
 
 class TaskSubmission(models.Model):
     STATUS_SUBMITTED = "submitted"

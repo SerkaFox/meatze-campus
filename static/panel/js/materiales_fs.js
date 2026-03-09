@@ -1,5 +1,7 @@
 /* static/panel/js/materiales_fs.js */
 // ---- global helpers (used outside IIFE too) ----
+
+
 window.getCookie = window.getCookie || function(name){
   const v = document.cookie.split(';')
     .map(s => s.trim())
@@ -7,11 +9,53 @@ window.getCookie = window.getCookie || function(name){
   return v ? decodeURIComponent(v.split('=')[1]) : '';
 };
 
+async function mzPostJSON(url, data, csrftoken){
+  const r = await fetch(url, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+      ...(csrftoken ? { 'X-CSRFToken': csrftoken } : {})
+    },
+    body: JSON.stringify(data || {})
+  });
+
+  const txt = await r.text();
+  let j = {};
+  try { j = txt ? JSON.parse(txt) : {}; } catch(_) {}
+
+  if(!r.ok || !j.ok){
+    console.error('[mzPostJSON FAIL]', {
+      url,
+      status: r.status,
+      csrftoken_present: !!csrftoken,
+      response_text: txt,
+      response_json: j
+    });
+    throw new Error(j.error || j.message || txt || ('HTTP ' + r.status));
+  }
+
+  return j;
+}
+window.mzPostJSON = mzPostJSON;
+function mzCsrfToken(){
+  const fromInput =
+    document.querySelector('input[name="csrfmiddlewaretoken"]')?.value ||
+    document.querySelector('[data-csrf-token]')?.getAttribute('data-csrf-token') ||
+    document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
+    '';
+
+  if (fromInput && fromInput.trim()) return fromInput.trim();
+
+  const fromCookie = getCookie('csrftoken') || window.getCookie?.('csrftoken') || '';
+  return (fromCookie || '').trim();
+}
+window.mzCsrfToken = mzCsrfToken;
 (() => {
   'use strict';
   if (window.__MZ_MATERIALES_FS__) return;
   window.__MZ_MATERIALES_FS__ = true;
-
   // -----------------------------
   // utils
   // -----------------------------
@@ -753,6 +797,48 @@ if (document.readyState === 'loading'){
   });
 })();
 
+
+function mzBytesHuman(n){
+  const num = Number(n || 0);
+  if (num < 1024) return `${num} B`;
+  if (num < 1024 * 1024) return `${(num / 1024).toFixed(1)} KB`;
+  if (num < 1024 * 1024 * 1024) return `${(num / 1024 / 1024).toFixed(1)} MB`;
+  return `${(num / 1024 / 1024 / 1024).toFixed(1)} GB`;
+}
+
+window.mzBytesHuman = mzBytesHuman;
+
+window.mzGetCursoCodigo = function(){
+  const m = location.pathname.match(/\/curso\/([^/]+)\//);
+  return m ? decodeURIComponent(m[1]) : '';
+};
+
+window.mzGoogleDriveImportUrl = function(){
+  const codigo = window.mzGetCursoCodigo();
+  if(!codigo) throw new Error('No se pudo detectar código del curso');
+  return `/alumno/curso/${encodeURIComponent(codigo)}/materiales/drive/import/`;
+};
+
+window.mzUploadApiBase = function(){
+  const codigo = window.mzGetCursoCodigo();
+  if(!codigo) throw new Error('No se pudo detectar código del curso en la URL');
+  return `/alumno/curso/${encodeURIComponent(codigo)}/materiales/upload`;
+};
+const BIG_UPLOAD_THRESHOLD = 100 * 1024 * 1024; // 100 MB
+const CHUNK_SIZE = 10 * 1024 * 1024; // 10 MB
+
+
+function mzUploadInitUrl(){
+  return mzUploadApiBase() + '/init/';
+}
+
+function mzUploadChunkUrl(){
+  return mzUploadApiBase() + '/chunk/';
+}
+
+function mzUploadCompleteUrl(){
+  return mzUploadApiBase() + '/complete/';
+}
   // -----------------------------
   // 5) Drag & Drop move file (teacher)
   // -----------------------------
@@ -769,8 +855,6 @@ if (document.readyState === 'loading'){
     // “teacher mode” — если есть хоть один data-drop-folder
     const isTeacher = !!document.querySelector('[data-drop-folder]');
     if(!isTeacher) return;
-
-    const csrftoken = getCookie('csrftoken');
 
     let dragFileId = null;
     let dragEl = null;
@@ -806,6 +890,7 @@ if (document.readyState === 'loading'){
 
       return kids;
     }
+	window.mzFindTargetContainer = findTargetContainer;
 
 		function parseCountText(txt){
 		  const s = String(txt || '').trim();
@@ -926,7 +1011,11 @@ if (document.readyState === 'loading'){
 		  });
 
 		  const targetPath = folderEl.getAttribute('data-drop-folder') || '';
-
+		  // ✅ это перенос папки, не обрабатываем здесь
+		  const folderDragPath = e.dataTransfer?.getData('text/mz-folder') || '';
+		  if (folderDragPath) {
+			return;
+		  }
 		  // 1) upload local files
 		  if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length){
 			try{
@@ -977,7 +1066,7 @@ if (document.readyState === 'loading'){
               method: 'POST',
               credentials: 'include',
               headers: {
-                'X-CSRFToken': csrftoken,
+                'X-CSRFToken': mzCsrfToken(),
                 'X-Requested-With': 'XMLHttpRequest',
               },
               body: form
@@ -1047,10 +1136,7 @@ window.mzMaterialsReindexSearch?.();
 
     bindDropTargets();
 
-
-const UPLOAD_URL = mzPostUrl(); // или window.location.pathname + window.location.search
-
-function postFormXHR(url, formData, csrftoken){
+function postFormXHR(url, formData, csrftoken, { onProgress } = {}){
   return new Promise((resolve, reject)=>{
     const xhr = new XMLHttpRequest();
     xhr.open('POST', url, true);
@@ -1058,6 +1144,17 @@ function postFormXHR(url, formData, csrftoken){
 
     xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
     if (csrftoken) xhr.setRequestHeader('X-CSRFToken', csrftoken);
+
+    if (xhr.upload && typeof onProgress === 'function'){
+      xhr.upload.addEventListener('progress', (ev)=>{
+        if(!ev.lengthComputable) return;
+        onProgress({
+          loaded: ev.loaded || 0,
+          total: ev.total || 0,
+          percent: ev.total ? (ev.loaded / ev.total * 100) : 0
+        });
+      });
+    }
 
     xhr.onload = () => {
       const txt = xhr.responseText || '';
@@ -1071,46 +1168,171 @@ function postFormXHR(url, formData, csrftoken){
     };
 
     xhr.onerror = () => reject(new Error('Network error / blocked'));
+    xhr.onabort = () => reject(new Error('Upload aborted'));
+
     xhr.send(formData);
   });
+  
+}
+
+
+function shouldUseChunkUpload(file){
+  return !!file && (file.size || 0) >= BIG_UPLOAD_THRESHOLD;
+}
+
+async function postJSON(url, data, csrftoken){
+  const r = await fetch(url, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+      ...(csrftoken ? { 'X-CSRFToken': csrftoken } : {})
+    },
+    body: JSON.stringify(data || {})
+  });
+
+  const txt = await r.text();
+  let j = {};
+  try { j = txt ? JSON.parse(txt) : {}; } catch(_){}
+
+  if(!r.ok || !j.ok){
+    console.error('[postJSON FAIL]', {
+      url,
+      status: r.status,
+      csrftoken_present: !!csrftoken,
+      response_text: txt,
+      response_json: j
+    });
+    throw new Error(j.error || j.message || txt || ('HTTP ' + r.status));
+  }
+  return j;
+}
+
+async function uploadFileInChunks(file, targetPath, jobId){
+  const csrftoken = mzCsrfToken();
+console.log('[chunk init]', {
+  url: mzUploadInitUrl(),
+  csrftoken: getCookie('csrftoken'),
+  audience: (window.__MZ_AUD__ || 'alumnos'),
+  targetPath
+});
+  // 1) init
+  const initRes = await postJSON(mzUploadInitUrl(), {
+    audience: (window.__MZ_AUD__ || 'alumnos'),
+    folder_path: targetPath || '',
+    filename: file.name,
+    filesize: file.size,
+    content_type: file.type || 'application/octet-stream',
+    chunk_size: CHUNK_SIZE
+  }, csrftoken);
+
+  const uploadId = initRes.upload_id;
+  if(!uploadId) throw new Error('upload_init sin upload_id');
+
+  // 2) chunks
+  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+
+  for(let index = 0; index < totalChunks; index++){
+    const start = index * CHUNK_SIZE;
+    const end = Math.min(start + CHUNK_SIZE, file.size);
+    const blob = file.slice(start, end);
+
+    const fd = new FormData();
+    fd.append('upload_id', uploadId);
+    fd.append('chunk_index', String(index));
+    fd.append('total_chunks', String(totalChunks));
+    fd.append('chunk', blob, file.name + `.part${index}`);
+
+    await postFormXHR(mzUploadChunkUrl(), fd, csrftoken);
+
+    const loaded = end;
+    const percent = file.size ? (loaded / file.size * 100) : 0;
+
+    mzUploadOverlay.setUploading(jobId, {
+      percent,
+      meta: `${mzBytesHuman(loaded)} / ${mzBytesHuman(file.size)} · 1 archivo`
+    });
+  }
+
+  // 3) complete
+  const doneRes = await postJSON(mzUploadCompleteUrl(), {
+    upload_id: uploadId
+  }, csrftoken);
+
+  return doneRes;
 }
 
 async function uploadFilesToFolder(fileList, targetPath){
   const files = Array.from(fileList || []).filter(f => f && f.size >= 0);
   if(!files.length) return;
 
-  const fd = new FormData();
-  fd.append('action', 'upload_files_ajax');          // ✅ если бэк ждёт action
-  fd.append('folder_path', targetPath || '');    
-  fd.append('audience', (window.__MZ_AUD__ || 'alumnos'));  // ✅ куда грузим
-
-  // если твой endpoint требует код курса — ок, но лучше брать из data-атрибута страницы
-  // fd.append('course_code', window.__MZ_CURSO_CODE__ || 'IFCT0309');
-
-  for (const f of files) fd.append('files', f, f.name);
-
-  // ✅ XHR POST
-  const res = await postFormXHR(UPLOAD_URL, fd, csrftoken);
-  const j = res.j;
-  if(!j || !j.ok) throw new Error((j && (j.error || j.message)) || 'upload_failed');
-
-  // ✅ UI insert
   const container = findTargetContainer(targetPath);
-  if(container && Array.isArray(j.files)){
-    let added = 0;
-    for(const it of j.files){
-      if(it && it.file_html){
-        container.insertAdjacentHTML('afterbegin', it.file_html);
-        added += 1;
+  const csrftoken = mzCsrfToken();
+
+  for(const file of files){
+    const totalBytes = file.size || 0;
+    const jobId = mzUploadOverlay.addJob({
+      name: file.name,
+      meta: `0 / ${mzBytesHuman(totalBytes)} · 1 archivo`
+    });
+
+    try{
+      let j;
+
+      if(shouldUseChunkUpload(file)){
+        j = await uploadFileInChunks(file, targetPath, jobId);
+      } else {
+        const fd = new FormData();
+        fd.append('action', 'upload_files_ajax');
+        fd.append('folder_path', targetPath || '');
+        fd.append('audience', (window.__MZ_AUD__ || 'alumnos'));
+        fd.append('files', file, file.name);
+
+        const res = await postFormXHR(mzPostUrl(), fd, csrftoken, {
+          onProgress: ({ loaded, total, percent }) => {
+            const safeTotal = total || totalBytes || 0;
+            mzUploadOverlay.setUploading(jobId, {
+              percent,
+              meta: `${mzBytesHuman(loaded)} / ${mzBytesHuman(safeTotal)} · 1 archivo`
+            });
+          }
+        });
+
+        j = res.j;
       }
+
+      if(!j || !j.ok){
+        throw new Error((j && (j.error || j.message)) || 'upload_failed');
+      }
+
+      if(container && Array.isArray(j.files)){
+        let added = 0;
+        for(const it of j.files){
+          if(it && it.file_html){
+            container.insertAdjacentHTML('afterbegin', it.file_html);
+            added += 1;
+          }
+        }
+
+        if(targetPath){
+          bumpCount(targetPath, +added, 'direct');
+          bumpCountCascadeTotal(targetPath, +added);
+        }
+
+        window.mzMaterialsSyncCardsFromTree?.();
+        window.mzMaterialsFsBindDropTargets?.();
+        window.mzMaterialsReindexSearch?.();
+      }
+
+      mzUploadOverlay.setDone(jobId, {
+        meta: `${mzBytesHuman(totalBytes)} · 1 archivo`
+      });
+
+    }catch(err){
+      mzUploadOverlay.setError(jobId, err.message || 'No se pudo subir archivo');
+      throw err;
     }
-    if (targetPath){
-		  bumpCount(targetPath, +added, 'direct');
-		  bumpCountCascadeTotal(targetPath, +added);
-		}
-		window.mzMaterialsSyncCardsFromTree?.();
-    if (window.mzMaterialsFsBindDropTargets) window.mzMaterialsFsBindDropTargets();
-    if (window.mzMaterialsReindexSearch) window.mzMaterialsReindexSearch();
   }
 }
 
@@ -1127,11 +1349,6 @@ window.mzMaterialsUploadFilesToFolder = uploadFilesToFolder;
 	(function initCreateFolder(){
 	  const form = document.getElementById('mz-folder-create-form');
 	  if(!form) return;
-
-	  function getCookie(name){
-		const v = document.cookie.split(';').map(s=>s.trim()).find(s=>s.startsWith(name+'='));
-		return v ? decodeURIComponent(v.split('=')[1]) : '';
-	  }
 
 function hasDuplicateNameInParent(parentPath, name){
   const container = ensureChildrenContainer(parentPath || '');
@@ -1153,7 +1370,7 @@ function hasDuplicateNameInParent(parentPath, name){
 		  method: 'POST',
 		  credentials: 'include',
 		  headers: {
-			'X-CSRFToken': getCookie('csrftoken'),
+			'X-CSRFToken': mzCsrfToken(),
 			'X-Requested-With': 'XMLHttpRequest',
 		  },
 		  body: fd
@@ -1659,6 +1876,353 @@ function mzGetRootFilesContainer(){
 }
 window.mzGetRootFilesContainer = mzGetRootFilesContainer;
 
+
+const mzUploadOverlay = (() => {
+  let jobs = new Map();
+  let seq = 1;
+  let autoHideTimer = null;
+  const cancelHandlers = new Map();
+
+  const root = () => document.getElementById('mz-upl-pop');
+  const mini = () => document.getElementById('mz-upl-pop-mini');
+  const miniText = () => document.getElementById('mz-upl-pop-mini-text');
+  const miniPct = () => document.getElementById('mz-upl-pop-mini-pct');
+  const card = () => document.getElementById('mz-upl-pop-card');
+  const list = () => document.getElementById('mz-upl-pop-list');
+  const sub = () => document.getElementById('mz-upl-pop-sub');
+
+  function ensureVisible(){
+    const r = root();
+    if(r) r.hidden = false;
+  }
+
+	function onCancel(id, handler){
+	  if(!id || typeof handler !== 'function') return;
+	  cancelHandlers.set(id, handler);
+	}
+
+  function open(){
+    ensureVisible();
+    const c = card();
+    if(c) c.hidden = false;
+  }
+
+  function close(){
+    const c = card();
+    const r = root();
+    if(c) c.hidden = true;
+    if(r) r.hidden = true;
+  }
+
+  function clearAutoHide(){
+    if(autoHideTimer){
+      clearTimeout(autoHideTimer);
+      autoHideTimer = null;
+    }
+  }
+
+  function closeAll(){
+    clearAutoHide();
+	cancelHandlers.clear();
+    jobs.clear();
+
+    const c = card();
+    const r = root();
+
+    if(c) c.hidden = true;
+    if(r) r.hidden = true;
+
+    render();
+  }
+
+  function scheduleAutoHide(){
+    clearAutoHide();
+
+    autoHideTimer = setTimeout(()=>{
+      const arr = Array.from(jobs.values());
+      const active = arr.some(j => j.status === 'uploading' || j.status === 'preparing');
+      const hasErrors = arr.some(j => j.status === 'error');
+
+      if(active) return;
+      if(hasErrors) return;
+
+      jobs.clear();
+
+      const c = card();
+      const r = root();
+
+      if(c) c.hidden = true;
+      if(r) r.hidden = true;
+
+      render();
+    }, 4000);
+  }
+
+  function getSummary(){
+    const arr = Array.from(jobs.values());
+    const active = arr.filter(j => j.status === 'uploading' || j.status === 'preparing');
+    const done = arr.filter(j => j.status === 'done');
+    const errors = arr.filter(j => j.status === 'error');
+
+    let pct = 0;
+    if(active.length){
+      pct = Math.round(active.reduce((s, j)=>s + (j.percent || 0), 0) / active.length);
+    } else if(done.length && !errors.length){
+      pct = 100;
+    }
+
+    return { active, done, errors, pct };
+  }
+
+  function renderMini(){
+    const { active, done, errors, pct } = getSummary();
+    const r = root();
+    if(!r) return;
+
+    if(!jobs.size){
+      r.hidden = true;
+      return;
+    }
+
+    r.hidden = false;
+if(active.length){
+  const first = active[0];
+  if(miniText()) miniText().textContent = active.length === 1
+    ? `Subiendo: ${first.name} · no cierres esta página`
+    : `Subiendo ${active.length} archivo(s)… · no cierres esta página`;
+  if(miniPct()) miniPct().textContent = `${pct}%`;
+  return;
+}
+  
+    if(errors.length){
+      if(miniText()) miniText().textContent = `Errores: ${errors.length}`;
+      if(miniPct()) miniPct().textContent = '!';
+      return;
+    }
+
+    if(done.length){
+      if(miniText()) miniText().textContent = `Carga completada`;
+      if(miniPct()) miniPct().textContent = '100%';
+    }
+  }
+
+  function renderList(){
+    const el = list();
+    if(!el) return;
+
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (m) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    }[m]));
+
+    const arr = Array.from(jobs.values()).sort((a,b)=> b.id - a.id);
+
+    el.innerHTML = arr.map(j => `
+      <div class="mz-upl-job ${j.status === 'done' ? 'is-done' : ''} ${j.status === 'error' ? 'is-error' : ''}" data-job-id="${j.id}">
+        <div class="mz-upl-job-head">
+          <div class="mz-upl-job-name" title="${esc(j.name || '')}">${esc(j.name || '')}</div>
+          <div class="mz-upl-job-state">${esc(j.stateLabel || '')}</div>
+        </div>
+        <div class="mz-upl-job-bar"><i style="width:${Math.max(0, Math.min(100, j.percent || 0))}%"></i></div>
+        <div class="mz-upl-job-meta">${esc(j.meta || '')}</div>
+      </div>
+    `).join('');
+
+    const { active, done, errors } = getSummary();
+    if(sub()){
+      sub().textContent = `${active.length} activas · ${done.length} completadas · ${errors.length} con error`;
+    }
+  }
+
+  function render(){
+    renderMini();
+    renderList();
+  }
+
+  function addJob({ name, meta } = {}){
+    clearAutoHide();
+
+    jobs = new Map(
+      Array.from(jobs.entries()).filter(([, j]) => j.status !== 'done')
+    );
+
+    ensureVisible();
+
+    const id = seq++;
+    jobs.set(id, {
+      id,
+      name: name || 'Archivo',
+      meta: meta || '',
+      percent: 0,
+      status: 'preparing',
+      stateLabel: 'Preparando'
+    });
+
+    render();
+    open();
+    return id;
+  }
+
+  function updateJob(id, patch = {}){
+    const j = jobs.get(id);
+    if(!j) return;
+    Object.assign(j, patch);
+    render();
+  }
+
+  function setUploading(id, { percent = 0, meta = '' } = {}){
+    updateJob(id, {
+      status: 'uploading',
+      stateLabel: `${Math.round(percent)}%`,
+      percent,
+      meta
+    });
+  }
+
+  function setDone(id, { meta = '' } = {}){
+    updateJob(id, {
+      status: 'done',
+      stateLabel: 'Completado',
+      percent: 100,
+      meta
+    });
+	cancelHandlers.delete(id);
+    render();
+    scheduleAutoHide();
+  }
+
+  function setError(id, message){
+    updateJob(id, {
+      status: 'error',
+      stateLabel: 'Error',
+      meta: message || 'Upload failed'
+    });
+	cancelHandlers.delete(id);
+    open();
+  }
+
+  function bind(){
+    mini()?.addEventListener('click', ()=>{
+      const c = card();
+      const r = root();
+      if(!c || !r) return;
+
+      r.hidden = false;
+      c.hidden = !c.hidden;
+    });
+
+    document.getElementById('mz-upl-pop-hide')?.addEventListener('click', ()=>{
+      const c = card();
+      if(c) c.hidden = true;
+    });
+
+	document.getElementById('mz-upl-pop-close')?.addEventListener('click', ()=>{
+	  const activeJob = Array.from(jobs.values()).find(j =>
+		j.status === 'uploading' || j.status === 'preparing'
+	  );
+
+	  if(activeJob){
+		const fn = cancelHandlers.get(activeJob.id);
+		if(fn){
+		  fn();
+		  return;
+		}
+	  }
+
+	  closeAll();
+	});
+  }
+function hasActiveUploads(){
+  return Array.from(jobs.values()).some(j =>
+    j.status === 'uploading' || j.status === 'preparing'
+  );
+}
+	return {
+	  bind,
+	  open,
+	  close,
+	  closeAll,
+	  addJob,
+	  updateJob,
+	  setUploading,
+	  setDone,
+	  setError,
+	  onCancel,
+	  hasActiveUploads
+	};
+})();
+window.mzUploadOverlay = mzUploadOverlay;
+
+ensureUploadOverlayDom();
+mzUploadOverlay.bind();
+window.addEventListener('beforeunload', (e)=>{
+  if (!window.mzUploadOverlay?.hasActiveUploads?.()) return;
+
+  e.preventDefault();
+  e.returnValue = '';
+});
+document.addEventListener('click', (e)=>{
+  const a = e.target.closest('a[href]');
+  if(!a) return;
+
+  // новые вкладки / служебные ссылки не трогаем
+  if (
+    a.target === '_blank' ||
+    e.ctrlKey || e.metaKey || e.shiftKey || e.altKey ||
+    a.hasAttribute('download')
+  ) return;
+
+  if (!window.mzUploadOverlay?.hasActiveUploads?.()) return;
+
+  const href = a.getAttribute('href') || '';
+  if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+
+  const ok = confirm('Hay una carga en progreso. Si sales ahora, la subida puede interrumpirse. ¿Quieres salir de todos modos?');
+  if(!ok){
+    e.preventDefault();
+    e.stopPropagation();
+  }
+}, true);
+
+function ensureUploadOverlayDom(){
+  let el = document.getElementById('mz-upl-pop');
+  if(el) return el;
+
+  const wrap = document.createElement('div');
+  wrap.innerHTML = `
+    <div id="mz-upl-pop" class="mz-upl-pop" hidden aria-live="polite" aria-atomic="true">
+      <button type="button" class="mz-upl-pop-mini" id="mz-upl-pop-mini">
+        <span class="mz-upl-pop-mini-dot"></span>
+        <span id="mz-upl-pop-mini-text">Subiendo archivos…</span>
+        <span id="mz-upl-pop-mini-pct">0%</span>
+      </button>
+
+      <div class="mz-upl-pop-card" id="mz-upl-pop-card" hidden>
+        <div class="mz-upl-pop-head">
+          <div>
+            <div class="mz-upl-pop-title">Cargas</div>
+            <div class="mz-upl-pop-sub" id="mz-upl-pop-sub">0 activas</div>
+          </div>
+
+          <div class="mz-upl-pop-actions">
+            <button type="button" class="mzc-btn ghost" id="mz-upl-pop-hide">Ocultar</button>
+            <button type="button" class="mzc-btn ghost" id="mz-upl-pop-close" aria-label="Cerrar">✕</button>
+          </div>
+        </div>
+
+        <div class="mz-upl-pop-list" id="mz-upl-pop-list"></div>
+      </div>
+    </div>
+  `.trim();
+
+  el = wrap.firstElementChild;
+  document.body.appendChild(el);
+  return el;
+}
+
 function normPath(p){
   return (p || '').trim().replace(/^\/+|\/+$/g,'');
 }
@@ -1690,7 +2254,7 @@ function mzBumpCount(path, delta, mode='total'){
     c.textContent = String(n);
   }
 }
-
+window.mzBumpCount = mzBumpCount;
 function mzBumpCountCascade(path, delta, mode='total'){
   const parts = (path||'').split('/').filter(Boolean);
   let acc = '';
@@ -1704,6 +2268,7 @@ function mzBumpCountCascade(path, delta, mode='total'){
 function mzBumpCountCascadeTotal(path, delta){
   mzBumpCountCascade(path, delta, 'total');
 }
+window.mzBumpCountCascadeTotal = mzBumpCountCascadeTotal;
 function mzCleanupEmptyPlaceholders(){
   document.querySelectorAll('.mz-tree-node').forEach(node=>{
     const kids = node.querySelector(':scope > .mz-tree-children');
@@ -1734,107 +2299,109 @@ window.mzCleanupEmptyPlaceholders = mzCleanupEmptyPlaceholders;
     if(!form) return;
     e.preventDefault();
 
-    const path = (form.querySelector('input[name="path"]')?.value || form.dataset.path || '').trim();
-    if(!path) return;
+    try {
+      const path = (form.querySelector('input[name="path"]')?.value || form.dataset.path || '').trim();
+      if(!path) return;
 
-    const csrftoken = (document.cookie.split(';').map(s=>s.trim()).find(s=>s.startsWith('csrftoken='))||'').split('=')[1] || '';
+      const csrftoken = mzCsrfToken();
 
-    async function post(mode){
-      const fd = new FormData(form);
-      fd.set('action', 'folder_delete');
-      fd.set('path', path);
-      fd.set('mode', mode);
+      async function post(mode){
+        const fd = new FormData(form);
+        fd.set('action', 'folder_delete');
+        fd.set('path', path);
+        fd.set('mode', mode);
 
-      const r = await fetch(window.location.pathname + window.location.search, {
-        method:'POST',
-        credentials:'include',
-        headers:{ 'X-CSRFToken': decodeURIComponent(csrftoken), 'X-Requested-With':'XMLHttpRequest' },
-        body: fd
-      });
-      const txt = await r.text();
-      let j = {};
-      try{ j = txt ? JSON.parse(txt) : {}; }catch(_){}
-      return { r, j };
+        const r = await fetch(window.location.pathname + window.location.search, {
+          method:'POST',
+          credentials:'include',
+          headers:{ 'X-CSRFToken': csrftoken, 'X-Requested-With':'XMLHttpRequest' },
+          body: fd
+        });
+
+        const txt = await r.text();
+        let j = {};
+        try { j = txt ? JSON.parse(txt) : {}; } catch(_) {}
+        return { r, j };
+      }
+
+      // 1) check
+      let res = await post('check');
+
+      if(res.r.ok && res.j.ok){
+        const node = form.closest('.mz-tree-node');
+        if(node) node.remove();
+        window.mzMaterialsSyncCardsFromTree?.();
+        window.mzCleanupEmptyPlaceholders?.();
+        window.mzMaterialsReindexSearch?.();
+        return;
+      }
+
+      if(res.r.status === 409 && res.j.error === 'folder_not_empty'){
+        const files = res.j.files_count || 0;
+        const subs  = res.j.subfolders_count || 0;
+
+        const choice = await mzConfirmFolderDelete({
+          title: 'Eliminar carpeta',
+          html: `
+            <div style="line-height:1.35">
+              La carpeta <b>${path}</b> no está vacía.<br>
+              <span>Archivos: <b>${files}</b>, Subcarpetas: <b>${subs}</b></span>
+              <div style="margin-top:10px; opacity:.9">
+                ¿Qué quieres hacer?
+              </div>
+            </div>
+          `,
+          actions: [
+            { label:'Cancelar', value:null },
+            { label:'Mover archivos al raíz', value:'move_root' },
+            { label:'Eliminar TODO', value:'purge', cls:'danger' },
+          ]
+        });
+
+        if(!choice) return;
+
+        const rr = await post(choice);
+
+        if(rr.r.ok && rr.j.ok){
+          const node = form.closest('.mz-tree-node');
+          if(!node) return;
+
+          if(choice === 'move_root'){
+            const rootFiles = mzGetRootFilesContainer?.();
+            if(rootFiles){
+              // переносим ВСЕ файлы текущей папки и подпапок
+              const files = Array.from(node.querySelectorAll('.mz-tree-file'));
+              files.forEach(fileEl=>{
+                fileEl.setAttribute('data-folder', '');
+                fileEl.dataset.folder = '';
+
+                const tag = fileEl.querySelector('.mz-mat-tag');
+                if(tag){
+                  tag.textContent = 'Sin módulo';
+                  tag.classList.add('muted');
+                }
+
+                rootFiles.appendChild(fileEl);
+              });
+            }
+          }
+
+          node.remove();
+          window.mzMaterialsSyncCardsFromTree?.();
+          window.mzCleanupEmptyPlaceholders?.();
+          window.mzMaterialsReindexSearch?.();
+          return;
+        }
+
+        alert('No se pudo completar: ' + (rr.j.error || rr.j.message || rr.r.status));
+        return;
+      }
+
+      alert('No se pudo eliminar la carpeta: ' + (res.j.error || res.r.status));
+    } catch (err) {
+      console.error('[folder-delete] failed', err);
+      alert('Error al eliminar la carpeta.');
     }
-
-    // 1) check
-    let res = await post('check');
-
-    if(res.r.ok && res.j.ok){
-      // убрать узел из DOM
-      const node = form.closest('.mz-tree-node');
-      if(node) node.remove();
-	    window.mzMaterialsSyncCardsFromTree?.();
-      return;
-    }
-
-	if(res.r.status === 409 && res.j.error === 'folder_not_empty'){
-	  const files = res.j.files_count || 0;
-	  const subs  = res.j.subfolders_count || 0;
-
-	  const choice = await mzConfirmFolderDelete({
-		title: 'Eliminar carpeta',
-		html: `
-		  <div style="line-height:1.35">
-			La carpeta <b>${path}</b> no está vacía.<br>
-			<span>Archivos: <b>${files}</b>, Subcarpetas: <b>${subs}</b></span>
-			<div style="margin-top:10px; opacity:.9">
-			  ¿Qué quieres hacer?
-			</div>
-		  </div>
-		`,
-		actions: [
-		  { label:'Cancelar', value:null },
-		  { label:'Mover archivos al raíz', value:'move_root' },
-		  { label:'Eliminar TODO', value:'purge', cls:'danger' },
-		]
-	  });
-
-	  if(!choice) return;
-
-		const rr = await post(choice);
-
-		if(rr.r.ok && rr.j.ok){
-		  const node = form.closest('.mz-tree-node');
-		  if(!node) return;
-
-		  if(choice === 'move_root'){
-			const rootFiles = mzGetRootFilesContainer();
-
-			// ✅ переносим ВСЕ файлы из папки + подпапок в root
-			const files = Array.from(node.querySelectorAll('.mz-tree-children .mz-tree-file'));
-			files.forEach(fileEl=>{
-			  // обновим атрибуты под “корень”
-			  fileEl.setAttribute('data-folder', '');
-			  fileEl.dataset.folder = '';
-
-			  // если у тебя module_key пересчитывается от path:
-			  const tag = fileEl.querySelector('.mz-mat-tag');
-			  if(tag){
-				tag.textContent = 'Sin módulo';
-				tag.classList.add('muted');
-			  }
-
-			  rootFiles.appendChild(fileEl);
-			});
-		  }
-
-		  // ✅ удаляем саму папку (и подпапки вместе с ней)
-		  node.remove();
-			window.mzMaterialsSyncCardsFromTree?.();
-		  // ✅ поправим плейсхолдеры и поиск
-		  mzCleanupEmptyPlaceholders();
-		  if(window.mzMaterialsReindexSearch) window.mzMaterialsReindexSearch();
-
-		  return;
-		}
-
-		// если не ок — как и было:
-		alert('No se pudo completar: ' + (rr.j.error || rr.j.message || rr.r.status));
-	  return;
-	}
-
-    alert('No se pudo eliminar la carpeta: ' + (res.j.error || res.r.status));
   });
 })();
 
@@ -1900,7 +2467,17 @@ async function uploadFolderBundle(fileList){
   const files = Array.from(fileList || []);
   if(!files.length) return;
 
-  // webkitRelativePath: "MiCarpeta/sub1/a.pdf"
+  const totalBytes = files.reduce((s, f) => s + (f.size || 0), 0);
+  const rootFolderName =
+    (files[0] && files[0].webkitRelativePath && files[0].webkitRelativePath.split('/')[0]) || 'Carpeta';
+
+  const uploadUrl = mzPostUrl();
+
+  const jobId = mzUploadOverlay.addJob({
+    name: rootFolderName,
+    meta: `0 / ${mzBytesHuman(totalBytes)} · ${files.length} archivo(s)`
+  });
+
   const fd = new FormData();
   fd.append('action', 'upload_folder_bundle');
 
@@ -1909,24 +2486,34 @@ async function uploadFolderBundle(fileList){
     fd.append('paths', f.webkitRelativePath || f.name);
   }
 
-  const r = await fetch(window.location.pathname + window.location.search, {
-    method:'POST',
-    credentials:'include',
-    headers:{
-      'X-CSRFToken': getCookie('csrftoken'),
-      'X-Requested-With': 'XMLHttpRequest',
-    },
-    body: fd
+  let result;
+  try{
+    const uploadUrl = mzPostUrl();
+
+	result = await postFormXHR(uploadUrl, fd, mzCsrfToken(), {
+      onProgress: ({ loaded, total, percent }) => {
+        const safeTotal = total || totalBytes || 0;
+        mzUploadOverlay.setUploading(jobId, {
+          percent,
+          meta: `${mzBytesHuman(loaded)} / ${mzBytesHuman(safeTotal)} · ${files.length} archivo(s)`
+        });
+      }
+    });
+  }catch(err){
+    mzUploadOverlay.setError(jobId, err.message || 'No se pudo subir la carpeta');
+    throw err;
+  }
+
+  const j = result.j || {};
+  if(!j.ok){
+    mzUploadOverlay.setError(jobId, j.error || 'upload_folder_failed');
+    throw new Error(j.error || 'upload_folder_failed');
+  }
+
+  mzUploadOverlay.setDone(jobId, {
+    meta: `${mzBytesHuman(totalBytes)} · ${files.length} archivo(s)`
   });
 
-  const txt = await r.text();
-  let j = {};
-  try{ j = txt ? JSON.parse(txt) : {}; }catch(_){}
-
-  if(!r.ok || !j.ok) throw new Error(j.error || ('HTTP '+r.status));
-
-  // ✅ тут можно вставить html узлы/файлы если ты вернёшь их из backend
-  // иначе: location.reload() как fallback
   location.reload();
 }
 
@@ -1936,15 +2523,15 @@ async function uploadFolderBundle(fileList){
     if(!form) return;
     e.preventDefault();
 
-    const csrftoken = getCookie('csrftoken');
+    const csrftoken = mzCsrfToken();
 
     const r = await fetch(window.location.pathname + window.location.search, {
       method:'POST',
       credentials:'include',
-      headers:{
-        'X-CSRFToken': csrftoken,
-        'X-Requested-With':'XMLHttpRequest'
-      },
+      headers: {
+	'X-CSRFToken': mzCsrfToken(),
+	'X-Requested-With': 'XMLHttpRequest',
+	},
       body: new FormData(form)
     });
 
@@ -2091,7 +2678,7 @@ window.mzIsDownloadForbidden = mzIsDownloadForbidden;
 
     e.preventDefault();
 
-    const csrftoken = getCookie('csrftoken');
+    const csrftoken = mzCsrfToken();
 
     let r, txt, j = {};
     try{
@@ -2170,5 +2757,98 @@ window.mzIsDownloadForbidden = mzIsDownloadForbidden;
     // максимум — пересинхроним карточки/поиск
     window.mzMaterialsSyncCardsFromTree?.();
     window.mzMaterialsReindexSearch?.();
+  });
+})();
+
+(function initMaterialsClear(){
+  if (window.__MZ_MATERIALS_CLEAR__) return;
+  window.__MZ_MATERIALS_CLEAR__ = true;
+
+  async function postClear(mode, audience){
+    const fd = new FormData();
+    fd.append('action', 'materials_clear');
+    fd.append('mode', mode);           // current | all
+    fd.append('audience', audience);   // alumnos | docentes | mis
+
+    const r = await fetch(window.location.pathname + window.location.search, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'X-CSRFToken': mzCsrfToken(),
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: fd
+    });
+
+    const txt = await r.text();
+    let j = {};
+    try { j = txt ? JSON.parse(txt) : {}; } catch(_) {}
+
+    if(!r.ok || !j.ok){
+      throw new Error(j.error || j.message || ('HTTP ' + r.status));
+    }
+    return j;
+  }
+
+  document.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('[data-action="materials.clear.ask"]');
+    if(!btn) return;
+
+    e.preventDefault();
+
+    const audience = (btn.getAttribute('data-aud') || 'alumnos').trim();
+
+    const choice = await mzConfirmFolderDelete({
+      title: 'Vaciar materiales',
+      html: `
+        <div style="line-height:1.4">
+          Puedes limpiar solo esta pestaña o vaciar todos los materiales del curso.
+          <div style="margin-top:10px; color:#fca5a5; font-weight:700">
+            Esta acción no se puede deshacer.
+          </div>
+        </div>
+      `,
+      actions: [
+        { label:'Cancelar', value:null },
+        { label:'Solo esta pestaña', value:'current' },
+        { label:'Todo el curso', value:'all', cls:'danger' },
+      ]
+    });
+
+    if(!choice) return;
+
+    const confirm2 = await mzConfirmFolderDelete({
+      title: 'Confirmación final',
+      html: `
+        <div style="line-height:1.4">
+          ${choice === 'all'
+            ? 'Se eliminarán todos los archivos del curso y se quitarán las carpetas personalizadas.'
+            : 'Se eliminarán los archivos de esta pestaña actual.'}
+          <div style="margin-top:10px; color:#fca5a5; font-weight:700">
+            Los archivos físicos en el storage no se borrarán, pero dejarán de estar enlazados.
+          </div>
+        </div>
+      `,
+      actions: [
+        { label:'Cancelar', value:null },
+        { label:'Sí, vaciar', value:'yes', cls:'danger' },
+      ]
+    });
+
+    if(confirm2 !== 'yes') return;
+
+    const old = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Vaciando...';
+
+    try{
+      await postClear(choice, audience);
+      location.reload();
+    }catch(err){
+      console.error(err);
+      alert('No se pudo vaciar materiales: ' + (err.message || err));
+      btn.disabled = false;
+      btn.textContent = old;
+    }
   });
 })();

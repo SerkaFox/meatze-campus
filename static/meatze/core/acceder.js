@@ -1,4 +1,5 @@
 /* static/meatze/pages/acceder.js */
+/* static/meatze/pages/acceder.js */
 (() => {
   'use strict';
   if (window.__MZ_ACCEDER_V2__) return;

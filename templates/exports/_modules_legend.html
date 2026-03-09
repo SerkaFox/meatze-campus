@@ -1,0 +1,40 @@
+{# templates/exports/_modules_legend.html #}
+<div class="mz-pagebreak"></div>
+
+<style>
+  .mz-pagebreak{
+    page-break-before: always;
+    break-before: page;
+  }
+</style>
+<section style="margin-top:14px">
+  <h2 style="margin:0 0 10px; font-size:16px; font-weight:800">
+    Módulos / Unidades formativas
+  </h2>
+
+  {% for m in mods %}
+    <div style="
+      margin:10px 0;
+      padding:10px 12px;
+      border:1px solid rgba(148,163,184,.55);
+      border-radius:12px;
+      background: rgba(255,255,255,.85);
+    ">
+      <div style="font-weight:800; font-size:13px; margin-bottom:4px">
+        {{ m.mod_key }}
+      </div>
+
+      <div style="font-size:12px; opacity:.9">
+        Del {{ m.from|date:"d/m/Y" }} al {{ m.to|date:"d/m/Y" }}
+      </div>
+
+      {% if m.exceptions %}
+        <ul style="margin:8px 0 0; padding-left:18px; font-size:12px">
+          {% for ex in m.exceptions %}
+            <li style="margin:2px 0">{{ ex }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  {% endfor %}
+</section>

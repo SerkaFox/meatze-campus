@@ -1,47 +1,60 @@
-from django.shortcuts import render, redirect
-from django.utils.http import url_has_allowed_host_and_scheme
-from rest_framework.response import Response
-from django.conf import settings
-from django.http import JsonResponse, HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework.decorators import api_view, permission_classes, authentication_classes
-from django.views.decorators.http import require_http_methods
-from rest_framework.permissions import AllowAny
-from django.contrib.auth import get_user_model, authenticate, login
-import json, io, re, os, requests, subprocess, tempfile, logging, random
-from rest_framework import status
+# api/views.py
+
+import json
+import io
+import re
+import os
+import requests
+import subprocess
+import tempfile
+import logging
+import random
+from datetime import date, time, timedelta, datetime
+from io import BytesIO
 from pathlib import Path
 from functools import wraps
-from .models import Curso, Enrol, UserProfile, Horario, PendingRole, LoginPIN, MZSetting
-from django.db import transaction
+
+from django.conf import settings
+from django.http import JsonResponse, HttpResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 from django.core.cache import cache
 from django.core.mail import send_mail
-from datetime import date, time, timedelta, datetime
-from django.db import transaction
-from io import BytesIO
-from docx import Document 
-from docx.shared import Mm, Cm, Pt
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from django.db import transaction, IntegrityError
 from django.db.models import Q, Count
-from django.shortcuts import get_object_or_404
-from .decorators import require_admin_token 
-from panel.models import (CursoFile, CursoPhysicalConfig, MaterialDownload, MaterialReceipt)
-from panel.views import PHYSICAL_ITEMS  
-from django.template.loader import render_to_string
-from api.horario_legend import (
-    build_horario_header_from_db,
-    build_modules_legend_from_db,
-    _add_legend_nonlective,
-    _add_modules_legend_blocks,
+from django.contrib.auth import get_user_model, authenticate, login
+
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.permissions import AllowAny
+from rest_framework import status
+
+def privacy_policy(request):
+    return render(request, "legal/privacy.html")
+
+
+def terms_of_service(request):
+    return render(request, "legal/terms.html")
+
+from .models import (
+    Curso, Enrol, UserProfile, Horario, PendingRole, LoginPIN, MZSetting
 )
+
+from .decorators import require_admin_token
+
+from panel.models import (
+    CursoFile, CursoPhysicalConfig, MaterialDownload, MaterialReceipt
+)
+from panel.views import PHYSICAL_ITEMS
+
+# ✅ DOCX export вынесен в отдельный файл
+from .docx_export import export_docx_graphic
+
 logger = logging.getLogger(__name__)
-
-LIBREOFFICE_BIN = getattr(settings, "LIBREOFFICE_PATH", "/usr/bin/soffice")
-
-MEATZE_DOCX_LOGOS = getattr(settings, "MEATZE_DOCX_LOGOS", {})
-
-
 User = get_user_model()
+
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
@@ -70,6 +83,7 @@ def login_password(request):
             data.update(request.data)
     except Exception as e:
         logger.warning("login_password: error reading request.data: %s", e)
+
     if not data:
         try:
             raw = request.body
@@ -97,25 +111,21 @@ def login_password(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    # 2) логиним — у тебя username == email, судя по коду создания юзеров
     user = authenticate(request, username=email, password=password)
-
     if user is None:
         return Response(
             {'message': 'Credenciales inválidas.'},
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    # 3) создаём сессию
     login(request, user)
 
-    # 4) собираем "me" для фронта
     me = {
         'id': user.id,
         'email': getattr(user, 'email', '') or '',
         'first_name': getattr(user, 'first_name', ''),
         'last_name': getattr(user, 'last_name', ''),
-        'is_teacher': getattr(user, 'is_staff', False),  # у тебя docente = staff
+        'is_teacher': getattr(user, 'is_staff', False),
         'has_password': True,
     }
 
@@ -137,11 +147,9 @@ def require_admin_token(view_func):
     return _wrapped
 
 
-
 @csrf_exempt
 @require_admin_token
 def admin_ping(request):
-    # Просто проверка токена
     return JsonResponse({"ok": True})
 
 
@@ -152,7 +160,6 @@ def admin_cursos_list(request):
     items = []
 
     for c in qs:
-        # в модели modules — LIST
         modules_str = json.dumps(c.modules or [], ensure_ascii=False)
 
         items.append({
@@ -166,29 +173,14 @@ def admin_cursos_list(request):
 
     return JsonResponse({"items": items})
 
-def _admin_can_access_course(request, curso: Curso) -> bool:
-    """
-    ВАЖНО: тут решаешь политику.
-    Минимальный вариант: любой валидный X-MZ-Admin видит всё.
-    Лучше: проверить, что admin связан с курсом/организацией.
-    """
-    # Вариант A (просто): True
-    return True
 
-    # Вариант B (пример): токен связан с user (если require_admin_token кладет request.admin_user)
-    # u = getattr(request, "admin_user", None)
-    # if not u:
-    #     return False
-    # return Enrol.objects.filter(user=u, codigo=curso.codigo, role__in=["teacher","admin"]).exists()
+def _admin_can_access_course(request, curso: Curso) -> bool:
+    return True
 
 
 @require_admin_token
 @require_http_methods(["GET"])
 def admin_material_status(request):
-    """
-    Возвращает тот же формат что alumnos_status, но auth по X-MZ-Admin
-    GET /meatze/v5/admin/lanbide/material_status?codigo=IFCT0309
-    """
     codigo = (request.GET.get("codigo") or "").strip().upper()
     if not codigo:
         return JsonResponse({"ok": False, "error": "codigo required"}, status=400)
@@ -198,12 +190,10 @@ def admin_material_status(request):
     if not _admin_can_access_course(request, curso):
         return JsonResponse({"ok": False, "error": "forbidden"}, status=403)
 
-    # --- физические предметы курса ---
     cfg = CursoPhysicalConfig.objects.filter(curso=curso).only("enabled_keys").first()
     physical_keys = (cfg.enabled_keys if cfg else []) or []
     total_phys = len(physical_keys)
 
-    # --- файлы, видимые ученикам ---
     visible_files_qs = (
         CursoFile.objects.filter(curso=curso)
         .filter(
@@ -216,7 +206,6 @@ def admin_material_status(request):
     visible_ids = list(visible_files_qs.values_list("id", flat=True))
     total_visible = len(visible_ids)
 
-    # если файлов нет и физики нет — быстрый ответ
     if total_visible == 0 and total_phys == 0:
         return JsonResponse({
             "ok": True,
@@ -226,7 +215,6 @@ def admin_material_status(request):
             "items": {}
         })
 
-    # --- агрегаты ---
     dl_counts = dict(
         MaterialDownload.objects.filter(file_id__in=visible_ids)
         .values("alumno_id").annotate(c=Count("id"))
@@ -239,10 +227,8 @@ def admin_material_status(request):
         .values_list("alumno_id", "c")
     )
 
-    # --- мапа file_id -> title/filename ---
     file_map = {}
     for f in visible_files_qs:
-        # f.file может быть FileField; у тебя раньше было f.filename, но не всегда есть
         filename = ""
         try:
             filename = getattr(f.file, "name", "") or ""
@@ -251,7 +237,6 @@ def admin_material_status(request):
             filename = ""
         file_map[f.id] = (f.title or filename or f"#{f.id}")
 
-    # --- детали: downloads ---
     dl_detail = {}
     dl_rows = (
         MaterialDownload.objects
@@ -261,7 +246,6 @@ def admin_material_status(request):
     for aid, fid in dl_rows:
         dl_detail.setdefault(aid, []).append(file_map.get(fid, f"#{fid}"))
 
-    # --- детали: receipts ---
     label_by_key = {it["key"]: it["label"] for it in PHYSICAL_ITEMS}
     rc_detail = {}
     rc_rows = (
@@ -273,10 +257,8 @@ def admin_material_status(request):
         label = (item_label or "").strip() or label_by_key.get(item_key, item_key)
         rc_detail.setdefault(aid, []).append(label)
 
-    # --- все alumno_id ---
     all_ids = set(dl_counts) | set(rc_counts) | set(dl_detail) | set(rc_detail)
 
-    # (опционально) чистим дубликаты в деталях, чтобы tooltip был аккуратней
     def _uniq(seq):
         seen = set()
         out = []
@@ -305,14 +287,8 @@ def admin_material_status(request):
     })
 
 
-
-
 @api_view(["GET"])
 def curso_detail(request):
-    """
-    /meatze/v5/curso?codigo=...
-    Один курс по коду.
-    """
     codigo = request.query_params.get("codigo")
     if not codigo:
         return Response({"error": "codigo requerido"}, status=400)
@@ -335,21 +311,14 @@ def curso_detail(request):
 def acceder(request):
     tab = (request.GET.get("tab") or "login").strip().lower()
 
-    # ✅ ВАЖНО: если пользователь залогинен и просит профиль — НЕ редиректим
     if request.user.is_authenticated and tab == "profile":
         return render(request, "acceder.html", {})
 
-    # (опционально) если залогинен и просто открыл /acceder/ без tab
-    # отправляем в панель
     if request.user.is_authenticated and tab in ("", "login"):
         return redirect("/alumno/")
 
-    # не залогинен → показываем страницу входа/регистрации
     return render(request, "acceder.html", {})
 
-# ─────────────────────────────
-# ADMIN · DOCENTES
-# ─────────────────────────────
 
 def _split_last_name(last_name: str):
     last_name = (last_name or "").strip()
@@ -373,7 +342,6 @@ def admin_teachers_list(request):
     users = list(qs)
     user_ids = [u.id for u in users]
 
-    # все назначения teacher по этим пользователям
     enrols = (
         Enrol.objects
         .filter(user_id__in=user_ids, role="teacher")
@@ -389,7 +357,6 @@ def admin_teachers_list(request):
         by_user.setdefault(uid, []).append(codigo)
         codigos.add(codigo)
 
-    # подтянем названия курсов
     titulo_by_codigo = dict(
         Curso.objects.filter(codigo__in=list(codigos))
         .values_list("codigo", "titulo")
@@ -419,13 +386,11 @@ def admin_teachers_list(request):
             "last_name1": last_name1,
             "last_name2": last_name2,
             "display_name": display_name,
-            "cursos": cursos,          # ✅ НОВОЕ
+            "cursos": cursos,
         })
 
     return JsonResponse({"items": items})
-    
-    
-from django.db import transaction, IntegrityError
+
 
 @require_admin_token
 @csrf_exempt
@@ -454,9 +419,6 @@ def admin_teachers_upsert(request):
     with transaction.atomic():
         user = None
 
-        # =========================
-        # A) UPDATE по ID
-        # =========================
         if user_id:
             user = User.objects.filter(pk=int(user_id)).first()
             if not user:
@@ -464,7 +426,6 @@ def admin_teachers_upsert(request):
 
             current_email = ((user.email or user.username or "")).strip().lower()
 
-            # ❌ запрещаем менять email (и НЕ трогаем username)
             if email and email != current_email:
                 return JsonResponse({
                     "ok": False,
@@ -475,19 +436,12 @@ def admin_teachers_upsert(request):
                     )
                 }, status=409)
 
-        # =========================
-        # B) UPSERT по email (CREATE/PROMOTE)
-        # =========================
         if not user:
-            # 1) сначала ищем по username=email (это твой уникальный ключ)
             user = User.objects.filter(username__iexact=email).first()
 
-            # 2) если не нашли — ищем по email
             if not user:
                 user = User.objects.filter(email__iexact=email).first()
 
-            # 3) если нашли по email, но username другой — НЕ пытаемся менять username
-            #    это и вызывает UniqueViolation. Лучше вернуть 409 с инструкцией.
             if user and (user.username or "").strip().lower() != email:
                 return JsonResponse({
                     "ok": False,
@@ -498,22 +452,17 @@ def admin_teachers_upsert(request):
                     )
                 }, status=409)
 
-            # 4) если всё ещё нет — создаём (с защитой от гонки)
             if not user:
                 try:
                     user = User.objects.create(username=email, email=email)
                 except IntegrityError:
-                    # на случай параллельного запроса — ещё раз читаем
                     user = User.objects.filter(username__iexact=email).first()
                     if not user:
                         raise
 
-            # 5) если user найден по username=email, но email у него был "deleted+...@invalid"
-            #    можно спокойно вернуть email обратно (email не уникальный обычно)
             if (user.email or "").strip().lower() != email:
                 user.email = email
 
-        # --- дальше обновляем поля преподавателя ---
         user.first_name = first_name
         user.last_name = full_last
         user.is_staff = True
@@ -531,16 +480,12 @@ def admin_teachers_upsert(request):
         profile.save()
 
     return JsonResponse({"ok": True, "id": user.id})
-    
-    
+
+
 @require_admin_token
 @csrf_exempt
 @require_http_methods(["POST"])
 def admin_teacher_update(request, user_id: int):
-    """
-    POST /meatze/v5/admin/teachers/<id>
-    Обновление данных преподавателя.
-    """
     try:
         teacher = User.objects.get(pk=user_id)
     except User.DoesNotExist:
@@ -559,31 +504,21 @@ def admin_teacher_update(request, user_id: int):
     bio = (data.get("bio") or "").strip()
     full_last = " ".join(p for p in [last1, last2] if p).strip()
 
-    # --- проверяем конфликт по email, если его изменили ---
     current_email = (teacher.email or "").lower()
     if email and email != current_email:
         conflict = User.objects.filter(email=email).exclude(pk=teacher.pk).first()
         if conflict:
-            # другой уже препод
             if conflict.is_staff:
-                return JsonResponse(
-                    {"ok": False, "message": "email_exists"},
-                    status=409
-                )
-            # почта занята другим пользователем (alumno и т.п.)
-            return JsonResponse(
-                {"ok": False, "message": "email_in_use"},
-                status=409
-            )
+                return JsonResponse({"ok": False, "message": "email_exists"}, status=409)
+            return JsonResponse({"ok": False, "message": "email_in_use"}, status=409)
 
-        # если конфликта нет — обновляем email
         teacher.email = email
         if not teacher.username:
             teacher.username = email
 
     teacher.first_name = first_name
     teacher.last_name = full_last
-    teacher.is_staff = True   # считаем staff = docente
+    teacher.is_staff = True
     teacher.save()
 
     profile, _ = UserProfile.objects.get_or_create(user=teacher)
@@ -607,20 +542,14 @@ def admin_teacher_update(request, user_id: int):
 @csrf_exempt
 @require_http_methods(["POST"])
 def admin_teacher_delete(request, user_id: int):
-    """
-    POST /meatze/v5/admin/teachers/<id>/delete
-    Убираем статус staff и чистим Enrol с ролью teacher.
-    """
     try:
         user = User.objects.get(pk=user_id)
     except User.DoesNotExist:
         return JsonResponse({"message": "not_found"}, status=404)
 
-    # перестаёт быть docente
     user.is_staff = False
     user.save(update_fields=["is_staff"])
 
-    # на всякий случай чистим привязки как преподавателя
     Enrol.objects.filter(user=user, role="teacher").delete()
 
     return JsonResponse({"ok": True})
@@ -629,9 +558,6 @@ def admin_teacher_delete(request, user_id: int):
 @csrf_exempt
 @require_admin_token
 def admin_cursos_delete(request, curso_id):
-    """
-    POST /meatze/v5/admin/cursos/<id>/delete
-    """
     if request.method != "POST":
         return JsonResponse({"error": "method_not_allowed"}, status=405)
 
@@ -658,7 +584,6 @@ def admin_cursos_upsert(request):
     modules = data.get("modules") or []
     tipo_formacion = (data.get("tipo_formacion") or "").strip().lower()
 
-    # ✅ NEW: откуда клонировать материалы
     clone_from = (data.get("clone_from") or "").strip().upper()
 
     if not codigo or not titulo:
@@ -679,23 +604,18 @@ def admin_cursos_upsert(request):
         norm_modules.append({"name": name, "hours": hours})
 
     curso_id = data.get("id")
-
-    # определяем: это создание нового курса или апдейт
     creating = False
 
     with transaction.atomic():
         if curso_id:
-            # редактирование по id
             try:
                 curso = Curso.objects.get(id=curso_id)
             except Curso.DoesNotExist:
-                # если id битый — fallback
                 curso = Curso.objects.filter(codigo=codigo).first()
                 if not curso:
                     curso = Curso(codigo=codigo)
                     creating = True
         else:
-            # если нет id — upsert по коду
             curso = Curso.objects.filter(codigo=codigo).first()
             if not curso:
                 curso = Curso(codigo=codigo)
@@ -708,15 +628,14 @@ def admin_cursos_upsert(request):
         curso.tipo_formacion = tipo_formacion
         curso.save()
 
-        # ✅ клонируем материалы ТОЛЬКО при создании нового курса
         cloned_files = 0
         if creating and clone_from and clone_from != codigo:
             src = Curso.objects.filter(codigo=clone_from).first()
             if src:
-                # переносим записи CursoFile без копирования файла на диск
                 src_qs = (CursoFile.objects
                           .filter(curso=src)
-                          .only("tipo", "module_key", "title", "file", "size", "ext", "share_alumnos", "uploaded_by", "folder_path"))
+                          .only("tipo", "module_key", "title", "file", "size", "ext",
+                                "share_alumnos", "uploaded_by", "folder_path"))
 
                 batch = []
                 for f in src_qs:
@@ -731,7 +650,7 @@ def admin_cursos_upsert(request):
                         share_alumnos=f.share_alumnos,
                         folder_path=f.folder_path,
                     )
-                    nf.file.name = f.file.name  # ✅ та же ссылка
+                    nf.file.name = f.file.name
                     batch.append(nf)
 
                 if batch:
@@ -743,18 +662,14 @@ def admin_cursos_upsert(request):
         "id": curso.id,
         "horas": total_horas,
         "tipo_formacion": curso.tipo_formacion,
-        "cloned_files": cloned_files,   # ✅ чтобы фронт мог показать “скопировано N”
+        "cloned_files": cloned_files,
     })
-
 
 
 @require_admin_token
 @csrf_exempt
 @require_http_methods(["POST"])
 def admin_curso_delete(request, curso_id: int):
-    """
-    POST /meatze/v5/admin/cursos/<id>/delete
-    """
     try:
         curso = Curso.objects.get(pk=curso_id)
     except Curso.DoesNotExist:
@@ -767,17 +682,9 @@ def admin_curso_delete(request, curso_id: int):
     return JsonResponse({"ok": True})
 
 
-# ─────────────────────────────
-# ADMIN · ENROLMENTS (teachers per curso)
-# ─────────────────────────────
-
 @require_admin_token
 @require_http_methods(["GET"])
 def admin_enrolments_list(request):
-    """
-    GET /meatze/v5/admin/enrolments?codigo=IFCT0209&role=teacher
-    Для вкладки "Asignar docentes".
-    """
     codigo = (request.GET.get("codigo") or "").strip()
     role = (request.GET.get("role") or "").strip()
 
@@ -806,11 +713,6 @@ def admin_enrolments_list(request):
 @csrf_exempt
 @require_http_methods(["POST"])
 def admin_cursos_assign(request):
-    """
-    POST /meatze/v5/admin/cursos/assign
-    тело: {curso_codigo: "...", teachers: ["1","2",...]}
-    Обновляет список Enrol с ролью teacher для данного курса.
-    """
     try:
         data = json.loads(request.body or "{}")
     except json.JSONDecodeError:
@@ -836,12 +738,10 @@ def admin_cursos_assign(request):
     teacher_ids = list(set(teacher_ids))
 
     with transaction.atomic():
-        # удаляем все старые привязки teacher для этого курса
         Enrol.objects.filter(codigo=codigo, role="teacher").exclude(
             user_id__in=teacher_ids
         ).delete()
 
-        # существующие
         existing = set(
             Enrol.objects.filter(codigo=codigo, role="teacher")
             .values_list("user_id", flat=True)
@@ -859,20 +759,10 @@ def admin_cursos_assign(request):
     return JsonResponse({"ok": True, "teachers": teacher_ids})
 
 
-# ─────────────────────────────
-# STUBS для частей, которые пока не реализованы (чтобы не было 404)
-# ─────────────────────────────
 @csrf_exempt
 @require_admin_token
 @require_http_methods(["GET", "POST"])
 def admin_fixed_nonlective(request):
-    """
-    GET  /meatze/v5/admin/fixed-nonlective?adm=...
-         → {"years": {"2025": ["01-13","08-15", ...], ...}}
-
-    POST /meatze/v5/admin/fixed-nonlective?adm=...
-         тело: {"years": {"2025": "13/01, 15/01-20/01", "2026": "10/01, 20/06"}}
-    """
     CACHE_KEY = "mz_fixed_nonlective"
 
     if request.method == "GET":
@@ -892,8 +782,6 @@ def admin_fixed_nonlective(request):
                 norm[str(y)] = []
         return JsonResponse({"years": norm})
 
-    # ----- POST -----
-    # ✅ 1) parse JSON body
     try:
         raw = (request.body or b"").decode("utf-8").strip()
         payload = json.loads(raw) if raw else {}
@@ -909,7 +797,6 @@ def admin_fixed_nonlective(request):
         if not token:
             return []
 
-        # 01/08-31/08
         m = re.match(r"^(\d{1,2})/(\d{1,2})\s*-\s*(\d{1,2})/(\d{1,2})$", token)
         if m:
             d1, mo1, d2, mo2 = map(int, m.groups())
@@ -926,7 +813,6 @@ def admin_fixed_nonlective(request):
                 cur += timedelta(days=1)
             return out
 
-        # 10-20/09
         m = re.match(r"^(\d{1,2})\s*-\s*(\d{1,2})/(\d{1,2})$", token)
         if m:
             d1, d2, mo = map(int, m.groups())
@@ -943,7 +829,6 @@ def admin_fixed_nonlective(request):
                 cur += timedelta(days=1)
             return out
 
-        # 13/01
         m = re.match(r"^(\d{1,2})/(\d{1,2})$", token)
         if m:
             d, mo = map(int, m.groups())
@@ -983,32 +868,17 @@ def admin_fixed_nonlective(request):
 
     return JsonResponse({"ok": True, "years": new_years})
 
+
 @require_admin_token
 @require_http_methods(["GET"])
 def admin_holidays(request, year: int):
-    """
-    GET /meatze/v5/admin/holidays/<year>?adm=...
-    Возвращает кэшированный список праздников ES/ES-PV для фронта.
-
-    Формат ответа:
-    {
-      "year": 2025,
-      "items": [
-        {"date": "2025-01-01", "name": "Año Nuevo"},
-        ...
-      ]
-    }
-    """
-
     year = int(year)
     CACHE_KEY = f"mz_holidays_{year}"
 
-    # 1) пробуем взять из кеша
     cached = cache.get(CACHE_KEY)
     if cached is not None:
         return JsonResponse({"year": year, "items": cached})
 
-    # 2) если нет в кеше — тянем из Nager.Date
     items = []
     try:
         r = requests.get(
@@ -1020,54 +890,43 @@ def admin_holidays(request, year: int):
 
         for h in raw:
             counties = h.get("counties") or []
-            # если список провинций есть, берём только те, где есть ES-PV
             if counties and "ES-PV" not in counties:
                 continue
 
             items.append({
-                "date": h.get("date"),                          # YYYY-MM-DD
-                "name": h.get("localName") or h.get("name", ""),  # локальное имя
+                "date": h.get("date"),
+                "name": h.get("localName") or h.get("name", ""),
             })
 
     except Exception as e:
-        # на всякий случай не роняем фронт — просто пустой список
         print("HOLIDAYS ERROR:", e)
         items = []
 
-    # 3) кладём в кеш, например, на сутки/месяц (можно и без TTL — на весь год)
-    cache.set(CACHE_KEY, items, 60 * 60 * 24 * 30)  # 30 дней
+    cache.set(CACHE_KEY, items, 60 * 60 * 24 * 30)
 
     return JsonResponse({"year": year, "items": items})
-
 
 
 @require_admin_token
 @require_http_methods(["GET"])
 def news_subscribers(request):
-    """GET /meatze/v5/news/subscribers — заглушка."""
     return JsonResponse({"items": []})
 
 
 @require_admin_token
 @require_http_methods(["GET"])
 def news_wa_inbox(request):
-    """GET /meatze/v5/news/wa-inbox — заглушка."""
     return JsonResponse({"items": []})
-    
+
+
 @csrf_exempt
 @require_http_methods(["GET", "POST"])
 def curso_horario(request, codigo):
-    """
-    GET  /meatze/v5/curso/<codigo>/horario?tipo=curso|practica&grupo=...
-    POST /meatze/v5/curso/<codigo>/horario?adm=...
-         тело: {items:[...], tipo?, grupo?}
-    """
     try:
         curso = Curso.objects.get(codigo=codigo)
     except Curso.DoesNotExist:
         return JsonResponse({"error": "not_found"}, status=404)
 
-    # ---------- READ ----------
     if request.method == "GET":
         tipo = (request.GET.get("tipo") or "").strip() or None
         grupo = (request.GET.get("grupo") or "").strip() or None
@@ -1076,13 +935,11 @@ def curso_horario(request, codigo):
 
         if tipo == "curso":
             qs = qs.filter(Q(tipo__isnull=True) | Q(tipo="") | Q(tipo="curso"))
-
         elif tipo:
             qs = qs.filter(tipo=tipo)
 
         if grupo:
             qs = qs.filter(grupo=grupo)
-
 
         items = []
         for h in qs:
@@ -1099,8 +956,6 @@ def curso_horario(request, codigo):
 
         return JsonResponse({"codigo": codigo, "items": items})
 
-    # ---------- WRITE ----------
-    # простая проверка админ-токена (как у тебя в require_admin_token)
     token = request.GET.get("adm") or request.headers.get("X-MZ-Admin")
     expected = getattr(settings, "MEATZE_ADMIN_PASS", "MeatzeIT")
     if token != expected:
@@ -1115,18 +970,14 @@ def curso_horario(request, codigo):
     if not isinstance(items, list):
         return JsonResponse({"ok": False, "error": "items_invalid"}, status=400)
 
-    # Текущий слой (теория / практика / группа)
     current_tipo = (payload.get("tipo") or "").strip() or (request.GET.get("tipo") or "").strip()
     current_grupo = (payload.get("grupo") or "").strip() or (request.GET.get("grupo") or "").strip()
 
-    # запасной вариант: если фронт не положил в корень, берём из первого элемента, если есть
     if not current_tipo and items:
         current_tipo = (items[0].get("tipo") or "").strip()
     if not current_grupo and items:
         current_grupo = (items[0].get("grupo") or "").strip()
 
-
-    # Удаляем ТОЛЬКО текущий слой, а не всё расписание курса
     qs = Horario.objects.filter(curso=curso)
 
     if current_tipo == "curso" or current_tipo == "":
@@ -1138,7 +989,6 @@ def curso_horario(request, codigo):
         qs = qs.filter(grupo=current_grupo)
 
     qs.delete()
-
 
     created = 0
     for it in items:
@@ -1174,13 +1024,6 @@ def curso_horario(request, codigo):
 @require_admin_token
 @require_http_methods(["POST"])
 def admin_curso_fecha_inicio(request, codigo: str):
-    """
-    POST /meatze/v5/admin/curso/<codigo>/fecha_inicio?adm=...
-
-    тело: { "fecha": "YYYY-MM-DD" }
-
-    Обновляет поле fecha_inicio у курса с данным código.
-    """
     try:
         curso = Curso.objects.get(codigo=codigo)
     except Curso.DoesNotExist:
@@ -1193,8 +1036,6 @@ def admin_curso_fecha_inicio(request, codigo: str):
 
     fecha_str = (payload.get("fecha") or "").strip()
     if not fecha_str:
-        # можно либо очищать дату, либо считать ошибкой.
-        # Я сделаю "очистить", чтобы было гибко:
         curso.fecha_inicio = None
         curso.save(update_fields=["fecha_inicio"])
         return JsonResponse({"ok": True, "fecha": None})
@@ -1208,7 +1049,8 @@ def admin_curso_fecha_inicio(request, codigo: str):
     curso.save(update_fields=["fecha_inicio"])
 
     return JsonResponse({"ok": True, "fecha": curso.fecha_inicio.isoformat()})
-    
+
+
 @api_view(["POST"])
 @require_admin_token
 def curso_horario_save(request, codigo):
@@ -1224,7 +1066,6 @@ def curso_horario_save(request, codigo):
     current_tipo = (request.data.get("tipo") or "").strip()
     current_grupo = (request.data.get("grupo") or "").strip()
 
-    # запасной вариант: если фронт не положил в корень
     if not current_tipo and items:
         current_tipo = (items[0].get("tipo") or "").strip()
     if not current_grupo and items:
@@ -1241,7 +1082,6 @@ def curso_horario_save(request, codigo):
         qs = qs.filter(grupo=current_grupo)
 
     qs.delete()
-
 
     created = 0
     for it in items:
@@ -1268,6 +1108,7 @@ def curso_horario_save(request, codigo):
 
 # api/views.py
 from utils.auto_horario import auto_generate_schedule
+
 @csrf_exempt
 @require_http_methods(["POST"])
 @require_admin_token
@@ -1276,7 +1117,6 @@ def admin_auto_schedule(request, codigo):
     tipo = (payload.get("tipo") or "curso").strip()     # "curso" / "practica"
     grupo = (payload.get("grupo") or "").strip()        # для practica тут должен быть alumno_id
 
-    # если генерируешь практику — без grupo нельзя
     if tipo == "practica" and not grupo:
         return JsonResponse({"ok": False, "error": "grupo_required_for_practica"}, status=400)
 
@@ -1313,15 +1153,10 @@ class AdminAuthMiddleware:
         return self.get_response(request)
 
 
-# api/views.py
 @csrf_exempt
 @require_http_methods(["POST"])
 @require_admin_token
 def curso_horario_bulk_delete(request, codigo):
-    """
-    POST /meatze/v5/curso/<codigo>/horario/bulk-delete?adm=...
-    {fechas:["2025-01-10", "..."]} → удаляет эти даты у данного курса
-    """
     try:
         curso = Curso.objects.get(codigo=codigo)
     except Curso.DoesNotExist:
@@ -1361,19 +1196,13 @@ def curso_horario_bulk_delete(request, codigo):
     return JsonResponse({"ok": True, "deleted": deleted})
 
 
-
-
 @require_admin_token
 @require_http_methods(["GET"])
 def curso_alumnos(request, codigo: str):
-    """
-    GET /meatze/v5/curso/<codigo>/alumnos?adm=...
-    Возвращает список ALUMNOS (без teachers).
-    """
     enrols = (
         Enrol.objects
         .filter(codigo=codigo)
-        .exclude(role="teacher")          # <-- главное: учителей убираем
+        .exclude(role="teacher")
         .select_related("user")
         .order_by("user__first_name", "user__last_name", "user__email")
     )
@@ -1382,8 +1211,8 @@ def curso_alumnos(request, codigo: str):
     for e in enrols:
         u = e.user
         items.append({
-            "user_id": u.id,              # <-- фронт ждёт user_id
-            "id": u.id,                   # <-- можно оставить для совместимости
+            "user_id": u.id,
+            "id": u.id,
             "email": u.email or u.username,
             "nombre": u.get_full_name() or (u.email or u.username),
             "role": e.role,
@@ -1391,565 +1220,6 @@ def curso_alumnos(request, codigo: str):
 
     return JsonResponse({"items": items})
 
-import zipfile
-from lxml import etree
-
-W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-NS = {"w": W_NS}
-
-# ===== DOCX markers (module-level) =====
-COURSE_INFO_MARKERS = [
-    "Nombre curso:",
-    "Código curso:",
-    "Año académico:",
-    "Fechas impartición:",
-    "Horario:",
-    "Entidad:",
-    "Tipo formación:",
-]
-
-import zipfile
-from lxml import etree
-from pathlib import Path
-
-W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-NS = {"w": W_NS}
-
-COURSE_INFO_MARKERS = [
-    "Nombre curso:",
-    "Código curso:",
-    "Año académico:",
-    "Fechas impartición:",
-    "Horario:",
-    "Entidad:",
-    "Tipo formación:",
-]
-
-def _patch_courseinfo_fonts_and_borders(
-    docx_path: Path,
-    markers=None,
-    font_name="Trebuchet MS",
-    font_size_pt=11,
-    border_size=8,
-    border_color="000000",
-    bold_labels=True,
-    row_height_cm=0.7,          # ✅ НОВОЕ
-    v_align="center",           # ✅ НОВОЕ: center / top / bottom
-):
-    if markers is None:
-        markers = COURSE_INFO_MARKERS
-
-    half_points = str(int(font_size_pt * 2))
-
-    def cm_to_twips(cm: float) -> str:
-        # 1 inch = 2.54 cm, 1 inch = 1440 twips
-        tw = int(round((cm / 2.54) * 1440))
-        return str(max(tw, 1))
-
-    row_twips = cm_to_twips(row_height_cm)
-
-    def q(tag):
-        return f"{{{W_NS}}}{tag}"
-
-    def ensure(parent, tag, insert0=False):
-        el = parent.find(f"w:{tag}", NS)
-        if el is None:
-            el = etree.Element(q(tag))
-            if insert0 and len(parent):
-                parent.insert(0, el)
-            else:
-                parent.append(el)
-        return el
-
-    def set_run_style(run_el, make_bold=None):
-        rpr = run_el.find("w:rPr", NS)
-        if rpr is None:
-            rpr = etree.Element(q("rPr"))
-            run_el.insert(0, rpr)
-
-        rfonts = rpr.find("w:rFonts", NS)
-        if rfonts is None:
-            rfonts = etree.Element(q("rFonts"))
-            rpr.insert(0, rfonts)
-
-        rfonts.set(q("ascii"), font_name)
-        rfonts.set(q("hAnsi"), font_name)
-        rfonts.set(q("eastAsia"), font_name)
-        rfonts.set(q("cs"), font_name)
-
-        sz = rpr.find("w:sz", NS)
-        if sz is None:
-            sz = etree.Element(q("sz"))
-            rpr.append(sz)
-        sz.set(q("val"), half_points)
-
-        szcs = rpr.find("w:szCs", NS)
-        if szcs is None:
-            szcs = etree.Element(q("szCs"))
-            rpr.append(szcs)
-        szcs.set(q("val"), half_points)
-
-        if make_bold is not None:
-            if make_bold:
-                ensure(rpr, "b")
-            else:
-                b = rpr.find("w:b", NS)
-                if b is not None:
-                    rpr.remove(b)
-
-    def node_text(node):
-        parts = node.xpath(".//w:t/text()", namespaces=NS)
-        return " ".join(" ".join(parts).split()).strip()
-
-    def is_course_table(tbl):
-        found = set()
-        for tr in tbl.xpath("./w:tr", namespaces=NS):
-            tcs = tr.xpath("./w:tc", namespaces=NS)
-            if not tcs:
-                continue
-            left = node_text(tcs[0])
-            for m in markers:
-                if left.startswith(m):
-                    found.add(m)
-        return len(found) >= 3
-
-    def set_table_borders(tbl):
-        tblPr = tbl.find("w:tblPr", NS)
-        if tblPr is None:
-            tblPr = etree.Element(q("tblPr"))
-            tbl.insert(0, tblPr)
-
-        borders = tblPr.find("w:tblBorders", NS)
-        if borders is None:
-            borders = etree.Element(q("tblBorders"))
-            tblPr.append(borders)
-
-        for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
-            el = borders.find(f"w:{edge}", NS)
-            if el is None:
-                el = etree.Element(q(edge))
-                borders.append(el)
-            el.set(q("val"), "single")
-            el.set(q("sz"), str(border_size))
-            el.set(q("space"), "0")
-            el.set(q("color"), border_color)
-
-    def set_row_height(tr):
-        trPr = tr.find("w:trPr", NS)
-        if trPr is None:
-            trPr = etree.Element(q("trPr"))
-            tr.insert(0, trPr)
-
-        trH = trPr.find("w:trHeight", NS)
-        if trH is None:
-            trH = etree.Element(q("trHeight"))
-            trPr.append(trH)
-
-        trH.set(q("val"), row_twips)
-        trH.set(q("hRule"), "exact")   # ✅ именно EXACT
-
-    def set_cell_valign(tc):
-        tcPr = tc.find("w:tcPr", NS)
-        if tcPr is None:
-            tcPr = etree.Element(q("tcPr"))
-            tc.insert(0, tcPr)
-
-        vA = tcPr.find("w:vAlign", NS)
-        if vA is None:
-            vA = etree.Element(q("vAlign"))
-            tcPr.append(vA)
-        vA.set(q("val"), v_align)
-
-        # ✅ Убираем лишние отступы параграфов, чтобы “не прилипало к верху”
-        for p in tc.xpath(".//w:p", namespaces=NS):
-            pPr = p.find("w:pPr", NS)
-            if pPr is None:
-                pPr = etree.Element(q("pPr"))
-                p.insert(0, pPr)
-
-            spacing = pPr.find("w:spacing", NS)
-            if spacing is None:
-                spacing = etree.Element(q("spacing"))
-                pPr.append(spacing)
-            spacing.set(q("before"), "0")
-            spacing.set(q("after"), "0")
-
-    # ---- чтение/запись zip ----
-    with zipfile.ZipFile(docx_path, "r") as zin:
-        files = {name: zin.read(name) for name in zin.namelist()}
-
-    xml = files.get("word/document.xml")
-    if not xml:
-        return 0, 0
-
-    root = etree.fromstring(xml)
-
-    hits_tables = 0
-    hits_paras = 0
-
-    # 1) TABLE курс-инфо: бордеры + шрифт + высота строк + vAlign
-    for tbl in root.xpath(".//w:tbl", namespaces=NS):
-        if not is_course_table(tbl):
-            continue
-
-        hits_tables += 1
-        set_table_borders(tbl)
-
-        for tr in tbl.xpath("./w:tr", namespaces=NS):
-            set_row_height(tr)
-            for tc in tr.xpath("./w:tc", namespaces=NS):
-                set_cell_valign(tc)
-
-        # шрифт всем runs внутри таблицы
-        for r in tbl.xpath(".//w:r", namespaces=NS):
-            set_run_style(r, make_bold=None)
-
-        # жирным лейблы в первой колонке
-        if bold_labels:
-            for tr in tbl.xpath("./w:tr", namespaces=NS):
-                tcs = tr.xpath("./w:tc", namespaces=NS)
-                if not tcs:
-                    continue
-                left_tc = tcs[0]
-                left_txt = node_text(left_tc)
-                if any(left_txt.startswith(m) for m in markers):
-                    for r in left_tc.xpath(".//w:r", namespaces=NS):
-                        set_run_style(r, make_bold=True)
-
-        break
-
-    # 2) Параграфы-строки (если LO не таблицей)
-    for p in root.xpath(".//w:p", namespaces=NS):
-        full = node_text(p)
-        if full and any(full.startswith(m) for m in markers):
-            for r in p.xpath(".//w:r", namespaces=NS):
-                set_run_style(r, make_bold=None)
-            hits_paras += 1
-
-    files["word/document.xml"] = etree.tostring(
-        root, xml_declaration=True, encoding="UTF-8", standalone="yes"
-    )
-
-    with zipfile.ZipFile(docx_path, "w", compression=zipfile.ZIP_DEFLATED) as zout:
-        for name, data in files.items():
-            zout.writestr(name, data)
-
-    return hits_tables, hits_paras
-
-
-def _patch_docx_courseinfo_paragraphs(
-    docx_path: Path,
-    markers=None,
-    font_name="Trebuchet MS",
-    font_size_pt=11,
-    bold_labels=True,   # ✅ ДОБАВИЛИ
-):
-    # ✅ если markers не передали — берём дефолт
-    if markers is None:
-        markers = globals().get("COURSE_INFO_MARKERS") or [
-            "Nombre curso:",
-            "Código curso:",
-            "Año académico:",
-            "Fechas impartición:",
-            "Horario:",
-            "Entidad:",
-            "Tipo formación:",
-        ]
-
-
-    # ✅ на всякий случай нормализуем
-    markers = [str(m).strip() for m in (markers or []) if str(m).strip()]
-
-    half_points = str(int(font_size_pt * 2))
-
-    def ensure_rpr(run_el):
-        rpr = run_el.find("w:rPr", NS)
-        if rpr is None:
-            rpr = etree.Element(f"{{{W_NS}}}rPr")
-            run_el.insert(0, rpr)
-        return rpr
-
-    def set_fonts(rpr):
-        rfonts = rpr.find("w:rFonts", NS)
-        if rfonts is None:
-            rfonts = etree.Element(f"{{{W_NS}}}rFonts")
-            rpr.insert(0, rfonts)
-        rfonts.set(f"{{{W_NS}}}ascii", font_name)
-        rfonts.set(f"{{{W_NS}}}hAnsi", font_name)
-        rfonts.set(f"{{{W_NS}}}eastAsia", font_name)
-        rfonts.set(f"{{{W_NS}}}cs", font_name)
-
-        sz = rpr.find("w:sz", NS)
-        if sz is None:
-            sz = etree.Element(f"{{{W_NS}}}sz")
-            rpr.append(sz)
-        sz.set(f"{{{W_NS}}}val", half_points)
-
-        szcs = rpr.find("w:szCs", NS)
-        if szcs is None:
-            szcs = etree.Element(f"{{{W_NS}}}szCs")
-            rpr.append(szcs)
-        szcs.set(f"{{{W_NS}}}val", half_points)
-
-    def set_bold(rpr, on=True):
-        b = rpr.find("w:b", NS)
-        if b is None:
-            b = etree.Element(f"{{{W_NS}}}b")
-            rpr.append(b)
-        b.set(f"{{{W_NS}}}val", "1" if on else "0")
-
-    hits = 0
-
-    with zipfile.ZipFile(docx_path, "r") as zin:
-        files = {name: zin.read(name) for name in zin.namelist()}
-
-    xml = files.get("word/document.xml")
-    if not xml:
-        logger.warning("DOCX XML: word/document.xml not found")
-        return
-
-    root = etree.fromstring(xml)
-
-    # Ищем все абзацы w:p (они есть и в body и внутри w:txbxContent)
-    for p in root.xpath(".//w:p", namespaces=NS):
-        # склеиваем весь текст абзаца
-        texts = [t.text for t in p.xpath(".//w:t", namespaces=NS) if t.text]
-        full = " ".join(" ".join(texts).split()).strip()
-        if not full:
-            continue
-
-        if any(full.startswith(m) for m in markers):
-            # применяем стиль ко всем runs этого абзаца
-            runs = p.xpath(".//w:r", namespaces=NS)
-            for r in runs:
-                rpr = ensure_rpr(r)
-                set_fonts(rpr)
-
-            # если хочешь: сам маркер сделать bold (аккуратно)
-            # (обычно первый run и есть маркер)
-            if bold_labels and runs:
-                rpr0 = ensure_rpr(runs[0])
-                set_bold(rpr0, True)
-
-            hits += 1
-
-    files["word/document.xml"] = etree.tostring(
-        root, xml_declaration=True, encoding="UTF-8", standalone="yes"
-    )
-
-    with zipfile.ZipFile(docx_path, "w", compression=zipfile.ZIP_DEFLATED) as zout:
-        for name, data in files.items():
-            zout.writestr(name, data)
-
-    logger.warning("DOCX XML: courseinfo paragraphs patched = %s", hits)
-
-
-from docx.shared import Cm, Pt
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-
-def _inject_headers_footers(docx_path: Path):
-    LOGOS = getattr(settings, "MEATZE_DOCX_LOGOS", {})
-
-    doc = Document(str(docx_path))
-    section = doc.sections[0]
-
-    # Принудительные поля секции (чтобы всё влазило и не было "узко")
-    section.left_margin  = Cm(1.0)
-    section.right_margin = Cm(1.0)
-    section.top_margin   = Cm(1.2)
-    section.bottom_margin= Cm(1.2)
-
-    usable_width = section.page_width - section.left_margin - section.right_margin
-
-    # ================= HEADER =================
-    header = section.header
-    h_table = header.add_table(rows=1, cols=2, width=usable_width)
-    col_left_width  = int(usable_width * 0.5)
-    col_right_width = int(usable_width * 0.5)
-
-    h_table.columns[0].width = col_left_width
-    h_table.columns[1].width = col_right_width
-
-    cell_left, cell_right = h_table.rows[0].cells
-
-    lanbide = LOGOS.get("lanbide")
-    if lanbide and Path(lanbide).exists():
-        p_l = cell_left.paragraphs[0]
-        p_l.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        p_l.paragraph_format.space_before = Pt(0)
-        p_l.paragraph_format.space_after  = Pt(0)
-        p_l.add_run().add_picture(lanbide, width=Cm(2.5))
-
-    euskadi = LOGOS.get("euskadi")
-    if euskadi and Path(euskadi).exists():
-        p_r = cell_right.paragraphs[0]
-        p_r.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        p_r.paragraph_format.space_before = Pt(0)
-        p_r.paragraph_format.space_after  = Pt(0)
-        p_r.add_run().add_picture(euskadi, width=Cm(9.5))
-
-    # ================= FOOTER =================
-    footer = section.footer
-    for p in footer.paragraphs:
-        p.text = ""
-
-    # ✅ Поднять футер (не влияет на ширину таблиц в документе)
-    section.footer_distance = Cm(1.2)  # попробуй 1.0..1.5
-
-    # ✅ ОДНА строка, без "пробела" сверху
-    f_table = footer.add_table(rows=1, cols=1, width=usable_width)
-    f_table.autofit = False
-
-    eu = LOGOS.get("eu")
-    if eu and Path(eu).exists():
-        p = f_table.rows[0].cells[0].paragraphs[0]
-        p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        p.paragraph_format.space_before = Pt(0)
-        p.paragraph_format.space_after  = Pt(0)
-        p.add_run().add_picture(eu, width=Cm(3.2))
-
-    doc.save(str(docx_path))
-
-
-
-@csrf_exempt
-@require_http_methods(["POST"])
-@require_admin_token
-def export_docx_graphic(request):
-    try:
-        payload = json.loads(request.body or "{}")
-    except json.JSONDecodeError:
-        return JsonResponse({"ok": False, "error": "json_invalid"}, status=400)
-
-    codigo = (payload.get("codigo") or "").strip().upper()
-    tipo   = (payload.get("tipo") or "curso").strip().lower()
-    grupo  = (payload.get("grupo") or "").strip()
-    vacaciones = payload.get("vacaciones") or []
-
-    if not codigo:
-        return JsonResponse({"ok": False, "error": "codigo_required"}, status=400)
-
-    curso = get_object_or_404(Curso, codigo=codigo)
-
-    # ✅ ВОТ ГЛАВНОЕ: берем HTML из payload, если он есть
-    html = (payload.get("html") or "").strip()
-
-    # fallback: только если html не пришёл — тогда рендерим серверный шаблон
-    if not html:
-        header = build_horario_header_from_db(curso, tipo, grupo)
-        mods   = build_modules_legend_from_db(curso)
-        html = render_to_string("exports/calendario_docx.html", {
-            "curso": curso,
-            "header_main": header["main"],
-            "header_exceptions": header["exceptions"],
-            "modules": mods,
-            "vacaciones": vacaciones,
-        })
-
-    filename = (payload.get("filename") or "calendario.docx").strip()
-    if not filename.lower().endswith(".docx"):
-        filename += ".docx"
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmpdir_path = Path(tmpdir)
-        html_path = tmpdir_path / "calendario.html"
-        html_path.write_text(html, encoding="utf-8")
-
-        if not LIBREOFFICE_BIN or not Path(LIBREOFFICE_BIN).exists():
-            return JsonResponse({"ok": False, "error": "soffice_not_found", "bin": LIBREOFFICE_BIN}, status=503)
-
-
-        # 1) HTML -> DOCX через LibreOffice
-        cmd = [
-            LIBREOFFICE_BIN,
-            "--headless", "--nologo",
-            "--convert-to", "docx:MS Word 2007 XML",
-            "--outdir", str(tmpdir_path),
-            str(html_path),
-        ]
-        
-        env = os.environ.copy()
-        env["PATH"] = env.get("PATH") or "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-
-        proc = subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            cwd=tmpdir,
-            timeout=120,
-            env=env,
-        )
-        logger.info("LO stdout: %s", proc.stdout.decode(errors="ignore"))
-        logger.info("LO stderr: %s", proc.stderr.decode(errors="ignore"))
-
-        if proc.returncode != 0:
-            return JsonResponse(
-                {
-                    "ok": False,
-                    "error": "soffice_failed",
-                    "stdout": proc.stdout.decode(errors="ignore"),
-                    "stderr": proc.stderr.decode(errors="ignore"),
-                },
-                status=500,
-            )
-
-        docx_files = list(tmpdir_path.glob("*.docx"))
-        if not docx_files:
-            return JsonResponse({"ok": False, "error": "docx_not_generated"}, status=500)
-
-        docx_path = docx_files[0]
-
-        # после docx_path = docx_files[0]
-
-        # branding как было
-        try:
-            _inject_headers_footers(docx_path)
-        except Exception:
-            logger.exception("Failed to inject headers/footers")
-
-        # patch как было
-        try:
-            _patch_docx_courseinfo_paragraphs(docx_path, font_size_pt=11)
-        except Exception:
-            logger.exception("DOCX patch failed, continuing")
-
-        doc = Document(str(docx_path))
-
-        # 1) легенда модулей ИЗ БД
-        try:
-            mods = build_modules_legend_from_db(curso)   # <- DB
-            legend = payload.get("legend") or []
-            _add_modules_legend_blocks(doc, curso, legend)
-        except Exception:
-            logger.exception("Failed to add modules legend table")
-
-        # 2) vacaciones / no lectivos — как раньше (payload) или тоже DB если сделаешь
-        try:
-            _add_legend_nonlective(doc, vacaciones)
-        except Exception:
-            logger.exception("Failed to add nonlective legend")
-
-        doc.save(str(docx_path))
-
-        # XML-бодер патч (если он “про таблицу курса”)
-        try:
-            _patch_courseinfo_fonts_and_borders(docx_path, font_size_pt=12, row_height_cm=0.7, v_align="center")
-        except Exception:
-            logger.exception("DOCX border patch failed")
-        except Exception as e:
-            logger.exception("Failed to add nonlective legend: %s", e)
-
-        data = docx_path.read_bytes()
-
-    resp = HttpResponse(
-        data,
-        content_type=(
-            "application/vnd.openxmlformats-officedocument."
-            "wordprocessingml.document"
-        ),
-    )
-    resp["Content-Disposition"] = f"attachment; filename=\"{filename}\""
-    return resp
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -1959,15 +1229,10 @@ def request_pin(request):
     if not email:
         return Response({"message": "Email requerido"}, status=400)
 
-    # генерируем 6 цифр
     pin = f"{random.randint(0, 999999):06d}"
-
-    # сохраняем
     LoginPIN.objects.create(email=email, pin=pin)
 
-    # создаём пользователя, если нет
     user, created = User.objects.get_or_create(email=email, defaults={"username": email})
-
 
     PendingRole.objects.get_or_create(
         user=user,
@@ -1976,8 +1241,6 @@ def request_pin(request):
         defaults={"requested_role": "unknown"},
     )
 
-
-    # отправляем письмо
     send_mail(
         subject="Tu PIN de acceso a MEATZE",
         message=f"Tu código PIN es: {pin}\nVálido durante 10 minutos.",
@@ -1987,3 +1250,168 @@ def request_pin(request):
     )
 
     return Response({"ok": True, "message": "PIN enviado"})
+    
+def _effective_nonlective_years(curso: Curso) -> dict[str, list[str]]:
+    if getattr(curso, "use_global_nonlective", True):
+        return _get_global_nonlective_years()
+    return _normalize_years_mmdd(curso.nonlective_years or {})
+
+@require_admin_token
+@require_http_methods(["GET"])
+def admin_curso_nonlective_effective(request, codigo: str):
+    curso = get_object_or_404(Curso, codigo=(codigo or "").strip().upper())
+    years = _effective_nonlective_years(curso)
+    return JsonResponse({"ok": True, "codigo": curso.codigo, "years": years})
+    
+@require_admin_token
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def admin_curso_nonlective(request, codigo: str):
+    curso = get_object_or_404(Curso, codigo=(codigo or "").strip().upper())
+
+    if request.method == "GET":
+        global_years = _get_global_nonlective_years()
+
+        # курс хранит mm-dd list, но вдруг там старые строки — нормализуем на лету
+        course_years = curso.nonlective_years or {}
+        course_years = _normalize_years_mmdd(course_years)
+
+        return JsonResponse({
+            "ok": True,
+            "codigo": curso.codigo,
+            "use_global": bool(getattr(curso, "use_global_nonlective", True)),
+            "years": course_years,
+            "global_years": global_years,
+        })
+
+    # POST
+    try:
+        payload = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"ok": False, "error": "json_invalid"}, status=400)
+
+    use_global = payload.get("use_global")
+    years_raw = payload.get("years")
+
+    if use_global is None:
+        # можно не присылать — тогда не меняем
+        use_global = getattr(curso, "use_global_nonlective", True)
+    else:
+        use_global = bool(use_global)
+
+    if years_raw is None:
+        years_norm = _normalize_years_mmdd(curso.nonlective_years or {})
+    else:
+        years_norm = _normalize_years_mmdd(years_raw)
+
+    # сохраняем
+    curso.use_global_nonlective = use_global
+    curso.nonlective_years = years_norm
+    curso.save(update_fields=["use_global_nonlective", "nonlective_years"])
+
+    return JsonResponse({
+        "ok": True,
+        "codigo": curso.codigo,
+        "use_global": curso.use_global_nonlective,
+        "years": curso.nonlective_years,
+    })
+    
+def _normalize_years_mmdd(years_raw) -> dict[str, list[str]]:
+    if not isinstance(years_raw, dict):
+        return {}
+
+    def is_mmdd(s: str) -> bool:
+        return bool(re.match(r"^\d{2}-\d{2}$", s or ""))
+
+    def expand_token_to_dates(y: int, token: str) -> list[str]:
+        token = (token or "").strip()
+        if not token:
+            return []
+
+        # DD/MM - DD/MM
+        m = re.match(r"^(\d{1,2})/(\d{1,2})\s*-\s*(\d{1,2})/(\d{1,2})$", token)
+        if m:
+            d1, mo1, d2, mo2 = map(int, m.groups())
+            try:
+                start = date(y, mo1, d1)
+                end = date(y, mo2, d2)
+            except ValueError:
+                return []
+            if end < start:
+                return []
+            out, cur = [], start
+            while cur <= end:
+                out.append(cur.strftime("%m-%d"))
+                cur += timedelta(days=1)
+            return out
+
+        # DD-DD/MM
+        m = re.match(r"^(\d{1,2})\s*-\s*(\d{1,2})/(\d{1,2})$", token)
+        if m:
+            d1, d2, mo = map(int, m.groups())
+            try:
+                start = date(y, mo, d1)
+                end = date(y, mo, d2)
+            except ValueError:
+                return []
+            if end < start:
+                return []
+            out, cur = [], start
+            while cur <= end:
+                out.append(cur.strftime("%m-%d"))
+                cur += timedelta(days=1)
+            return out
+
+        # DD/MM
+        m = re.match(r"^(\d{1,2})/(\d{1,2})$", token)
+        if m:
+            d, mo = map(int, m.groups())
+            try:
+                dt = date(y, mo, d)
+            except ValueError:
+                return []
+            return [dt.strftime("%m-%d")]
+
+        # MM-DD (уже норм)
+        if is_mmdd(token):
+            return [token]
+
+        return []
+
+    out: dict[str, list[str]] = {}
+    for y_str, spec in years_raw.items():
+        try:
+            y = int(str(y_str))
+        except ValueError:
+            continue
+
+        # вход может быть:
+        # 1) list ["03-24","03-25"]  или ["24/03","25/03","01/04-05/04"]
+        # 2) string "24/03, 01/04-05/04"
+        if isinstance(spec, list):
+            tokens = [str(x).strip() for x in spec if str(x).strip()]
+        else:
+            tokens = [t.strip() for t in str(spec).split(",") if t.strip()]
+
+        mmdd_set = set()
+        for t in tokens:
+            for mmdd in expand_token_to_dates(y, t):
+                mmdd_set.add(mmdd)
+
+        out[str(y)] = sorted(mmdd_set)
+
+    return out
+    
+def _get_global_nonlective_years() -> dict[str, list[str]]:
+    cfg = MZSetting.objects.filter(key="fixed_nonlective").first()
+    years = (cfg.value if cfg else {}) or {}
+    out: dict[str, list[str]] = {}
+    for y, v in years.items():
+        if isinstance(v, list):
+            out[str(y)] = [str(x).strip() for x in v if str(x).strip()]
+        elif isinstance(v, str):
+            # на всякий, если старое попадётся
+            out[str(y)] = [s.strip() for s in v.split(",") if s.strip()]
+        else:
+            out[str(y)] = []
+    return out
