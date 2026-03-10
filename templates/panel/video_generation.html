@@ -1,0 +1,435 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="mz-card" style="max-width:1200px;margin:0 auto;display:grid;gap:18px;">
+
+  <div>
+    <h2 style="margin:0 0 8px;">AI · Imagen y vídeo</h2>
+    <p class="mz-help" style="margin:0;">
+      Guarda imágenes en tu biblioteca, genera imágenes nuevas y úsales luego como fuente para vídeo.
+    </p>
+  </div>
+
+  <div class="mz-row" style="grid-template-columns:1.2fr .8fr;gap:18px;align-items:start;">
+    <div class="mz-card" style="padding:16px;">
+      <h3 style="margin:0 0 12px;">Generación de vídeo</h3>
+
+      <form id="mz-video-gen-form" class="mz-row" style="grid-template-columns:1fr 1fr;gap:14px;" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ video_form.source_asset_id }}
+
+        <label style="grid-column:1 / -1;">
+          <span class="mz-help">Subir imagen nueva</span>
+          {{ video_form.source_image }}
+        </label>
+
+        <label style="grid-column:1 / -1;">
+          <span class="mz-help">Prompt</span>
+          {{ video_form.prompt }}
+        </label>
+
+        <label>
+          <span class="mz-help">Duración (segundos)</span>
+          {{ video_form.seconds }}
+        </label>
+
+        <label>
+          <span class="mz-help">Calidad</span>
+          {{ video_form.quality }}
+        </label>
+
+        <label>
+          <span class="mz-help">Formato</span>
+          {{ video_form.aspect_ratio }}
+        </label>
+
+        <div class="mz-pill" id="mz-video-selected-asset" style="grid-column:1 / -1;padding:10px;display:none;">
+          <strong>Fuente seleccionada:</strong>
+          <span class="mz-help" data-role="label"></span>
+          <button type="button" class="mz-btn" id="mz-video-clear-asset">Quitar</button>
+        </div>
+
+        <div style="grid-column:1 / -1;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <button type="submit" class="mz-btn mz-btn-primary">Generar vídeo</button>
+          <span id="mz-video-gen-state" class="mz-help">Listo</span>
+        </div>
+      </form>
+    </div>
+
+    <div class="mz-card" style="padding:16px;">
+      <h3 style="margin:0 0 12px;">Generación de imagen</h3>
+
+      <form id="mz-image-gen-form" class="mz-row" style="grid-template-columns:1fr;gap:14px;" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ image_form.source_asset_1_id }}
+        {{ image_form.source_asset_2_id }}
+        {{ image_form.source_asset_3_id }}
+
+        <label>
+          <span class="mz-help">Subir imagen 1</span>
+          {{ image_form.source_image_1 }}
+        </label>
+
+        <label>
+          <span class="mz-help">Subir imagen 2</span>
+          {{ image_form.source_image_2 }}
+        </label>
+
+        <label>
+          <span class="mz-help">Subir imagen 3</span>
+          {{ image_form.source_image_3 }}
+        </label>
+
+        <label>
+          <span class="mz-help">Prompt</span>
+          {{ image_form.prompt }}
+        </label>
+
+        <label>
+          <span class="mz-help">Calidad</span>
+          {{ image_form.quality }}
+        </label>
+
+        <div class="mz-pill" id="mz-image-selected-assets" style="padding:10px;display:none;">
+          <strong>Refs seleccionadas:</strong>
+          <div class="mz-help" data-role="labels"></div>
+          <button type="button" class="mz-btn" id="mz-image-clear-assets">Quitar todas</button>
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <button type="submit" class="mz-btn mz-btn-primary">Generar imagen</button>
+          <span id="mz-image-gen-state" class="mz-help">Listo</span>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="mz-card" style="padding:16px;">
+    <h3 style="margin:0 0 12px;">Mi biblioteca</h3>
+    <div id="mz-assets-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;">
+      {% for a in assets %}
+        <article class="mz-pill mz-asset-card" data-asset-id="{{ a.id }}" data-url="{{ a.file.url }}" data-title="{{ a.title|default:'Imagen'|escape }}" style="padding:10px;display:grid;gap:8px;">
+          <img src="{{ a.file.url }}" alt="{{ a.title }}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;">
+          <div style="font-size:.92rem;font-weight:600;">{{ a.title|default:"Imagen" }}</div>
+          <div class="mz-help">{{ a.width }}×{{ a.height }} · {{ a.origin }}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button type="button" class="mz-btn js-use-for-video">Usar para vídeo</button>
+            <button type="button" class="mz-btn js-use-for-image">Usar para imagen</button>
+          </div>
+        </article>
+      {% empty %}
+        <div class="mz-help">Aún no hay imágenes guardadas.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="mz-row" style="grid-template-columns:1fr 1fr;gap:18px;align-items:start;">
+    <div class="mz-card" style="padding:16px;">
+      <h3 style="margin:0 0 12px;">Trabajos de vídeo</h3>
+      <div id="mz-video-jobs" style="display:grid;gap:10px;">
+        {% for job in video_jobs %}
+          <article class="mz-pill" data-video-job-id="{{ job.id }}" style="display:grid;gap:8px;padding:12px;">
+            <div><strong>#{{ job.id }}</strong> · {{ job.get_status_display }}</div>
+            <div class="mz-help">Formato: {{ job.aspect_ratio }} · {{ job.fit_width }}×{{ job.fit_height }}</div>
+            <div>{{ job.prompt|truncatechars:180 }}</div>
+			{% if job.result_file %}
+			<video controls style="max-width:100%;border-radius:14px;">
+			  <source src="{{ job.result_file.url }}">
+			</video>
+
+			<div style="margin-top:8px;">
+			  <a class="mz-btn" href="{{ job.result_file.url }}" download>
+				Descargar video
+			  </a>
+			</div>
+			{% endif %}
+			{% if job.last_frame_asset %}
+			<div>
+			  <div class="mz-help" style="margin-bottom:6px;">Último fotograma</div>
+
+			  <img src="{{ job.last_frame_asset.file.url }}"
+				   style="max-width:240px;border-radius:12px;">
+
+			  <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+				<button
+				  type="button"
+				  class="mz-btn js-use-for-video"
+				  data-asset-id="{{ job.last_frame_asset.id }}"
+				  data-title="video_job_{{ job.id }}_frame">
+				  Animar este frame
+				</button>
+			  </div>
+			</div>
+			{% endif %}
+          </article>
+        {% empty %}
+          <div class="mz-help">Aún no hay trabajos de vídeo.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="mz-card" style="padding:16px;">
+      <h3 style="margin:0 0 12px;">Trabajos de imagen</h3>
+      <div id="mz-image-jobs" style="display:grid;gap:10px;">
+        {% for job in image_jobs %}
+          <article class="mz-pill" data-image-job-id="{{ job.id }}" style="display:grid;gap:8px;padding:12px;">
+            <div><strong>#{{ job.id }}</strong> · {{ job.get_status_display }}</div>
+            <div>{{ job.prompt|truncatechars:180 }}</div>
+            {% if job.result_image %}
+              <img src="{{ job.result_image.url }}" style="max-width:100%;border-radius:14px;">
+            {% endif %}
+            {% if job.result_asset %}
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button type="button" class="mz-btn js-result-to-video" data-asset-id="{{ job.result_asset.id }}" data-title="image_job_{{ job.id }}">
+                  Usar para vídeo
+                </button>
+              </div>
+            {% endif %}
+          </article>
+        {% empty %}
+          <div class="mz-help">Aún no hay trabajos de imagen.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+(() => {
+  const videoForm = document.getElementById('mz-video-gen-form');
+  const imageForm = document.getElementById('mz-image-gen-form');
+  const videoState = document.getElementById('mz-video-gen-state');
+  const imageState = document.getElementById('mz-image-gen-state');
+  const videoJobsWrap = document.getElementById('mz-video-jobs');
+  const imageJobsWrap = document.getElementById('mz-image-jobs');
+  const assetsGrid = document.getElementById('mz-assets-grid');
+
+  const csrf = videoForm.querySelector('[name=csrfmiddlewaretoken]').value;
+
+  const createVideoUrl = "{% url 'panel:video_generation_create' %}";
+  const createImageUrl = "{% url 'panel:image_generation_create' %}";
+  const videoStatusBase = "{% url 'panel:video_generation_page' %}".replace(/\/$/, '');
+  const imageStatusBase = "{% url 'panel:video_generation_page' %}".replace(/\/$/, '');
+
+  const videoAssetInput = videoForm.querySelector('[name=source_asset_id]');
+  const imageAsset1Input = imageForm.querySelector('[name=source_asset_1_id]');
+  const imageAsset2Input = imageForm.querySelector('[name=source_asset_2_id]');
+  const imageAsset3Input = imageForm.querySelector('[name=source_asset_3_id]');
+
+  const videoSelectedBox = document.getElementById('mz-video-selected-asset');
+  const videoSelectedLabel = videoSelectedBox?.querySelector('[data-role=label]');
+  const imageSelectedBox = document.getElementById('mz-image-selected-assets');
+  const imageSelectedLabels = imageSelectedBox?.querySelector('[data-role=labels]');
+
+  function esc(s){
+    return String(s || '')
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
+  }
+
+  function setVideoAsset(id, title){
+    videoAssetInput.value = id || '';
+    if(id){
+      videoSelectedBox.style.display = '';
+      videoSelectedLabel.textContent = `#${id} · ${title || 'Imagen'}`;
+    } else {
+      videoSelectedBox.style.display = 'none';
+      videoSelectedLabel.textContent = '';
+    }
+  }
+
+  function getImageAssetIds(){
+    return [imageAsset1Input.value, imageAsset2Input.value, imageAsset3Input.value].filter(Boolean);
+  }
+
+  function refreshImageAssetLabels(){
+    const ids = getImageAssetIds();
+    if(!ids.length){
+      imageSelectedBox.style.display = 'none';
+      imageSelectedLabels.innerHTML = '';
+      return;
+    }
+    imageSelectedBox.style.display = '';
+    imageSelectedLabels.innerHTML = ids.map((id, idx) => `<div>Ref ${idx + 1}: #${esc(id)}</div>`).join('');
+  }
+
+  function pushImageAsset(id){
+    if(!id) return;
+    if(!imageAsset1Input.value){ imageAsset1Input.value = id; refreshImageAssetLabels(); return; }
+    if(!imageAsset2Input.value){ imageAsset2Input.value = id; refreshImageAssetLabels(); return; }
+    if(!imageAsset3Input.value){ imageAsset3Input.value = id; refreshImageAssetLabels(); return; }
+    imageAsset3Input.value = id;
+    refreshImageAssetLabels();
+  }
+
+  document.getElementById('mz-video-clear-asset')?.addEventListener('click', () => setVideoAsset('', ''));
+  document.getElementById('mz-image-clear-assets')?.addEventListener('click', () => {
+    imageAsset1Input.value = '';
+    imageAsset2Input.value = '';
+    imageAsset3Input.value = '';
+    refreshImageAssetLabels();
+  });
+
+  assetsGrid?.addEventListener('click', (e) => {
+    const card = e.target.closest('.mz-asset-card');
+    if(!card) return;
+    const assetId = card.getAttribute('data-asset-id');
+    const title = card.getAttribute('data-title') || 'Imagen';
+
+    if(e.target.closest('.js-use-for-video')){
+      setVideoAsset(assetId, title);
+      return;
+    }
+    if(e.target.closest('.js-use-for-image')){
+      pushImageAsset(assetId);
+      return;
+    }
+  });
+
+  imageJobsWrap?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.js-result-to-video');
+    if(!btn) return;
+    setVideoAsset(btn.getAttribute('data-asset-id'), btn.getAttribute('data-title') || 'Generated image');
+  });
+
+  function videoJobHtml(job){
+    const video = job.result_url ? `
+      <video controls style="max-width:100%;border-radius:14px;">
+        <source src="${esc(job.result_url)}">
+      </video>` : '';
+
+    const frame = job.last_frame_url ? `
+      <div>
+        <div class="mz-help" style="margin-bottom:6px;">Último fotograma</div>
+        <img src="${esc(job.last_frame_url)}" style="max-width:240px;border-radius:12px;">
+      </div>` : '';
+
+    const err = job.error_text ? `<div class="mz-help" style="color:#fca5a5;">${esc(job.error_text)}</div>` : '';
+
+    return `
+      <article class="mz-pill" data-video-job-id="${job.id}" style="display:grid;gap:8px;padding:12px;">
+        <div><strong>#${job.id}</strong> · ${esc(job.status)}</div>
+        <div class="mz-help">Formato: ${esc(job.aspect_ratio || 'original')} · ${esc(job.fit_width || 0)}×${esc(job.fit_height || 0)}</div>
+        <div>${esc(job.prompt || '')}</div>
+        ${err}
+        ${video}
+        ${frame}
+      </article>`;
+  }
+
+  function imageJobHtml(job){
+    const img = job.result_url ? `<img src="${esc(job.result_url)}" style="max-width:100%;border-radius:14px;">` : '';
+    const err = job.error_text ? `<div class="mz-help" style="color:#fca5a5;">${esc(job.error_text)}</div>` : '';
+    const useBtn = job.result_asset_id ? `
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button type="button" class="mz-btn js-result-to-video" data-asset-id="${job.result_asset_id}" data-title="image_job_${job.id}">
+          Usar para vídeo
+        </button>
+      </div>` : '';
+
+    return `
+      <article class="mz-pill" data-image-job-id="${job.id}" style="display:grid;gap:8px;padding:12px;">
+        <div><strong>#${job.id}</strong> · ${esc(job.status)}</div>
+        <div>${esc(job.prompt || '')}</div>
+        ${err}
+        ${img}
+        ${useBtn}
+      </article>`;
+  }
+
+  async function pollVideoJob(jobId){
+    let done = false;
+    while(!done){
+      const r = await fetch(`${videoStatusBase}/${jobId}/status/`, { credentials: 'include' });
+      const j = await r.json();
+      if(j.ok && j.job){
+        let el = videoJobsWrap.querySelector(`[data-video-job-id="${jobId}"]`);
+        if(!el){
+          videoJobsWrap.insertAdjacentHTML('afterbegin', videoJobHtml(j.job));
+        } else {
+          el.outerHTML = videoJobHtml(j.job);
+        }
+        done = ['done','error'].includes(j.job.status);
+      } else {
+        done = true;
+      }
+      if(!done){
+        await new Promise(res => setTimeout(res, 2500));
+      }
+    }
+  }
+
+  async function pollImageJob(jobId){
+    let done = false;
+    while(!done){
+      const r = await fetch(`${imageStatusBase}/image/${jobId}/status/`, { credentials: 'include' });
+      const j = await r.json();
+      if(j.ok && j.job){
+        let el = imageJobsWrap.querySelector(`[data-image-job-id="${jobId}"]`);
+        if(!el){
+          imageJobsWrap.insertAdjacentHTML('afterbegin', imageJobHtml(j.job));
+        } else {
+          el.outerHTML = imageJobHtml(j.job);
+        }
+        done = ['done','error'].includes(j.job.status);
+      } else {
+        done = true;
+      }
+      if(!done){
+        await new Promise(res => setTimeout(res, 2500));
+      }
+    }
+  }
+
+  videoForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    videoState.textContent = 'Enviando...';
+    const fd = new FormData(videoForm);
+
+    const r = await fetch(createVideoUrl, {
+      method: 'POST',
+      body: fd,
+      credentials: 'include',
+      headers: { 'X-CSRFToken': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+    });
+
+    const j = await r.json();
+    if(!r.ok || !j.ok){
+      videoState.textContent = 'Error';
+      return;
+    }
+
+    videoState.textContent = `Tarea #${j.job.id} enviada`;
+    videoJobsWrap.insertAdjacentHTML('afterbegin', videoJobHtml(j.job));
+    pollVideoJob(j.job.id);
+  });
+
+  imageForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    imageState.textContent = 'Enviando...';
+    const fd = new FormData(imageForm);
+
+    const r = await fetch(createImageUrl, {
+      method: 'POST',
+      body: fd,
+      credentials: 'include',
+      headers: { 'X-CSRFToken': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+    });
+
+    const j = await r.json();
+    if(!r.ok || !j.ok){
+      imageState.textContent = 'Error';
+      return;
+    }
+
+    imageState.textContent = `Tarea #${j.job.id} enviada`;
+    imageJobsWrap.insertAdjacentHTML('afterbegin', imageJobHtml(j.job));
+    pollImageJob(j.job.id);
+  });
+
+  refreshImageAssetLabels();
+})();
+</script>
+{% endblock %}

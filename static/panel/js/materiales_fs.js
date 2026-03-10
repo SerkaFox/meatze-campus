@@ -1002,14 +1002,6 @@ function mzUploadCompleteUrl(){
 		  e.preventDefault();
 		  folderEl.classList.remove('is-drop-ok','is-drop-bad','is-drop-upload');
 
-		  console.log('[DROP]', {
-			targetPath: folderEl.getAttribute('data-drop-folder') || '',
-			files: e.dataTransfer?.files?.length || 0,
-			types: Array.from(e.dataTransfer?.types || []),
-			items: e.dataTransfer?.items?.length || 0,
-			dragFileId
-		  });
-
 		  const targetPath = folderEl.getAttribute('data-drop-folder') || '';
 		  // ✅ это перенос папки, не обрабатываем здесь
 		  const folderDragPath = e.dataTransfer?.getData('text/mz-folder') || '';
@@ -1055,12 +1047,6 @@ function mzUploadCompleteUrl(){
           form.append('action', 'file_move');
           form.append('file_id', fileId);
           form.append('target_path', targetPath);
-			console.log('[MZ DND] drop rawId', {
-			  dragFileId,
-			  app: e.dataTransfer.getData('application/x-mz-file-id'),
-			  text: e.dataTransfer.getData('text/plain'),
-			  text2: e.dataTransfer.getData('text'),
-			});
           try{
             const r = await fetch(window.location.pathname + window.location.search, {
               method: 'POST',
@@ -1211,12 +1197,6 @@ async function postJSON(url, data, csrftoken){
 
 async function uploadFileInChunks(file, targetPath, jobId){
   const csrftoken = mzCsrfToken();
-console.log('[chunk init]', {
-  url: mzUploadInitUrl(),
-  csrftoken: getCookie('csrftoken'),
-  audience: (window.__MZ_AUD__ || 'alumnos'),
-  targetPath
-});
   // 1) init
   const initRes = await postJSON(mzUploadInitUrl(), {
     audience: (window.__MZ_AUD__ || 'alumnos'),

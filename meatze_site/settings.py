@@ -138,11 +138,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+USE_TZ = True
+TIME_ZONE = "Europe/Madrid"
 
 USE_I18N = True
 
-USE_TZ = True
 SESSION_COOKIE_SAMESITE = "None"
 SESSION_COOKIE_SECURE = True
 
@@ -203,6 +203,8 @@ MZ_SCHOOL_LAN_CIDRS = [
     "192.168.2.0/16",
     "188.65.0.0/16",
     "176.28.0.0/16",
+    "104.22.0.0/16",
+    "178.23.0.0/16",
     # если у тебя бывает 100.64.0.0/10 (CGNAT) внутри — можно добавить:
     # "100.64.0.0/10",
 ]

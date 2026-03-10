@@ -52,12 +52,6 @@ document.addEventListener('drop', async (e) => {
   const codigo = window.__MZ_CURSO_CODIGO__;
   const url = `/alumno/curso/${encodeURIComponent(codigo)}/materiales/fs/move-folder/`;
 
-  console.log('[FOLDER MOVE SEND]', {
-    source,
-    targetParent,
-    url
-  });
-
   try {
     const r = await fetch(url, {
       method: 'POST',

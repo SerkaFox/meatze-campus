@@ -320,6 +320,32 @@ function importPickedFileSilent(doc, targetPath){
   });
 }
 
+function importPickedFile(doc, targetPath){
+  const name = doc.name || 'drive_file';
+  const sizeBytes = Number(doc.sizeBytes || doc.size || 0);
+
+  const jobId = window.mzUploadOverlay.addJob({
+    name,
+    meta: `Preparando Google Drive · destino: ${humanPath(targetPath)}`
+  });
+
+  const progress = createDriveProgressJob(jobId, 'file');
+
+  return importPickedFileSilent(doc, targetPath)
+    .then((j) => {
+      progress.finish(
+        sizeBytes > 0
+          ? `Importado en ${humanPath(targetPath)} · ${window.mzBytesHuman ? window.mzBytesHuman(sizeBytes) : ''}`.trim()
+          : `Importado en ${humanPath(targetPath)}`
+      );
+      return j;
+    })
+    .catch((err) => {
+      progress.fail(err.message || 'Error importando archivo');
+      throw err;
+    });
+}
+
   function importPickedFolder(doc, targetPath){
     const folderId = doc.id;
     const name = doc.name || doc[window.google.picker.Document.NAME] || 'Carpeta';
@@ -330,14 +356,7 @@ function importPickedFileSilent(doc, targetPath){
       name,
       meta: `Preparando carpeta de Google Drive · destino: ${humanPath(targetPath)}`
     });
-window.mzUploadOverlay.onCancel(progressJobId, () => {
-  if(!currentDriveImportJob) return;
 
-  const ok = confirm('¿Cancelar la importación de Google Drive?');
-  if(!ok) return;
-
-  currentDriveImportJob.cancelled = true;
-});
     const progress = createDriveProgressJob(jobId, 'folder');
 
     return window.mzPostJSON(importUrl, {

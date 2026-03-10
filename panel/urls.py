@@ -143,3 +143,22 @@ urlpatterns += [
 ]
 
 
+from .views_generation import (
+    generation_assets_list,
+    image_generation_create,
+    image_generation_status,
+    video_generation_create,
+    video_generation_page,
+    video_generation_status,
+)
+
+urlpatterns += [
+    path("ai/video/", video_generation_page, name="video_generation_page"),
+    path("ai/video/create/", video_generation_create, name="video_generation_create"),
+    path("ai/video/<int:pk>/status/", video_generation_status, name="video_generation_status"),
+
+    path("ai/video/image/create/", image_generation_create, name="image_generation_create"),
+    path("ai/video/image/<int:pk>/status/", image_generation_status, name="image_generation_status"),
+
+    path("ai/video/assets/", generation_assets_list, name="generation_assets_list"),
+]
