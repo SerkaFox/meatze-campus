@@ -1,5 +1,7 @@
 # api/auth_views.py
 import random
+import re
+import unicodedata
 from datetime import timedelta
 from django.contrib.auth import get_user_model, authenticate, login, logout
 
@@ -11,7 +13,7 @@ from rest_framework.decorators import api_view, permission_classes, authenticati
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from .models import LoginPIN, UserProfile 
+from .models import Enrol, LoginPIN, UserProfile 
 from api.models import PendingRole 
 
 User = get_user_model()
@@ -43,6 +45,37 @@ def build_me(user: User) -> dict:
     }
 
 
+SYSTEM_STUDENT_EMAIL_MESSAGE = (
+    "Este e-mail no es un correo real. Entra con la contraseña que te dio tu "
+    "docente o pídele que la actualice."
+)
+
+
+def _course_email_domain(code: str) -> str:
+    s = unicodedata.normalize("NFKD", code or "")
+    s = "".join(ch for ch in s if not unicodedata.combining(ch))
+    s = s.lower()
+    s = re.sub(r"[^a-z0-9]+", "", s)
+    return f"{s or 'curso'}.es"
+
+
+def is_system_student_email(email: str) -> bool:
+    user = (
+        User.objects.filter(email__iexact=email).first()
+        or User.objects.filter(username__iexact=email).first()
+    )
+    if not user or "@" not in email:
+        return False
+
+    domain = email.rsplit("@", 1)[1].lower()
+    course_codes = Enrol.objects.filter(
+        user=user,
+        role="student",
+    ).values_list("codigo", flat=True)
+
+    return any(domain == _course_email_domain(code) for code in course_codes)
+
+
 # 1) REQUEST PIN  -------------------------------------------------------
 @csrf_exempt
 @api_view(["POST"])
@@ -59,6 +92,12 @@ def request_pin(request):
     email = (request.data.get("email") or "").strip().lower()
     if not email or "@" not in email:
         return Response({"message": "E-mail inválido"}, status=status.HTTP_400_BAD_REQUEST)
+
+    if is_system_student_email(email):
+        return Response(
+            {"ok": False, "message": SYSTEM_STUDENT_EMAIL_MESSAGE},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     # 6-значный PIN
     code = f"{random.randint(0, 999999):06d}"
