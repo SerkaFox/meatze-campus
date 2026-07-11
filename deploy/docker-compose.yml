@@ -1,0 +1,96 @@
+# MEATZE Campus — full application stack.
+# Build context is the repository root (parent of this deploy/ dir).
+#
+#   cd deploy
+#   cp .env.docker.example .env   # then fill it in
+#   docker compose up -d --build
+#
+# NOTE on ports: db/redis are NOT published to the host (internal network only),
+# so this stack can run next to a native PostgreSQL/Redis without clashing.
+# HTTP is published on ${HTTP_PORT:-8080} — set HTTP_PORT=80 on the target server.
+
+name: meatze
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  web:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        WITH_CHROMIUM: ${WITH_CHROMIUM:-0}
+    image: meatze-app:latest
+    restart: unless-stopped
+    command: ["web"]
+    env_file: .env
+    environment:
+      DB_HOST: db
+      REDIS_HOST: redis
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - media:/app/files
+      - staticfiles:/app/staticfiles
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  ws:
+    image: meatze-app:latest
+    restart: unless-stopped
+    command: ["ws"]
+    env_file: .env
+    environment:
+      DB_HOST: db
+      REDIS_HOST: redis
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - media:/app/files
+    depends_on:
+      - web
+      - redis
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+    volumes:
+      - ./nginx/meatze.conf:/etc/nginx/conf.d/default.conf:ro
+      - staticfiles:/srv/staticfiles:ro
+      - media:/srv/files:ro
+    depends_on:
+      - web
+      - ws
+
+volumes:
+  pgdata:
+  redisdata:
+  media:
+  staticfiles:

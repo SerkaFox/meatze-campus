@@ -157,10 +157,13 @@ STATIC_ROOT = BASE_DIR / "static"
 MEATZE_ADMIN_PASS = os.getenv("MEATZE_ADMIN_PASS", "")
 
 
+# Paths are derived from BASE_DIR so they resolve correctly both on the native
+# host (/home/iaadmin/meatze) and inside the container (/app). Same result on the
+# existing server, but portable.
 MEATZE_DOCX_LOGOS = {
-    "lanbide": "/home/iaadmin/meatze/files/lanbide.png",
-    "euskadi": "/home/iaadmin/meatze/files/euskadi.png",
-    "eu":      "/home/iaadmin/meatze/files/eu.png",
+    "lanbide": str(BASE_DIR / "files" / "lanbide.png"),
+    "euskadi": str(BASE_DIR / "files" / "euskadi.png"),
+    "eu":      str(BASE_DIR / "files" / "eu.png"),
 }
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -216,11 +219,16 @@ MZ_ATTENDANCE_HB_SEC = 90
 
 PLAYWRIGHT_BIN = "/usr/bin/chromium"  # или оставь пустым, если playwright сам
 
-JITSI_DOMAIN = "meetjwt.meatzeaula.es"
-JITSI_JWT_ENABLED = True
-JITSI_JWT_SECRET = "meatze123"          # то же самое что app_secret в Prosody
-JITSI_JWT_APP_ID = "meatze"             # то же что app_id
-JITSI_JWT_AUD = "jitsi"
+JITSI_DOMAIN = os.getenv("JITSI_DOMAIN", "meetjwt.meatzeaula.es")
+JITSI_JWT_ENABLED = os.getenv("JITSI_JWT_ENABLED", "1") == "1"
+JITSI_JWT_SECRET = os.getenv("JITSI_JWT_SECRET", "meatze123")   # == app_secret in Prosody
+JITSI_JWT_APP_ID = os.getenv("JITSI_JWT_APP_ID", "meatze")      # == app_id
+JITSI_JWT_AUD = os.getenv("JITSI_JWT_AUD", "jitsi")
+
+# Ollama (AI) stays external. The two callers (api/notify_views.py and
+# api/views_ai.py) interpret OLLAMA_URL/OLLAMA_MODEL differently, so we do NOT
+# define them here; instead each reads OLLAMA_BASE_URL from the environment
+# (default http://127.0.0.1:11434) and keeps its own endpoint/model default.
 
 MEETZE_SHOW_LIVE_TAB = True
 X_FRAME_OPTIONS = "SAMEORIGIN"
@@ -235,8 +243,8 @@ LOGGING = {
 }
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 
-SESSION_COOKIE_DOMAIN = ".meatzeaula.es"
-CSRF_COOKIE_DOMAIN = ".meatzeaula.es"
+SESSION_COOKIE_DOMAIN = os.getenv("SESSION_COOKIE_DOMAIN", ".meatzeaula.es")
+CSRF_COOKIE_DOMAIN = os.getenv("CSRF_COOKIE_DOMAIN", ".meatzeaula.es")
 
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True

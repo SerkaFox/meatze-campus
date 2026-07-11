@@ -11,6 +11,10 @@ __pycache__/
 # Envs
 .env
 .env.*
+# ...but keep example/template env files (needed for deployment docs)
+!.env.example
+!**/.env.example
+!**/.env.docker.example
 venv/
 .venv/
 

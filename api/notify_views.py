@@ -1616,7 +1616,9 @@ from rest_framework.response import Response
 from django.conf import settings
 
 
-OLLAMA_URL = getattr(settings, "OLLAMA_URL", "http://127.0.0.1:11434/api/chat")
+OLLAMA_URL = getattr(settings, "OLLAMA_URL", None) or (
+    os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434").rstrip("/") + "/api/chat"
+)
 OLLAMA_MODEL = getattr(settings, "OLLAMA_MODEL", "llama3.1")
 
 

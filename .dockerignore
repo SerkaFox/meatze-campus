@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.sqlite3
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtualenv / node
+venv/
+.venv/
+node_modules/
+
+# Secrets — never bake real env into the image
+.env
+.env.*
+!.env.example
+
+# Media & collected static (mounted as volumes at runtime)
+files/
+staticfiles/
+*.log
+
+# Local dev / VCS / IDE
+.git/
+.gitignore
+.idea/
+.vscode/
+.DS_Store
+
+# Deploy artifacts we don't need inside the app image
+deploy/jitsi/
+**/*.tar
+**/*.tar.gz

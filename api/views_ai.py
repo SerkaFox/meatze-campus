@@ -1,3 +1,4 @@
+import os
 import requests, re
 from ai.rag_portal import retrieve_portal_context
 from django.conf import settings
@@ -13,7 +14,7 @@ import json
 from pathlib import Path
 
 ACTION_REG = Path(__file__).resolve().parents[2] / "docs" / "autogen_strict" / "action_registry.json"
-OLLAMA_URL = getattr(settings, "OLLAMA_URL", "http://127.0.0.1:11434")
+OLLAMA_URL = getattr(settings, "OLLAMA_URL", None) or os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
 OLLAMA_MODEL = getattr(
     settings,
     "OLLAMA_MODEL",
@@ -24,7 +25,7 @@ MEATZE_ADMIN_PASS = getattr(settings, "MEATZE_ADMIN_PASS", None)
 User = get_user_model()
 
 # Лучше вынести в settings, но можно пока так
-OLLAMA_URL = getattr(settings, "OLLAMA_URL", "http://127.0.0.1:11434")
+OLLAMA_URL = getattr(settings, "OLLAMA_URL", None) or os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
 OLLAMA_MODEL = getattr(
     settings,
     "OLLAMA_MODEL",
