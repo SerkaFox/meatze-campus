@@ -47,7 +47,7 @@
   }
 
   // ===== UI helpers =====
-  const STEPS = ['#step-email', '#step-temp', '#step-temp-finish', '#step-setpass'];
+  const STEPS = ['#step-role', '#step-email', '#step-temp', '#step-temp-finish', '#step-setpass'];
 	function setHelpUI(code){
 	  window.AURORA = window.AURORA || {};
 	  window.AURORA.HELP_UI = code || "";
@@ -63,12 +63,13 @@
 
 	  // 👇 ВАЖНО: help-контекст всегда соответствует текущему шагу
 	  const map = {
+		'#step-role':        'ui=acceder:role',
 		'#step-email':       'ui=acceder:login',
 		'#step-temp':        'ui=acceder:temp_open',
 		'#step-temp-finish': 'ui=acceder:temp_finish',
 		'#step-setpass':     'ui=acceder:setpass',
 	  };
-	  setHelpUI(map[sel] || 'ui=acceder:login');
+	  setHelpUI(map[sel] || 'ui=acceder:role');
 	}
   
 
@@ -558,7 +559,8 @@ if (card) {
 	  }
 
 	  // дальше как было...
-	  if ($('#step-email')) showStep('#step-email');
+	  if ($('#step-role')) showStep('#step-role');
+	  else if ($('#step-email')) showStep('#step-email');
 
     // auth
     $('#btn-login-pass')?.addEventListener('click', apiLoginPassword);
@@ -567,7 +569,11 @@ if (card) {
     $('#btn-verify')    ?.addEventListener('click', verifyPIN);
     $('#btn-setpass')   ?.addEventListener('click', setPassword);
 	$('#btn-send-pin')?.addEventListener('click', () => setHelpUI('acc:pin_request'));
-	$('#btn-open-temp')?.addEventListener('click', () => setHelpUI('acc:temp_open'));
+
+    // role choice (primera pantalla)
+    $('#btn-role-existing')?.addEventListener('click', () => showStep('#step-email'));
+    $('#btn-role-new')?.addEventListener('click', () => { setHelpUI('acc:temp_open'); openTemp(); });
+    $('#btn-email-back')?.addEventListener('click', () => showStep('#step-role'));
 
 
 // === ENTER to submit (login / pin / temp) ===
@@ -610,16 +616,15 @@ bindEnterSubmit();
     });
 
     // temp
-    $('#btn-open-temp') ?.addEventListener('click', openTemp);
     $('#temp-course')?.addEventListener('change', async () => {
 	  renderSelectedCourseCode();
 	  await loadTempNamesForCourse();
 	});
 
-    $('#btn-temp-back') ?.addEventListener('click', () => showStep('#step-email'));
+    $('#btn-temp-back') ?.addEventListener('click', () => showStep('#step-role'));
     $('#btn-temp-check')?.addEventListener('click', tempVerify);
     $('#btn-temp-finish')?.addEventListener('click', tempClaim);
-    $('#btn-temp-cancel')?.addEventListener('click', () => showStep('#step-email'));
+    $('#btn-temp-cancel')?.addEventListener('click', () => showStep('#step-role'));
 
   }
 // ===== PROFILE TAB =====

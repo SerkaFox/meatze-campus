@@ -8,12 +8,6 @@
 
     <div class="mz-auth-h">
       <h3 id="mz-auth-title" class="mz-auth-title">Acceso</h3>
-      <div class="mz-auth-actions">
-
-        {% if not request.user.is_authenticated %}
-          <button id="btn-open-temp" class="mz-btn ghost sm" type="button">Crea una cuenta de estudiante</button>
-        {% endif %}
-      </div>
     </div>
 
     <div class="mz-auth-b">
@@ -27,6 +21,23 @@
         {% endif %}
 
         {% if not request.user.is_authenticated %}
+
+          <!-- ===== STEP: ROLE (primera pantalla) ===== -->
+          <div id="step-role">
+            <div class="mz-help" style="margin-bottom:14px">¿Cómo quieres entrar?</div>
+
+            <button id="btn-role-existing" class="mz-btn" type="button"
+                    style="width:100%;text-align:left;padding:14px 16px;margin-bottom:10px;display:block">
+              <strong style="display:block;font-size:15px">Ya tengo cuenta</strong>
+              <span class="mz-help" style="display:block;margin-top:2px">Alumnado y docentes con email y contraseña.</span>
+            </button>
+
+            <button id="btn-role-new" class="mz-btn ghost" type="button"
+                    style="width:100%;text-align:left;padding:14px 16px;display:block">
+              <strong style="display:block;font-size:15px">Soy alumno, es mi primera vez</strong>
+              <span class="mz-help" style="display:block;margin-top:2px">Necesitas el curso y el código que te dio tu docente.</span>
+            </button>
+          </div>
 
           <!-- ===== STEP: TEMP (crear cuenta alumno) ===== -->
           <div id="step-temp" style="display:none">
@@ -86,11 +97,15 @@
           </div>
 
           <!-- ===== STEP: EMAIL/PASS/PIN ===== -->
-          <div id="step-email">
+          <div id="step-email" style="display:none">
             <label class="mz-help">E-mail</label>
             <input id="auth-email" class="mz-inp" type="email" placeholder="tu@correo.com" autocomplete="email">
+            <div class="mz-help" style="margin-top:2px">
+              Alumnado: el email de acceso que se generó al crear tu cuenta (no es un correo real).
+              Docentes: vuestro email.
+            </div>
 
-            <label class="mz-help">Contraseña (si no tienes, usa PIN)</label>
+            <label class="mz-help" style="margin-top:8px">Contraseña (si no tienes, usa PIN)</label>
             <div class="mz-field">
               <input id="auth-pass-login" class="mz-inp" type="password" placeholder="Contraseña" autocomplete="current-password">
               <button class="mz-reveal" type="button" aria-label="Mostrar contraseña" data-target="#auth-pass-login">
@@ -104,6 +119,7 @@
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button id="btn-login-pass" class="mz-btn" type="button">Entrar</button>
               <button id="btn-send-pin" class="mz-btn link" type="button">Recibir PIN por e-mail</button>
+              <button id="btn-email-back" class="mz-btn ghost sm" type="button">← Volver</button>
             </div>
             <div id="msg-pass-login" class="mz-help"></div>
 
@@ -263,7 +279,7 @@
 
   // Кнопки
   const btnPin  = document.getElementById("btn-send-pin");
-  const btnTemp = document.getElementById("btn-open-temp");
+  const btnTemp = document.getElementById("btn-role-new");
 
   // При клике задаём контекст (и можешь сразу открывать help, если хочешь)
   btnPin?.addEventListener("click", () => {

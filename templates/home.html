@@ -2,6 +2,58 @@
 
 {% block content %}
 <style>
+  /* ===== COLOR THEME (solo esta página, por ahora) ===== */
+  :root{
+    --wi-a1:#38bdf8; --wi-a2:#0ea5e9; --wi-a3:#1d4ed8;
+    --wi-glow-1:rgba(59,130,246,.45); --wi-glow-2:rgba(34,197,94,.22);
+    --wi-link:#7dd3fc;
+    --wi-cta-text:#0b1220;
+  }
+  :root[data-color-theme="indigo"]{
+    --wi-a1:#818cf8; --wi-a2:#22d3ee; --wi-a3:#6366f1;
+    --wi-glow-1:rgba(99,102,241,.45); --wi-glow-2:rgba(34,211,238,.25);
+    --wi-link:#a5b4fc;
+  }
+  :root[data-color-theme="esmeralda"]{
+    --wi-a1:#34d399; --wi-a2:#0d9488; --wi-a3:#059669;
+    --wi-glow-1:rgba(16,185,129,.4); --wi-glow-2:rgba(45,212,191,.25);
+    --wi-link:#6ee7b7;
+  }
+
+  .mz-theme-switch{
+    position:fixed;
+    top:78px; right:16px;
+    z-index:998;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 8px;
+    border-radius:999px;
+    background:rgba(2,6,23,.75);
+    border:1px solid rgba(148,163,184,.35);
+    backdrop-filter:blur(6px);
+  }
+  .mz-theme-switch span{
+    font-size:11px;
+    color:#9ca3af;
+    padding-left:4px;
+  }
+  .mz-theme-dot{
+    width:20px;height:20px;
+    border-radius:999px;
+    border:2px solid rgba(255,255,255,.25);
+    cursor:pointer;
+    padding:0;
+  }
+  .mz-theme-dot[data-theme="azul"]{ background:linear-gradient(135deg,#38bdf8,#1d4ed8); }
+  .mz-theme-dot[data-theme="indigo"]{ background:linear-gradient(135deg,#22d3ee,#6366f1); }
+  .mz-theme-dot[data-theme="esmeralda"]{ background:linear-gradient(135deg,#34d399,#059669); }
+  .mz-theme-dot.is-active{ border-color:#fff; }
+  @media (max-width:640px){
+    .mz-theme-switch{ top:66px; right:10px; padding:5px 6px; gap:4px; }
+    .mz-theme-switch span{ display:none; }
+  }
+
   /* ===== HERO + AI (главная) ===== */
   .mz-home-wrap{
     min-height: calc(100vh - 90px);
@@ -28,8 +80,8 @@
   .mz-hero-card{
     border-radius:26px;
     padding:26px 24px;
-    background:radial-gradient(circle at 0 0,rgba(59,130,246,.45),transparent 55%),
-               radial-gradient(circle at 100% 100%,rgba(34,197,94,.22),transparent 55%),
+    background:radial-gradient(circle at 0 0,var(--wi-glow-1),transparent 55%),
+               radial-gradient(circle at 100% 100%,var(--wi-glow-2),transparent 55%),
                linear-gradient(135deg,#020617,#020617);
     border:1px solid rgba(148,163,184,.35);
     box-shadow:0 26px 80px rgba(15,23,42,.9);
@@ -101,8 +153,8 @@
     padding:10px 18px;
     border-radius:999px;
     border:none;
-    background:linear-gradient(135deg,#38bdf8,#0ea5e9);
-    color:#0b1220;
+    background:linear-gradient(135deg,var(--wi-a1),var(--wi-a2));
+    color:var(--wi-cta-text);
     font-weight:700;
     cursor:pointer;
     box-shadow:0 12px 32px rgba(8,47,73,.7);
@@ -118,7 +170,7 @@
   .mz-ai-card{
     border-radius:26px;
     padding:18px 18px 16px;
-    background:radial-gradient(circle at 0 0,rgba(59,130,246,.4),transparent 55%),
+    background:radial-gradient(circle at 0 0,var(--wi-glow-1),transparent 55%),
                linear-gradient(145deg,#020617,#020617);
     border:1px solid rgba(148,163,184,.4);
     box-shadow:0 26px 80px rgba(15,23,42,.85);
@@ -142,7 +194,7 @@
   }
   .mz-ai-avatar{
     width:34px;height:34px;border-radius:999px;
-    background:conic-gradient(from 140deg,#38bdf8,#4ade80,#38bdf8);
+    background:conic-gradient(from 140deg,var(--wi-a1),#4ade80,var(--wi-a1));
     padding:2px;
     box-shadow:0 0 0 2px rgba(15,23,42,.9);
   }
@@ -196,7 +248,7 @@
     flex:0 0 30px;
     width:30px;height:30px;
     border-radius:999px;
-    background:linear-gradient(135deg,#1d4ed8,#38bdf8);
+    background:linear-gradient(135deg,var(--wi-a3),var(--wi-a1));
     color:#e0f2fe;
     font-weight:800;
     font-size:14px;
@@ -224,7 +276,7 @@
     text-align:center;
   }
   .mz-ai-foot a{
-    color:#7dd3fc;
+    color:var(--wi-link);
     font-weight:600;
   }
 
@@ -241,10 +293,6 @@
   @keyframes mz-slide-in{
     to{opacity:1;transform:translateY(0);}
   }
-  .mz-ai-bubble a {
-  text-decoration: underline;
-  color: #38bdf8;
-}
   .mz-hero-cta-row{
     display:flex;
     flex-wrap:wrap;
@@ -266,7 +314,7 @@
     box-shadow:0 12px 32px rgba(8,47,73,.35);
   }
   .mz-hero-cta-secondary:hover{
-    border-color:rgba(56,189,248,.75);
+    border-color:color-mix(in srgb, var(--wi-a1) 75%, transparent);
     box-shadow:0 16px 40px rgba(8,47,73,.45);
   }
   /* ===== shimmer / glow (как в Room) ===== */
@@ -280,11 +328,11 @@
   filter: blur(18px);
   transform: translateX(-45%);
   background: linear-gradient(120deg,
-    rgba(56,189,248,.00) 0%,
-    rgba(56,189,248,.22) 25%,
-    rgba(34,197,94,.14) 50%,
-    rgba(56,189,248,.18) 75%,
-    rgba(56,189,248,.00) 100%
+    color-mix(in srgb, var(--wi-a1) 0%, transparent) 0%,
+    color-mix(in srgb, var(--wi-a1) 22%, transparent) 25%,
+    color-mix(in srgb, var(--wi-a2) 14%, transparent) 50%,
+    color-mix(in srgb, var(--wi-a1) 18%, transparent) 75%,
+    color-mix(in srgb, var(--wi-a1) 0%, transparent) 100%
   );
   animation: mz-shimmer 7.5s ease-in-out infinite;
 }
@@ -332,7 +380,7 @@
   font-weight:800;
   letter-spacing:.08em;
   text-transform:uppercase;
-  color:#7dd3fc;
+  color:var(--wi-link);
   margin-bottom:8px;
 }
 .mz-section-title{
@@ -367,7 +415,7 @@
 }
 .mz-feat-card:hover{
   transform:translateY(-3px);
-  border-color:rgba(56,189,248,.5);
+  border-color:color-mix(in srgb, var(--wi-a1) 50%, transparent);
 }
 .mz-feat-icon{
   font-size:22px;
@@ -454,8 +502,10 @@
   text-align:center;
   border-radius:26px;
   padding:40px 24px;
-  background:linear-gradient(135deg,rgba(29,78,216,.25),rgba(14,165,233,.15));
-  border:1px solid rgba(56,189,248,.4);
+  background:linear-gradient(135deg,
+    color-mix(in srgb, var(--wi-a3) 25%, transparent),
+    color-mix(in srgb, var(--wi-a2) 15%, transparent));
+  border:1px solid color-mix(in srgb, var(--wi-a1) 40%, transparent);
 }
 .mz-cta-title{
   font-size:22px;
@@ -469,6 +519,38 @@
   margin-bottom:20px;
 }
 </style>
+
+<div class="mz-theme-switch" role="group" aria-label="Estilo de color">
+  <span>Estilo</span>
+  <button type="button" class="mz-theme-dot" data-theme="azul" title="Azul"></button>
+  <button type="button" class="mz-theme-dot" data-theme="indigo" title="Índigo"></button>
+  <button type="button" class="mz-theme-dot" data-theme="esmeralda" title="Esmeralda"></button>
+</div>
+<script>
+(function(){
+  var KEY = 'wi_color_theme';
+  var root = document.documentElement;
+  var saved = localStorage.getItem(KEY) || 'azul';
+  if (saved !== 'azul') root.setAttribute('data-color-theme', saved);
+
+  function setActive(theme){
+    document.querySelectorAll('.mz-theme-dot').forEach(function(btn){
+      btn.classList.toggle('is-active', btn.dataset.theme === theme);
+    });
+  }
+  setActive(saved);
+
+  document.querySelectorAll('.mz-theme-dot').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var theme = btn.dataset.theme;
+      if (theme === 'azul') root.removeAttribute('data-color-theme');
+      else root.setAttribute('data-color-theme', theme);
+      localStorage.setItem(KEY, theme);
+      setActive(theme);
+    });
+  });
+})();
+</script>
 
 <div class="mz-home-wrap">
   <div class="mz-home-grid">
@@ -516,7 +598,7 @@
   </div>
 
   <div class="mz-hero-note">
-    ¿Primera vez? Usa el PIN que te llega por e-mail o pide acceso a tu docente.
+    ¿Alumno nuevo? Pide a tu docente el código de tu curso para crear tu cuenta.
   </div>
 </div>
     </section>
@@ -539,8 +621,8 @@
         <div class="mz-step-item">
           <div class="mz-step-num">1</div>
           <div class="mz-step-body">
-            <strong>Accede con tu PIN</strong>
-            <span>Te lo enviamos por e-mail, o te lo da tu docente.</span>
+            <strong>Entra o crea tu cuenta</strong>
+            <span>¿Ya tienes cuenta? Usa tu email y contraseña. ¿Primera vez? Pide a tu docente el código de tu curso.</span>
           </div>
         </div>
         <div class="mz-step-item">
