@@ -2591,10 +2591,10 @@ html, body { max-width: 100%; overflow-x: hidden; }
   }
 }
 
-/* ===== DEMO BADGE (esquina inferior izquierda) ===== */
+/* ===== DEMO BADGE (esquina inferior derecha — la izquierda la ocupa el FAB de ayuda) ===== */
 .mz-demo-badge{
   position:fixed;
-  left:16px; bottom:16px;
+  right:16px; bottom:16px;
   z-index:9997;
   display:flex; align-items:center; gap:6px;
   background:linear-gradient(90deg,#1760d6,#0c3f9e);
@@ -2613,7 +2613,7 @@ html, body { max-width: 100%; overflow-x: hidden; }
 }
 @media (max-width: 640px){
   .mz-demo-badge{
-    left:10px; bottom:10px;
+    right:10px; bottom:10px;
     font-size:.72rem;
     padding:7px 11px;
   }

@@ -177,101 +177,55 @@
     border:1px solid rgba(71,85,105,.7);
   }
 
-  .mz-ai-log{
-    flex:1;
-    min-height:160px;
-    max-height:280px;
-    border-radius:18px;
-    border:1px solid rgba(31,41,55,.9);
-    background:radial-gradient(circle at 0 0,rgba(37,99,235,.1),transparent 70%),
-               rgba(15,23,42,.95);
-    padding:10px 10px 8px;
-    overflow-y:auto;
-    font-size:14px;
-    scroll-behavior:smooth;
-  }
-  .mz-ai-msg{
-    margin-bottom:8px;
+  .mz-steps-list{
     display:flex;
+    flex-direction:column;
+    gap:4px;
+    flex:1;
   }
-  .mz-ai-msg.me{
-    justify-content:flex-end;
+  .mz-step-item{
+    display:flex;
+    gap:14px;
+    padding:14px 4px;
+    border-bottom:1px solid rgba(51,65,85,.6);
   }
-  .mz-ai-bubble{
-    max-width:80%;
-    padding:7px 10px;
-    border-radius:14px;
-    line-height:1.4;
+  .mz-step-item:last-child{
+    border-bottom:none;
   }
-  .mz-ai-msg.me .mz-ai-bubble{
-    border-radius:16px 16px 4px 16px;
+  .mz-step-num{
+    flex:0 0 30px;
+    width:30px;height:30px;
+    border-radius:999px;
     background:linear-gradient(135deg,#1d4ed8,#38bdf8);
     color:#e0f2fe;
-  }
-  .mz-ai-msg.bot .mz-ai-bubble{
-    border-radius:16px 16px 16px 4px;
-    background:rgba(15,23,42,.95);
-    border:1px solid rgba(30,64,175,.8);
-  }
-  .mz-ai-msg.bot .mz-ai-bubble strong{
-    color:#bfdbfe;
-  }
-  .mz-ai-msg small{
-    display:block;
-    margin-top:3px;
-    font-size:11px;
-    opacity:.7;
-  }
-
-  .mz-ai-input-row{
-    margin-top:10px;
-    display:grid;
-    grid-template-columns:1fr auto;
-    gap:8px;
-  }
-  .mz-ai-input{
-    border-radius:999px;
-    padding:10px 14px;
-    background:rgba(15,23,42,.92);
-    border:1px solid rgba(51,65,85,.95);
-    color:#e5e7eb;
+    font-weight:800;
     font-size:14px;
-  }
-  .mz-ai-input::placeholder{
-    color:#6b7280;
-  }
-  .mz-ai-input:focus{
-    outline:none;
-    border-color:#38bdf8;
-    box-shadow:0 0 0 2px rgba(56,189,248,.35);
-  }
-  .mz-ai-send{
-    border-radius:999px;
-    padding:0 16px;
-    border:none;
-    background:linear-gradient(135deg,#38bdf8,#0ea5e9);
-    color:#0b1220;
-    font-weight:700;
-    font-size:14px;
-    cursor:pointer;
-    display:inline-flex;
+    display:flex;
     align-items:center;
-    gap:6px;
-    min-width:96px;
     justify-content:center;
   }
-  .mz-ai-send[disabled]{
-    opacity:.5;
-    cursor:default;
+  .mz-step-body strong{
+    display:block;
+    font-size:14.5px;
+    color:#e5f3ff;
+    margin-bottom:2px;
+  }
+  .mz-step-body span{
+    font-size:13px;
+    color:#9ca3af;
+    line-height:1.4;
   }
   .mz-ai-foot{
-    margin-top:6px;
-    font-size:11px;
-    color:#6b7280;
-    display:flex;
-    justify-content:space-between;
-    gap:8px;
-    flex-wrap:wrap;
+    margin-top:14px;
+    padding-top:12px;
+    border-top:1px solid rgba(51,65,85,.6);
+    font-size:12px;
+    color:#9ca3af;
+    text-align:center;
+  }
+  .mz-ai-foot a{
+    color:#7dd3fc;
+    font-weight:600;
   }
 
   /* простая анимация появления модалки AI-ассистента при загрузке главной */
@@ -360,6 +314,160 @@
   opacity:.68;
   filter: blur(16px);
 }
+
+/* ===== FEATURES / LANBIDE / CTA (debajo del hero) ===== */
+.mz-section{
+  max-width:1180px;
+  margin:0 auto;
+  padding:40px 0;
+}
+.mz-section-head{
+  text-align:center;
+  max-width:640px;
+  margin:0 auto 32px;
+}
+.mz-section-kicker{
+  display:inline-block;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:#7dd3fc;
+  margin-bottom:8px;
+}
+.mz-section-title{
+  font-size:26px;
+  font-weight:800;
+  color:#e5f3ff;
+  margin:0 0 8px;
+}
+.mz-section-sub{
+  font-size:14.5px;
+  color:#9ca3af;
+  line-height:1.5;
+}
+
+.mz-feat-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:16px;
+}
+@media (max-width:1000px){
+  .mz-feat-grid{ grid-template-columns:repeat(2,1fr); }
+}
+@media (max-width:560px){
+  .mz-feat-grid{ grid-template-columns:1fr; }
+}
+.mz-feat-card{
+  border-radius:18px;
+  padding:20px 18px;
+  background:linear-gradient(160deg,rgba(15,23,42,.9),rgba(15,23,42,.7));
+  border:1px solid rgba(148,163,184,.25);
+  transition:transform .18s ease, border-color .18s ease;
+}
+.mz-feat-card:hover{
+  transform:translateY(-3px);
+  border-color:rgba(56,189,248,.5);
+}
+.mz-feat-icon{
+  font-size:22px;
+  margin-bottom:10px;
+}
+.mz-feat-title{
+  font-size:14.5px;
+  font-weight:700;
+  color:#e5f3ff;
+  margin-bottom:4px;
+}
+.mz-feat-desc{
+  font-size:12.5px;
+  color:#9ca3af;
+  line-height:1.5;
+}
+
+.mz-lanbide-card{
+  display:grid;
+  grid-template-columns:1.1fr 1fr;
+  gap:32px;
+  align-items:center;
+  border-radius:26px;
+  padding:34px;
+  background:radial-gradient(circle at 100% 0,rgba(34,197,94,.16),transparent 55%),
+             linear-gradient(135deg,#020617,#020617);
+  border:1px solid rgba(148,163,184,.3);
+  box-shadow:0 26px 80px rgba(15,23,42,.85);
+}
+@media (max-width:800px){
+  .mz-lanbide-card{ grid-template-columns:1fr; padding:26px; }
+}
+.mz-lanbide-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:999px;
+  background:rgba(34,197,94,.12);
+  border:1px solid rgba(34,197,94,.4);
+  color:#86efac;
+  font-size:12px;
+  font-weight:700;
+  margin-bottom:12px;
+}
+.mz-lanbide-title{
+  font-size:24px;
+  font-weight:800;
+  color:#e5f3ff;
+  margin:0 0 10px;
+}
+.mz-lanbide-text{
+  font-size:14px;
+  color:#9ca3af;
+  line-height:1.6;
+}
+.mz-lanbide-list{
+  list-style:none;
+  margin:0;
+  padding:0;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.mz-lanbide-list li{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  font-size:13.5px;
+  color:#dbeafe;
+}
+.mz-lanbide-check{
+  flex:0 0 20px;
+  width:20px;height:20px;
+  border-radius:999px;
+  background:rgba(34,197,94,.18);
+  color:#4ade80;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;
+  font-weight:900;
+}
+
+.mz-cta-card{
+  text-align:center;
+  border-radius:26px;
+  padding:40px 24px;
+  background:linear-gradient(135deg,rgba(29,78,216,.25),rgba(14,165,233,.15));
+  border:1px solid rgba(56,189,248,.4);
+}
+.mz-cta-title{
+  font-size:22px;
+  font-weight:800;
+  color:#e5f3ff;
+  margin:0 0 10px;
+}
+.mz-cta-sub{
+  font-size:14px;
+  color:#cbd5f5;
+  margin-bottom:20px;
+}
 </style>
 
 <div class="mz-home-wrap">
@@ -406,23 +514,6 @@
       ⚡ Sala corta (Room)
     </a>
   </div>
-  <div class="mz-legal-links" style="margin-top:18px;display:flex;gap:14px;flex-wrap:wrap;">
-  <a href="/privacy/" style="
-    color:#cfe7ff;
-    text-decoration:underline;
-    font-weight:600;
-  ">
-    Privacy Policy
-  </a>
-
-  <a href="/terms/" style="
-    color:#cfe7ff;
-    text-decoration:underline;
-    font-weight:600;
-  ">
-    Terms of Service
-  </a>
-</div>
 
   <div class="mz-hero-note">
     ¿Primera vez? Usa el PIN que te llega por e-mail o pide acceso a tu docente.
@@ -430,216 +521,153 @@
 </div>
     </section>
 
-    <!-- RIGHT: AI assistant -->
-    <section class="mz-ai-card" aria-label="Asistente virtual Aurora">
+    <!-- RIGHT: onboarding steps -->
+    <section class="mz-ai-card" aria-label="Cómo empezar en Aurora Campus">
       <header class="mz-ai-head">
         <div class="mz-ai-badge">
           <div class="mz-ai-avatar">
-            <div class="mz-ai-avatar-inner">M</div>
+            <div class="mz-ai-avatar-inner">🎓</div>
           </div>
           <div class="mz-ai-head-txt">
-            <strong>Asistente Aurora</strong><br>
-            <span class="mz-ai-status">Online · responde sobre cursos y el portal</span>
+            <strong>Tu primer día en 4 pasos</strong><br>
+            <span class="mz-ai-status">Así de simple es empezar</span>
           </div>
         </div>
       </header>
 
-      <div class="mz-ai-tags">
-        <span>Cómo entrar al campus</span>
-        <span>Calendario y módulos</span>
-        <span>Materiales y chat</span>
+      <div class="mz-steps-list">
+        <div class="mz-step-item">
+          <div class="mz-step-num">1</div>
+          <div class="mz-step-body">
+            <strong>Accede con tu PIN</strong>
+            <span>Te lo enviamos por e-mail, o te lo da tu docente.</span>
+          </div>
+        </div>
+        <div class="mz-step-item">
+          <div class="mz-step-num">2</div>
+          <div class="mz-step-body">
+            <strong>Revisa tu calendario</strong>
+            <span>Verás las clases y prácticas de tu curso, mes a mes.</span>
+          </div>
+        </div>
+        <div class="mz-step-item">
+          <div class="mz-step-num">3</div>
+          <div class="mz-step-body">
+            <strong>Descarga tus materiales</strong>
+            <span>Apuntes, guías y archivos, siempre disponibles por módulo.</span>
+          </div>
+        </div>
+        <div class="mz-step-item">
+          <div class="mz-step-num">4</div>
+          <div class="mz-step-body">
+            <strong>Habla con tu docente</strong>
+            <span>Chat directo para dudas, avisos y seguimiento del curso.</span>
+          </div>
+        </div>
       </div>
 
-      <div id="mz-ai-log" class="mz-ai-log" aria-live="polite">
-        <!-- стартовое сообщение -->
-      </div>
-
-      <div class="mz-ai-input-row">
-        <input id="mz-ai-input" class="mz-ai-input"
-               placeholder="Pregúntame cómo funciona el portal, el calendario, etc.">
-        <button id="mz-ai-send" class="mz-ai-send" type="button">
-          <span>Preguntar</span>
-        </button>
-      </div>
       <div class="mz-ai-foot">
-        <span id="mz-ai-footnote">Responde solo sobre Aurora Campus.</span>
-        <span>Propulsado por IA local.</span>
+        <a href="/privacy/">Privacy Policy</a> · <a href="/terms/">Terms of Service</a>
       </div>
     </section>
   </div>
 </div>
 
+<!-- ===== FEATURES ===== -->
+<section class="mz-section">
+  <div class="mz-section-head">
+    <span class="mz-section-kicker">Todo en un solo sitio</span>
+    <h2 class="mz-section-title">Lo que encontrarás en tu academia</h2>
+    <p class="mz-section-sub">
+      Un campus completo para gestionar cursos, docentes y alumnado — sin depender
+      de hojas de cálculo, grupos de WhatsApp sueltos ni carpetas compartidas.
+    </p>
+  </div>
+  <div class="mz-feat-grid">
+    <div class="mz-feat-card">
+      <div class="mz-feat-icon">📅</div>
+      <div class="mz-feat-title">Calendario y horarios</div>
+      <div class="mz-feat-desc">Por módulo, con prácticas y días no lectivos. Exportable a Word con membrete oficial.</div>
+    </div>
+    <div class="mz-feat-card">
+      <div class="mz-feat-icon">📂</div>
+      <div class="mz-feat-title">Materiales con trazabilidad</div>
+      <div class="mz-feat-desc">Entrega digital y física, con confirmación de recepción por alumno.</div>
+    </div>
+    <div class="mz-feat-card">
+      <div class="mz-feat-icon">💬</div>
+      <div class="mz-feat-title">Chat y avisos</div>
+      <div class="mz-feat-desc">Mensajería directa entre docentes y alumnado, sin salir del portal.</div>
+    </div>
+    <div class="mz-feat-card">
+      <div class="mz-feat-icon">🎥</div>
+      <div class="mz-feat-title">Videollamadas propias</div>
+      <div class="mz-feat-desc">Clases en directo con servidor propio. El docente siempre es quien modera.</div>
+    </div>
+    <div class="mz-feat-card">
+      <div class="mz-feat-icon">🧑‍🏫</div>
+      <div class="mz-feat-title">Panel de administración</div>
+      <div class="mz-feat-desc">Docentes, cursos, horarios y asignaciones desde un único sitio.</div>
+    </div>
+    <div class="mz-feat-card">
+      <div class="mz-feat-icon">📊</div>
+      <div class="mz-feat-title">Seguimiento de actividad</div>
+      <div class="mz-feat-desc">Conexión, tiempo activo y progreso por alumno y curso, exportable a CSV.</div>
+    </div>
+    <div class="mz-feat-card">
+      <div class="mz-feat-icon">📱</div>
+      <div class="mz-feat-title">Notificaciones</div>
+      <div class="mz-feat-desc">Avisos para docentes y alumnado, sin depender de un grupo de WhatsApp.</div>
+    </div>
+    <div class="mz-feat-card">
+      <div class="mz-feat-icon">📄</div>
+      <div class="mz-feat-title">Documentación oficial</div>
+      <div class="mz-feat-desc">Horarios y fichas en Word listos para justificar la formación ante la administración.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== LANBIDE ===== -->
+<section class="mz-section">
+  <div class="mz-lanbide-card">
+    <div>
+      <span class="mz-lanbide-badge">✓ Formación subvencionada</span>
+      <h2 class="mz-lanbide-title">Preparado para Lanbide</h2>
+      <p class="mz-lanbide-text">
+        Aurora Campus no es solo un portal de cursos: está pensado para poder
+        justificar la formación subvencionada ante la administración, con los
+        datos que Lanbide y el SEPE piden en una inspección — y con la
+        integración técnica que exige la modalidad de teleformación.
+      </p>
+    </div>
+    <ul class="mz-lanbide-list">
+      <li><span class="mz-lanbide-check">✓</span> Seguimiento de actividad por alumno, curso y fecha</li>
+      <li><span class="mz-lanbide-check">✓</span> Registro de asistencia a clases y prácticas</li>
+      <li><span class="mz-lanbide-check">✓</span> Trazabilidad de entrega de materiales (digital y físico)</li>
+      <li><span class="mz-lanbide-check">✓</span> Horarios exportables con membrete oficial</li>
+      <li><span class="mz-lanbide-check">✓</span> Servicio de seguimiento SOAP (Anexo V) integrado</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ===== CTA ===== -->
+<section class="mz-section">
+  <div class="mz-cta-card">
+    <h2 class="mz-cta-title">¿Quieres esto para tu academia?</h2>
+    <p class="mz-cta-sub">Adaptamos el nombre, el logo y los colores a tu centro.</p>
+    <a class="mz-hero-cta" href="https://webimpulsa.es/#precios" target="_blank" rel="noopener">
+      Hablemos →
+    </a>
+  </div>
+</section>
+
+{% if force_login %}
 <script>
-(function(){
-  const logEl   = document.getElementById('mz-ai-log');
-  const inputEl = document.getElementById('mz-ai-input');
-  const btnEl   = document.getElementById('mz-ai-send');
-  if (!logEl || !inputEl || !btnEl) return;
-
-  // история сообщений и текущая роль
-  const history = [];
-  let portalRole = 'visitor';
-
-function detectRoleFromText(text) {
-  const t = (text || '').toLowerCase();
-
-  // === ЯВНО: "я ученик / я студент / soy alumno..."
-  if (
-    /(soy|yo soy|я)\s+(alumn[oa]|estudiante|ученик|студент)/.test(t) ||
-    /\bsoy alumno\b/.test(t) ||
-    /\bsoy alumna\b/.test(t)
-  ) {
-    return 'alumno';
-  }
-
-  // === ЯВНО: "я учитель / soy docente..."
-  if (
-    /(soy|yo soy|я)\s+(docente|profesor[a]?|преподаватель|учитель)/.test(t) ||
-    /\bsoy docente\b/.test(t) ||
-    /\bsoy profesor\b/.test(t) ||
-    /\bsoy profesora\b/.test(t)
-  ) {
-    return 'docente';
-  }
-
-  // === ЯВНО: "я админ / soy admin..."
-  if (
-    /(soy|yo soy|я)\s+(admin|administrador[a]?|админ|администратор)/.test(t) ||
-    /\bsoy admin\b/.test(t)
-  ) {
-    return 'admin';
-  }
-
-  // === НЕЯВНО: спрашивают ПРО учителя / profesora / profe ===
-  if (
-    /учител[ья]/.test(t) ||
-    /преподавател[ья]/.test(t) ||
-    /\bdocente\b/.test(t) ||
-    /\bprofesor\b/.test(t) ||
-    /\bprofesora\b/.test(t) ||
-    /\bprofe\b/.test(t)
-  ) {
-    return 'docente';
-  }
-
-  // === НЕЯВНО: спрашивают ПРО панель учителя ===
-  if (
-    /панель\s+учител/.test(t) ||
-    /учительск[а-я]*\s+панел/.test(t) ||
-    /panel\s+(de\s+)?(docente|profesor)/.test(t)
-  ) {
-    return 'docente';
-  }
-
-  // === НЕЯВНО: спрашивают ПРО админа / панель админа ===
-  if (
-    /панель\s+администрат/.test(t) ||
-    /админск[а-я]*\s+панел/.test(t) ||
-    /\badmin\b/.test(t) ||
-    /\badministraci[oó]n\b/.test(t)
-  ) {
-    return 'admin';
-  }
-
-  // если явного сигнала нет — оставляем прежнюю роль
-  return portalRole;
-}
-
-
-  function addMsg(role, text){
-    const div = document.createElement('div');
-    div.className = 'mz-ai-msg ' + (role === 'user' ? 'me' : 'bot');
-    const bubble = document.createElement('div');
-    bubble.className = 'mz-ai-bubble';
-    bubble.innerHTML = text.replace(/\n/g,'<br>');
-    div.appendChild(bubble);
-    logEl.appendChild(div);
-    logEl.scrollTop = logEl.scrollHeight;
-
-    history.push({ role: role === 'user' ? 'user' : 'assistant', content: text });
-    if (history.length > 10) history.splice(0, history.length - 10);
-  }
-
-  // стартовое сообщение — теперь ПОСЛЕ объявления history и addMsg
-  addMsg('assistant',
-    "<strong>Hola, soy el asistente de Aurora Campus.</strong><br>" +
-    "Puedo explicarte cómo funciona el portal, qué verás en las pestañas de un curso " +
-    "（Información, Materiales, Calendario, Alumnos, IA, Chat）y cómo entrar con tu PIN o contraseña."
-  );
-
-  async function send(){
-    const q = (inputEl.value || '').trim();
-    if (!q) return;
-
-    // авто-детекция роли по тексту
-    portalRole = detectRoleFromText(q);
-
-    addMsg('user', q);
-    inputEl.value = '';
-    inputEl.focus();
-    btnEl.disabled = true;
-    const oldTxt = btnEl.textContent;
-    btnEl.textContent = 'Pensando…';
-    document.getElementById('mz-ai-footnote').textContent = 'Generando respuesta…';
-
-    const payload = {
-      question: q,
-      role: portalRole,
-      // teacher_email / admin_pass пока не используем — позже добавим, когда сделаем верификацию
-    };
-
-    try{
-      const r = await fetch('/v5/ai/help', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload),
-      });
-
-      const j = await r.json();
-
-      if (!r.ok) {
-        const msg = (j && (j.message || j.error))
-          ? (j.message || j.error)
-          : ('Error ' + r.status);
-
-        addMsg('assistant', msg);
-        document.getElementById('mz-ai-footnote').textContent =
-          'Responde solo sobre Aurora Campus.';
-        return;
-      }
-
-      const ans = (j.answer || j.message || 'No se pudo generar respuesta.').trim();
-      addMsg('assistant', ans);
-      document.getElementById('mz-ai-footnote').textContent =
-        'Responde solo sobre Aurora Campus.';
-    }catch(e){
-      addMsg('assistant',
-        'Lo siento, ahora mismo no puedo responder: ' +
-        (e.message || 'Error de conexión con la IA local.')
-      );
-      document.getElementById('mz-ai-footnote').textContent =
-        'Error de conexión con la IA local.';
-    }finally{
-      btnEl.disabled = false;
-      btnEl.textContent = oldTxt;
-    }
-  }
-
-  btnEl.addEventListener('click', send);
-  inputEl.addEventListener('keydown', e=>{
-    if (e.key === 'Enter' && !e.shiftKey){
-      e.preventDefault();
-      send();
-    }
-  });
-
-  {% if force_login %}
-  window.addEventListener('load', ()=>{
-    if (window.mzOpenAuth) window.mzOpenAuth();
-    else window.dispatchEvent(new Event('aurora:openAuth'));
-  });
-  {% endif %}
-})();
+window.addEventListener('load', ()=>{
+  if (window.mzOpenAuth) window.mzOpenAuth();
+  else window.dispatchEvent(new Event('aurora:openAuth'));
+});
 </script>
+{% endif %}
 
 {% endblock %}
