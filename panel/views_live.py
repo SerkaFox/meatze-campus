@@ -52,10 +52,6 @@ def _build_jitsi_jwt(*, room: str, user_name: str, is_teacher: bool) -> str | No
     if not getattr(settings, "JITSI_JWT_ENABLED", False):
         return None
 
-    # ❗ JWT ТОЛЬКО ДЛЯ УЧИТЕЛЯ
-    if not is_teacher:
-        return None
-
     secret = getattr(settings, "JITSI_JWT_SECRET", "") or ""
     if not secret:
         return None
@@ -67,6 +63,12 @@ def _build_jitsi_jwt(*, room: str, user_name: str, is_teacher: bool) -> str | No
 
     now = int(time.time())
 
+    # ❗ Emitimos JWT para TODOS (profesor y alumnado), no solo para el
+    # profesor: si el alumnado entra sin token, Jicofo puede asignarle
+    # moderador igualmente si entra antes que el profesor (comportamiento
+    # por defecto de Jitsi cuando la sala está vacía). Emitiendo siempre
+    # un JWT con moderator=False para el alumnado forzamos el rol
+    # explícitamente, sin depender del orden de entrada.
     payload = {
       "aud": aud,
       "iss": app_id,
@@ -77,8 +79,8 @@ def _build_jitsi_jwt(*, room: str, user_name: str, is_teacher: bool) -> str | No
       "context": {
         "user": {
           "name": user_name,
-          "affiliation": "owner",
-          "moderator": True,
+          "affiliation": "owner" if is_teacher else "member",
+          "moderator": bool(is_teacher),
         }
       },
     }

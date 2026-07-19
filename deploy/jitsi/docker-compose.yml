@@ -1,4 +1,4 @@
-# MEATZE Jitsi — video conferencing stack (based on official docker-jitsi-meet).
+# Aurora Jitsi — video conferencing stack (based on official docker-jitsi-meet).
 # https://github.com/jitsi/docker-jitsi-meet
 #
 # Setup:
@@ -12,7 +12,7 @@
 # Requires: public HTTPS on PUBLIC_URL and UDP 10000 reachable from clients.
 # JWT is enabled and MUST match Django settings (JITSI_JWT_*).
 
-name: meatze-jitsi
+name: aurora-jitsi
 
 x-jitsi-tag: &jitsi_tag stable-9823
 
