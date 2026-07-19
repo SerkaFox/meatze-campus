@@ -4,7 +4,7 @@
 <head>
   {% include "includes/google_tag.html" %}
   <meta charset="utf-8">
-  <title>{% block title %}MEATZE{% endblock %}</title>
+  <title>{% block title %}Aurora Campus (demo){% endblock %}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <link rel="icon" href="{% static 'files/logo.png' %}?v={% now 'U' %}" type="image/png">
@@ -13,29 +13,33 @@
   <link rel="icon" href="{% static 'favicon.png' %}">
 
   {% if not request.GET.next %}
-  <link rel="canonical" href="https://meatzeaula.es{{ request.path }}">
+  <link rel="canonical" href="https://curso.webimpulsa.es{{ request.path }}">
   {% endif %}
+  <meta name="robots" content="noindex,nofollow">
 
   {% block extra_head %}{% endblock %}
 
-  <link rel="stylesheet" href="{% static 'meatze/site.css' %}?v={% now 'U' %}">
-  <link rel="stylesheet" href="{% static 'meatze/chat_widget/chat-widget.css' %}">
+  <link rel="stylesheet" href="{% static 'aurora/site.css' %}?v={% now 'U' %}">
   
 <script>
-  window.MEATZE = window.MEATZE || {};
-  window.MEATZE.HELP_ATTENTION_ENABLED = true;       // включишь потом
-  window.MEATZE.HELP_ATTENTION_STRONG = true;        // сильная анимация
-  window.MEATZE.HELP_ATTENTION_STRICT = false;        // мигать только если реально есть help
-  window.MEATZE.HELP_ATTENTION_MAX_MS = 0;        // авто-стоп через 12с (12000 можно 0 = без лимита)
+  window.AURORA = window.AURORA || {};
+  window.AURORA.HELP_ATTENTION_ENABLED = true;       // включишь потом
+  window.AURORA.HELP_ATTENTION_STRONG = true;        // сильная анимация
+  window.AURORA.HELP_ATTENTION_STRICT = false;        // мигать только если реально есть help
+  window.AURORA.HELP_ATTENTION_MAX_MS = 0;        // авто-стоп через 12с (12000 можно 0 = без лимита)
 </script>
 </head>
 
 <body>
 
+<a href="https://webimpulsa.es/#precios" target="_blank" rel="noopener" class="mz-demo-badge">
+  🎓 Demo de plantilla — Web-Impulsa
+</a>
+
 <header id="mz-top">
   <div class="mz-top-inner">
     <a href="/" class="mz-brand">
-      <span>MEATZE</span>
+      <span>AURORA</span>
       <span class="mz-brand-badge">Campus</span>
     </a>
 
@@ -102,11 +106,11 @@
 
 <!-- ====== JS CORE ====== -->
 <script>
-  window.MEATZE = window.MEATZE || {};
-  window.MEATZE.V5 = (location.origin + '/').replace(/\/$/, '') + '/meatze/v5';
+  window.AURORA = window.AURORA || {};
+  window.AURORA.V5 = (location.origin + '/').replace(/\/$/, '') + '/v5';
 </script>
 
-<script src="{% static 'meatze/core/api.js' %}"></script>
+<script src="{% static 'aurora/core/api.js' %}"></script>
 
 <!-- ====== Account menu + logout (оставляем поведение, но без auth/profile модалок) ====== -->
 <script>
@@ -152,7 +156,7 @@
     }
 
     if (action === 'logout') {
-      try { await fetch('/meatze/v5/auth/logout', { method:'POST', credentials:'include' }); } catch(_){}
+      try { await fetch('/v5/auth/logout', { method:'POST', credentials:'include' }); } catch(_){}
       location.href = '/';
     }
   });
@@ -167,7 +171,7 @@
   if (location.pathname.startsWith('/acceder')) return;
 
   try{
-    const r = await fetch('/meatze/v5/me/profile', { credentials:'include', cache:'no-store' });
+    const r = await fetch('/v5/me/profile', { credentials:'include', cache:'no-store' });
     if (!r.ok) return;
 
     const j = await r.json();
@@ -181,11 +185,6 @@
   }catch(_){}
 })();
 </script>
-<!-- ====== ЧАТ: как в оригинале ====== -->
-{% include "includes/chat_widget.html" %}
-<script src="{% static 'meatze/chat_widget/chat-widget.js' %}"></script>
-
-
 {% block extra_js %}{% endblock %}
 
 <!-- ===== HELP (global) ===== -->
@@ -209,13 +208,13 @@
   }
 
 function buildContextUrl(){
-  const base = (window.MEATZE?.V5 || '/meatze/v5').replace(/\/$/, '');
+  const base = (window.AURORA?.V5 || '/v5').replace(/\/$/, '');
   const dbg = new URLSearchParams(location.search).get("help_debug") === "1";
 
   const path = location.pathname || "/";
   const query = location.search ? location.search.slice(1) : "";
 
-  const ui = (window.MEATZE?.HELP_UI || "").trim(); // 👈 ВАЖНО
+  const ui = (window.AURORA?.HELP_UI || "").trim(); // 👈 ВАЖНО
 
   return base + '/help/context'
     + '?path=' + encodeURIComponent(path)
@@ -233,7 +232,7 @@ function buildContextUrl(){
 
     const win = window.open(
       'about:blank',
-      'MEATZE_HELP',
+      'AURORA_HELP',
       `popup=yes,width=${w},height=${h},left=${left},top=${top}`
     );
 
@@ -337,7 +336,7 @@ function buildContextUrl(){
   });
     // ===== HELP ATTENTION (SAME SCOPE) =====
   (function(){
-    if (!window.MEATZE || window.MEATZE.HELP_ATTENTION_ENABLED !== true) return;
+    if (!window.AURORA || window.AURORA.HELP_ATTENTION_ENABLED !== true) return;
 
 	function pageKey(){
 	  const path = location.pathname || "/";
@@ -348,7 +347,7 @@ function buildContextUrl(){
 	  // const focus = (sp.get("focus") || "").trim();
 	  // return `mz_help_seen::${path}::tab=${tab}::focus=${focus}`;
 
-	  const role = (window.MEATZE && window.MEATZE.ROLE) ? String(window.MEATZE.ROLE) : "";
+	  const role = (window.AURORA && window.AURORA.ROLE) ? String(window.AURORA.ROLE) : "";
 	  return `mz_help_seen::${role}::${path}::tab=${tab}`;
 	}
 	function markSeen(){
@@ -358,7 +357,7 @@ function buildContextUrl(){
     const seen = localStorage.getItem(key) === "1";
 
     function enable(){
-      const strong = window.MEATZE.HELP_ATTENTION_STRONG === true;
+      const strong = window.AURORA.HELP_ATTENTION_STRONG === true;
       btn.classList.add(strong ? 'is-attn-strong' : 'is-attn');
 
       const badge = document.getElementById('mz-help-badge');
@@ -376,7 +375,7 @@ function buildContextUrl(){
     async function shouldBlink(){
       if (seen) return false;
 
-      if (window.MEATZE.HELP_ATTENTION_STRICT !== true) return true;
+      if (window.AURORA.HELP_ATTENTION_STRICT !== true) return true;
 
       // strict: мигаем только если реально есть embed_url
       try{
@@ -402,7 +401,7 @@ function buildContextUrl(){
 
       enable();
 
-      const maxMs = Number(window.MEATZE.HELP_ATTENTION_MAX_MS || 0);
+      const maxMs = Number(window.AURORA.HELP_ATTENTION_MAX_MS || 0);
       if (maxMs > 0){
         setTimeout(() => disable(), maxMs);
       }
@@ -411,12 +410,16 @@ function buildContextUrl(){
 })();
 </script>
 <footer class="mz-footer" style="margin-top:40px;padding:16px;text-align:center;font-size:13px;color:#8b9bb4;border-top:1px solid rgba(148,163,184,.2);">
-  <a href="https://meatzeaula.es/privacy/" style="color:#94a3b8;text-decoration:underline;">
+  <a href="/privacy/" style="color:#94a3b8;text-decoration:underline;">
     Privacy Policy
   </a>
   <span style="margin:0 10px;">•</span>
-  <a href="https://meatzeaula.es/terms/" style="color:#94a3b8;text-decoration:underline;">
+  <a href="/terms/" style="color:#94a3b8;text-decoration:underline;">
     Terms of Service
+  </a>
+  <span style="margin:0 10px;">•</span>
+  <a href="https://webimpulsa.es/" style="color:#94a3b8;text-decoration:underline;" target="_blank" rel="noopener">
+    Web hecha por Web-Impulsa
   </a>
 </footer>
 
@@ -424,13 +427,13 @@ function buildContextUrl(){
 
 <script>
   // ===== CHECKLIST PANEL: OFF =====
-  window.MEATZE = window.MEATZE || {};
-  window.MEATZE.CHECKLIST_ENABLED = false; // <-- включишь потом true
+  window.AURORA = window.AURORA || {};
+  window.AURORA.CHECKLIST_ENABLED = false; // <-- включишь потом true
 </script>
 
 <script>
 (function(){
-  if (window.MEATZE && window.MEATZE.CHECKLIST_ENABLED === false) return;
+  if (window.AURORA && window.AURORA.CHECKLIST_ENABLED === false) return;
   if (window.__MZ_CHECKLIST__) return;
   window.__MZ_CHECKLIST__ = true;
 
@@ -445,7 +448,7 @@ function buildContextUrl(){
   btn?.addEventListener('click', () => box.classList.toggle('is-hidden'));
 
   function getCourseCode(){
-    if (window.MEATZE?.COURSE_CODE) return String(window.MEATZE.COURSE_CODE || '').trim();
+    if (window.AURORA?.COURSE_CODE) return String(window.AURORA.COURSE_CODE || '').trim();
     const m = location.pathname.match(/\/curso\/([^\/]+)\//);
     return m ? m[1] : '';
   }

@@ -2,7 +2,7 @@
 <input type="hidden" id="mz-csrf" value="{{ csrf_token }}">
 <style>
 /* ================================
-   MEATZE · TAB ALUMNOS (DOCENTES)
+   AURORA · TAB ALUMNOS (DOCENTES)
 ================================= */
 
 #mz-alumnos-tab .mz-alu-head{
@@ -940,7 +940,7 @@
     if (!root) return;
 
     const courseCode = root.dataset.courseCode;
-    const V5_API = '/meatze/v5';
+    const V5_API = '/v5';
 
     const $cnt = root.querySelector('#mz-temp-count');
     const $gen = root.querySelector('#mz-temp-gen');
@@ -1198,9 +1198,9 @@ function renderTempTable(list){
   const courseCode = (document.querySelector('#mz-temp-root')?.dataset.courseCode) || '';
   if (!courseCode) return;
 
-  const V5 = (window.MEATZE && window.MEATZE.V5)
-    ? window.MEATZE.V5.replace(/\/$/,'')
-    : (location.origin + '/meatze/v5');
+  const V5 = (window.AURORA && window.AURORA.V5)
+    ? window.AURORA.V5.replace(/\/$/,'')
+    : (location.origin + '/v5');
 
   const STATUS_URL = `/alumno/curso/${courseCode}/alumnos/status`;
   const DECIDE_URL = `${V5}/teacher/attendance/decide`;
@@ -1386,13 +1386,13 @@ function renderTempTable(list){
       for (const sid in pres){
         if (String(pres[sid]?.status || '') === 'PENDING') pending++;
       }
-      window.MEATZE = window.MEATZE || {};
-      window.MEATZE.ATTENDANCE = {
+      window.AURORA = window.AURORA || {};
+      window.AURORA.ATTENDANCE = {
         pending_count: pending,
         presence: pres,
         courseCode: courseCode
       };
-      window.dispatchEvent(new CustomEvent('meatze:attendance', { detail: window.MEATZE.ATTENDANCE }));
+      window.dispatchEvent(new CustomEvent('aurora:attendance', { detail: window.AURORA.ATTENDANCE }));
     }catch(e){}
   }
 
@@ -1454,8 +1454,8 @@ function renderTempTable(list){
   if (!courseCode) return;
 
   // endpoints (проверь путь как ты добавил в urls.py)
-  const GET_URL = '/alumno/meatze/v5/teacher/student-modules/get';
-  const SET_URL = '/alumno/meatze/v5/teacher/student-modules/set';
+  const GET_URL = '/alumno/v5/teacher/student-modules/get';
+  const SET_URL = '/alumno/v5/teacher/student-modules/set';
 
   // dropdown node
   const dd = document.createElement('div');

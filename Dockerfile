@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libpq5 \
         curl \
         fonts-dejavu-core \
+        libreoffice-writer \
         libjpeg62-turbo \
         zlib1g \
     && if [ "$WITH_CHROMIUM" = "1" ]; then \

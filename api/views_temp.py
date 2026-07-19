@@ -39,7 +39,7 @@ def split_full_name(full_name: str):
     return first, last1, last2
 
 
-# --- POST /meatze/v5/teacher/temp/create ----------------------------
+# --- POST /v5/teacher/temp/create ----------------------------
 @csrf_exempt
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -117,7 +117,7 @@ def teacher_temp_create(request):
     })
     
 
-# --- GET /meatze/v5/teacher/temp/list -------------------------------
+# --- GET /v5/teacher/temp/list -------------------------------
 @csrf_exempt
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -149,7 +149,7 @@ def teacher_temp_list(request):
     })
 
 
-# --- POST /meatze/v5/teacher/temp/rotate ----------------------------
+# --- POST /v5/teacher/temp/rotate ----------------------------
 @csrf_exempt
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -183,7 +183,7 @@ def teacher_temp_rotate(request):
 
     return Response({"ok": True, "key": ta.key})
 
-# --- GET /meatze/v5/auth/temp_accounts ------------------------------
+# --- GET /v5/auth/temp_accounts ------------------------------
 @csrf_exempt
 @api_view(["GET"])
 @permission_classes([AllowAny])
@@ -207,7 +207,7 @@ def auth_temp_accounts(request):
     return Response({"items": list(items_qs)})
 
 
-# --- POST /meatze/v5/auth/temp_verify -------------------------------
+# --- POST /v5/auth/temp_verify -------------------------------
 @csrf_exempt
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -243,7 +243,7 @@ def auth_temp_verify(request):
     return Response({"ok": True})
     
 
-# --- POST /meatze/v5/auth/temp_claim --------------------------------
+# --- POST /v5/auth/temp_claim --------------------------------
 @csrf_exempt
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -327,7 +327,7 @@ def auth_temp_claim(request):
     django_login(django_request, user)
 
     return Response({"ok": True, "email": email, "me": build_me(user)})
-# POST /meatze/v5/teacher/alumno/reset_pass
+# POST /v5/teacher/alumno/reset_pass
 @csrf_exempt
 @api_view(["POST"])
 @permission_classes([AllowAny])

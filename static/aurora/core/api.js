@@ -1,4 +1,4 @@
-/* static/meatze/core/api.js */
+/* static/aurora/core/api.js */
 (() => {
   'use strict';
 

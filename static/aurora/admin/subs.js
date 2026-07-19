@@ -11,8 +11,8 @@
   let subsCache = null;
 
   // API helpers
-  // В Django wpApiSettings нет, так что достаточно корня + /meatze/v5
-  const API_BASE = '/meatze/v5';
+  // В Django wpApiSettings нет, так что достаточно корня + /v5
+  const API_BASE = '/v5';
   // Новый namespace, чтобы не мешать старым /news/*
   const API_N = API_BASE + '/notify';
   const tok = () => sessionStorage.getItem('mz_admin') || '';
@@ -207,7 +207,7 @@ const qs = (bust=false) => (bust ? `?_=${Date.now()}` : '');
     const previewText =
       `Hola ${name},\n\n` +
       `${bodyPart}\n\n` +
-      `“Gracias por formar parte de MEATZE.”\n` +
+      `“Gracias por formar parte de AURORA.”\n` +
       `Responde aquí y te contactaremos en breve.`;
 
     textEl.textContent = previewText;

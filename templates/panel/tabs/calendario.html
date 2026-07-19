@@ -477,7 +477,7 @@ colorMap = buildColorMap(state.keys);
 MZPanel.mount('cal', root, {
   code: "{{ curso.codigo|escapejs }}",
   api,
-  V5_API: "/meatze/v5",
+  V5_API: "/v5",
   USER_ID: {{ USER_ID|default:"null" }},
   IS_TEACHER: {{ IS_TEACHER|yesno:"true,false" }}
 });

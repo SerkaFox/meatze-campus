@@ -131,14 +131,14 @@ def _teacher_welcome_text(request, tprof: UserProfile, codes: list[str]) -> str:
     if not codes:
         return (
             f"Hola {name} 👋\n"
-            "Eres *DOCENTE* en MEATZE.\n"
+            "Eres *DOCENTE* en AURORA.\n"
             f"Perfil: {link}\n\n"
             "Ahora mismo no tienes cursos asignados.\n"
             "Si esto es un error, avisa a administración."
         )
 
     lines = [f"Hola {name} 👋",
-             "Eres *DOCENTE* en MEATZE.",
+             "Eres *DOCENTE* en AURORA.",
              f"Perfil: {link}",
              "",
              "Tus cursos:"]
@@ -405,7 +405,7 @@ def build_month_calendar_html(codigo: str, year: int, month: int) -> str:
         <p class="h1">{month_name}</p>
         <p class="h2">{title}</p>
       </div>
-      <div class="badge">MEATZE · Docentes</div>
+      <div class="badge">AURORA · Docentes</div>
     </div>
 
     <div class="grid" style="margin-bottom:10px;">
@@ -479,7 +479,7 @@ def render_html_to_png_bytes(html: str, width: int = 1100, height: int = 0, devi
 @authentication_classes([])
 def teacher_calendar_media(request):
     """
-    POST /meatze/v5/notify/teacher-calendar
+    POST /v5/notify/teacher-calendar
     body: { "codigo":"IFCT0309", "year":2026, "month":1 }
     Возвращает { ok:true, url:"https://.../media/..." , legend:"..." }
     (Пока без auth — но лучше потом защитить, если надо)
@@ -579,7 +579,7 @@ def find_teacher_by_wa(wa9: str):
 
 def default_reply_text(profile_name: str) -> str:
     return (
-        "Hola 👋 Gracias por escribir a MEATZE.\n"
+        "Hola 👋 Gracias por escribir a AURORA.\n"
         "Hemos recibido tu mensaje. Te responderemos en breve."
     )
 
@@ -627,38 +627,12 @@ def wa_msisdn(num: str) -> str:
 
 def wa_api(path: str, body: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Аналог mz_wa_api: POST в Graph API.
+    Envío por WhatsApp Cloud API deshabilitado (se pasó a usar WhatsApp Web
+    manualmente). Se deja el resto del pipeline (plantillas, broadcast, etc.)
+    intacto para poder reactivar el envío por API en el futuro sin más cambios
+    que reescribir esta función.
     """
-    token = getattr(settings, "WA_TOKEN", "")
-    phone_id = getattr(settings, "WA_PHONE_ID", "")
-    if not token or not phone_id:
-        return {"ok": False, "err": "WA config missing"}
-
-    url = f"https://graph.facebook.com/v20.0/{path}"
-    try:
-        r = requests.post(
-            url,
-            json=body,
-            timeout=20,
-            headers={
-                "Authorization": f"Bearer {token}",
-                "Content-Type": "application/json",
-            },
-        )
-    except Exception as e:
-        log.exception("WA request error")
-        return {"ok": False, "err": str(e)}
-
-    try:
-        j = r.json()
-    except Exception:
-        j = {"raw": r.text}
-
-    return {
-        "ok": r.status_code in (200, 201),
-        "code": r.status_code,
-        "resp": j,
-    }
+    return {"ok": False, "err": "WA API disabled"}
 
 
 def wa_send_text(to: str, text: str) -> Dict[str, Any]:
@@ -682,7 +656,7 @@ def wa_send_text(to: str, text: str) -> Dict[str, Any]:
     return wa_api(f"{phone_id}/messages", body)
 
 
-def wa_send_document(to: str, doc_url: str, filename: str = "Documento_MEATZE.pdf") -> Dict[str, Any]:
+def wa_send_document(to: str, doc_url: str, filename: str = "Documento_AURORA.pdf") -> Dict[str, Any]:
     """
     Аналог mz_wa_send_document
     """
@@ -846,7 +820,7 @@ def store_inbox(wa, wa_name, txt, source="meatze", direction="in"):
 @authentication_classes([])
 def subscribers(request):
     """
-    GET /meatze/v5/notify/subscribers
+    GET /v5/notify/subscribers
     Возвращает словарь wa -> {name, loc, active}, как в WP.
     """
     err = _require_admin(request)
@@ -869,7 +843,7 @@ def subscribers(request):
 @authentication_classes([])
 def wa_upsert(request):
     """
-    POST /meatze/v5/notify/wa-upsert
+    POST /v5/notify/wa-upsert
     Тело: { wa, name, loc, active }
     """
     err = _require_admin(request)
@@ -958,7 +932,7 @@ def build_course_rows(cursos: list[Curso]) -> list[dict]:
 @authentication_classes([])
 def wa_delete(request):
     """
-    POST /meatze/v5/notify/wa-delete
+    POST /v5/notify/wa-delete
     { "wa": "600123123" }
     """
     err = _require_admin(request)
@@ -979,7 +953,7 @@ def wa_delete(request):
 @authentication_classes([])
 def wa_toggle(request):
     """
-    POST /meatze/v5/notify/wa-toggle
+    POST /v5/notify/wa-toggle
     — меняет active 0/1
     """
     err = _require_admin(request)
@@ -1013,7 +987,7 @@ from django.core.files.uploadedfile import UploadedFile
 @permission_classes([])
 def wa_import(request):
     """
-    POST /meatze/v5/notify/wa-import
+    POST /v5/notify/wa-import
     form-data: file (CSV/XLSX), loc (Bilbao|Barakaldo|'')
     """
     err = _require_admin(request)
@@ -1171,7 +1145,7 @@ def wa_import(request):
 @authentication_classes([])
 def upload_wa(request):
     """
-    POST /meatze/v5/notify/upload-wa
+    POST /v5/notify/upload-wa
     form-data: file
     Возвращает url + filename, как WP upload-wa.
     """
@@ -1197,7 +1171,7 @@ def upload_wa(request):
 @authentication_classes([])
 def broadcast(request):
     """
-    POST /meatze/v5/notify/broadcast
+    POST /v5/notify/broadcast
     Тело максимально похоже на WP /news/broadcast, но реализуем только канал 'wa'.
 
     Важные поля:
@@ -1222,7 +1196,7 @@ def broadcast(request):
     test_wa = "".join(ch for ch in str(b.get("test_wa") or "") if ch.isdigit())
     wa_tpl = b.get("wa_tpl") or "broadcast"
     wa_media_url = (b.get("wa_media_url") or "").strip()
-    wa_media_name = (b.get("wa_media_name") or "").strip() or "Ficha_MEATZE.pdf"
+    wa_media_name = (b.get("wa_media_name") or "").strip() or "Ficha_AURORA.pdf"
     wa_loc = (b.get("wa_loc") or "").strip()
     if wa_loc not in ("Bilbao", "Barakaldo"):
         wa_loc = ""
@@ -1444,7 +1418,7 @@ def ws_webhook(request):
 
             link = request.build_absolute_uri("/acceder/?tab=profile")
             name = (tprof.display_name or tprof.build_display_name() or "profe").strip()
-            header = "MEATZE · Docentes"
+            header = "AURORA · Docentes"
             body = f"Hola {name} 👋\nPerfil: {link}\n\nTus cursos (elige uno):"
             rows = build_course_rows(cursos)
 
@@ -1476,7 +1450,7 @@ def ws_webhook(request):
     if admin_wa:
         prev = txt[:400] or "[mensaje vacío]"
         admin_msg = (
-            "Nuevo mensaje recibido en *MEATZE*:\n\n"
+            "Nuevo mensaje recibido en *AURORA*:\n\n"
             f"De: {profile or 'Sin nombre'}\n"
             f"Número: +{from_plain}\n"
         )
@@ -1492,7 +1466,7 @@ def ws_webhook(request):
 @permission_classes([])         # без DRF-permissions, только наш guard
 def wa_clear(request):
     """
-    POST /meatze/v5/notify/wa-clear
+    POST /v5/notify/wa-clear
     Полностью очищает таблицу WhatsApp-контактов.
     """
     err = _require_admin(request)
@@ -1509,7 +1483,7 @@ def wa_clear(request):
 @permission_classes([AllowAny])
 def wa_inbox(request):
     """
-    GET /meatze/v5/notify/wa-inbox?limit=50
+    GET /v5/notify/wa-inbox?limit=50
     Отдаём последние N сообщений для панели чата.
     Формат под wa.js: { items: [ {id, wa, msg, created_at, wa_name, sub_name, loc, direction}, ... ] }
     """
@@ -1552,7 +1526,7 @@ def wa_inbox(request):
 @permission_classes([AllowAny])
 def wa_inbox_delete(request):
     """
-    POST /meatze/v5/notify/wa-inbox-delete
+    POST /v5/notify/wa-inbox-delete
     { "wa": "600123123" }
     """
     err = _require_admin(request)
@@ -1572,7 +1546,7 @@ def wa_inbox_delete(request):
 @permission_classes([AllowAny])
 def wa_reply(request):
     """
-    POST /meatze/v5/notify/wa-reply
+    POST /v5/notify/wa-reply
     { "wa": "600123123", "text": "..." }
     Отправляет текст в WhatsApp и пишет запись в WaInbox (direction='out').
     """
@@ -1627,7 +1601,7 @@ OLLAMA_MODEL = getattr(settings, "OLLAMA_MODEL", "llama3.1")
 @authentication_classes([])
 def ai_portal_helper(request):
     """
-    POST /meatze/v5/ai/portal_helper
+    POST /v5/ai/portal_helper
     { "question": "...", "history": [ { "role": "user"|"assistant", "content": "..." }, ... ] }
     """
     question = (request.data.get("question") or "").strip()
@@ -1654,17 +1628,17 @@ def ai_portal_helper(request):
         kb_context = ""
 
     system_prompt = (
-        "Eres *Asistente MEATZE Campus*, un ayudante virtual del portal de formación MEATZE.\n"
+        "Eres *Asistente Aurora Campus*, un ayudante virtual del portal de formación Aurora Campus (demo).\n"
         "- Respondes SIEMPRE en español (puedes aclarar algo en euskera o ruso si el usuario lo usa).\n"
-        "- SOLO puedes hablar de MEATZE, del portal alumno, de los cursos subvencionados, módulos, "
+        "- SOLO puedes hablar de Aurora Campus, del portal alumno, de los cursos subvencionados, módulos, "
         "calendario, materiales, chat, IA, acceso, contraseñas, etc.\n"
         "- NO puedes inventar botones, secciones, apps móviles ni formularios de registro que NO estén "
         "descritos en el CONTEXTO que recibes.\n"
         "- Si en el contexto no aparece una funcionalidad (por ejemplo 'Registro', 'app móvil'), debes "
         "decir claramente que el portal NO tiene eso y explicar cómo se accede realmente (por PIN, "
         "correo del centro, etc.).\n"
-        "- Si te preguntan algo que no sea sobre MEATZE o sobre este portal, respondes brevemente "
-        "que este asistente solo puede ayudar con el campus MEATZE y propones alguna acción dentro del portal.\n"
+        "- Si te preguntan algo que no sea sobre AURORA o sobre este portal, respondes brevemente "
+        "que este asistente solo puede ayudar con el campus AURORA y propones alguna acción dentro del portal.\n"
         "- Sé claro, breve y práctico. Ejemplos: cómo entrar, cómo ver calendario, cómo funcionan los módulos, "
         "qué es la pestaña 'IA', cómo contactar por WhatsApp, etc.\n"
     )
@@ -1672,9 +1646,9 @@ def ai_portal_helper(request):
     # Вшиваем контекст базы в промпт
     if kb_context:
         system_prompt += (
-            "\n\n[CONTEXTO TÉCNICO DEL PORTAL MEATZE]\n"
+            "\n\n[CONTEXTO TÉCNICO DEL PORTAL AURORA]\n"
             "Usa SOLO la siguiente información para responder. Si algo no aparece aquí, responde que "
-            "no lo sabes o que no existe en el portal y recomienda contactar con el centro MEATZE.\n\n"
+            "no lo sabes o que no existe en el portal y recomienda contactar con el centro AURORA.\n\n"
             f"{kb_context}\n"
         )
 

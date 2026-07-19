@@ -4,7 +4,7 @@
   const $$ = (s,root=document)=>Array.from(root.querySelectorAll(s));
 
   // В Django нет /wp-json, поэтому сразу:
-  const API_BASE = '/meatze/v5';
+  const API_BASE = '/v5';
   const API_A    = API_BASE + '/admin';
 
 const KEY = 'mz_admin';
@@ -66,7 +66,7 @@ const qs = (bust=false) => (bust ? `?_=${Date.now()}` : '');
   // === Apply shared auth ===
   async function tryTokenShared(pwd){
     if (!pwd) return false;
-    setTok(pwd);          // храним ПЛЕЙН, сервер сверяет с MEATZE_ADMIN_PASS
+    setTok(pwd);          // храним ПЛЕЙН, сервер сверяет с AURORA_ADMIN_PASS
     try{
       await ping();
 document.getElementById('adm-shell')?.classList.remove('is-locked');
@@ -86,8 +86,8 @@ document.getElementById('adm-shell')?.classList.remove('is-locked');
 
       const last = localStorage.getItem('mz_admin_last') || 'cursos';
       showPanel(last);
-window.MEATZE = window.MEATZE || {};
-window.MEATZE.HELP_UI = "admin_mod:" + (last || "cursos");
+window.AURORA = window.AURORA || {};
+window.AURORA.HELP_UI = "admin_mod:" + (last || "cursos");
       document.dispatchEvent(new CustomEvent('mz:admin-auth', {detail:{ok:true}}));
       return true;
     }catch(_){
@@ -133,10 +133,27 @@ const map = {
   wa:'ui-wa',
   lanbide:'ui-lanbide',
 };
+const actionsTitle = document.getElementById('mz-admin-actions-title');
+const actionGroups = $$('.mz-actions-group');
+const actionTitles = {
+  teachers: 'Docentes',
+  cursos: 'Cursos',
+  horarios: 'Horarios',
+  lanbide: 'Lanbide',
+  subs: 'Subs',
+  wa: 'WhatsApp',
+};
 
+  function normalizeMod(mod){
+    const wanted = String(mod || 'cursos');
+    const btn = pillBtns.find(b => b.dataset.mod === wanted);
+    if (!map[wanted] || !btn || btn.hidden) return 'cursos';
+    return wanted;
+  }
 
   function showPanel(mod){
   if (!pills) return;
+  mod = normalizeMod(mod);
 
   // 1️⃣ выключаем ВСЕ панели
   Object.values(map).forEach(id=>{
@@ -154,6 +171,11 @@ const map = {
       detail:{mod}
     }));
   }
+
+  if (actionsTitle) actionsTitle.textContent = actionTitles[mod] || 'Panel';
+  actionGroups.forEach(group=>{
+    group.hidden = group.dataset.actionsFor !== mod;
+  });
 
   // 3️⃣ активная pill
   pillBtns.forEach(b=>{
@@ -184,13 +206,14 @@ try{
 
   localStorage.setItem('mz_admin_last', mod);
 }
+window.MZAdminShowPanel = showPanel;
 window.addEventListener('resize', ()=>{
   const last = localStorage.getItem('mz_admin_last') || 'cursos';
   // просто переустановит underline по текущей активной pill
   
   showPanel(last);
-  window.MEATZE = window.MEATZE || {};
-window.MEATZE.HELP_UI = "admin_mod:" + (mod || "cursos");
+  window.AURORA = window.AURORA || {};
+window.AURORA.HELP_UI = "admin_mod:" + (last || "cursos");
 }, {passive:true});
 
 
@@ -217,6 +240,46 @@ document.addEventListener('click', (e)=>{
   if (mod) showPanel(mod);
 });
 
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-admin-action-click]');
+  if (!btn) return;
+  const target = document.querySelector(btn.dataset.adminActionClick);
+  if (target) target.click();
+});
+
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-admin-anchor]');
+  if (!btn) return;
+  const before = btn.dataset.adminClickBefore;
+  if (before) document.querySelector(before)?.click();
+  setTimeout(()=>{
+    const target = document.querySelector(btn.dataset.adminAnchor);
+    target?.scrollIntoView({behavior:'smooth', block:'start'});
+    if (target){
+      target.classList.remove('mz-anchor-pulse');
+      void target.offsetWidth;
+      target.classList.add('mz-anchor-pulse');
+      window.setTimeout(()=> target.classList.remove('mz-anchor-pulse'), 1700);
+    }
+  }, before ? 80 : 0);
+});
+
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-guide-step]');
+  if (!btn) return;
+  const step = btn.dataset.guideStep;
+  if (step === 'teachers') showPanel('teachers');
+  if (step === 'horarios') showPanel('horarios');
+  if (step === 'cursos-form' || step === 'cursos-assign') {
+    showPanel('cursos');
+    setTimeout(()=>{
+      const target = step === 'cursos-assign' ? '#mzc-tab-assign' : '#mzc-tab-form';
+      document.querySelector(target)?.click();
+      document.getElementById('ui-cursos')?.scrollIntoView({behavior:'smooth', block:'start'});
+    }, 40);
+  }
+});
+
   // если DOM уже загружен – сразу инициализируем панели; если нет – дождёмся
   if (document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', initPanelsOnce);
@@ -233,13 +296,13 @@ document.addEventListener('click', (e)=>{
 
 
 (function(){
-  window.MEATZE = window.MEATZE || {};
+  window.AURORA = window.AURORA || {};
 
   const KEY = "mz_help_ui_last";
 
   function setUI(v){
-    window.MEATZE.HELP_UI = v || "";
-    try { localStorage.setItem(KEY, window.MEATZE.HELP_UI); } catch(_){}
+    window.AURORA.HELP_UI = v || "";
+    try { localStorage.setItem(KEY, window.AURORA.HELP_UI); } catch(_){}
   }
 
   function getUrlTab(){

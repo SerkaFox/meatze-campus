@@ -66,7 +66,7 @@ document.addEventListener('click', (e)=>{
   }
 });
   // === shared API/auth
-  const API_BASE = ((window.wpApiSettings?.root)||'/').replace(/\/$/,'') + '/meatze/v5';
+  const API_BASE = ((window.wpApiSettings?.root)||'/').replace(/\/$/,'') + '/v5';
   const API_A = API_BASE + '/admin';
   const H = code => `/curso/${encodeURIComponent(code)}/horario`;
   const tok = () => sessionStorage.getItem('mz_admin') || '';
@@ -81,6 +81,19 @@ async function apiJSON(url, opt={}) {
     try{ j = txt ? JSON.parse(txt) : {}; }catch(_){ throw new Error(`HTTP ${r.status} — ${txt.slice(0,160)}`); }
     if (!r.ok) throw new Error(j?.message || j?.code || `HTTP ${r.status}`);
     return j;
+  }
+
+  function showModal(el){
+    if (!el) return;
+    el.setAttribute('aria-hidden', 'false');
+    el.style.display = '';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function hideModal(el){
+    if (!el) return;
+    el.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
   }
 
   // === lazy panel init
@@ -120,6 +133,19 @@ const selCurso    = $('#mzh-curso');
   const btnNext  = $('#mzh-next');
 	const autoNota = $('#mzh-auto-nota');
 	const autoNotaWrap = $('#mzh-auto-nota-wrap');
+  const locationOpen = $('#mzh-location-open');
+  const locationModal = $('#mzh-location-modal');
+  const locationQuery = $('#mzh-location-query');
+  const locationSearch = $('#mzh-location-search');
+  const locationResults = $('#mzh-location-results');
+  const locationMsg = $('#mzh-location-msg');
+  const locationSelected = $('#mzh-location-selected');
+  const locationApply = $('#mzh-location-apply');
+  const locationMapEl = $('#mzh-location-map');
+  let selectedLocation = null;
+  let locationMap = null;
+  let locationMarker = null;
+  let leafletLoading = null;
 
   const btnAutoToggle = $('#mzh-auto-toggle'); // можно оставить, даже если кнопки нет
   const autoStart = $('#mzh-auto-start');
@@ -174,6 +200,7 @@ const selCurso    = $('#mzh-curso');
 
   const autoRun  = $('#mzh-auto-run');
   const autoMsg  = $('#mzh-auto-msg');
+  const autoCard = $('#mzh-auto-card');
   const btnExportGraphic = $('#mzh-export-graphic');
   const fixedToggle = $('#mzh-fixed-toggle');
   const fixedPanel  = $('#mzh-fixed-panel');
@@ -280,6 +307,16 @@ function studentLabel(it){
 	  if (autoHorasWrap) autoHorasWrap.style.display = isPractica ? '' : 'none';
 	  if (autoEndWrap)   autoEndWrap.style.display   = isPractica ? '' : 'none';
 	}
+
+  function updateAutoCardVisibility(){
+    if (!autoCard) return;
+    autoCard.hidden = !codigo;
+  }
+
+  function updateExportVisibility(hasItems=false){
+    if (!btnExportGraphic) return;
+    btnExportGraphic.hidden = !(codigo && hasItems);
+  }
 
 //End of alumnos
 
@@ -529,11 +566,13 @@ function qp(){
     if (!code){
       codigo = null;
       cursoMeta = null;
+      updateAutoCardVisibility();
       clearGrid();
       return;
     }
     const it = cursosByCode.get(code) || null;
     openCurso(code, it);
+    updateAutoCardVisibility();
   });
 }
 
@@ -612,12 +651,12 @@ if (btnExportGraphic){
 		if (fixedY0) fixedY0.value = compressDateList(y0Arr, y0);
 		if (fixedY1) fixedY1.value = compressDateList(y1Arr, y1);
 		if (fixedY2) fixedY2.value = compressDateList(y2Arr, y2);
-        fixedPanel.style.display =
-          (fixedPanel.style.display === 'none' || !fixedPanel.style.display)
-            ? 'block'
-            : 'none';
+        showModal(fixedPanel);
       });
     }
+    fixedPanel?.addEventListener('click', (e)=>{
+      if (e.target?.getAttribute?.('data-fixed-close') === '1') hideModal(fixedPanel);
+    });
     if (fixedSave){
       fixedSave.addEventListener('click', async ()=>{
         fixedMsg.textContent = '';
@@ -643,7 +682,7 @@ if (btnExportGraphic){
           fixedMsg.textContent = 'Guardado correctamente para todos los cursos.';
           fixedMsg.style.color = '#0b6d22';
 		  // авто-скрытие панели после сохранения
-		if (fixedPanel) fixedPanel.style.display = 'none';
+		hideModal(fixedPanel);
 
 		// небольшой “успех” на кнопке (по желанию)
 		if (fixedToggle){
@@ -658,6 +697,158 @@ if (btnExportGraphic){
         }
       });
     }
+
+    function renderLocationResults(items){
+      if (!locationResults) return;
+      locationResults.innerHTML = '';
+      selectedLocation = null;
+      if (locationApply) locationApply.disabled = true;
+      if (locationSelected) locationSelected.textContent = 'Sin ubicación seleccionada.';
+      if (!items.length){
+        locationResults.innerHTML = '<div class="mz-help">Sin resultados. Prueba con calle, ciudad y provincia.</div>';
+        return;
+      }
+      items.forEach((it)=>{
+        const lat = String(it.lat || '');
+        const lon = String(it.lon || '');
+        const label = String(it.display_name || '').trim();
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'mz-location-result';
+        btn.setAttribute('aria-pressed', 'false');
+        btn.innerHTML = `<b>${escapeHtml(label.split(',').slice(0,2).join(', ') || label)}</b><span>${escapeHtml(label)}</span>`;
+        btn.addEventListener('click', ()=>{
+          locationResults.querySelectorAll('.mz-location-result').forEach(x=>x.setAttribute('aria-pressed','false'));
+          btn.setAttribute('aria-pressed','true');
+          selectedLocation = {label, lat, lon};
+          if (locationApply) locationApply.disabled = false;
+          if (locationSelected) locationSelected.textContent = label;
+          setMapPoint(lat, lon, label, false);
+        });
+        locationResults.appendChild(btn);
+      });
+    }
+
+    function loadLeaflet(){
+      if (window.L) return Promise.resolve(window.L);
+      if (leafletLoading) return leafletLoading;
+      leafletLoading = new Promise((resolve, reject)=>{
+        if (!document.querySelector('link[data-mzh-leaflet]')){
+          const css = document.createElement('link');
+          css.rel = 'stylesheet';
+          css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+          css.setAttribute('data-mzh-leaflet', '1');
+          document.head.appendChild(css);
+        }
+        const js = document.createElement('script');
+        js.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        js.async = true;
+        js.onload = () => resolve(window.L);
+        js.onerror = () => reject(new Error('leaflet_unavailable'));
+        document.head.appendChild(js);
+      });
+      return leafletLoading;
+    }
+
+    function setMapPoint(lat, lon, label, updateSelection=true){
+      if (!locationMap || !window.L || !lat || !lon) return;
+      const p = [Number(lat), Number(lon)];
+      if (locationMarker) locationMarker.setLatLng(p);
+      else locationMarker = window.L.marker(p).addTo(locationMap);
+      locationMarker.bindPopup(label || 'Ubicación seleccionada').openPopup();
+      locationMap.setView(p, 15);
+      if (updateSelection){
+        selectedLocation = {label: label || `${lat}, ${lon}`, lat:String(lat), lon:String(lon)};
+        if (locationApply) locationApply.disabled = false;
+        if (locationSelected) locationSelected.textContent = selectedLocation.label;
+      }
+    }
+
+    async function reverseLocation(lat, lon){
+      try{
+        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
+        const r = await fetch(url, {headers:{'Accept':'application/json'}});
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const j = await r.json();
+        return String(j.display_name || `${lat}, ${lon}`);
+      }catch(_){
+        return `${lat}, ${lon}`;
+      }
+    }
+
+    async function initLocationMap(){
+      if (!locationMapEl) return;
+      try{
+        const L = await loadLeaflet();
+        if (!locationMap){
+          locationMap = L.map(locationMapEl).setView([43.2627, -2.9253], 12);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap'
+          }).addTo(locationMap);
+          locationMap.on('click', async (ev)=>{
+            const lat = ev.latlng.lat.toFixed(6);
+            const lon = ev.latlng.lng.toFixed(6);
+            if (locationMsg) locationMsg.textContent = 'Resolviendo dirección del punto seleccionado...';
+            const label = await reverseLocation(lat, lon);
+            setMapPoint(lat, lon, label, true);
+            if (locationMsg) locationMsg.textContent = 'Punto seleccionado en el mapa.';
+          });
+        }
+        setTimeout(()=> locationMap.invalidateSize(), 120);
+      }catch(_){
+        if (locationMsg) locationMsg.textContent = 'Mapa no disponible. Puedes buscar por texto o pegar la dirección manualmente.';
+      }
+    }
+
+    async function searchLocation(){
+      const q = (locationQuery?.value || '').trim();
+      if (!q){
+        if (locationMsg) locationMsg.textContent = 'Escribe una dirección o nombre de empresa.';
+        return;
+      }
+      if (locationMsg) locationMsg.textContent = 'Buscando...';
+      try{
+        const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&countrycodes=es&q=' + encodeURIComponent(q);
+        const r = await fetch(url, {headers:{'Accept':'application/json'}});
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const items = await r.json();
+        renderLocationResults(Array.isArray(items) ? items : []);
+        if (locationMsg) locationMsg.textContent = 'Selecciona una ubicación de la lista.';
+      }catch(e){
+        if (locationMsg) locationMsg.textContent = 'No se pudo buscar la ubicación. Puedes pegar la dirección manualmente.';
+        renderLocationResults([]);
+      }
+    }
+
+    locationOpen?.addEventListener('click', ()=>{
+      if (locationQuery && autoNota) locationQuery.value = autoNota.value.replace(/\s+-\s+https?:\/\/.+$/,'');
+      if (locationMsg) locationMsg.textContent = '';
+      if (locationResults) locationResults.innerHTML = '';
+      selectedLocation = null;
+      if (locationApply) locationApply.disabled = true;
+      if (locationSelected) locationSelected.textContent = 'Sin ubicación seleccionada.';
+      showModal(locationModal);
+      initLocationMap();
+      setTimeout(()=> locationQuery?.focus(), 50);
+    });
+    locationModal?.addEventListener('click', (e)=>{
+      if (e.target?.getAttribute?.('data-location-close') === '1') hideModal(locationModal);
+    });
+    locationSearch?.addEventListener('click', searchLocation);
+    locationQuery?.addEventListener('keydown', (e)=>{
+      if (e.key === 'Enter'){
+        e.preventDefault();
+        searchLocation();
+      }
+    });
+    locationApply?.addEventListener('click', ()=>{
+      if (!selectedLocation || !autoNota) return;
+      const link = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedLocation.lat + ',' + selectedLocation.lon)}`;
+      autoNota.value = `${selectedLocation.label} - ${link}`;
+      autoNota.dispatchEvent(new Event('input', {bubbles:true}));
+      hideModal(locationModal);
+    });
 
     autoStart.addEventListener('change', async ()=>{
       window.__MZ_HOLIDAYS_MAP__ = await loadHolidaysAndRenderList(autoStart.value || null);
@@ -769,7 +960,7 @@ async function deleteFechasBulk(codigo, fechas){
 }
 
 
-  function clearGrid(){ grid.innerHTML=''; legend.innerHTML=''; gTitle.textContent='—'; }
+  function clearGrid(){ grid.innerHTML=''; legend.innerHTML=''; gTitle.textContent='—'; updateExportVisibility(false); }
 
 	document.addEventListener('mz:cursos-updated', async (ev)=>{
 	  const prevCode = selCurso.value || '';
@@ -949,6 +1140,8 @@ async function horarioMap(){
   }
 
   function colorForKey(key){
+    const customMatch = /^__custom_color:(#[0-9a-fA-F]{6}):/.exec(String(key || ''));
+    if (customMatch) return customMatch[1];
     if (!colorByKey.has(key)){
       const idx = colorByKey.size;
       const hue = (idx*137.508) % 360;
@@ -961,6 +1154,29 @@ async function horarioMap(){
 let __HAS_MF_UF__ = false;
 let __MOD_GROUP_BY_KEY__ = new Map(); // UFxxx -> MFxxxx (или сам ключ)
 let __MODS_ALL__ = []; // [{key,label,type,group,horas}]
+
+function parseCustomNotaShared(raw){
+  const s = String(raw || '').trim();
+  const m = /^(.*?)\s*\[WI:custom;scope=(in|extra);color=(#[0-9a-fA-F]{6})\]\s*$/.exec(s);
+  if (!m) return {isCustom:false, title:s, scope:'in', color:'#60a5fa', clean:s};
+  return {
+    isCustom:true,
+    title:(m[1] || '').trim(),
+    scope:m[2] || 'in',
+    color:m[3] || '#60a5fa',
+    clean:(m[1] || '').trim()
+  };
+}
+
+function displayNotaShared(raw){
+  return parseCustomNotaShared(raw).clean;
+}
+
+function customColorFromNotaShared(raw){
+  const meta = parseCustomNotaShared(raw);
+  return meta.isCustom ? meta.color : '';
+}
+
 function rebuildModuleMaps(){
   __MOD_GROUP_BY_KEY__ = new Map();
   __HAS_MF_UF__ = false;
@@ -991,6 +1207,11 @@ function rebuildModuleMaps(){
 
 // возвращает ключ, по которому надо красить
 function colorKeyFromNota(rawNota, desde, hasta){
+  const customColor = customColorFromNotaShared(rawNota);
+  if (customColor){
+    return `__custom_color:${customColor}:${displayNotaShared(rawNota) || customColor}`;
+  }
+
   // если нет nota → старое поведение (по времени)
   const raw = (rawNota && String(rawNota).trim())
     ? String(rawNota).trim()
@@ -1031,6 +1252,7 @@ function colorKeyFromNota(rawNota, desde, hasta){
     const start = (f.getDay()+6)%7;
 
     cache = await horarioMap();
+    updateExportVisibility(!!(cache.det && cache.det.size));
 
     legend.innerHTML='';
     const mfSet = new Set();
@@ -1047,7 +1269,7 @@ const labelByKey = new Map((__MODS_ALL__||[]).map(m=>[m.key, m.label]));
 
 [...mfSet].sort().forEach(k=>{
   const s = document.createElement('span');
-  const lbl = labelByKey.get(k) || k;
+  const lbl = labelByKey.get(k) || String(k).replace(/^__custom_color:#[0-9a-fA-F]{6}:/,'');
   s.innerHTML = `<i style="background:${colorForKey(k)}"></i>${escapeHtml(lbl)}`;
   legend.appendChild(s);
 });
@@ -1087,7 +1309,7 @@ el.addEventListener('pointerup', (e)=>{
   evtsBox.innerHTML = dayItems.slice(0,2).map(it=>{
     const t = `${(it.desde||'').slice(0,5)}–${(it.hasta||'').slice(0,5)}`;
     // label: nota или aula или пусто
-    const label = (it.nota && it.nota.trim()) ? it.nota.trim() : (it.aula||'').trim();
+    const label = (it.nota && it.nota.trim()) ? displayNotaShared(it.nota) : (it.aula||'').trim();
     return `<div class="evtline"><span class="t">${t}</span>${label?` <span class="l">· ${escapeHtml(label)}</span>`:''}</div>`;
   }).join('');
 
@@ -1119,7 +1341,7 @@ el.addEventListener('pointerup', (e)=>{
         el.style.background = `linear-gradient(135deg, ${stops.join(', ')})`;
         el.title = dayItems.map(it => {
           const t = `${(it.desde||'').slice(0,5)}–${(it.hasta||'').slice(0,5)}`;
-          return it.nota ? `${t} · ${it.nota}` : t;
+          return it.nota ? `${t} · ${displayNotaShared(it.nota)}` : t;
         }).join('\n');
       }
 
@@ -2508,6 +2730,8 @@ const usePlainModulesLegend = !hasMF && !hasUF; // ✅ fallback режим
       function extractModuleKeyFromNota(raw){
         const txt = String(raw||'').trim();
         if (!txt) return null;
+        const custom = parseCustomNotaShared(txt);
+        if (custom.isCustom) return null;
         const parts = txt.split(' · ').map(t=>t.trim()).filter(Boolean);
         for (let i=parts.length-1; i>=0; i--){
           const p = parts[i];
@@ -2523,10 +2747,11 @@ const usePlainModulesLegend = !hasMF && !hasUF; // ✅ fallback режим
             ? it.nota.trim()
             : `${(it.desde||'').slice(0,5)}-${(it.hasta||'').slice(0,5)}`;
 
-          const modKeyFromNota = extractModuleKeyFromNota(rawNota);
-          const mfKey = mfByModuleKey.get(modKeyFromNota || '') || (
-            String(rawNota).split(' · ')[0]
-          );
+          const customMeta = parseCustomNotaShared(rawNota);
+          const modKeyFromNota = customMeta.isCustom ? null : extractModuleKeyFromNota(rawNota);
+          const mfKey = customMeta.isCustom
+            ? colorKeyFromNota(rawNota, it.desde, it.hasta)
+            : (mfByModuleKey.get(modKeyFromNota || '') || String(rawNota).split(' · ')[0]);
           if (!mfKey) return;
 
           const d = normHHMM(it.desde);
@@ -2678,12 +2903,98 @@ function renderMonthsTable(cells){
 
       const monthsTableHtml = renderMonthsTable(monthImgs);
 
+      function spansSignature(spans){
+        return (spans || [])
+          .map(([a,b]) => `${String(a || '').slice(0,5)}-${String(b || '').slice(0,5)}`)
+          .sort()
+          .join('|');
+      }
+
+      function spansMinutes(spans){
+        let mins = 0;
+        (spans || []).forEach(([a,b]) => { mins += minutesBetween(a,b); });
+        return mins;
+      }
+
+      function exceptionDatesBySchedule(ti){
+        const dates = Array.from(ti?.spansByDate?.keys?.() || []).sort();
+        const sigFreq = new Map();
+        const sigMins = new Map();
+        const sigByDate = new Map();
+
+        dates.forEach(d=>{
+          const spans = ti.spansByDate.get(d) || [];
+          const sig = spansSignature(spans);
+          if (!sig) return;
+          sigByDate.set(d, sig);
+          sigFreq.set(sig, (sigFreq.get(sig) || 0) + 1);
+          sigMins.set(sig, spansMinutes(spans));
+        });
+
+        let normalSig = '';
+        let bestCnt = -1;
+        sigFreq.forEach((cnt, sig)=>{
+          const mins = sigMins.get(sig) || 0;
+          const bestMins = sigMins.get(normalSig) || 0;
+          if (cnt > bestCnt || (cnt === bestCnt && mins > bestMins)){
+            bestCnt = cnt;
+            normalSig = sig;
+          }
+        });
+
+        return dates.filter(d => {
+          const sig = sigByDate.get(d);
+          return sig && normalSig && sig !== normalSig;
+        });
+      }
+
+      function htmlScheduleExceptionLines(ti, indent='6pt', limit=10){
+        if (!ti || !ti.spansByDate || !ti.spansByDate.size) return '';
+        const lines = exceptionDatesBySchedule(ti).map(d=>{
+          const spans = ti.spansByDate.get(d) || [];
+          const mins = spansMinutes(spans);
+          const horas = (mins/60).toFixed(1).replace('.',',');
+          const intervalos = spans.map(([a,b]) => `de ${a} a ${b}`).join(' y ');
+          return `<div style="margin-left:${indent};">El ${esDateDMY(d)} el horario será de ${horas} horas (${esc(intervalos)})</div>`;
+        });
+        if (lines.length > limit){
+          return lines.slice(0, limit).join('') +
+            `<div style="margin-left:${indent};opacity:.8">… y ${lines.length - limit} día(s) más con horario especial</div>`;
+        }
+        return lines.join('');
+      }
+
+      function textScheduleExceptionLines(ti){
+        if (!ti || !ti.spansByDate || !ti.spansByDate.size) return [];
+        return exceptionDatesBySchedule(ti).map(d=>{
+          const spans = ti.spansByDate.get(d) || [];
+          const mins = spansMinutes(spans);
+          const horas = (mins/60).toFixed(1).replace('.',',');
+          const intervalos = spans.map(([a,b]) => `de ${a} a ${b}`).join(' y ');
+          return `El ${esDateDMY(d)} el horario será de ${horas} horas (${intervalos})`;
+        });
+      }
+
+      function totalHoursFromTimeInfo(ti){
+        if (!ti || !ti.spansByDate || !ti.spansByDate.size) return 0;
+        let mins = 0;
+        ti.spansByDate.forEach(spans => {
+          mins += spansMinutes(spans);
+        });
+        return Math.round((mins / 60) * 10) / 10;
+      }
+
       const mfPresent = new Set();
       det.forEach(items => {
         items.forEach(it => {
           const raw = (it.nota && it.nota.trim())
             ? it.nota.trim()
             : `${(it.desde||'').slice(0,5)}-${(it.hasta||'').slice(0,5)}`;
+          const custom = parseCustomNotaShared(raw);
+          if (custom.isCustom){
+            mfPresent.add(colorKeyFromNota(raw, it.desde, it.hasta));
+            return;
+          }
           const modKey = extractModuleKeyFromNota(raw);
           if (!modKey) return;
           const mfKey = mfByModuleKey.get(modKey) || modKey;
@@ -2693,6 +3004,7 @@ function renderMonthsTable(cells){
 
 		let orderedMF = [];
 		let orderedPlainMods = [];
+        const orderedCustomKeys = Array.from(mfPresent).filter(k=>String(k).startsWith('__custom_color:'));
 
 		if (!usePlainModulesLegend) {
 		  // === как было: MF-легенда ===
@@ -2700,6 +3012,7 @@ function renderMonthsTable(cells){
 			.filter(x=>x.type==='MF')
 			.map(x=>x.key)
 			.filter(k=>mfPresent.has(k));
+          orderedMF.push(...orderedCustomKeys);
 		} else {
 		  // === fallback: легенда по обычным модулям ===
 		  orderedPlainMods = modsAll
@@ -2748,32 +3061,7 @@ function legendHTML(){
       // “неполные дни”
       let body = '';
       if (ti && ti.spansByDate && ti.spansByDate.size){
-        let fullDayMin = 0;
-        ti.spansByDate.forEach(spans=>{
-          let mm = 0;
-          (spans||[]).forEach(([a,b])=>{ mm += minutesBetween(a,b); });
-          if (mm > fullDayMin) fullDayMin = mm;
-        });
-
-
-
-		const fechas = Array.from(ti.spansByDate.keys()).sort();
-
-		const lines = [];
-		for (const d of fechas){
-		  const html = dayLine(d);
-		  if (html) lines.push(html);
-		}
-
-		// лимит, чтобы не раздувать легенду
-		const LIMIT = 6;
-		if (lines.length > LIMIT){
-		  const rest = lines.length - LIMIT;
-		  body += lines.slice(0, LIMIT).join('');
-		  body += `<div style="margin-left:6pt;opacity:.8">… y ${rest} día(s) más con horario especial</div>`;
-		} else {
-		  body += lines.join('');
-		}
+        body += htmlScheduleExceptionLines(ti, '6pt', 10);
       }
 
       rows += boxRow(
@@ -2782,6 +3070,30 @@ function legendHTML(){
         range ? esc(range) : '',
         body
       );
+    });
+
+    orderedCustomKeys.forEach(customKey=>{
+      const color = colorForKey(customKey);
+      const rMOD  = moduleDateRangeMF.get(customKey);
+      const ti    = moduleTimeInfoMF.get(customKey);
+      let titleCore = String(customKey).replace(/^__custom_color:#[0-9a-fA-F]{6}:/, '') || 'Actividad personalizada';
+      const horasCustom = totalHoursFromTimeInfo(ti);
+      if (horasCustom > 0) titleCore += ` (${String(horasCustom).replace('.', ',')} horas)`;
+      const range = rMOD ? `Del ${esDateDMY(rMOD.start)} al ${esDateDMY(rMOD.end)}` : '';
+      let body = '';
+      if (ti && ti.spansByDate && ti.spansByDate.size){
+        const lines = Array.from(ti.spansByDate.keys()).sort().map(d=>{
+          const spans = ti.spansByDate.get(d) || [];
+          let mins = 0;
+          spans.forEach(([a,b])=>{ mins += minutesBetween(a,b); });
+          const horas = (mins/60).toFixed(1).replace('.',',');
+          const intervalos = spans.map(([a,b]) => `de ${a} a ${b}`).join(' y ');
+          return `<div style="margin-left:6pt;">El ${esDateDMY(d)}: ${horas} horas (${esc(intervalos)})</div>`;
+        });
+        body = lines.slice(0, 8).join('');
+        if (lines.length > 8) body += `<div style="margin-left:6pt;opacity:.8">… y ${lines.length - 8} día(s) más</div>`;
+      }
+      rows += boxRow(color, esc(titleCore), range ? esc(range) : '', body);
     });
 
     return `
@@ -2798,15 +3110,18 @@ function legendHTML(){
     const mfMeta   = modsAll.find(m=>m.key===mfKey) || {label: mfKey, horas:0};
     const color    = colorForKey(mfKey);
     const rMF      = moduleDateRangeMF.get(mfKey);
+    const isCustomLegend = String(mfKey).startsWith('__custom_color:');
+    const customLegendTitle = String(mfKey).replace(/^__custom_color:#[0-9a-fA-F]{6}:/, '');
 
     const horasFromUFs = horasMFDesdeUF.get(mfKey) || 0;
     const horasMFProp  = Number(mfMeta.horas || 0) || 0;
     const horasMFShow  = (horasFromUFs > 0) ? horasFromUFs
                       : (horasMFProp > 0)  ? horasMFProp
                       : (horasMF.get(mfKey) || 0);
+    const horasLegendShow = isCustomLegend ? totalHoursFromTimeInfo(moduleTimeInfoMF.get(mfKey)) : horasMFShow;
 
-    let titleCore = (String(mfMeta.label || '').trim() || mfKey);
-    if (horasMFShow > 0) titleCore += ` (${horasMFShow} horas)`;
+    let titleCore = isCustomLegend ? customLegendTitle : (String(mfMeta.label || '').trim() || mfKey);
+    if (horasLegendShow > 0) titleCore += ` (${String(horasLegendShow).replace('.', ',')} horas)`;
 
     const range = rMF ? `Del ${esDateDMY(rMF.start)} al ${esDateDMY(rMF.end)}` : '';
 
@@ -2819,34 +3134,7 @@ function legendHTML(){
     if (!hasUFs){
       const tiMF = moduleTimeInfoMF.get(mfKey);
       if (tiMF && tiMF.spansByDate && tiMF.spansByDate.size){
-        const fechasMF = Array.from(tiMF.spansByDate.keys()).sort();
-        let freq = new Map(), fullDayMinMF = 0, maxCountMF = 0;
-
-        fechasMF.forEach(d=>{
-          const spans = tiMF.spansByDate.get(d) || [];
-          if (!spans.length) return;
-          let mm=0; spans.forEach(([a,b])=> mm += minutesBetween(a,b));
-          const now = (freq.get(mm)||0)+1;
-          freq.set(mm, now);
-          if (now > maxCountMF){ maxCountMF = now; fullDayMinMF = mm; }
-        });
-        if (!fullDayMinMF && freq.size){
-          fullDayMinMF = Array.from(freq.keys()).sort((a,b)=>b-a)[0];
-        }
-
-        const mfDayLine = (d)=>{
-          const spans = tiMF.spansByDate.get(d) || [];
-          if (!spans.length) return '';
-          let mins=0; spans.forEach(([a,b])=> mins += minutesBetween(a,b));
-          if (fullDayMinMF && mins === fullDayMinMF) return '';
-          const horas = (mins/60).toFixed(1).replace('.',',');
-          const intervalos = spans.map(([a,b]) => `de ${a} a ${b}`).join(' y ');
-          return `<div style="margin-left:1pt;">El ${esDateDMY(d)} el horario será de ${horas} horas (${esc(intervalos)})</div>`;
-        };
-
-        const first = fechasMF[0], last = fechasMF[fechasMF.length-1];
-        body += mfDayLine(first);
-        if (last !== first) body += mfDayLine(last);
+        body += htmlScheduleExceptionLines(tiMF, '1pt', 10);
       }
     }
 
@@ -2862,77 +3150,7 @@ function legendHTML(){
       if (rUF) body += `<div>Del ${esDateDMY(rUF.start)} al ${esDateDMY(rUF.end)}</div>`;
 
       if (ti && ti.spansByDate && ti.spansByDate.size){
-        let fullDayMin = 0;
-        ti.spansByDate.forEach(spans=>{
-          let mm = 0;
-          (spans||[]).forEach(([a,b])=>{ mm += minutesBetween(a,b); });
-          if (mm > fullDayMin) fullDayMin = mm;
-        });
-
-// 1) Определяем "нормальную" длительность как MODE (самая частая)
-const fechas = Array.from(ti.spansByDate.keys()).sort();
-
-const freq = new Map(); // mins -> count
-const minsByDate = new Map(); // date -> mins
-fechas.forEach(d=>{
-  const spans = ti.spansByDate.get(d) || [];
-  let mm = 0;
-  spans.forEach(([a,b])=>{ mm += minutesBetween(a,b); });
-  minsByDate.set(d, mm);
-  freq.set(mm, (freq.get(mm)||0)+1);
-});
-
-// выбрать mins с максимальной частотой (при равенстве — больше минут)
-let normalMins = null, bestCnt = -1;
-freq.forEach((cnt, mm)=>{
-  if (cnt > bestCnt || (cnt === bestCnt && (normalMins==null || mm > normalMins))){
-    bestCnt = cnt;
-    normalMins = mm;
-  }
-});
-
-const dayLine = (d)=>{
-  const spans = ti.spansByDate.get(d)||[];
-  if (!spans.length) return '';
-  const mins = minsByDate.get(d) || 0;
-
-  // ✅ печатаем только если отличается от нормы
-  if (normalMins != null && mins === normalMins) return '';
-
-  const horas = (mins/60).toFixed(1).replace('.',',');
-  const intervalos = spans.map(([a,b]) => `de ${a} a ${b}`).join(' y ');
-  return `<div style="margin-left:6pt;">El ${esDateDMY(d)} el horario será de ${horas} horas (${esc(intervalos)})</div>`;
-};
-
-// 2) Список исключений
-let exDates = fechas.filter(d => {
-  const mins = minsByDate.get(d) || 0;
-  return normalMins != null ? (mins !== normalMins) : (mins > 0);
-});
-
-// 3) Чтобы твой "отличительный" день точно попал в видимую часть:
-//    сначала покажем редкие длительности, потом остальное
-exDates.sort((a,b)=>{
-  const ma = minsByDate.get(a) || 0;
-  const mb = minsByDate.get(b) || 0;
-  const ca = freq.get(ma) || 0;
-  const cb = freq.get(mb) || 0;
-  if (ca !== cb) return ca - cb;      // редкие первыми
-  if (ma !== mb) return ma - mb;      // меньшие/большие дальше
-  return a.localeCompare(b);
-});
-
-const lines = exDates.map(d => dayLine(d)).filter(Boolean);
-
-// лимит
-const LIMIT = 10; // можно 6, но 10 обычно лучше для легенды
-if (lines.length > LIMIT){
-  const rest = lines.length - LIMIT;
-  body += lines.slice(0, LIMIT).join('');
-  body += `<div style="margin-left:6pt;opacity:.8">… y ${rest} día(s) más con horario especial</div>`;
-} else {
-  body += lines.join('');
-}
+        body += htmlScheduleExceptionLines(ti, '6pt', 10);
       }
     });
 
@@ -3235,6 +3453,8 @@ img.month{
       const legendJson = orderedMF.map(mfKey => {
         const mfMeta = modsAll.find(m=>m.key===mfKey) || {label: mfKey, horas:0};
         const color  = colorForKey(mfKey);
+        const isCustomLegend = String(mfKey).startsWith('__custom_color:');
+        const customLegendTitle = String(mfKey).replace(/^__custom_color:#[0-9a-fA-F]{6}:/, '');
 
         const rMF = moduleDateRangeMF.get(mfKey);
         const horasFromUFs = horasMFDesdeUF.get(mfKey) || 0;
@@ -3248,11 +3468,14 @@ img.month{
         } else {
           horasMFShow = horasMF.get(mfKey) || 0;
         }
+        if (isCustomLegend) {
+          horasMFShow = totalHoursFromTimeInfo(moduleTimeInfoMF.get(mfKey));
+        }
 
-        const labelBase = (mfMeta.label || mfKey).trim();
+        const labelBase = (isCustomLegend ? customLegendTitle : (mfMeta.label || mfKey)).trim();
         let tituloMF    = labelBase || mfKey;
         if (horasMFShow > 0) {
-          tituloMF += ` (${horasMFShow} horas)`;
+          tituloMF += ` (${String(horasMFShow).replace('.', ',')} horas)`;
         }
 
         const rangoMF  = rMF ? `Del ${esDateDMY(rMF.start)} al ${esDateDMY(rMF.end)}` : '';
@@ -3274,47 +3497,7 @@ img.month{
 
             const detalles = [];
             if (ti && ti.spansByDate && ti.spansByDate.size) {
-              const fechas = Array.from(ti.spansByDate.keys()).sort();
-              let freq = new Map();
-              let fullDayMin = 0;
-              let maxCount = 0;
-
-              fechas.forEach(d => {
-                const spans = ti.spansByDate.get(d) || [];
-                if (!spans.length) return;
-
-                let mm = 0;
-                spans.forEach(([a,b]) => { mm += minutesBetween(a,b); });
-
-                const prev = freq.get(mm) || 0;
-                const now  = prev + 1;
-                freq.set(mm, now);
-
-                if (now > maxCount) {
-                  maxCount   = now;
-                  fullDayMin = mm;
-                }
-              });
-
-              if (!fullDayMin && freq.size) {
-                fullDayMin = Array.from(freq.keys()).sort((a,b)=>b-a)[0];
-              }
-
-              fechas.forEach(d => {
-                const spans = ti.spansByDate.get(d) || [];
-                if (!spans.length) return;
-
-                let mins = 0;
-                spans.forEach(([a,b]) => { mins += minutesBetween(a,b); });
-                if (fullDayMin && mins === fullDayMin) return;
-
-                const horas = (mins/60).toFixed(1).replace('.',',');
-                const intervalos = spans
-                  .map(([a,b]) => `de ${a} a ${b}`)
-                  .join(' y ');
-
-                detalles.push(`El ${esDateDMY(d)} el horario será de ${horas} horas (${intervalos})`);
-              });
+              detalles.push(...textScheduleExceptionLines(ti));
             }
 
             return {
@@ -3512,6 +3695,35 @@ function moduleLabelByKey(key){
   return m ? m.label : '';
 }
 
+function parseCustomNota(raw){
+  const s = String(raw || '').trim();
+  const m = /^(.*?)\s*\[WI:custom;scope=(in|extra);color=(#[0-9a-fA-F]{6})\]\s*$/.exec(s);
+  if (!m) return {isCustom:false, title:s, scope:'in', color:'#60a5fa', clean:s};
+  return {
+    isCustom:true,
+    title:(m[1] || '').trim(),
+    scope:m[2] || 'in',
+    color:m[3] || '#60a5fa',
+    clean:(m[1] || '').trim()
+  };
+}
+
+function buildCustomNota(title, scope, color){
+  const safeTitle = String(title || 'Actividad personalizada').trim().slice(0, 160);
+  const safeScope = scope === 'extra' ? 'extra' : 'in';
+  const safeColor = /^#[0-9a-fA-F]{6}$/.test(String(color || '')) ? color : '#60a5fa';
+  return `${safeTitle} [WI:custom;scope=${safeScope};color=${safeColor}]`;
+}
+
+function displayNota(raw){
+  return parseCustomNota(raw).clean;
+}
+
+function customColorFromNota(raw){
+  const meta = parseCustomNota(raw);
+  return meta.isCustom ? meta.color : '';
+}
+
 
 
 function rowTemplate(slot, idx){
@@ -3523,19 +3735,19 @@ function rowTemplate(slot, idx){
 
   // ✅ готовим SELECT options ДО innerHTML
   const opts = getCourseModuleOptions();
-  const safeNota = String(nota || '').trim();
+  const parsedCustom = parseCustomNota(nota);
+  const safeNota = parsedCustom.isCustom ? '' : String(nota || '').trim();
 
   const hasNotaInList = safeNota && opts.some(o => o.key === safeNota);
-  const customValue = (!hasNotaInList && safeNota) ? safeNota : '';
+  const useCustom = parsedCustom.isCustom || (!hasNotaInList && safeNota);
+  const customValue = parsedCustom.isCustom ? parsedCustom.title : ((!hasNotaInList && safeNota) ? safeNota : '');
 
   const optionsHtml = [
     `<option value="">— (sin módulo) —</option>`,
     ...opts.map(o => (
       `<option value="${escapeHtml(o.key)}" ${o.key===safeNota?'selected':''}>${escapeHtml(o.label)}</option>`
     )),
-    customValue
-      ? `<option value="${escapeHtml(customValue)}" selected>(Personalizado) ${escapeHtml(customValue)}</option>`
-      : ``
+    `<option value="__custom__" ${useCustom?'selected':''}>+ Actividad / título personalizado</option>`
   ].join('');
 
   const el = document.createElement('div');
@@ -3568,8 +3780,38 @@ function rowTemplate(slot, idx){
       </select>
     </label>
 
+    <div class="mz-custom-extra js-custom-extra" ${useCustom ? '' : 'hidden'}>
+      <label>
+        <span class="mz-help">Nombre de la actividad</span>
+        <input class="mz-inp js-custom-title" value="${escapeHtml(customValue || parsedCustom.title || '')}" placeholder="Clase especial, tutoría, charla...">
+      </label>
+      <label>
+        <span class="mz-help">Color</span>
+        <input class="mz-inp js-custom-color" type="color" value="${escapeHtml(parsedCustom.color || '#60a5fa')}">
+      </label>
+      <label class="mz-help mz-auto-flag">
+        <input class="js-custom-scope" type="checkbox" ${parsedCustom.scope === 'extra' ? '' : 'checked'}>
+        Incluida en horas del curso
+      </label>
+    </div>
+
     <button type="button" class="mz-del js-del" title="Eliminar tramo">🗑</button>
   `;
+
+  function syncCustomNota(){
+    const sel = el.querySelector('.js-nota');
+    const extra = el.querySelector('.js-custom-extra');
+    const title = el.querySelector('.js-custom-title');
+    const color = el.querySelector('.js-custom-color');
+    const scope = el.querySelector('.js-custom-scope');
+    const isCustom = sel.value === '__custom__';
+    if (extra) extra.hidden = !isCustom;
+    if (isCustom){
+      current.slots[idx].nota = buildCustomNota(title?.value || '', scope?.checked ? 'in' : 'extra', color?.value || '#60a5fa');
+    }else{
+      current.slots[idx].nota = sel.value;
+    }
+  }
 
   el.querySelector('.js-del').addEventListener('click', ()=>{
     current.slots.splice(idx,1);
@@ -3587,8 +3829,11 @@ function rowTemplate(slot, idx){
     current.slots[idx].aula = e.target.value;
   });
   el.querySelector('.js-nota').addEventListener('change', (e)=>{
-    current.slots[idx].nota = e.target.value; // ✅ сохраняем key
+    syncCustomNota();
   });
+  el.querySelector('.js-custom-title')?.addEventListener('input', syncCustomNota);
+  el.querySelector('.js-custom-color')?.addEventListener('input', syncCustomNota);
+  el.querySelector('.js-custom-scope')?.addEventListener('change', syncCustomNota);
 
   return el;
 }
@@ -3607,7 +3852,7 @@ btnAdd?.addEventListener('click', ()=>{
     desde:'09:00',
     hasta:'14:00',
     aula: last?.aula || '',
-    nota: last?.nota || ''   // ✅ ключ существующего модуля
+    nota: buildCustomNota('Nueva actividad', 'in', '#60a5fa')
   });
   renderSlots();
 });
@@ -3748,7 +3993,7 @@ window.__MZ_DAYMODAL_OPEN__ = async function(dateYMD){
   }
 
   // если ты уже где-то хранишь токен — подцепится. иначе оставь пустым.
-  const ADM = (sessionStorage.getItem('mz_admin') || window.MZ_ADMIN_TOKEN || window.MEATZE_ADMIN_PASS || '').trim();
+  const ADM = (sessionStorage.getItem('mz_admin') || window.MZ_ADMIN_TOKEN || window.AURORA_ADMIN_PASS || '').trim();
 
   function apiUrl(path){
     // подстрой под свой base: у тебя API_BASE используется в других местах
@@ -3827,6 +4072,26 @@ window.__MZ_DAYMODAL_OPEN__ = async function(dateYMD){
     msg.style.color = isBad ? '#8a1233' : '';
   }
 
+  function setCourseButtonState(){
+    if (!btnToggle) return;
+    const hasCourse = !!getCodigo();
+    btnToggle.disabled = !hasCourse;
+    btnToggle.title = hasCourse ? '' : 'Selecciona un curso primero.';
+  }
+
+  function openCourseModal(){
+    if (!panel) return;
+    panel.setAttribute('aria-hidden', 'false');
+    panel.style.display = '';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeCourseModal(){
+    if (!panel) return;
+    panel.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
   function setFieldsEnabled(enabled){
     // если use_global=true — поля скрываем/дизейблим
     const wrap = $('#mzh-course-fixed-fields');
@@ -3845,7 +4110,7 @@ window.__MZ_DAYMODAL_OPEN__ = async function(dateYMD){
     }
     setMsg('Cargando…');
 
-    const url = apiUrl(`/meatze/v5/admin/curso/${encodeURIComponent(codigo)}/nonlective`);
+    const url = apiUrl(`/v5/admin/curso/${encodeURIComponent(codigo)}/nonlective`);
     const data = await apiJSON(url);
 
     const useGlobal = !!data.use_global;
@@ -3870,7 +4135,7 @@ window.__MZ_DAYMODAL_OPEN__ = async function(dateYMD){
     }
     setMsg('Copiando desde global…');
 
-    const url = apiUrl(`/meatze/v5/admin/curso/${encodeURIComponent(codigo)}/nonlective`);
+    const url = apiUrl(`/v5/admin/curso/${encodeURIComponent(codigo)}/nonlective`);
     const data = await apiJSON(url);
 
     const g = data.global_years || {};
@@ -3904,7 +4169,7 @@ window.__MZ_DAYMODAL_OPEN__ = async function(dateYMD){
       }
     };
 
-    const url = apiUrl(`/meatze/v5/admin/curso/${encodeURIComponent(codigo)}/nonlective`);
+    const url = apiUrl(`/v5/admin/curso/${encodeURIComponent(codigo)}/nonlective`);
     const data = await apiJSON(url, {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
@@ -3918,26 +4183,32 @@ window.__MZ_DAYMODAL_OPEN__ = async function(dateYMD){
 
   // --- события ---
 	btnToggle.addEventListener('click', async () => {
-	  const open = panel.style.display !== 'none';
-	  panel.style.display = open ? 'none' : 'block';
+	  if (!getCodigo()){
+		setMsg('Selecciona un curso.', true);
+		setCourseButtonState();
+		return;
+	  }
 
-	  if (!open) {
-		try {
-		  await loadCourseNonlective();
+	  openCourseModal();
+	  try {
+		await loadCourseNonlective();
 
-		  const ctx = $('#mzh-ctx');
-		  if (ctx) {
-			const isGlobal = chkUseGlobal.checked;
-			ctx.textContent = isGlobal
-			  ? 'No lectivos: global del centro'
-			  : 'No lectivos: exclusivos del curso';
-		  }
-
-		} catch(e){
-		  setMsg(String(e.message||e), true);
+		const ctx = $('#mzh-ctx');
+		if (ctx) {
+		  const isGlobal = chkUseGlobal.checked;
+		  ctx.textContent = isGlobal
+			? 'No lectivos: global del centro'
+			: 'No lectivos: exclusivos del curso';
 		}
+
+	  } catch(e){
+		setMsg(String(e.message||e), true);
 	  }
 	});
+
+  panel.addEventListener('click', (e) => {
+    if (e.target?.getAttribute?.('data-course-fixed-close') === '1') closeCourseModal();
+  });
 
   chkUseGlobal.addEventListener('change', () => {
     setFieldsEnabled(!chkUseGlobal.checked);
@@ -3951,7 +4222,7 @@ window.__MZ_DAYMODAL_OPEN__ = async function(dateYMD){
   });
 
   btnSave.addEventListener('click', async () => {
-    try { await saveCourseNonlective(); }
+    try { await saveCourseNonlective(); closeCourseModal(); }
     catch(e){ setMsg(String(e.message||e), true); }
   });
 
@@ -3959,11 +4230,13 @@ window.__MZ_DAYMODAL_OPEN__ = async function(dateYMD){
   const cursoSel = $('#mzh-curso');
   if (cursoSel){
     cursoSel.addEventListener('change', async () => {
-      if (panel.style.display !== 'none'){
+      setCourseButtonState();
+      if (panel.getAttribute('aria-hidden') === 'false'){
         try { await loadCourseNonlective(); }
         catch(e){ setMsg(String(e.message||e), true); }
       }
     });
   }
+  setCourseButtonState();
 
 })();

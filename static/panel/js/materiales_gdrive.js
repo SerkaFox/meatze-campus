@@ -73,7 +73,7 @@ window.mzGoogleDriveCreateFolderUrl = function(){
   return `/alumno/curso/${encodeURIComponent(codigo)}/materiales/drive/create-folder/`;
 };
 
-async function createMeatzeFolder(parentPath, name){
+async function createCursoFolder(parentPath, name){
   return window.mzPostJSON(window.mzGoogleDriveCreateFolderUrl(), {
     parent_path: parentPath || '',
     name: name || 'Carpeta'
@@ -131,7 +131,7 @@ async function listDriveFolderChildren(folderId){
       { percent: 6,  meta: 'Conectando con Google Drive…' },
       { percent: 16, meta: 'Preparando importación…' },
       { percent: 32, meta: 'Descargando archivo desde Google Drive…' },
-      { percent: 52, meta: 'Guardando en MEATZE…' },
+      { percent: 52, meta: 'Guardando en AURORA…' },
       { percent: 72, meta: 'Procesando archivo…' },
       { percent: 88, meta: 'Finalizando importación…' },
     ];
@@ -139,10 +139,10 @@ async function listDriveFolderChildren(folderId){
     const folderSteps = [
       { percent: 5,  meta: 'Conectando con Google Drive…' },
       { percent: 12, meta: 'Leyendo carpeta…' },
-      { percent: 24, meta: 'Creando estructura en MEATZE…' },
+      { percent: 24, meta: 'Creando estructura en AURORA…' },
       { percent: 40, meta: 'Importando archivos…' },
       { percent: 58, meta: 'Procesando contenido…' },
-      { percent: 76, meta: 'Guardando en MEATZE…' },
+      { percent: 76, meta: 'Guardando en AURORA…' },
       { percent: 90, meta: 'Finalizando carpeta…' },
     ];
 
@@ -656,17 +656,17 @@ async function importPickedFolderIncremental(doc, targetPath){
     });
   }
 
-  async function walkFolder(driveFolderId, driveFolderName, meatzeParentPath){
+  async function walkFolder(driveFolderId, driveFolderName, targetParentPath){
 if(currentDriveImportJob?.cancelled){
   throw new Error("Importación cancelada por el usuario");
 }
     const safeName = String(driveFolderName || 'Carpeta').trim() || 'Carpeta';
 
-    const created = await createMeatzeFolder(meatzeParentPath, safeName);
+    const created = await createCursoFolder(targetParentPath, safeName);
 
-    const currentMeatzePath =
+    const currentTargetPath =
       created.path ||
-      (meatzeParentPath ? `${meatzeParentPath}/${safeName}` : safeName);
+      (targetParentPath ? `${targetParentPath}/${safeName}` : safeName);
 
     foldersDone++;
 
@@ -689,7 +689,7 @@ if(currentDriveImportJob?.cancelled){
         await walkFolder(
           item.id,
           item.name || 'Carpeta',
-          currentMeatzePath
+          currentTargetPath
         );
 
       }else{
@@ -699,7 +699,7 @@ if(currentDriveImportJob?.cancelled){
           name: item.name || 'file',
           mimeType: item.mimeType || '',
           size: Number(item.size || 0)
-        }, currentMeatzePath);
+        }, currentTargetPath);
 if(currentDriveImportJob?.cancelled){
   throw new Error("Importación cancelada");
 }

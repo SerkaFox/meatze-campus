@@ -24,12 +24,12 @@ urlpatterns = [
     path("alumno/materiales/share-link/<int:file_id>/", views.material_share_link_create, name="material_share_link_create"),
     path("s/<str:token>/", views.public_share_download, name="public_share_download"),
 
-    path("meatze/v5/attendance/request", attendance_request),
-    path("meatze/v5/attendance/heartbeat", attendance_heartbeat),
+    path("v5/attendance/request", attendance_request),
+    path("v5/attendance/heartbeat", attendance_heartbeat),
     path("curso/<str:codigo>/physical_report_doc/", views.teacher_physical_report_doc, name="physical_report_doc"),
     path("curso/<str:codigo>/tareas/anexo-vi.docx", reports.teacher_anexo_vi_report_doc, name="anexo_vi_docx"),
-    path("meatze/v5/teacher/attendance/pending", teacher_attendance_pending),
-    path("meatze/v5/teacher/attendance/decide", teacher_attendance_decide),
+    path("v5/teacher/attendance/pending", teacher_attendance_pending),
+    path("v5/teacher/attendance/decide", teacher_attendance_decide),
 ]
 
 # panel/urls.py
@@ -37,8 +37,8 @@ from django.urls import path
 from .views_materiales_api import materiales_upload_files_ajax, materiales_upload_folder_bundle
 
 urlpatterns += [
-    path("meatze/v5/materiales/upload_files_ajax/", materiales_upload_files_ajax, name="mz_upload_files_ajax"),
-    path("meatze/v5/materiales/upload_folder_bundle/", materiales_upload_folder_bundle, name="mz_upload_folder_bundle"),
+    path("v5/materiales/upload_files_ajax/", materiales_upload_files_ajax, name="mz_upload_files_ajax"),
+    path("v5/materiales/upload_folder_bundle/", materiales_upload_folder_bundle, name="mz_upload_folder_bundle"),
 ]
 
 # panel/urls.py
@@ -54,8 +54,8 @@ urlpatterns += [
 ]
 from panel.views_modules_access import teacher_student_modules_get, teacher_student_modules_set
 urlpatterns += [
-    path("meatze/v5/teacher/student-modules/get", teacher_student_modules_get, name="teacher_student_modules_get"),
-    path("meatze/v5/teacher/student-modules/set", teacher_student_modules_set, name="teacher_student_modules_set"),
+    path("v5/teacher/student-modules/get", teacher_student_modules_get, name="teacher_student_modules_get"),
+    path("v5/teacher/student-modules/set", teacher_student_modules_set, name="teacher_student_modules_set"),
     path("curso/<int:curso_id>/live/status/", views_live.curso_live_status, name="curso_live_status"),
     path("curso/<int:curso_id>/live/ping/", views_live.curso_live_ping, name="curso_live_ping"),
     path("curso/<int:curso_id>/live/close/", views_live.curso_live_close, name="curso_live_close"),

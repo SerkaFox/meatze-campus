@@ -1,11 +1,14 @@
 
 
-<!-- === MEATZE · Cursos (panel bajo gate compartido) === -->
+<!-- === AURORA · Cursos (panel bajo gate compartido) === -->
 
 
 <section id="ui-cursos" class="mz-pane" data-active="false">
   <div class="mz-card">
     <h3 style="margin-top:0">Gestión de Cursos</h3>
+    <div class="mz-flow-note">
+      <strong>Objetivo:</strong> crea el curso una vez, pega sus modulos con horas y despues asigna los docentes que lo impartiran.
+    </div>
 
     <div class="hub" style="margin-bottom:10px">
       <button id="mzc-tab-form"
@@ -22,6 +25,13 @@
 
     <!-- Pane: Crear/Editar -->
     <div id="mzc-pane-form">
+<div class="mz-step-heading">
+  <span>2</span>
+  <div>
+    <h4>Crear curso y pegar modulos</h4>
+    <p>Formato recomendado: <b>UF0852 Instalacion - 86 horas</b>. Tambien reconoce <b>86h</b> y grupos MF/UF.</p>
+  </div>
+</div>
 <div class="mz-card mzc-form-row">
   <label class="mzc-col-50">
     <span class="mz-help">Título del curso *</span>
@@ -44,7 +54,7 @@
 </div>
 
 
-      <label class="mz-help">Módulos (una línea por módulo, termina en “– 86 horas”)</label>
+      <label class="mz-help">Módulos (una línea por módulo, termina en “- 86 horas”)</label>
       <textarea id="mzc-cf-modulos" rows="10" class="mz-inp" placeholder="UF0852 Instalación – 86 horas"></textarea>
 
       <div class="mz-row cols-2" style="grid-template-columns:1fr 1fr; margin-top:8px">
@@ -87,6 +97,13 @@
 
     <!-- Pane: Asignar -->
 <div id="mzc-pane-assign" style="display:none">
+  <div class="mz-step-heading">
+    <span>3</span>
+    <div>
+      <h4>Asignar docentes al curso</h4>
+      <p>Busca el curso, marca uno o varios docentes y guarda la asignacion. Azul significa asignado.</p>
+    </div>
+  </div>
 
   <div class="ca-grid">
 
@@ -117,7 +134,7 @@
         <div id="mzc-ca-assigned" class="ca-assigned">No hay docentes asignados.</div>
       </div>
 
-      <div class="ca-actions">
+      <div class="ca-actions" hidden>
         <button id="mzc-ca-assign" class="mz-btn" data-action="admin.cursos.assign_teachers">
           Guardar Asignación
         </button>
@@ -132,6 +149,11 @@
     <!-- RIGHT: teachers list -->
     <div class="mz-card ca-right">
       <h4 class="ca-h">Docentes disponibles</h4>
+      <label class="ca-field">
+        <span class="mz-help">Buscar docente</span>
+        <input id="mzc-ca-teacher-search" class="mz-inp" placeholder="Nombre, apellido o email...">
+      </label>
+      <div class="ca-selected-counter" id="mzc-ca-selected-counter">0 docentes seleccionados</div>
 <div class="mz-help" style="margin-bottom:10px">
   Marca los docentes que impartirán el curso. Puedes seleccionar varios.
   <br>

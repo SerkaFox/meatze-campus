@@ -2,17 +2,17 @@
 {% load static %}
 {% block content %}
 <script>
-  window.MZ_NOTIFY_URL = "{% static 'files/meatze_notify.mp3' %}";
+  window.MZ_NOTIFY_URL = "{% static 'files/aurora_notify.mp3' %}";
 </script>
 
 {% block extra_head %}
 
-<link rel="stylesheet" href="{% static 'meatze/admin/teachers.css' %}?v={% now 'U' %}">
-<link rel="stylesheet" href="{% static 'meatze/admin/subs.css' %}">
-<link rel="stylesheet" href="{% static 'meatze/admin/horarios.css' %}">
-<link rel="stylesheet" href="{% static 'meatze/admin/cursos.css' %}">
-<link rel="stylesheet" href="{% static 'meatze/admin/wa.css' %}">
-<link rel="stylesheet" href="{% static 'meatze/admin/admin-ui.css' %}">
+<link rel="stylesheet" href="{% static 'aurora/admin/teachers.css' %}?v={% now 'U' %}">
+<link rel="stylesheet" href="{% static 'aurora/admin/subs.css' %}">
+<link rel="stylesheet" href="{% static 'aurora/admin/horarios.css' %}">
+<link rel="stylesheet" href="{% static 'aurora/admin/cursos.css' %}">
+<link rel="stylesheet" href="{% static 'aurora/admin/wa.css' %}">
+<link rel="stylesheet" href="{% static 'aurora/admin/admin-ui.css' %}">
 
 {% endblock %}
 
@@ -44,36 +44,90 @@
       <div id="adm-gate-msg" class="mz-help" style="margin-top:6px"></div>
     </div>
 
-    <div id="adm-pills" class="mz-card" role="tablist" aria-label="Administración">
-      <div class="pillbar">
-        <button class="pill" data-mod="teachers">Docentes</button>
-        <button class="pill" data-mod="cursos">Cursos</button>
-        <button class="pill" data-mod="horarios">Horarios</button>
-        <button class="pill" data-mod="subs">Subs & envíos</button>
-        <button class="pill" data-mod="wa">WhatsApp</button>
-		<button class="pill" data-mod="lanbide">Lanbide</button>
+    <div class="mz-admin-layout">
+      <aside id="adm-pills" class="mz-card mz-admin-sidebar" role="tablist" aria-label="Administración">
+        <div class="mz-admin-guide">
+          <div>
+            <div class="mz-guide-kicker">Ruta recomendada</div>
+            <h2>Configura un curso en 4 pasos</h2>
+            <p>Primero crea docentes, despues crea el curso con sus modulos, asigna docentes y revisa el horario.</p>
+          </div>
+          <div class="mz-guide-steps" aria-label="Pasos principales">
+            <button type="button" data-guide-step="teachers"><span>1</span> Docentes</button>
+            <button type="button" data-guide-step="cursos-form"><span>2</span> Curso y modulos</button>
+            <button type="button" data-guide-step="cursos-assign"><span>3</span> Asignar docentes</button>
+            <button type="button" data-guide-step="horarios"><span>4</span> Horarios</button>
+          </div>
+        </div>
+        <div class="pillbar">
+          <button class="pill" data-mod="teachers">Docentes</button>
+          <button class="pill" data-mod="cursos">Cursos</button>
+          <button class="pill" data-mod="horarios">Horarios</button>
+          <button class="pill mz-later" data-mod="subs" hidden>Subs & envíos</button>
+          <button class="pill mz-later" data-mod="wa" hidden>WhatsApp</button>
+		  <button class="pill" data-mod="lanbide">Lanbide</button>
 
-      </div>
+        </div>
+      </aside>
+
+      <main class="mz-admin-main">
+        {% include "meatze_admin/teachers.html" %}
+        {% include "meatze_admin/cursos.html" %}
+        {% include "meatze_admin/horarios.html" %}
+        {% include "meatze_admin/subs.html" %}
+        {% include "meatze_admin/wa.html" %}
+	    {% include "meatze_admin/lanbide.html" %}
+      </main>
+
+      <aside class="mz-card mz-admin-actions" aria-label="Acceso rápido">
+        <div class="mz-actions-kicker">Acceso rápido</div>
+        <h3 id="mz-admin-actions-title">Panel</h3>
+
+        <div class="mz-actions-group" data-actions-for="teachers">
+          <p class="mz-help">Docentes</p>
+          <button type="button" class="mz-btn link" data-admin-anchor="#ui-teachers .mz-step-heading">Inicio</button>
+          <button type="button" class="mz-btn link" data-admin-anchor="#ui-teachers .t-grid">Alta y solicitudes</button>
+          <button type="button" class="mz-btn link" data-admin-anchor="#ui-teachers .mz-card:last-child">Docentes actuales</button>
+        </div>
+
+        <div class="mz-actions-group" data-actions-for="cursos">
+          <p class="mz-help">Cursos</p>
+          <button type="button" class="mz-btn link" data-admin-anchor="#ui-cursos .mz-step-heading">Inicio</button>
+          <button type="button" class="mz-btn link" data-admin-anchor="#mzc-pane-form">Crear curso</button>
+          <button type="button" class="mz-btn link" data-admin-anchor="#mzc-cf-list">Lista de cursos</button>
+          <button type="button" class="mz-btn link" data-admin-anchor="#mzc-pane-assign" data-admin-click-before="#mzc-tab-assign">Asignar docentes</button>
+          <button type="button" class="mz-btn link" data-admin-anchor="#mzc-ca-teachers-chips" data-admin-click-before="#mzc-tab-assign">Lista docentes</button>
+        </div>
+
+        <div class="mz-actions-group" data-actions-for="horarios">
+          <p class="mz-help">Horarios</p>
+          <button type="button" class="mz-btn link" data-admin-anchor="#ui-horarios .mz-step-heading">Inicio</button>
+          <button type="button" class="mz-btn link" data-admin-anchor="#mzh-curso">Seleccionar curso</button>
+          <button type="button" class="mz-btn link" data-admin-anchor="#mzh-grid">Calendario</button>
+          <button type="button" class="mz-btn link" data-admin-anchor="#mzh-auto-panel">Autorrellenar</button>
+          <button type="button" class="mz-btn link" data-admin-anchor="#mzh-hol-box">Días omitidos</button>
+          <button type="button" class="mz-btn link" data-admin-anchor="#mzh-export-graphic">Exportar Word</button>
+        </div>
+
+        <div class="mz-actions-group" data-actions-for="lanbide">
+          <p class="mz-help">Lanbide</p>
+          <button type="button" class="mz-btn link" data-admin-anchor="#ui-lanbide">Inicio</button>
+          <button type="button" class="mz-btn link" data-admin-anchor="#lz-tbody">Resultados</button>
+        </div>
+      </aside>
     </div>
-
-    {% include "meatze_admin/teachers.html" %}
-    {% include "meatze_admin/cursos.html" %}
-    {% include "meatze_admin/horarios.html" %}
-    {% include "meatze_admin/subs.html" %}
-    {% include "meatze_admin/wa.html" %}
-	{% include "meatze_admin/lanbide.html" %}
 
 
   </div>
 </div>
 <script>
 (function(){
-  window.MEATZE = window.MEATZE || {};
+  window.AURORA = window.AURORA || {};
   // текущий модуль админки: teachers/cursos/horarios/subs/wa/lanbide
-  window.MEATZE.HELP_UI = window.MEATZE.HELP_UI || "";
+  window.AURORA.HELP_UI = window.AURORA.HELP_UI || "";
 
   function setMod(mod){
-    window.MEATZE.HELP_UI = "admin_mod:" + String(mod || "");
+    window.AURORA.HELP_UI = "admin_mod:" + String(mod || "");
   }
 
   // при загрузке — попробуем взять активный модуль (если он хранится где-то)
@@ -89,21 +143,17 @@
   const enter = document.getElementById("adm-enter-shared");
   enter?.addEventListener("click", () => {
     // это не факт что вошли, но хотя бы покажем help про вход
-    window.MEATZE.HELP_UI = "admin_gate";
+    window.AURORA.HELP_UI = "admin_gate";
   });
 })();
 </script>
-<script src="{% static 'meatze/admin/admin-core.js' %}
-"></script>
-<script src="{% static 'meatze/admin/teachers.js' %}?v={% now 'U' %}"></script>
-<script src="{% static 'meatze/admin/cursos.js' %}?v={% now 'U' %}"></script>
-<script src="{% static 'meatze/admin/horarios.js' %}?v={% now 'U' %}"></script>
-<script src="{% static 'meatze/admin/subs.js' %}
-"></script>
-<script src="{% static 'meatze/admin/wa.js' %}
-"></script>
-<script src="{% static 'meatze/admin/lanbide.js' %}
-"></script>
+<script src="{% static 'aurora/admin/admin-core.js' %}?v={% now 'U' %}"></script>
+<script src="{% static 'aurora/admin/teachers.js' %}?v={% now 'U' %}"></script>
+<script src="{% static 'aurora/admin/cursos.js' %}?v={% now 'U' %}"></script>
+<script src="{% static 'aurora/admin/horarios.js' %}?v={% now 'U' %}"></script>
+<script src="{% static 'aurora/admin/subs.js' %}?v={% now 'U' %}"></script>
+<script src="{% static 'aurora/admin/wa.js' %}?v={% now 'U' %}"></script>
+<script src="{% static 'aurora/admin/lanbide.js' %}?v={% now 'U' %}"></script>
 
 <style>
   .mz-remember { display:block; }

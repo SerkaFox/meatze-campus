@@ -566,7 +566,7 @@ def leaf_name(path: str) -> str:
         return ""
     return path.split("/")[-1]
     
-def _ensure_meatze_folder_path(curso, full_path: str, user, locked=False):
+def _ensure_curso_folder_path(curso, full_path: str, user, locked=False):
     full_path = normalize_path(full_path)
     if not full_path:
         return
@@ -583,7 +583,7 @@ def _ensure_meatze_folder_path(curso, full_path: str, user, locked=False):
             locked=locked,
         )
         
-def _import_drive_file_to_meatze(
+def _import_drive_file_to_curso(
     *,
     curso,
     user,
@@ -647,17 +647,17 @@ def _import_drive_folder_recursive(
     user,
     drive_folder_id: str,
     drive_folder_name: str,
-    meatze_parent_path: str,
+    target_parent_path: str,
     audience: str,
     access_token: str,
     stats: dict,
 ):
     folder_name = _safe_name(drive_folder_name or "Carpeta")
-    current_meatze_path = _normalize_path(
-        f"{meatze_parent_path}/{folder_name}" if meatze_parent_path else folder_name
+    current_target_path = _normalize_path(
+        f"{target_parent_path}/{folder_name}" if target_parent_path else folder_name
     )
 
-    _ensure_meatze_folder_path(curso, current_meatze_path, user, locked=False)
+    _ensure_curso_folder_path(curso, current_target_path, user, locked=False)
     stats["folders_created"] += 1
 
     children = _list_drive_folder_children(drive_folder_id, access_token)
@@ -676,19 +676,19 @@ def _import_drive_folder_recursive(
                 user=user,
                 drive_folder_id=item_id,
                 drive_folder_name=item_name,
-                meatze_parent_path=current_meatze_path,
+                target_parent_path=current_target_path,
                 audience=audience,
                 access_token=access_token,
                 stats=stats,
             )
         else:
-            _import_drive_file_to_meatze(
+            _import_drive_file_to_curso(
                 curso=curso,
                 user=user,
                 drive_file_id=item_id,
                 drive_name=item_name,
                 drive_mime=item_mime,
-                folder_path=current_meatze_path,
+                folder_path=current_target_path,
                 audience=audience,
                 access_token=access_token,
             )
@@ -728,7 +728,7 @@ def materiales_import_google_drive_folder(request, codigo):
             user=request.user,
             drive_folder_id=folder_id,
             drive_folder_name=folder_name,
-            meatze_parent_path=target_path,
+            target_parent_path=target_path,
             audience=audience,
             access_token=access_token,
             stats=stats,

@@ -8,7 +8,7 @@ from django.db import transaction
 
 from api.models import Curso
 
-ROOM_RE = re.compile(r'\b(meatze-\d+-[a-z0-9-]+)\b')
+ROOM_RE = re.compile(r'\b(curso-[a-z0-9-]+)\b')
 
 # Эти паттерны ты подгонишь по факту, но базово так:
 OPEN_HINTS  = ("Created conference", "created room", "Created MUC", "conference created", "joined", "Focus joined")
@@ -18,7 +18,7 @@ class Command(BaseCommand):
     help = "Watch Jitsi/Prosody logs and toggle Curso.live_is_open"
 
     def add_arguments(self, parser):
-        parser.add_argument("--domain", default="meetjwt.meatzeaula.es")
+        parser.add_argument("--domain", default="meet.jit.si")
         parser.add_argument("--services", nargs="*", default=["jicofo", "prosody"])
         parser.add_argument("--close-idle-seconds", type=int, default=60)  # страховка
 

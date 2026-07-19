@@ -83,7 +83,7 @@ def is_system_student_email(email: str) -> bool:
 @authentication_classes([])   # без SessionAuthentication → без CSRF от DRF
 def request_pin(request):
     """
-    POST /meatze/v5/auth/request_pin
+    POST /v5/auth/request_pin
     { "email": "..." }
 
     Создаёт 6-значный PIN и отправляет на почту.
@@ -107,13 +107,13 @@ def request_pin(request):
     LoginPIN.objects.create(email=email, pin=code)
 
     # ── отправка письма ──
-    subject = "Tu PIN de acceso a MEATZE"
+    subject = "Tu PIN de acceso a Aurora Campus"
     message = (
         f"Hola,\n\n"
-        f"Tu código de acceso a MEATZE es: {code}\n\n"
+        f"Tu código de acceso a Aurora Campus es: {code}\n\n"
         f"Es válido durante 10 minutos.\n\n"
         f"Un saludo,\n"
-        f"Equipo MEATZE"
+        f"Equipo Aurora Campus"
     )
     from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None) or settings.EMAIL_HOST_USER
 
@@ -137,7 +137,7 @@ def request_pin(request):
 @authentication_classes([])   # сами работаем с сессией
 def verify_pin(request):
     """
-    POST /meatze/v5/auth/verify_pin
+    POST /v5/auth/verify_pin
     { "email": "...", "pin": "123456" }
 
     Проверяет PIN, создаёт/находит пользователя, логинит через сессию,
@@ -300,7 +300,7 @@ def set_password(request):
 @authentication_classes([])
 def logout_view(request):
     """
-    POST /meatze/v5/auth/logout
+    POST /v5/auth/logout
     """
     django_request = get_django_request(request)
     logout(django_request)
@@ -355,7 +355,7 @@ def login_password(request):
 @authentication_classes([])  # не используем DRF-авторизации, читаем сессию сами
 def me_view(request):
     """
-    GET /meatze/v5/me
+    GET /v5/me
 
     Возвращает текущего юзера по сессии:
     { "me": { ... } } или { "me": null }, если не залогинен.

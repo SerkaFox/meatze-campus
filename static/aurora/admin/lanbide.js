@@ -3,7 +3,7 @@
   if (window.__MZ_LANBIDE_V2__) return;
   window.__MZ_LANBIDE_V2__ = true;
 
-const API_BASE = (window.MEATZE?.V5 || (location.origin + '/meatze/v5')).replace(/\/$/,'');
+const API_BASE = (window.AURORA?.V5 || (location.origin + '/v5')).replace(/\/$/,'');
 const API_A    = API_BASE + '/admin';
 
 

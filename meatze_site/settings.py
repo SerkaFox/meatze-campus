@@ -77,7 +77,7 @@ CHANNEL_LAYERS = {
 ROOT_URLCONF = 'meatze_site.urls'
 LOGIN_URL = '/'
 LOGIN_REDIRECT_URL = '/alumno/'
-MEATZE_BASE_URL = "https://meatzeaula.es"
+MEATZE_BASE_URL = "https://curso.webimpulsa.es"
 MEATZE_ADMIN_URL_PATH = "/admin-panel/"  
 MEATZE_ASSISTANT_INDEX_PATH = "docs/autogen_strict/assistant_index.json"
 
@@ -191,9 +191,6 @@ STATICFILES_DIRS = [
 ]
 
 
-WA_TOKEN = os.getenv("WA_TOKEN", "")
-WA_PHONE_ID = os.getenv("WA_PHONE_ID", "")
-WA_VERIFY_TOKEN = os.getenv("WA_VERIFY_TOKEN", "")
 WA_ADMIN_BILBAO = os.getenv("WA_ADMIN_BILBAO", "")
 WA_ADMIN_BARAKALDO = os.getenv("WA_ADMIN_BARAKALDO", "")
 
@@ -219,10 +216,10 @@ MZ_ATTENDANCE_HB_SEC = 90
 
 PLAYWRIGHT_BIN = "/usr/bin/chromium"  # или оставь пустым, если playwright сам
 
-JITSI_DOMAIN = os.getenv("JITSI_DOMAIN", "meetjwt.meatzeaula.es")
+JITSI_DOMAIN = os.getenv("JITSI_DOMAIN", "meet.jit.si")
 JITSI_JWT_ENABLED = os.getenv("JITSI_JWT_ENABLED", "1") == "1"
-JITSI_JWT_SECRET = os.getenv("JITSI_JWT_SECRET", "meatze123")   # == app_secret in Prosody
-JITSI_JWT_APP_ID = os.getenv("JITSI_JWT_APP_ID", "meatze")      # == app_id
+JITSI_JWT_SECRET = os.getenv("JITSI_JWT_SECRET", "")   # == app_secret in Prosody
+JITSI_JWT_APP_ID = os.getenv("JITSI_JWT_APP_ID", "aurora")      # == app_id
 JITSI_JWT_AUD = os.getenv("JITSI_JWT_AUD", "jitsi")
 
 # Ollama (AI) stays external. The two callers (api/notify_views.py and
@@ -243,8 +240,8 @@ LOGGING = {
 }
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 
-SESSION_COOKIE_DOMAIN = os.getenv("SESSION_COOKIE_DOMAIN", ".meatzeaula.es")
-CSRF_COOKIE_DOMAIN = os.getenv("CSRF_COOKIE_DOMAIN", ".meatzeaula.es")
+SESSION_COOKIE_DOMAIN = os.getenv("SESSION_COOKIE_DOMAIN", "") or None
+CSRF_COOKIE_DOMAIN = os.getenv("CSRF_COOKIE_DOMAIN", "") or None
 
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True

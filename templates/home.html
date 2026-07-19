@@ -371,7 +371,7 @@
         <span>Campus de formación subvencionada</span>
       </div>
       <h1 class="mz-hero-title">
-        Bienvenido a MEATZE Campus
+        Bienvenido a Aurora Campus
       </h1>
 <p class="mz-hero-sub">
   Aquí podrás seguir tus cursos subvencionados, revisar el calendario de clases,
@@ -407,7 +407,7 @@
     </a>
   </div>
   <div class="mz-legal-links" style="margin-top:18px;display:flex;gap:14px;flex-wrap:wrap;">
-  <a href="https://meatzeaula.es/privacy/" style="
+  <a href="/privacy/" style="
     color:#cfe7ff;
     text-decoration:underline;
     font-weight:600;
@@ -415,7 +415,7 @@
     Privacy Policy
   </a>
 
-  <a href="https://meatzeaula.es/terms/" style="
+  <a href="/terms/" style="
     color:#cfe7ff;
     text-decoration:underline;
     font-weight:600;
@@ -431,14 +431,14 @@
     </section>
 
     <!-- RIGHT: AI assistant -->
-    <section class="mz-ai-card" aria-label="Asistente virtual MEATZE">
+    <section class="mz-ai-card" aria-label="Asistente virtual Aurora">
       <header class="mz-ai-head">
         <div class="mz-ai-badge">
           <div class="mz-ai-avatar">
             <div class="mz-ai-avatar-inner">M</div>
           </div>
           <div class="mz-ai-head-txt">
-            <strong>Asistente MEATZE</strong><br>
+            <strong>Asistente Aurora</strong><br>
             <span class="mz-ai-status">Online · responde sobre cursos y el portal</span>
           </div>
         </div>
@@ -462,7 +462,7 @@
         </button>
       </div>
       <div class="mz-ai-foot">
-        <span id="mz-ai-footnote">Responde solo sobre MEATZE Campus.</span>
+        <span id="mz-ai-footnote">Responde solo sobre Aurora Campus.</span>
         <span>Propulsado por IA local.</span>
       </div>
     </section>
@@ -562,7 +562,7 @@ function detectRoleFromText(text) {
 
   // стартовое сообщение — теперь ПОСЛЕ объявления history и addMsg
   addMsg('assistant',
-    "<strong>Hola, soy el asistente de MEATZE.</strong><br>" +
+    "<strong>Hola, soy el asistente de Aurora Campus.</strong><br>" +
     "Puedo explicarte cómo funciona el portal, qué verás en las pestañas de un curso " +
     "（Información, Materiales, Calendario, Alumnos, IA, Chat）y cómo entrar con tu PIN o contraseña."
   );
@@ -589,7 +589,7 @@ function detectRoleFromText(text) {
     };
 
     try{
-      const r = await fetch('/meatze/v5/ai/help', {
+      const r = await fetch('/v5/ai/help', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(payload),
@@ -604,14 +604,14 @@ function detectRoleFromText(text) {
 
         addMsg('assistant', msg);
         document.getElementById('mz-ai-footnote').textContent =
-          'Responde solo sobre MEATZE Campus.';
+          'Responde solo sobre Aurora Campus.';
         return;
       }
 
       const ans = (j.answer || j.message || 'No se pudo generar respuesta.').trim();
       addMsg('assistant', ans);
       document.getElementById('mz-ai-footnote').textContent =
-        'Responde solo sobre MEATZE Campus.';
+        'Responde solo sobre Aurora Campus.';
     }catch(e){
       addMsg('assistant',
         'Lo siento, ahora mismo no puedo responder: ' +
@@ -636,7 +636,7 @@ function detectRoleFromText(text) {
   {% if force_login %}
   window.addEventListener('load', ()=>{
     if (window.mzOpenAuth) window.mzOpenAuth();
-    else window.dispatchEvent(new Event('meatze:openAuth'));
+    else window.dispatchEvent(new Event('aurora:openAuth'));
   });
   {% endif %}
 })();

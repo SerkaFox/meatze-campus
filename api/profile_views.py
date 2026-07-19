@@ -19,7 +19,7 @@ def _get_or_create_profile(user: User) -> UserProfile:
 @login_required
 def me_change_password(request):
     """
-    POST /meatze/v5/me/password
+    POST /v5/me/password
     { "password": "...." }
 
     Меняет пароль текущему залогиненному пользователю.
@@ -238,7 +238,7 @@ def me_profile(request):
 @permission_classes([IsAuthenticated])
 def user_display(request):
     """
-    GET /meatze/v5/user_display?email=...
+    GET /v5/user_display?email=...
     Возвращает красивое имя для e-mail.
     """
     email = (request.query_params.get("email") or "").strip().lower()

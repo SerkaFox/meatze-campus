@@ -18,7 +18,7 @@ class RequestPinTests(TestCase):
 
         with patch("api.auth_views.send_mail") as send_mail:
             response = self.client.post(
-                "/meatze/v5/auth/request_pin",
+                "/v5/auth/request_pin",
                 data={"email": "ane@ifct0209.es"},
                 content_type="application/json",
             )

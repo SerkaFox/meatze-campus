@@ -1,5 +1,4 @@
-/* static/meatze/pages/acceder.js */
-/* static/meatze/pages/acceder.js */
+/* static/aurora/pages/acceder.js */
 (() => {
   'use strict';
   if (window.__MZ_ACCEDER_V2__) return;
@@ -10,7 +9,7 @@
   const WP_ROOT = (window.wpApiSettings && wpApiSettings.root)
     ? wpApiSettings.root
     : (location.origin + '/');
-  const V5 = WP_ROOT.replace(/\/$/, '') + '/meatze/v5';
+  const V5 = WP_ROOT.replace(/\/$/, '') + '/v5';
 
   // ===== same fetch helper style as original modal =====
   async function api(url, opt = {}) {
@@ -23,8 +22,8 @@
     }
 
     o.headers = Object.assign({ 'Cache-Control': 'no-cache' }, o.headers || {});
-    const isV5 = /\/meatze\/v5\//.test(url);
-    const isPublic = /\/meatze\/v5\/(?:cursos|curso|me|auth\/)/.test(url);
+    const isV5 = /\/v5\//.test(url);
+    const isPublic = /\/v5\/(?:cursos|curso|me|auth\/)/.test(url);
 
     if (isV5 && window.mzRestNonce && !isPublic) o.headers['X-WP-Nonce'] = window.mzRestNonce;
     if (!isV5 && window.wpApiSettings?.nonce)   o.headers['X-WP-Nonce'] = window.wpApiSettings.nonce;
@@ -50,8 +49,8 @@
   // ===== UI helpers =====
   const STEPS = ['#step-email', '#step-temp', '#step-temp-finish', '#step-setpass'];
 	function setHelpUI(code){
-	  window.MEATZE = window.MEATZE || {};
-	  window.MEATZE.HELP_UI = code || "";
+	  window.AURORA = window.AURORA || {};
+	  window.AURORA.HELP_UI = code || "";
 	}
 
 	// в твоём acceder.js:
@@ -148,7 +147,7 @@ function finishAuthRedirect() {
       if (j?.me) {
         try { localStorage.setItem('mz_me', JSON.stringify(j.me)); } catch (_) {}
       }
-      window.dispatchEvent(new CustomEvent('meatze:authChanged', { detail: Object.assign({ logged_in: true }, j?.me || {}) }));
+      window.dispatchEvent(new CustomEvent('aurora:authChanged', { detail: Object.assign({ logged_in: true }, j?.me || {}) }));
       finishAuthRedirect();
     } catch (e) {
       msgPwd.textContent = e?.message || 'Credenciales inválidas.';

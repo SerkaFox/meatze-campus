@@ -1,5 +1,5 @@
 /* =========================================================
-   MEATZE · Horarios (Calendar) — CLEAN
+   AURORA · Horarios (Calendar) — CLEAN
    Scoped to #ui-horarios
    ========================================================= */
 
@@ -166,9 +166,23 @@
    ========================================================= */
 #ui-horarios .mz-auto-grid{
   display:grid;
-  grid-template-columns: 220px minmax(260px, 340px) minmax(220px, 1fr) minmax(220px, 1fr);
+  grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);
   gap:10px;
   align-items:end;
+}
+#ui-horarios .mz-auto-aula{
+  grid-column:1 / -1;
+}
+#ui-horarios #mzh-auto-nota-wrap{
+  grid-column:1 / -1;
+}
+#ui-horarios #mzh-auto-horas-wrap{
+  grid-column:1;
+  max-width:220px;
+}
+#ui-horarios #mzh-auto-end-wrap{
+  grid-column:2;
+  max-width:240px;
 }
 #ui-horarios .mz-auto-range{
   display:grid;
@@ -178,24 +192,44 @@
 }
 
 #ui-horarios .mz-auto-row{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:14px;
-  flex-wrap:wrap;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+  align-items:start;
   margin:0;
 }
 #ui-horarios .mz-auto-dow{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  flex-wrap:wrap;
+  display:grid;
+  grid-template-columns:1fr;
+  align-items:start;
+  gap:8px;
   margin:0;
 }
 #ui-horarios .mz-auto-dow-list{
   display:flex;
+  gap:6px;
+  flex-wrap:nowrap;
+  overflow-x:auto;
+  padding-bottom:2px;
+}
+#ui-horarios .mz-auto-dow-list .mz-auto-flag{
+  min-width:44px;
+  padding:8px 9px;
+  justify-content:center;
+  flex:0 0 auto;
+}
+#ui-horarios .mz-auto-flags{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
   gap:8px;
   flex-wrap:wrap;
+}
+#ui-horarios .mz-location-input{
+  display:grid;
+  grid-template-columns:minmax(0, 1fr) auto;
+  gap:8px;
+  align-items:end;
 }
 
 /* checkbox chip */
@@ -219,6 +253,23 @@
 #ui-horarios .mz-auto-flag:hover{
   background:rgba(14,115,184,.06);
   border-color:rgba(14,115,184,.25);
+}
+#ui-horarios .mz-firstday-ui{
+  display:none !important;
+}
+#ui-horarios .mz-auto-footer{
+  display:grid;
+  gap:10px;
+  margin-top:12px;
+}
+#ui-horarios .mz-auto-actions{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+#ui-horarios .mz-auto-actions .mz-btn{
+  min-width:160px;
 }
 /* без :has() — добавляй/снимай класс is-on из JS если хочешь подсветку */
 #ui-horarios .mz-auto-flag.is-on{
@@ -394,6 +445,14 @@
    ========================================================= */
 @media (max-width: 980px){
   #ui-horarios .mz-auto-grid{ grid-template-columns:1fr; }
+  #ui-horarios .mz-auto-aula,
+  #ui-horarios #mzh-auto-nota-wrap,
+  #ui-horarios #mzh-auto-horas-wrap,
+  #ui-horarios #mzh-auto-end-wrap{ grid-column:auto; }
+  #ui-horarios #mzh-auto-horas-wrap,
+  #ui-horarios #mzh-auto-end-wrap{ max-width:none; }
+  #ui-horarios .mz-auto-row{ grid-template-columns:1fr; }
+  #ui-horarios .mz-auto-flags{ justify-content:flex-start; }
   #ui-horarios .mz-hol-list{ grid-template-columns:1fr; }
 }
 @media (max-width: 640px){
@@ -539,9 +598,24 @@
 }
 
 #ui-horarios .mz-aula,
-#ui-horarios .mz-nota{
+#ui-horarios .mz-nota,
+#ui-horarios .mz-custom-extra{
   display:grid;
   gap:6px;
+}
+#ui-horarios .mz-custom-extra{
+  grid-column:1 / -2;
+  grid-template-columns:minmax(180px, 1fr) 120px auto;
+  align-items:end;
+  padding-top:2px;
+}
+#ui-horarios .mz-custom-extra[hidden]{
+  display:none !important;
+}
+#ui-horarios .mz-custom-extra input[type="color"]{
+  width:100%;
+  height:38px;
+  padding:4px;
 }
 
 /* inputs in modal (use your existing .mz-inp if present; add fallback) */
@@ -597,6 +671,16 @@
   color:white;
 }
 #ui-horarios .mz-btn.primary:hover{ filter:brightness(1.03); }
+#ui-horarios .mzh-export-btn{
+  background-color:#0e73b8 !important;
+  background-image:linear-gradient(135deg,#0e73b8,#085f99) !important;
+  border-color:#0a5f99 !important;
+  color:#fff !important;
+  box-shadow:0 10px 22px rgba(14,115,184,.22);
+}
+#ui-horarios .mzh-export-btn[hidden]{
+  display:none !important;
+}
 #ui-horarios .mz-btn.link{
   background:transparent;
   border-color:transparent;
@@ -605,6 +689,68 @@
 #ui-horarios .mz-btn:disabled{
   opacity:.55;
   cursor:not-allowed;
+}
+
+#ui-horarios .mz-fixed-modal-card{
+  width:min(760px, calc(100vw - 28px));
+}
+#ui-horarios .mz-fixed-years{
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:10px;
+}
+#ui-horarios .mz-fixed-course-top{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:10px;
+  align-items:center;
+}
+#ui-horarios .mz-location-search{
+  display:grid;
+  grid-template-columns:minmax(0, 1fr) auto;
+  gap:8px;
+  align-items:end;
+}
+#ui-horarios .mz-location-results{
+  display:grid;
+  gap:8px;
+  margin-top:10px;
+  max-height:46vh;
+  overflow:auto;
+}
+#ui-horarios .mz-location-map{
+  height:300px;
+  margin-top:10px;
+  border-radius:14px;
+  border:1px solid rgba(15,23,42,.12);
+  background:#eef2f7;
+  overflow:hidden;
+}
+#ui-horarios .mz-location-result{
+  width:100%;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid rgba(15,23,42,.12);
+  background:rgba(255,255,255,.82);
+  text-align:left;
+  cursor:pointer;
+}
+#ui-horarios .mz-location-result:hover,
+#ui-horarios .mz-location-result[aria-pressed="true"]{
+  border-color:rgba(14,115,184,.38);
+  background:rgba(14,115,184,.08);
+}
+#ui-horarios .mz-location-result b{
+  display:block;
+  color:#0f172a;
+  font-size:13px;
+}
+#ui-horarios .mz-location-result span{
+  display:block;
+  margin-top:3px;
+  color:#64748b;
+  font-size:12px;
+  line-height:1.35;
 }
 
 /* small help */
@@ -616,16 +762,24 @@
 
 /* responsive modal rows */
 @media (max-width: 920px){
+  #ui-horarios .mz-fixed-years,
+  #ui-horarios .mz-fixed-course-top,
+  #ui-horarios .mz-location-search,
+  #ui-horarios .mz-location-input{
+    grid-template-columns:1fr;
+  }
   #ui-horarios .mz-dayrow{
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
       "time time"
       "aula nota"
+      "custom custom"
       "del del";
   }
   #ui-horarios .mz-dayrow .mz-time{ grid-area: time; }
   #ui-horarios .mz-dayrow .mz-aula{ grid-area: aula; }
   #ui-horarios .mz-dayrow .mz-nota{ grid-area: nota; }
+  #ui-horarios .mz-dayrow .mz-custom-extra{ grid-area: custom; grid-template-columns:1fr; }
   #ui-horarios .mz-dayrow .mz-del{
     grid-area: del;
     width:100%;
@@ -644,6 +798,7 @@
       "time"
       "aula"
       "nota"
+      "custom"
       "del";
   }
 }

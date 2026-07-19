@@ -10,9 +10,9 @@
   const REQ_THROTTLE_MS = 60000;      // don't spam request
   const DEBUG = !!(window.MZ_TRAFFIC && window.MZ_TRAFFIC.debug);
 
-  const V5 = (window.MEATZE && window.MEATZE.V5)
-    ? window.MEATZE.V5.replace(/\/$/, '')
-    : (location.origin.replace(/\/$/, '') + '/meatze/v5');
+  const V5 = (window.AURORA && window.AURORA.V5)
+    ? window.AURORA.V5.replace(/\/$/, '')
+    : (location.origin.replace(/\/$/, '') + '/v5');
 
   const ENDPOINT = (window.MZ_TRAFFIC && window.MZ_TRAFFIC.endpoint)
     ? String(window.MZ_TRAFFIC.endpoint)

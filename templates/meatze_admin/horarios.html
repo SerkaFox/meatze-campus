@@ -1,5 +1,12 @@
-<!-- === MEATZE · Horarios (panel bajo gate compartido) === -->
+<!-- === AURORA · Horarios (panel bajo gate compartido) === -->
 <section id="ui-horarios" class="mz-pane" data-active="false">
+  <div class="mz-step-heading">
+    <span>4</span>
+    <div>
+      <h4>Revisar o generar horarios</h4>
+      <p>Selecciona un curso y usa el calendario para revisar sesiones, practicas y dias no lectivos antes de publicar el curso.</p>
+    </div>
+  </div>
   <div class="mz-card">
 	<h3 style="margin:0 0 8px">Seleccionar curso y ámbito</h3>
 	<div class="mz-row" style="grid-template-columns:2fr 1fr">
@@ -57,14 +64,9 @@
     <div id="mzh-grid" class="grid"></div>
     <div id="mzh-legend" class="legend"></div>
   </div>
-    <div style="margin-top:10px; display:flex; justify-content:flex-end;">
-<button id="mzh-export-graphic" class="mz-btn link" type="button" data-action="horarios.export.word_graphic">
-  Descargar Word (gráfico)
-</button>
-    </div>
 
   <!-- AUTORRELLENAR (módulos) -->
-  <div class="mz-card mz-auto-card">
+  <div id="mzh-auto-card" class="mz-card mz-auto-card" hidden>
     <div class="mz-auto-head">
       <div>
         <h3 class="mz-editor-title">Autorrellenar (módulos)</h3>
@@ -73,99 +75,6 @@
           omitiendo fines de semana, festivos oficiales y días no lectivos del centro.
         </div>
       </div>
-<button id="mzh-fixed-toggle" class="mz-btn link" type="button" data-action="horarios.fixed.toggle">
-  Actualizar días no lectivos del centro
-</button>
-      <div id="mzh-fixed-panel" class="mz-card mz-fixed-card" style="display:none;margin-top:8px">
-        <div class="mz-help" style="margin-bottom:4px">
-          Días fijos no lectivos por año (formato <b>DD/MM</b>, separados por coma.
-Se admiten rangos: <b>01/08-31/08</b>, <b>10-20/09</b>.
-
-          Se aplican a <b>todos</b> los cursos.
-        </div>
-<div class="mz-row" style="grid-template-columns:1fr 1fr 1fr;gap:8px">
-  <label>
-    <span class="mz-help">Año <span id="mzh-fixed-y0-label"></span></span>
-    <input id="mzh-fixed-y0" class="mz-inp" placeholder="13/01, 15/01">
-  </label>
-
-  <label>
-    <span class="mz-help">Año <span id="mzh-fixed-y1-label"></span></span>
-    <input id="mzh-fixed-y1" class="mz-inp" placeholder="13/01, 15/01">
-  </label>
-
-  <label>
-    <span class="mz-help">Año <span id="mzh-fixed-y2-label"></span></span>
-    <input id="mzh-fixed-y2" class="mz-inp" placeholder="10/01, 20/06">
-  </label>
-</div>
-        <div class="mz-fixed-actions">
-          <button id="mzh-fixed-save" class="mz-btn" type="button" data-action="horarios.fixed.save">
-  Guardar días no lectivos
-</button>
-          <span id="mzh-fixed-msg" class="mz-help"></span>
-        </div>
-      </div>
-	  
-	  <!-- === DÍAS NO LECTIVOS DEL CURSO (override) === -->
-<button id="mzh-course-fixed-toggle" class="mz-btn link" type="button"
-        data-action="horarios.course_fixed.toggle" style="margin-top:6px">
-  Días no lectivos de ESTE curso
-</button>
-
-<div id="mzh-course-fixed-panel" class="mz-card mz-fixed-card"
-     style="display:none;margin-top:8px">
-  <div class="mz-help" style="margin-bottom:8px">
-    Aquí puedes elegir si el curso usa los días <b>globales del centro</b>
-    o un listado <b>exclusivo</b> (solo para este curso).
-  </div>
-
-  <div class="mz-row" style="grid-template-columns: 1.2fr .8fr; gap:10px; align-items:end">
-    <label class="mz-help mz-auto-flag" style="display:flex;gap:8px;align-items:center;margin:0">
-      <input id="mzh-course-use-global" type="checkbox" checked>
-      Usar lista global del centro
-    </label>
-
-    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
-      <button id="mzh-course-copy-global" class="mz-btn" type="button"
-              data-action="horarios.course_fixed.copy_global">
-        Copiar desde global
-      </button>
-    </div>
-  </div>
-
-  <div id="mzh-course-fixed-fields" style="margin-top:8px">
-    <div class="mz-help" style="margin-bottom:4px">
-      Días no lectivos <b>del curso</b> por año (formato <b>DD/MM</b>, separados por coma).
-      Se admiten rangos: <b>01/08-31/08</b>, <b>10-20/09</b>.
-    </div>
-
-    <div class="mz-row" style="grid-template-columns:1fr 1fr 1fr;gap:8px">
-      <label>
-        <span class="mz-help">Año <span id="mzh-course-y0-label"></span></span>
-        <input id="mzh-course-y0" class="mz-inp" placeholder="13/01, 15/01">
-      </label>
-
-      <label>
-        <span class="mz-help">Año <span id="mzh-course-y1-label"></span></span>
-        <input id="mzh-course-y1" class="mz-inp" placeholder="13/01, 15/01">
-      </label>
-
-      <label>
-        <span class="mz-help">Año <span id="mzh-course-y2-label"></span></span>
-        <input id="mzh-course-y2" class="mz-inp" placeholder="10/01, 20/06">
-      </label>
-    </div>
-
-    <div class="mz-fixed-actions" style="margin-top:8px">
-      <button id="mzh-course-fixed-save" class="mz-btn" type="button"
-              data-action="horarios.course_fixed.save">
-        Guardar días del curso
-      </button>
-      <span id="mzh-course-fixed-msg" class="mz-help"></span>
-    </div>
-  </div>
-</div>
     </div>
 
     <!-- панель параметров автозаполнения, всегда открыта -->
@@ -197,7 +106,12 @@ Se admiten rangos: <b>01/08-31/08</b>, <b>10-20/09</b>.
 		  <!-- АДРЕС / NOTA: только для prácticas -->
 		  <label id="mzh-auto-nota-wrap">
 			<span class="mz-help">Dirección / ubicación (opcional)</span>
-			<input id="mzh-auto-nota" class="mz-inp" placeholder="Dirección / ubicación…">
+			<div class="mz-location-input">
+			  <input id="mzh-auto-nota" class="mz-inp" placeholder="Dirección / ubicación…">
+			  <button id="mzh-location-open" class="mz-btn link" type="button">
+			    Buscar mapa
+			  </button>
+			</div>
 		  </label>
 
 		  <!-- Длительность и дата конца: только для prácticas -->
@@ -232,20 +146,27 @@ Se admiten rangos: <b>01/08-31/08</b>, <b>10-20/09</b>.
       <input id="mzh-auto-skiphol" type="checkbox" checked>
       Omitir festivos ES-PV (online)
     </label>
+    <button id="mzh-fixed-toggle" class="mz-btn link" type="button" data-action="horarios.fixed.toggle">
+      Días no lectivos del centro
+    </button>
+    <button id="mzh-course-fixed-toggle" class="mz-btn link" type="button"
+            data-action="horarios.course_fixed.toggle" disabled>
+      Días no lectivos de este curso
+    </button>
   </div>
 
 </div>
 
 
       <!-- Primer día especial (más corto) -->
-      <div class="mz-row mz-auto-flags">
+      <div class="mz-row mz-auto-flags mz-firstday-ui" hidden>
         <label class="mz-help mz-auto-flag">
           <input id="mzh-firstday-special" type="checkbox">
           Primer día con horario diferente
         </label>
       </div>
 
-      <div id="mzh-firstday-wrap" class="mz-row" style="display:none; margin-top:4px;">
+      <div id="mzh-firstday-wrap" class="mz-row mz-firstday-ui" style="display:none; margin-top:4px;" hidden>
         <div class="mz-auto-range">
           <label>
             <span class="mz-help">Primer día: desde</span>
@@ -259,9 +180,14 @@ Se admiten rangos: <b>01/08-31/08</b>, <b>10-20/09</b>.
         </div>
       </div>
       <div class="mz-auto-footer">
-<button id="mzh-auto-run" class="mz-btn primary" type="button" data-action="horarios.auto.run">
-  Autorrellenar ahora
-</button>
+<div class="mz-auto-actions">
+  <button id="mzh-auto-run" class="mz-btn primary" type="button" data-action="horarios.auto.run">
+    Autorrellenar ahora
+  </button>
+  <button id="mzh-export-graphic" class="mz-btn primary mzh-export-btn" type="button" data-action="horarios.export.word_graphic" hidden>
+    Descargar Word (gráfico)
+  </button>
+</div>
 <!-- мини-карта практики: показываем выбранного alumno -->
 <div id="mzh-student-card" class="mz-student-card" style="display:none">
   <div class="mz-student-title">Prácticas de</div>
@@ -294,6 +220,140 @@ Se admiten rangos: <b>01/08-31/08</b>, <b>10-20/09</b>.
     <div id="mzh-busytxt" class="mzh-busy-txt">Procesando…</div>
     <div class="mzh-busy-track">
       <div id="mzh-busybar" class="mzh-busy-bar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- === Modal: Días no lectivos del centro === -->
+<div id="mzh-fixed-panel" class="mz-modal" aria-hidden="true">
+  <div class="mz-modal-backdrop" data-fixed-close="1"></div>
+  <div class="mz-modal-card mz-fixed-modal-card" role="dialog" aria-modal="true" aria-labelledby="mzh-fixed-title">
+    <div class="mz-modal-head">
+      <div>
+        <div id="mzh-fixed-title" class="mz-modal-title">Días no lectivos del centro</div>
+        <div class="mz-help">Se aplican a todos los cursos salvo que un curso tenga una lista exclusiva.</div>
+      </div>
+      <button type="button" class="mz-btn link" data-fixed-close="1" aria-label="Cerrar">✕</button>
+    </div>
+
+    <div class="mz-modal-body">
+      <div class="mz-help" style="margin-bottom:10px">
+        Formato <b>DD/MM</b>, separados por coma. Se admiten rangos: <b>01/08-31/08</b>, <b>10-20/09</b>.
+      </div>
+      <div class="mz-fixed-years">
+        <label>
+          <span class="mz-help">Año <span id="mzh-fixed-y0-label"></span></span>
+          <input id="mzh-fixed-y0" class="mz-inp" placeholder="13/01, 15/01">
+        </label>
+        <label>
+          <span class="mz-help">Año <span id="mzh-fixed-y1-label"></span></span>
+          <input id="mzh-fixed-y1" class="mz-inp" placeholder="13/01, 15/01">
+        </label>
+        <label>
+          <span class="mz-help">Año <span id="mzh-fixed-y2-label"></span></span>
+          <input id="mzh-fixed-y2" class="mz-inp" placeholder="10/01, 20/06">
+        </label>
+      </div>
+    </div>
+
+    <div class="mz-modal-foot">
+      <span id="mzh-fixed-msg" class="mz-help"></span>
+      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+        <button type="button" class="mz-btn link" data-fixed-close="1">Cancelar</button>
+        <button id="mzh-fixed-save" class="mz-btn primary" type="button" data-action="horarios.fixed.save">
+          Guardar días no lectivos
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- === Modal: Días no lectivos específicos del curso === -->
+<div id="mzh-course-fixed-panel" class="mz-modal" aria-hidden="true">
+  <div class="mz-modal-backdrop" data-course-fixed-close="1"></div>
+  <div class="mz-modal-card mz-fixed-modal-card" role="dialog" aria-modal="true" aria-labelledby="mzh-course-fixed-title">
+    <div class="mz-modal-head">
+      <div>
+        <div id="mzh-course-fixed-title" class="mz-modal-title">Días no lectivos de este curso</div>
+        <div class="mz-help">Lista exclusiva para el curso seleccionado o uso de la lista global del centro.</div>
+      </div>
+      <button type="button" class="mz-btn link" data-course-fixed-close="1" aria-label="Cerrar">✕</button>
+    </div>
+
+    <div class="mz-modal-body">
+      <div class="mz-fixed-course-top">
+        <label class="mz-help mz-auto-flag" style="display:flex;gap:8px;align-items:center;margin:0">
+          <input id="mzh-course-use-global" type="checkbox" checked>
+          Usar lista global del centro
+        </label>
+        <button id="mzh-course-copy-global" class="mz-btn" type="button"
+                data-action="horarios.course_fixed.copy_global">
+          Copiar desde global
+        </button>
+      </div>
+
+      <div id="mzh-course-fixed-fields" style="margin-top:12px">
+        <div class="mz-help" style="margin-bottom:10px">
+          Formato <b>DD/MM</b>, separados por coma. Se admiten rangos: <b>01/08-31/08</b>, <b>10-20/09</b>.
+        </div>
+        <div class="mz-fixed-years">
+          <label>
+            <span class="mz-help">Año <span id="mzh-course-y0-label"></span></span>
+            <input id="mzh-course-y0" class="mz-inp" placeholder="13/01, 15/01">
+          </label>
+          <label>
+            <span class="mz-help">Año <span id="mzh-course-y1-label"></span></span>
+            <input id="mzh-course-y1" class="mz-inp" placeholder="13/01, 15/01">
+          </label>
+          <label>
+            <span class="mz-help">Año <span id="mzh-course-y2-label"></span></span>
+            <input id="mzh-course-y2" class="mz-inp" placeholder="10/01, 20/06">
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="mz-modal-foot">
+      <span id="mzh-course-fixed-msg" class="mz-help"></span>
+      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+        <button type="button" class="mz-btn link" data-course-fixed-close="1">Cancelar</button>
+        <button id="mzh-course-fixed-save" class="mz-btn primary" type="button"
+                data-action="horarios.course_fixed.save">
+          Guardar días del curso
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- === Modal: Buscar ubicación de prácticas === -->
+<div id="mzh-location-modal" class="mz-modal" aria-hidden="true">
+  <div class="mz-modal-backdrop" data-location-close="1"></div>
+  <div class="mz-modal-card mz-fixed-modal-card" role="dialog" aria-modal="true" aria-labelledby="mzh-location-title">
+    <div class="mz-modal-head">
+      <div>
+        <div id="mzh-location-title" class="mz-modal-title">Buscar ubicación</div>
+        <div class="mz-help">Busca una dirección y confirma para insertarla en las prácticas.</div>
+      </div>
+      <button type="button" class="mz-btn link" data-location-close="1" aria-label="Cerrar">✕</button>
+    </div>
+
+    <div class="mz-modal-body">
+      <div class="mz-location-search">
+        <input id="mzh-location-query" class="mz-inp" placeholder="Empresa, calle, ciudad...">
+        <button id="mzh-location-search" class="mz-btn" type="button">Buscar</button>
+      </div>
+      <div id="mzh-location-msg" class="mz-help" style="margin-top:8px"></div>
+      <div id="mzh-location-map" class="mz-location-map"></div>
+      <div id="mzh-location-results" class="mz-location-results"></div>
+    </div>
+
+    <div class="mz-modal-foot">
+      <span id="mzh-location-selected" class="mz-help">Sin ubicación seleccionada.</span>
+      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+        <button type="button" class="mz-btn link" data-location-close="1">Cancelar</button>
+        <button id="mzh-location-apply" class="mz-btn primary" type="button" disabled>Insertar ubicación</button>
+      </div>
     </div>
   </div>
 </div>

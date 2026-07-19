@@ -1,5 +1,5 @@
 /* ==========================================================
-   MEATZE ADMIN UI — CLEAN & SCOPED
+   AURORA ADMIN UI — CLEAN & SCOPED
    ========================================================== */
 
 /* ===== Guard: изоляция от base.html ===== */
@@ -23,7 +23,7 @@
 
   --mz-radius:14px;
   --mz-radius-pill:999px;
-  --mz-max:1100px;
+  --mz-max:none;
 
   --mz-focus:0 0 0 3px rgba(14,115,184,.25);
 }
@@ -34,6 +34,83 @@
   margin:0 auto;
 }
 
+.mz-page:has(.mz-admin-scope){
+  max-width:none;
+  padding-left:24px;
+  padding-right:24px;
+}
+
+.mz-admin-scope .mz-admin-layout{
+  display:block;
+}
+
+.mz-admin-scope .mz-admin-sidebar,
+.mz-admin-scope .mz-admin-actions{
+  position:fixed;
+  top:84px;
+  z-index:20;
+  width:280px;
+  max-height:calc(100vh - 84px - 24px);
+  overflow-y:auto;
+  overflow-x:visible;
+  scrollbar-width:thin;
+}
+
+.mz-admin-scope .mz-admin-sidebar{
+  left:24px;
+}
+
+.mz-admin-scope .mz-admin-actions{
+  right:24px;
+}
+
+.mz-admin-scope .mz-admin-main{
+  min-width:0;
+  width:min(1080px, calc(100vw - 760px));
+  margin:0 auto;
+}
+
+.mz-admin-scope .mz-admin-actions{
+  padding:16px;
+}
+
+.mz-admin-scope .mz-actions-kicker{
+  color:var(--mz-primary);
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.mz-admin-scope .mz-admin-actions h3{
+  margin:4px 0 14px;
+}
+
+.mz-admin-scope .mz-actions-group{
+  display:grid;
+  gap:9px;
+}
+
+.mz-admin-scope .mz-actions-group[hidden]{
+  display:none !important;
+}
+
+.mz-admin-scope .mz-admin-actions .mz-btn{
+  width:100%;
+  justify-content:center;
+}
+
+.mz-admin-scope .mz-anchor-pulse{
+  animation:mzAnchorPulse .78s ease-in-out 2;
+  border-radius:14px;
+}
+
+@keyframes mzAnchorPulse{
+  0%{ box-shadow:0 0 0 0 rgba(14,115,184,0); outline:0 solid rgba(14,115,184,0); }
+  38%{ box-shadow:0 0 0 8px rgba(14,115,184,.18), 0 14px 34px rgba(14,115,184,.20); outline:2px solid rgba(14,115,184,.52); }
+  100%{ box-shadow:0 0 0 0 rgba(14,115,184,0); outline:0 solid rgba(14,115,184,0); }
+}
+
 /* ===== Cards ===== */
 .mz-admin-scope .mz-card{
   background:var(--mz-card);
@@ -42,6 +119,129 @@
   padding:14px;
   margin:12px 0;
   box-shadow:var(--mz-shadow-soft);
+}
+
+/* ===== Client-friendly admin guide ===== */
+.mz-admin-scope .mz-admin-guide{
+  display:block;
+  margin-bottom:16px;
+  padding:16px;
+  border-radius:18px;
+  background:linear-gradient(135deg,#0b2b4a,#0e73b8 62%,#21a6ca);
+  color:#fff;
+  overflow:hidden;
+}
+.mz-admin-scope .mz-guide-kicker{
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  opacity:.82;
+}
+.mz-admin-scope .mz-admin-guide h2{
+  margin:4px 0 8px;
+  font-size:20px;
+  line-height:1.12;
+  color:#fff;
+}
+.mz-admin-scope .mz-admin-guide p{
+  max-width:100%;
+  margin:0;
+  color:rgba(255,255,255,.82);
+  font-size:14px;
+  line-height:1.55;
+}
+.mz-admin-scope .mz-guide-steps{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:10px;
+  margin-top:14px;
+}
+.mz-admin-scope .mz-guide-steps button{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:52px;
+  border:1px solid rgba(255,255,255,.24);
+  border-radius:14px;
+  background:rgba(255,255,255,.12);
+  color:#fff;
+  cursor:pointer;
+  font-weight:800;
+  text-align:left;
+  padding:10px 12px;
+}
+.mz-admin-scope .mz-guide-steps button:hover{
+  background:rgba(255,255,255,.20);
+}
+.mz-admin-scope .mz-guide-steps span,
+.mz-admin-scope .mz-step-heading > span{
+  width:28px;
+  height:28px;
+  border-radius:999px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 28px;
+  background:#fff;
+  color:var(--mz-primary);
+  font-weight:900;
+}
+.mz-admin-scope .mz-step-heading{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  padding:14px;
+  margin:0 0 12px;
+  border:1px solid rgba(14,115,184,.18);
+  border-radius:16px;
+  background:linear-gradient(135deg,#eaf4fb,#e3f4f7);
+}
+.mz-admin-scope .mz-step-heading h4{
+  margin:0 0 4px;
+  color:var(--mz-ink);
+  font-size:16px;
+}
+.mz-admin-scope .mz-step-heading p,
+.mz-admin-scope .mz-flow-note{
+  margin:0;
+  color:var(--mz-muted);
+  font-size:13px;
+  line-height:1.55;
+}
+.mz-admin-scope .mz-flow-note{
+  margin:-4px 0 12px;
+  padding:10px 12px;
+  border-left:4px solid var(--mz-primary);
+  background:#f6fbff;
+  border-radius:10px;
+}
+
+@media (max-width:1180px){
+  .mz-admin-scope .mz-admin-layout{
+    display:block;
+  }
+  .mz-admin-scope .mz-admin-main{
+    width:auto;
+    max-width:1080px;
+    margin:0 auto;
+  }
+  .mz-admin-scope .mz-admin-sidebar,
+  .mz-admin-scope .mz-admin-actions{
+    position:sticky;
+    top:0;
+    width:auto;
+    max-height:none;
+    overflow:visible;
+    border-radius:0 0 16px 16px;
+  }
+  .mz-admin-scope .mz-admin-actions{
+    position:static;
+    border-radius:var(--mz-radius);
+  }
+  .mz-admin-scope .mz-admin-guide{
+    display:none;
+  }
 }
 
 /* ===== Text ===== */
@@ -146,18 +346,19 @@
 
 /* ===== Pillbar / Tabs ===== */
 .mz-admin-scope #adm-pills .pillbar{
-  display:flex;
+  display:grid;
   gap:8px;
-  flex-wrap:wrap;
-  align-items:center;
+  grid-template-columns:1fr;
 }
 .mz-admin-scope .pill{
+  width:100%;
   border-radius:var(--mz-radius-pill);
   padding:10px 14px;
   border:1px solid var(--mz-border);
   background:#fff;
   color:var(--mz-ink);
   font-weight:700;
+  text-align:left;
 }
 .mz-admin-scope .pill[aria-current="true"]{
   background:var(--mz-primary);
@@ -233,13 +434,8 @@
   display:grid;
   gap:8px;
   grid-template-columns:1fr;
-  max-width:560px;
-  margin:8px auto;
-}
-@media (min-width:840px){
-  .mz-admin-scope #mzc-ca-teachers-chips{
-    grid-template-columns:1fr 1fr;
-  }
+  max-width:none;
+  margin:8px 0;
 }
 .mz-admin-scope .mz-inp,
 .mz-admin-scope .mz-sel,
@@ -329,8 +525,29 @@
 .mz-admin-scope #adm-shell.is-locked #adm-pills{
   display:none !important;
 }
+.mz-admin-scope #adm-shell.is-locked .mz-admin-actions{
+  display:none !important;
+}
+.mz-admin-scope #adm-shell.is-locked .mz-admin-layout{
+  display:block !important;
+}
 .mz-admin-scope #adm-shell.is-locked .mz-pane{
   display:none !important;
+}
+
+@media (max-width:1180px){
+  .mz-admin-scope #adm-pills .pillbar{
+    display:flex;
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    padding-bottom:4px;
+  }
+  .mz-admin-scope .pill{
+    width:auto;
+    flex:0 0 auto;
+    text-align:center;
+    white-space:nowrap;
+  }
 }
 
 

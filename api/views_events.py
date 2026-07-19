@@ -184,7 +184,7 @@ def admin_lanbide_activity(request):
 @require_http_methods(["GET"])
 def admin_lanbide_daily(request):
     """
-    GET /meatze/v5/admin/lanbide/daily?codigo=IFCT0309&from=2026-01-12&to=2026-01-14&role=student
+    GET /v5/admin/lanbide/daily?codigo=IFCT0309&from=2026-01-12&to=2026-01-14&role=student
     Возвращает строки (user, day): events, active_sec, first, last
     """
 

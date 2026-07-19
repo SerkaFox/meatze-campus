@@ -2,7 +2,7 @@
   const $ = s => document.querySelector(s);
 
   // === shared API/auth (совместно с общим gate)
-  const API_BASE = ((window.wpApiSettings?.root)||'/').replace(/\/$/,'') + '/meatze/v5';
+  const API_BASE = ((window.wpApiSettings?.root)||'/').replace(/\/$/,'') + '/v5';
   const API_A = API_BASE + '/admin';
   const tok = () => sessionStorage.getItem('mz_admin') || '';
   const qs = (bust=false) => (bust ? `?_=${Date.now()}` : '');

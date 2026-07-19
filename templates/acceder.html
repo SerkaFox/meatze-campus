@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Acceder · MEATZE{% endblock %}
+{% block title %}Acceder · Aurora Campus{% endblock %}
 
 {% block content %}
 <section class="mz-page mz-auth-page" style="max-width:720px;margin:0 auto;padding:24px 12px;">
@@ -258,8 +258,8 @@
   <script>
 (function(){
   // Храним текущий "контекст помощи" для страницы
-  window.MEATZE = window.MEATZE || {};
-  window.MEATZE.HELP_UI = "";  // например: teacher_pin / student_create
+  window.AURORA = window.AURORA || {};
+  window.AURORA.HELP_UI = "";  // например: teacher_pin / student_create
 
   // Кнопки
   const btnPin  = document.getElementById("btn-send-pin");
@@ -267,11 +267,11 @@
 
   // При клике задаём контекст (и можешь сразу открывать help, если хочешь)
   btnPin?.addEventListener("click", () => {
-    window.MEATZE.HELP_UI = "teacher_pin";
+    window.AURORA.HELP_UI = "teacher_pin";
   });
 
   btnTemp?.addEventListener("click", () => {
-    window.MEATZE.HELP_UI = "student_create";
+    window.AURORA.HELP_UI = "student_create";
   });
 })();
 </script>
@@ -280,5 +280,5 @@
 
 {% block extra_js %}
   <!-- ВАЖНО: путь -->
-  <script src="{% static 'meatze/core/acceder.js' %}?v={% now 'U' %}"></script>
+  <script src="{% static 'aurora/core/acceder.js' %}?v={% now 'U' %}"></script>
 {% endblock %}

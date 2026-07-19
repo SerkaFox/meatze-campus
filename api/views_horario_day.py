@@ -199,7 +199,7 @@ def horario_day(request, codigo: str):
                 obj.hora_inicio = _parse_hhmm(s["desde"])
                 obj.hora_fin    = _parse_hhmm(s["hasta"])
                 obj.aula        = s["aula"]
-                obj.modulo      = module_key
+                obj.modulo      = s["module_key"] or s["nota"]
                 obj.save(update_fields=["hora_inicio", "hora_fin", "aula", "modulo"])
 
                 keep_ids.add(obj.id)
@@ -348,12 +348,22 @@ def _slot_minutes(h: Horario) -> int:
         return 0
     return max(0, _minutes(h.hora_inicio, h.hora_fin))
 
+def _custom_scope(modulo: str) -> str:
+    txt = (modulo or "").strip()
+    if "[WI:custom;" not in txt:
+        return ""
+    if "scope=extra;" in txt:
+        return "extra"
+    return "in"
+
 def _layer_queryset(curso: Curso, tipo: str, grupo: str):
     return Horario.objects.filter(curso=curso).filter(_layer_q(tipo, grupo))
 
 def _sum_layer_minutes_db(curso: Curso, tipo: str, grupo: str) -> int:
     total = 0
-    for it in _layer_queryset(curso, tipo, grupo).only("hora_inicio", "hora_fin"):
+    for it in _layer_queryset(curso, tipo, grupo).only("hora_inicio", "hora_fin", "modulo"):
+        if _custom_scope(it.modulo) == "extra":
+            continue
         if it.hora_inicio and it.hora_fin:
             total += _minutes(it.hora_inicio, it.hora_fin)
     return max(0, total)
@@ -482,7 +492,9 @@ def _get_practica_target_minutes(curso: Curso, grupo: str) -> int:
 
 def _sum_minutes_qs(qs) -> int:
     total = 0
-    for it in qs.only("hora_inicio", "hora_fin"):
+    for it in qs.only("hora_inicio", "hora_fin", "modulo"):
+        if _custom_scope(it.modulo) == "extra":
+            continue
         if it.hora_inicio and it.hora_fin:
             total += max(0, _minutes(it.hora_inicio, it.hora_fin))
     return max(0, total)
@@ -747,6 +759,14 @@ def _reassign_modules_for_day(curso: Curso, tipo: str, grupo: str, d: date) -> D
     for h in qs_day:
         mins = _slot_minutes(h)
         if mins <= 0:
+            continue
+        scope = _custom_scope(h.modulo)
+        if scope:
+            if scope == "in":
+                left_in_mod -= mins
+                while left_in_mod <= 0 and idx < len(plan) - 1:
+                    idx += 1
+                    left_in_mod += plan[idx][1]
             continue
         if idx >= len(plan):
             break

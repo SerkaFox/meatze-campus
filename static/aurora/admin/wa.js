@@ -10,11 +10,11 @@
   let autoTimer     = null;
 
 	const notifyAudio = new Audio(
-	  window.MZ_NOTIFY_URL || '/static/files/meatze_notify.mp3'
+	  window.MZ_NOTIFY_URL || '/static/files/aurora_notify.mp3'
 	);
 
-  // В Django wpApiSettings нет, работаем напрямую с /meatze/v5
-  const API_BASE = '/meatze/v5';
+  // В Django wpApiSettings нет, работаем напрямую с /v5
+  const API_BASE = '/v5';
   const API_N    = API_BASE + '/notify';
   const tok      = () => sessionStorage.getItem('mz_admin') || '';
 const qs = (bust=false) => (bust ? `?_=${Date.now()}` : '');
@@ -40,7 +40,7 @@ const qs = (bust=false) => (bust ? `?_=${Date.now()}` : '');
     if (Notification.permission === 'granted'){
       new Notification(`Nuevo mensaje de ${from}`, {
         body: text.slice(0,120),
-        icon: 'https://meatze.eus/wp-content/uploads/2024/11/meatze-icon.png'
+        icon: '/static/favicon.png'
       });
     }
     else if (Notification.permission !== 'denied'){

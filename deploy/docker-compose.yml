@@ -80,7 +80,7 @@ services:
     image: nginx:alpine
     restart: unless-stopped
     ports:
-      - "${HTTP_PORT:-8080}:80"
+      - "127.0.0.1:${HTTP_PORT:-8080}:80"
     volumes:
       - ./nginx/meatze.conf:/etc/nginx/conf.d/default.conf:ro
       - staticfiles:/srv/staticfiles:ro

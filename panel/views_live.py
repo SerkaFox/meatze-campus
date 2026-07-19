@@ -60,8 +60,8 @@ def _build_jitsi_jwt(*, room: str, user_name: str, is_teacher: bool) -> str | No
     if not secret:
         return None
 
-    domain = getattr(settings, "JITSI_DOMAIN", "meetjwt.meatzeaula.es")
-    app_id = getattr(settings, "JITSI_JWT_APP_ID", "meatze")
+    domain = getattr(settings, "JITSI_DOMAIN", "meet.jit.si")
+    app_id = getattr(settings, "JITSI_JWT_APP_ID", "aurora")
     aud = getattr(settings, "JITSI_JWT_AUD", "jitsi")
     ttl = int(getattr(settings, "JITSI_JWT_TTL_SECONDS", 2 * 60 * 60))
 
@@ -92,8 +92,8 @@ def _build_jitsi_jwt(*, room: str, user_name: str, is_teacher: bool) -> str | No
 
 
 def build_live_context(*, request, curso, is_teacher: bool) -> dict:
-    domain = getattr(settings, "JITSI_DOMAIN", "meetjwt.meatzeaula.es")  # <-- ВАЖНО
-    display_name = (request.user.get_full_name() or request.user.username or "MEATZE").strip()
+    domain = getattr(settings, "JITSI_DOMAIN", "meet.jit.si")  # <-- ВАЖНО
+    display_name = (request.user.get_full_name() or request.user.username or "Invitado").strip()
     room = _curso_room(curso)
 
     token = _build_jitsi_jwt(

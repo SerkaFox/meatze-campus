@@ -1,7 +1,7 @@
 (()=>{ 'use strict';
   // === shared auth helpers ===
   const $ = s => document.querySelector(s);
-  const API_BASE = ((window.wpApiSettings?.root)||'/').replace(/\/$/,'') + '/meatze/v5';
+  const API_BASE = ((window.wpApiSettings?.root)||'/').replace(/\/$/,'') + '/v5';
   const API_A = API_BASE + '/admin';
   const tok = () => sessionStorage.getItem('mz_admin') || '';
 const qs = (bust=false) => (bust ? `?_=${Date.now()}` : '');
@@ -100,6 +100,9 @@ let cloneFromCodigo = null;   // ✅ NEW
     const caCodigo  = $('#mzc-ca-codigo');
     const caMsg     = $('#mzc-ca-msg');
     const chipsBox  = $('#mzc-ca-teachers-chips');
+    const teacherSearch = $('#mzc-ca-teacher-search');
+    const teacherCounter = $('#mzc-ca-selected-counter');
+    let currentAssignedSet = new Set();
 
     // parse + counters
 	// parse + counters
@@ -548,7 +551,36 @@ async function loadList(){
 
 
     // assign docentes
+    function updateTeacherCounter(){
+      if (!teacherCounter) return;
+      const selected = chipsBox.querySelectorAll('.mz-chip--block[aria-pressed="true"]').length;
+      const visible = chipsBox.querySelectorAll('.mz-chip--block:not([hidden])').length;
+      teacherCounter.textContent = `${selected} docente(s) seleccionado(s) · ${visible} visible(s)`;
+    }
+
+    function applyTeacherFilter(){
+      const q = normTxt(teacherSearch?.value || '');
+      let visible = 0;
+      chipsBox.querySelectorAll('.mz-chip--block').forEach(btn=>{
+        const hay = normTxt(btn.dataset.search || btn.textContent || '');
+        const hide = q && !hay.includes(q);
+        btn.hidden = !!hide;
+        btn.style.display = hide ? 'none' : '';
+        if (!hide) visible++;
+      });
+      let empty = chipsBox.querySelector('.ca-empty');
+      if (!empty) {
+        empty = document.createElement('div');
+        empty.className = 'ca-empty mz-help';
+        chipsBox.appendChild(empty);
+      }
+      empty.hidden = visible > 0;
+      empty.textContent = q ? 'No hay docentes con ese filtro.' : 'No hay docentes creados todavia.';
+      updateTeacherCounter();
+    }
+
     function buildTeacherChips(teachers, assignedSet){
+      currentAssignedSet = assignedSet || new Set();
       chipsBox.replaceChildren();
       for (const t of (teachers||[])){
         const id = normId(t.user_id ?? t.uid ?? t.uid_str ?? t.id);
@@ -556,14 +588,23 @@ async function loadList(){
         const name = teacherLabel(t);
         const btn = document.createElement('button');
         btn.type='button'; btn.className='mz-chip--block'; btn.dataset.id=id;
-        btn.setAttribute('aria-pressed', assignedSet.has(id) ? 'true' : 'false');
-        btn.innerHTML = `<i aria-hidden="true"></i><span>${esc(name)}</span>`;
-        btn.addEventListener('click', ()=>{
+        btn.dataset.search = [name, t.email, t.wa].filter(Boolean).join(' ');
+        btn.setAttribute('aria-pressed', currentAssignedSet.has(id) ? 'true' : 'false');
+        btn.innerHTML = `<i aria-hidden="true"></i><span>${esc(name)}</span><small>${esc(t.email || '')}</small>`;
+        btn.addEventListener('click', async ()=>{
+          if (!(caCurso.value || '').trim()) {
+            caMsg.textContent = 'Selecciona un curso antes de asignar docentes.';
+            caMsg.style.color = '#b90e2e';
+            return;
+          }
           const on = btn.getAttribute('aria-pressed')==='true';
           btn.setAttribute('aria-pressed', on?'false':'true');
+          updateTeacherCounter();
+          await saveAssignedTeachers();
         });
         chipsBox.appendChild(btn);
       }
+      applyTeacherFilter();
     }
 	function getSelectedTeacherIdsFromChips(){
 	  return [...chipsBox.querySelectorAll('.mz-chip--block[aria-pressed="true"]')]
@@ -619,13 +660,14 @@ async function loadList(){
     }
 
     caCurso.addEventListener('change', updateAssignedTeachers);
+    teacherSearch?.addEventListener('input', applyTeacherFilter);
     $('#mzc-ca-reload').addEventListener('click', async ()=>{
       const sel = caCurso.value;
       await loadAssignForm(true);
       if (sel) caCurso.value = sel;
       await updateAssignedTeachers();
     });
-    $('#mzc-ca-assign').addEventListener('click', async ()=>{
+    async function saveAssignedTeachers(){
       const codigo = (caCurso.value||'').trim();
       if (!codigo){ caMsg.textContent='Selecciona un curso'; caMsg.style.color='#b90e2e'; return; }
       const teacherIds = getSelectedTeacherIdsFromChips();
@@ -633,9 +675,13 @@ async function loadList(){
         method:'POST', headers:auth(true),
         body:JSON.stringify({curso_codigo: codigo, teachers: teacherIds})
       });
-      caMsg.textContent = `${teacherIds.length} profesor(es) asignados`;
+      caMsg.textContent = `${teacherIds.length} docente(s) asignado(s). Guardado automático.`;
       caMsg.style.color = '#0b6d22';
       await updateAssignedTeachers();
+    }
+
+    $('#mzc-ca-assign').addEventListener('click', async ()=>{
+      await saveAssignedTeachers();
     });
 document.dispatchEvent(new CustomEvent('mz:teachers-updated'));
     // init data

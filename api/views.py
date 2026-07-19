@@ -1242,9 +1242,9 @@ def request_pin(request):
     )
 
     send_mail(
-        subject="Tu PIN de acceso a MEATZE",
+        subject="Tu PIN de acceso a Aurora Campus",
         message=f"Tu código PIN es: {pin}\nVálido durante 10 minutos.",
-        from_email="no-reply@meatze.eus",
+        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None) or "no-reply@example.com",
         recipient_list=[email],
         fail_silently=False,
     )

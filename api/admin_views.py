@@ -80,7 +80,7 @@ def admin_teachers(request):
 @api_view(["POST"])
 def admin_teacher_update(request, pk: int):
     """
-    POST /meatze/v5/admin/teachers/<id>
+    POST /v5/admin/teachers/<id>
     """
     err = _check_admin(request)
     if err:
@@ -165,7 +165,7 @@ def _curso_to_item(c: Curso):
 @api_view(["GET"])
 def admin_cursos_list(request):
     """
-    GET /meatze/v5/admin/cursos
+    GET /v5/admin/cursos
     """
     err = _check_admin(request)
     if err:
@@ -179,7 +179,7 @@ def admin_cursos_list(request):
 @api_view(["POST"])
 def admin_cursos_upsert(request):
     """
-    POST /meatze/v5/admin/cursos/upsert
+    POST /v5/admin/cursos/upsert
 
     Body: { codigo, titulo, modules: [ {name, hours}, ... ], id? }
     """
@@ -231,7 +231,7 @@ def admin_cursos_upsert(request):
 @api_view(["POST"])
 def admin_curso_delete(request, pk: int):
     """
-    POST /meatze/v5/admin/cursos/<id>/delete
+    POST /v5/admin/cursos/<id>/delete
     """
     err = _check_admin(request)
     if err:
@@ -248,7 +248,7 @@ def admin_curso_delete(request, pk: int):
 @api_view(["GET"])
 def admin_enrolments(request):
     """
-    GET /meatze/v5/admin/enrolments?codigo=IFCT0209&role=teacher
+    GET /v5/admin/enrolments?codigo=IFCT0209&role=teacher
     """
     err = _check_admin(request)
     if err:
@@ -282,7 +282,7 @@ def admin_enrolments(request):
 @api_view(["POST"])
 def admin_cursos_assign(request):
     """
-    POST /meatze/v5/admin/cursos/assign
+    POST /v5/admin/cursos/assign
     Body: { curso_codigo: "IFCT0209", teachers: ["12","34",...] }
     """
     err = _check_admin(request)
@@ -335,7 +335,7 @@ from django.db.models import Q
 @api_view(["GET"])
 def admin_debug_user(request):
     """
-    GET /meatze/v5/admin/debug/user?email=a@b.com
+    GET /v5/admin/debug/user?email=a@b.com
     Показывает всех пользователей с таким email (или близко) + их enrols.
     """
     err = _check_admin(request)

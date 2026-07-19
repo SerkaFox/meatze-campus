@@ -699,7 +699,7 @@
 <script>
 (function(){
   const codigo = "{{ curso.codigo|escapejs }}";
-  const V5 = "{{ V5_API_BASE|default:'/meatze/v5'|escapejs }}";
+  const V5 = "{{ V5_API_BASE|default:'/v5'|escapejs }}";
   const badge = document.getElementById('mz-main-chat-badge');
   const badgeMobile = document.getElementById('mz-main-chat-badge-mobile');
   if (!codigo || !badge) return;
@@ -790,13 +790,13 @@ function setBadge(n){
 <script src="{% static 'js/traffic.js' %}?v={% now 'U' %}"></script>
 <script>
 (function(){
-  window.MEATZE = window.MEATZE || {};
-  window.MEATZE.COURSE_CODE = "{{ curso.codigo|escapejs }}";
-  window.MEATZE.IS_TEACHER  = {{ is_teacher|yesno:"true,false" }};
+  window.AURORA = window.AURORA || {};
+  window.AURORA.COURSE_CODE = "{{ curso.codigo|escapejs }}";
+  window.AURORA.IS_TEACHER  = {{ is_teacher|yesno:"true,false" }};
 
   // ✅ ключевое: контекст помощи СРАЗУ, даже если в URL нет ?tab=
   const tab = "{{ active_tab|default:'info'|escapejs }}";
-  window.MEATZE.HELP_UI = "panel:tab:" + (tab || "info");
+  window.AURORA.HELP_UI = "panel:tab:" + (tab || "info");
 })();
 </script>
 <script>
@@ -879,7 +879,7 @@ function setBadge(n){
 
     if (liveWin && !liveWin.closed) { liveWin.focus(); return; }
 
-    liveWin = window.open(url, 'MEATZE_LIVE', features);
+    liveWin = window.open(url, 'AURORA_LIVE', features);
 
     if (!liveWin) {
       alert("Браузер заблокировал всплывающее окно. Разреши pop-ups для этого сайта и нажми ещё раз.");
@@ -907,9 +907,9 @@ function setBadge(n){
 </script>
 <script>
   (function(){
-    window.MEATZE = window.MEATZE || {};
-    window.MEATZE.COURSE_CODE = "{{ curso.codigo|escapejs }}";
-    window.MEATZE.HELP_UI = "panel:tab:{{ active_tab|escapejs }}";
+    window.AURORA = window.AURORA || {};
+    window.AURORA.COURSE_CODE = "{{ curso.codigo|escapejs }}";
+    window.AURORA.HELP_UI = "panel:tab:{{ active_tab|escapejs }}";
   })();
 </script>
 <script>

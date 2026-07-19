@@ -90,9 +90,9 @@
   align-items:start;
 }
 
-/* Если хочешь, чтобы форма была не на всю ширину, а как “левая колонка” раньше */
+/* В админке клиента оба верхних блока идут друг под другом на всю ширину. */
 #ui-teachers .t-grid > .mz-card:first-child{
-  max-width: 520px;
+  max-width: none;
 }
 
 /* таблица: пусть умеет ужиматься без выпирания */
@@ -128,10 +128,10 @@
   white-space: normal;
   word-break: break-word;
 }
-/* ===== Teachers layout: top 2-col, bottom full ===== */
+/* ===== Teachers layout: stacked top cards, bottom full ===== */
 #ui-teachers .t-grid{
   display:grid;
-  grid-template-columns: minmax(320px, 520px) minmax(0, 1fr);
+  grid-template-columns: 1fr;
   gap:16px;
   align-items:start;
 }

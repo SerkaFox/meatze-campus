@@ -52,6 +52,7 @@
   white-space:pre-wrap;
 }
 #ui-cursos .ca-actions{ margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; }
+#ui-cursos .ca-actions[hidden]{ display:none !important; }
 
 #ui-cursos .ca-list{
   display:grid;
@@ -65,7 +66,8 @@
 
 /* chips */
 #ui-cursos .mz-chip--block{
-  display:flex;
+  display:grid;
+  grid-template-columns:18px minmax(0,1fr);
   align-items:flex-start;
   gap:10px;
   padding:10px 12px;
@@ -76,6 +78,22 @@
   font-weight:700;
   text-align:left;
   transition: box-shadow .12s ease, border-color .12s ease, transform .06s ease;
+}
+#ui-cursos .mz-chip--block span{
+  display:block;
+  min-width:0;
+}
+#ui-cursos .mz-chip--block small{
+  display:block;
+  grid-column:2;
+  margin-left:0;
+  color:#64748b;
+  font-size:12px;
+  font-weight:600;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:normal;
+  max-width:none;
 }
 #ui-cursos .mz-chip--block:hover{
   border-color:#bcdcff;
@@ -109,6 +127,26 @@
   transform:rotate(45deg);
 }
 #ui-cursos .mz-actions-col{ width: 132px; text-align:center; }
+#ui-cursos .ca-selected-counter{
+  display:inline-flex;
+  width:max-content;
+  max-width:100%;
+  margin:8px 0 10px;
+  padding:6px 10px;
+  border:1px solid rgba(14,115,184,.20);
+  border-radius:999px;
+  background:rgba(14,115,184,.08);
+  color:#0a5b93;
+  font-size:12px;
+  font-weight:800;
+}
+#ui-cursos .ca-empty{
+  border:1px dashed #cbd5e1;
+  border-radius:12px;
+  padding:14px;
+  background:#f8fafc;
+  text-align:center;
+}
 /* скролл для таблицы на узких экранах */
 #ui-cursos .mz-table-scroll{
   overflow-x:auto;
@@ -168,5 +206,14 @@
 @media (max-width: 760px){
   #ui-cursos .mzc-form-row{
     grid-template-columns:1fr;
+  }
+  #ui-cursos .mz-chip--block{
+    display:grid;
+    grid-template-columns:18px minmax(0,1fr);
+  }
+  #ui-cursos .mz-chip--block small{
+    grid-column:2;
+    margin-left:0;
+    max-width:100%;
   }
 }
