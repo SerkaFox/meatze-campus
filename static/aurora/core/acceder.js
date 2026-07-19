@@ -209,6 +209,7 @@ function finishAuthRedirect() {
 
       const isTeacher   = !!(me && (me.is_teacher === true || me.is_teacher == 1));
       const hasPassword = !!(me && (me.has_password === true || me.has_password == 1));
+      const pendingRole = !!(me && (me.pending_role === true || me.pending_role == 1));
       MUST_SET = !!(isTeacher && !hasPassword);
 
       const note = setWrap?.querySelector('.mz-ok');
@@ -217,6 +218,9 @@ function finishAuthRedirect() {
           ? 'Sesión iniciada. Como docente, define una contraseña (obligatorio).'
           : 'Sesión iniciada. Puedes definir una contraseña para próximos accesos (opcional).';
       }
+
+      const pendingNote = $('#pending-role-note');
+      if (pendingNote) pendingNote.style.display = pendingRole ? 'block' : 'none';
 
       showStep('#step-setpass');
     } catch (e) {

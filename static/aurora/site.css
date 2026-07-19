@@ -1951,6 +1951,7 @@ html, body { max-width: 100%; overflow-x: hidden; }
   align-items:center;
   justify-content:center;
   cursor:pointer;
+  color:#0f1b2d;
   transition: transform .08s ease, background .12s ease;
 }
 
@@ -1959,7 +1960,9 @@ html, body { max-width: 100%; overflow-x: hidden; }
 
 .mz-reveal svg{
   width:18px; height:18px;
-  opacity:.8;
+  opacity:.85;
+  stroke:currentColor;
+  display:block;
 }
 
 /* buttons */

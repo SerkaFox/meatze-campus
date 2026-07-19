@@ -33,15 +33,22 @@ def get_django_request(req):
 
 # --- вспомогалка для ответа "me" ---
 def build_me(user: User) -> dict:
+    is_teacher = bool(getattr(user, "is_staff", False))
+    pending_role = (
+        not is_teacher
+        and PendingRole.objects.filter(user=user, status="pending").exists()
+    )
     return {
         "id": user.id,
         "email": user.email or "",
         "first_name": user.first_name or "",
         "last_name": user.last_name or "",
         # docente?
-        "is_teacher": bool(getattr(user, "is_staff", False)),
+        "is_teacher": is_teacher,
         # есть ли пароль
         "has_password": bool(user.has_usable_password()),
+        # esperando que un admin confirme si es docente o alumno
+        "pending_role": pending_role,
     }
 
 
