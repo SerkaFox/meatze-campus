@@ -7,7 +7,7 @@ renderiza de forma consistente en Gmail/Outlook/Apple Mail. Nada de
 JS — un botón "copiar" no funcionaría en ningún cliente de correo, así
 que en su lugar el código se muestra grande, monoespaciado y con
 espaciado entre letras para que sea fácil seleccionarlo con un
-doble/triple clic.
+doble clic.
 """
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
@@ -17,7 +17,9 @@ BRAND = "Aurora Campus"
 
 
 def _pin_html(pin: str) -> str:
-    spaced_pin = " ".join(pin)
+    # sin espacios reales entre dígitos: el espaciado es solo visual
+    # (CSS letter-spacing), así el código sigue siendo una sola
+    # "palabra" y un doble clic lo selecciona entero.
     return f"""\
 <!doctype html>
 <html lang="es">
@@ -46,14 +48,14 @@ def _pin_html(pin: str) -> str:
           <td align="center" style="padding:20px 28px 8px;">
             <div style="display:inline-block;background:#0b1220;border:1px solid #334155;border-radius:14px;padding:18px 26px;">
               <span style="font-family:'Courier New',Courier,monospace;font-size:34px;font-weight:800;
-                           letter-spacing:8px;color:#7dd3fc;">{spaced_pin}</span>
+                           color:#7dd3fc;">{pin}</span>
             </div>
           </td>
         </tr>
 
         <tr>
           <td style="padding:8px 28px 28px;color:#9ca3af;font-size:12.5px;line-height:1.6;text-align:center;">
-            Consejo: haz triple clic sobre el código para seleccionarlo entero y copiarlo.
+            Consejo: haz doble clic sobre el código para seleccionarlo entero y copiarlo.
           </td>
         </tr>
 
