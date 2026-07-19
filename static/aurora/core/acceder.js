@@ -732,6 +732,8 @@ async function saveProfile(){
     btn.textContent = 'Guardando…';
   }
 
+  let redirecting = false;
+
   try{
     await api(V5 + '/me/profile', { method:'POST', body });
 
@@ -740,7 +742,10 @@ async function saveProfile(){
       if (msgPass) msgPass.textContent = 'Contraseña actualizada.';
     }
 
-    if (msgTop) msgTop.textContent = 'Datos guardados.';
+    if (msgTop) {
+      msgTop.className = 'mz-ok';
+      msgTop.textContent = '✓ Datos guardados correctamente.';
+    }
 
     // очистка паролей
     const pass1 = document.getElementById('prof-pass1');
@@ -748,10 +753,22 @@ async function saveProfile(){
     if (pass1) pass1.value = '';
     if (pass2) pass2.value = '';
 
+    // si llegamos aquí forzados a completar el perfil (viene con ?next=),
+    // seguimos automáticamente en vez de dejar a la persona parada aquí
+    if (qNext()) {
+      redirecting = true;
+      if (btn) btn.textContent = 'Guardado, entrando…';
+      setTimeout(() => finishAuthRedirect(), 800);
+      return;
+    }
+
   } catch(e){
-    if (msgTop) msgTop.textContent = e?.message || 'No se pudo guardar.';
+    if (msgTop) {
+      msgTop.className = 'mz-bad';
+      msgTop.textContent = e?.message || 'No se pudo guardar.';
+    }
   } finally{
-    if (btn){
+    if (btn && !redirecting){
       btn.disabled = false;
       btn.textContent = 'Guardar cambios';
     }
