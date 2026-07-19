@@ -34,8 +34,8 @@
 
             <button id="btn-role-teacher-new" class="mz-btn ghost" type="button"
                     style="width:100%;text-align:left;padding:14px 16px;margin-bottom:10px;display:block">
-              <strong style="display:block;font-size:15px">Soy docente, es mi primera vez</strong>
-              <span class="mz-help" style="display:block;margin-top:2px">Regístrate con tu email; un administrador confirmará tu acceso.</span>
+              <strong style="display:block;font-size:15px">Soy docente / He olvidado mi contraseña</strong>
+              <span class="mz-help" style="display:block;margin-top:2px">Regístrate o recupera tu acceso con un código enviado a tu email.</span>
             </button>
 
             <button id="btn-role-new" class="mz-btn ghost" type="button"
@@ -48,7 +48,9 @@
           <!-- ===== STEP: TEACHER NEW (registro ligero: email + código) ===== -->
           <div id="step-teacher-new" style="display:none">
             <div class="mz-help" style="margin-bottom:6px">
-              Regístrate como docente. Te enviaremos un código de verificación por email.
+              Regístrate como docente o recupera tu acceso. Te enviaremos un código de
+              verificación por email — sirve tanto si es tu primera vez como si has
+              olvidado la contraseña.
             </div>
 
             <label class="mz-help">E-mail</label>
@@ -136,7 +138,7 @@
               Docentes: vuestro email.
             </div>
 
-            <label class="mz-help" style="margin-top:8px">Contraseña (si no tienes, usa PIN)</label>
+            <label class="mz-help" style="margin-top:8px">Contraseña</label>
             <div class="mz-field">
               <input id="auth-pass-login" class="mz-inp" type="password" placeholder="Contraseña" autocomplete="current-password">
               <button class="mz-reveal" type="button" aria-label="Mostrar contraseña" data-target="#auth-pass-login">
@@ -149,21 +151,9 @@
 
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button id="btn-login-pass" class="mz-btn" type="button">Entrar</button>
-              <button id="btn-send-pin" class="mz-btn link" type="button">Recibir PIN por e-mail</button>
               <button id="btn-email-back" class="mz-btn ghost sm" type="button">← Volver</button>
             </div>
             <div id="msg-pass-login" class="mz-help"></div>
-
-            <div id="pin-wrap" style="margin-top:8px;display:none">
-              <label class="mz-help">PIN (6 dígitos)</label>
-              <input id="auth-pin" class="mz-inp" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="one-time-code">
-
-              <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <button id="btn-verify" class="mz-btn" type="button">Seguir con PIN</button>
-                <button id="btn-resend" class="mz-btn link" type="button">Reenviar PIN</button>
-              </div>
-              <div id="msg-pin" class="mz-help"></div>
-            </div>
           </div>
 
           <!-- ===== STEP: SET PASSWORD (после PIN) ===== -->

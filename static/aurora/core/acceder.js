@@ -611,11 +611,7 @@ if (card) {
 
     // auth
     $('#btn-login-pass')?.addEventListener('click', apiLoginPassword);
-    $('#btn-send-pin')  ?.addEventListener('click', requestPIN);
-    $('#btn-resend')    ?.addEventListener('click', requestPIN);
-    $('#btn-verify')    ?.addEventListener('click', verifyPIN);
     $('#btn-setpass')   ?.addEventListener('click', setPassword);
-	$('#btn-send-pin')?.addEventListener('click', () => setHelpUI('acc:pin_request'));
 
     // role choice (primera pantalla)
     $('#btn-role-existing')?.addEventListener('click', () => showStep('#step-email'));

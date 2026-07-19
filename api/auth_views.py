@@ -173,16 +173,20 @@ def verify_pin(request):
     # логиним по сессии (ВАЖНО: через HttpRequest)
     django_request = get_django_request(request)
     login(django_request, user)
-    try:
-        obj, created = PendingRole.objects.get_or_create(
-            user=user,
-            email=user.email,
-            status="pending",
-            defaults={"requested_role": "unknown"},
-        )
-        print("PENDING:", "created" if created else "exists", obj.id, obj.email)
-    except Exception as e:
-        print("PENDING ERROR:", repr(e))
+    # solo entra en cola de aprobación si todavía no es docente confirmado —
+    # si no, cada recuperación de acceso de un docente ya aprobado volvería
+    # a marcarlo como "pendiente" sin motivo
+    if not user.is_staff:
+        try:
+            obj, created = PendingRole.objects.get_or_create(
+                user=user,
+                email=user.email,
+                status="pending",
+                defaults={"requested_role": "unknown"},
+            )
+            print("PENDING:", "created" if created else "exists", obj.id, obj.email)
+        except Exception as e:
+            print("PENDING ERROR:", repr(e))
 
 
     me = build_me(user)
