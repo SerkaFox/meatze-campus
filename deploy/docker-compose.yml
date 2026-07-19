@@ -55,6 +55,8 @@ services:
     volumes:
       - media:/app/files
       - staticfiles:/app/staticfiles
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       db:
         condition: service_healthy
