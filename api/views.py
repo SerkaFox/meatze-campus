@@ -21,7 +21,6 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.core.cache import cache
-from django.core.mail import send_mail
 from django.db import transaction, IntegrityError
 from django.db.models import Q, Count
 from django.contrib.auth import get_user_model, authenticate, login
@@ -1221,36 +1220,6 @@ def curso_alumnos(request, codigo: str):
     return JsonResponse({"items": items})
 
 
-@api_view(["POST"])
-@permission_classes([AllowAny])
-@authentication_classes([])
-def request_pin(request):
-    email = (request.data.get("email") or "").strip().lower()
-    if not email:
-        return Response({"message": "Email requerido"}, status=400)
-
-    pin = f"{random.randint(0, 999999):06d}"
-    LoginPIN.objects.create(email=email, pin=pin)
-
-    user, created = User.objects.get_or_create(email=email, defaults={"username": email})
-
-    PendingRole.objects.get_or_create(
-        user=user,
-        email=email,
-        status="pending",
-        defaults={"requested_role": "unknown"},
-    )
-
-    send_mail(
-        subject="Tu PIN de acceso a Aurora Campus",
-        message=f"Tu código PIN es: {pin}\nVálido durante 10 minutos.",
-        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None) or "no-reply@example.com",
-        recipient_list=[email],
-        fail_silently=False,
-    )
-
-    return Response({"ok": True, "message": "PIN enviado"})
-    
 def _effective_nonlective_years(curso: Curso) -> dict[str, list[str]]:
     if getattr(curso, "use_global_nonlective", True):
         return _get_global_nonlective_years()

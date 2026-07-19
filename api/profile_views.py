@@ -149,6 +149,7 @@ def me_profile(request):
             "last_name2": profile.last_name2 or "",
             "display_name": disp,
             "bio": profile.bio or "",
+            "wa": profile.wa or "",
             "is_teacher": _is_teacher(request.user, profile),
             "teacher_courses": _teacher_courses_payload(request.user) if _is_teacher(request.user, profile) else [],
         }
@@ -172,6 +173,8 @@ def me_profile(request):
             profile.last_name2 = (data.get("last_name2") or "").strip()
         if "bio" in data:
             profile.bio = (data.get("bio") or "").strip()
+        if "wa" in data:
+            profile.wa = (data.get("wa") or "").strip()
 
         # display_name:
         # - если ключа нет -> не трогаем (важно для teacher_add/remove)
@@ -228,6 +231,7 @@ def me_profile(request):
             "last_name2": profile.last_name2 or "",
             "display_name": disp,
             "bio": profile.bio or "",
+            "wa": profile.wa or "",
             "is_teacher": _is_teacher(request.user, profile),
             "teacher_courses": _teacher_courses_payload(request.user) if _is_teacher(request.user, profile) else [],
         }

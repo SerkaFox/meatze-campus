@@ -676,6 +676,8 @@ async function loadProfile(){
     if (fLast2) fLast2.value = pr.last_name2 || '';
     if (fDisp)  fDisp.value  = pr.display_name || '';
     if (fBio)   fBio.value   = pr.bio || '';
+    const fWa = document.getElementById('prof-wa');
+    if (fWa) fWa.value = pr.wa || '';
 
     msgTop && (msgTop.textContent = '');
   } catch(e){
@@ -696,6 +698,7 @@ async function saveProfile(){
   const fLast2 = document.getElementById('prof-last2');
   const fDisp  = document.getElementById('prof-display');
   const fBio   = document.getElementById('prof-bio');
+  const fWa    = document.getElementById('prof-wa');
 
   const p1 = (document.getElementById('prof-pass1')?.value || '').trim();
   const p2 = (document.getElementById('prof-pass2')?.value || '').trim();
@@ -725,6 +728,7 @@ async function saveProfile(){
     last_name2:   fLast2?.value || '',
     display_name: fDisp?.value  || '',
     bio:          fBio?.value   || '',
+    wa:           fWa?.value    || '',
   };
 
   if (btn){

@@ -6,8 +6,8 @@ from datetime import timedelta
 from django.contrib.auth import get_user_model, authenticate, login, logout
 
 from django.utils import timezone
-from django.core.mail import send_mail
 from django.conf import settings
+from .emails import send_pin_email
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import AllowAny
@@ -114,18 +114,8 @@ def request_pin(request):
     LoginPIN.objects.create(email=email, pin=code)
 
     # ── отправка письма ──
-    subject = "Tu PIN de acceso a Aurora Campus"
-    message = (
-        f"Hola,\n\n"
-        f"Tu código de acceso a Aurora Campus es: {code}\n\n"
-        f"Es válido durante 10 minutos.\n\n"
-        f"Un saludo,\n"
-        f"Equipo Aurora Campus"
-    )
-    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None) or settings.EMAIL_HOST_USER
-
     try:
-        send_mail(subject, message, from_email, [email], fail_silently=False)
+        send_pin_email(email, code)
     except Exception as e:
         # лог — по желанию
         print("EMAIL ERROR:", e)
