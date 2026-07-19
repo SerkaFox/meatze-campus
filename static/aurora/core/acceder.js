@@ -47,7 +47,7 @@
   }
 
   // ===== UI helpers =====
-  const STEPS = ['#step-role', '#step-email', '#step-temp', '#step-temp-finish', '#step-setpass'];
+  const STEPS = ['#step-role', '#step-email', '#step-teacher-new', '#step-temp', '#step-temp-finish', '#step-setpass'];
 	function setHelpUI(code){
 	  window.AURORA = window.AURORA || {};
 	  window.AURORA.HELP_UI = code || "";
@@ -65,6 +65,7 @@
 	  const map = {
 		'#step-role':        'ui=acceder:role',
 		'#step-email':       'ui=acceder:login',
+		'#step-teacher-new': 'ui=acceder:teacher_new',
 		'#step-temp':        'ui=acceder:temp_open',
 		'#step-temp-finish': 'ui=acceder:temp_finish',
 		'#step-setpass':     'ui=acceder:setpass',
@@ -225,6 +226,48 @@ function finishAuthRedirect() {
       showStep('#step-setpass');
     } catch (e) {
       msgPin.textContent = e?.message || 'PIN incorrecto o caducado.';
+    }
+  }
+
+  // ===== Registro ligero de docente: email -> código -> perfil (con contraseña) =====
+  // Evita el paso #step-setpass: nombre, apellido y contraseña se piden juntos
+  // en la pantalla de perfil, en vez de pedir la contraseña dos veces.
+  async function tnSendPin() {
+    const emailEl = $('#tn-email');
+    const msg = $('#msg-tn');
+    const email = (emailEl.value || '').trim().toLowerCase();
+
+    if (!validEmail(email)) { msg.textContent = 'E-mail inválido'; return; }
+
+    msg.textContent = 'Enviando…';
+    try {
+      await api(V5 + '/auth/request_pin', { method: 'POST', body: { email } });
+      msg.textContent = 'Código enviado. Revisa tu correo.';
+      const pinWrap = $('#tn-pin-wrap');
+      if (pinWrap) pinWrap.style.display = 'block';
+      $('#tn-pin')?.focus();
+    } catch (e) {
+      msg.textContent = e?.message || 'No se pudo enviar el código.';
+    }
+  }
+
+  async function tnVerify() {
+    const emailEl = $('#tn-email');
+    const pinEl = $('#tn-pin');
+    const msg = $('#msg-tn');
+
+    const email = (emailEl.value || '').trim().toLowerCase();
+    const pin = (pinEl.value || '').replace(/\D/g, '').slice(0, 6);
+
+    if (pin.length !== 6) { msg.textContent = 'El código debe tener 6 dígitos.'; return; }
+
+    try {
+      await api(V5 + '/auth/verify_pin', { method: 'POST', body: { email, pin } });
+      msg.textContent = '';
+      const next = qNext() || '/alumno/';
+      location.href = '/acceder/?tab=profile&next=' + encodeURIComponent(next);
+    } catch (e) {
+      msg.textContent = e?.message || 'Código incorrecto o caducado.';
     }
   }
 
@@ -577,7 +620,14 @@ if (card) {
     // role choice (primera pantalla)
     $('#btn-role-existing')?.addEventListener('click', () => showStep('#step-email'));
     $('#btn-role-new')?.addEventListener('click', () => { setHelpUI('acc:temp_open'); openTemp(); });
+    $('#btn-role-teacher-new')?.addEventListener('click', () => { setHelpUI('acc:teacher_new'); showStep('#step-teacher-new'); $('#tn-email')?.focus(); });
     $('#btn-email-back')?.addEventListener('click', () => showStep('#step-role'));
+
+    // teacher new (registro ligero)
+    $('#btn-tn-send')?.addEventListener('click', tnSendPin);
+    $('#btn-tn-resend')?.addEventListener('click', tnSendPin);
+    $('#btn-tn-verify')?.addEventListener('click', tnVerify);
+    $('#btn-tn-back')?.addEventListener('click', () => showStep('#step-role'));
 
 
 // === ENTER to submit (login / pin / temp) ===
@@ -604,6 +654,10 @@ function bindEnterSubmit() {
   // temp flow: Enter on code => tempVerify, Enter on pass => tempClaim
   onEnter($('#temp-code'), tempVerify);
   onEnter($('#temp-pass'), tempClaim);
+
+  // teacher new: Enter on email => send, Enter on pin => verify
+  onEnter($('#tn-email'), tnSendPin);
+  onEnter($('#tn-pin'), tnVerify);
 }
 
 bindEnterSubmit();
@@ -678,6 +732,10 @@ async function loadProfile(){
     if (fBio)   fBio.value   = pr.bio || '';
     const fWa = document.getElementById('prof-wa');
     if (fWa) fWa.value = pr.wa || '';
+
+    const hasPassword = !!(pr.has_password === true || pr.has_password == 1);
+    const nudge = document.getElementById('pwd-nudge');
+    if (nudge) nudge.style.display = hasPassword ? 'none' : 'block';
 
     msgTop && (msgTop.textContent = '');
   } catch(e){

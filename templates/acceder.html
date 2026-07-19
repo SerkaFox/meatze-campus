@@ -29,7 +29,13 @@
             <button id="btn-role-existing" class="mz-btn" type="button"
                     style="width:100%;text-align:left;padding:14px 16px;margin-bottom:10px;display:block">
               <strong style="display:block;font-size:15px">Ya tengo cuenta</strong>
-              <span class="mz-help" style="display:block;margin-top:2px">Alumnado y docentes con email y contraseña.</span>
+              <span class="mz-help" style="display:block;margin-top:2px">Accede con tu email y contraseña.</span>
+            </button>
+
+            <button id="btn-role-teacher-new" class="mz-btn ghost" type="button"
+                    style="width:100%;text-align:left;padding:14px 16px;margin-bottom:10px;display:block">
+              <strong style="display:block;font-size:15px">Soy docente, es mi primera vez</strong>
+              <span class="mz-help" style="display:block;margin-top:2px">Regístrate con tu email; un administrador confirmará tu acceso.</span>
             </button>
 
             <button id="btn-role-new" class="mz-btn ghost" type="button"
@@ -37,6 +43,31 @@
               <strong style="display:block;font-size:15px">Soy alumno, es mi primera vez</strong>
               <span class="mz-help" style="display:block;margin-top:2px">Necesitas el curso y el código que te dio tu docente.</span>
             </button>
+          </div>
+
+          <!-- ===== STEP: TEACHER NEW (registro ligero: email + código) ===== -->
+          <div id="step-teacher-new" style="display:none">
+            <div class="mz-help" style="margin-bottom:6px">
+              Regístrate como docente. Te enviaremos un código de verificación por email.
+            </div>
+
+            <label class="mz-help">E-mail</label>
+            <input id="tn-email" class="mz-inp" type="email" placeholder="tu@correo.com" autocomplete="email">
+
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+              <button id="btn-tn-send" class="mz-btn" type="button">Enviar código</button>
+              <button id="btn-tn-back" class="mz-btn ghost sm" type="button">← Volver</button>
+            </div>
+            <div id="msg-tn" class="mz-help"></div>
+
+            <div id="tn-pin-wrap" style="margin-top:8px;display:none">
+              <label class="mz-help">Código (6 dígitos)</label>
+              <input id="tn-pin" class="mz-inp" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="one-time-code">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+                <button id="btn-tn-verify" class="mz-btn" type="button">Verificar y continuar</button>
+                <button id="btn-tn-resend" class="mz-btn link" type="button">Reenviar código</button>
+              </div>
+            </div>
           </div>
 
           <!-- ===== STEP: TEMP (crear cuenta alumno) ===== -->
@@ -244,9 +275,16 @@
 </div>
     <hr class="sep">
 
+    <div id="pwd-nudge" style="display:none;margin-bottom:8px;padding:10px 12px;border-radius:10px;
+                                background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.4);color:#fde68a;
+                                font-size:13px">
+      Todavía no tienes contraseña: hasta ahora solo entras pidiendo un código por email cada vez.
+      Defínela aquí para poder entrar directamente la próxima vez.
+    </div>
+
     <div>
-      <div class="mz-label">Cambiar contraseña</div>
-      <div class="mz-help">Déjalo vacío si no quieres cambiarla.</div>
+      <div class="mz-label" id="pwd-section-title">Cambiar contraseña</div>
+      <div class="mz-help" id="pwd-section-help">Déjalo vacío si no quieres cambiarla.</div>
     </div>
 
 <div class="mz-grid2" style="margin-top:10px">

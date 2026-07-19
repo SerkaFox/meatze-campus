@@ -150,6 +150,7 @@ def me_profile(request):
             "display_name": disp,
             "bio": profile.bio or "",
             "wa": profile.wa or "",
+            "has_password": bool(request.user.has_usable_password()),
             "is_teacher": _is_teacher(request.user, profile),
             "teacher_courses": _teacher_courses_payload(request.user) if _is_teacher(request.user, profile) else [],
         }
