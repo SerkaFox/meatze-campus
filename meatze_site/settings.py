@@ -194,6 +194,14 @@ STATICFILES_DIRS = [
 WA_ADMIN_BILBAO = os.getenv("WA_ADMIN_BILBAO", "")
 WA_ADMIN_BARAKALDO = os.getenv("WA_ADMIN_BARAKALDO", "")
 
+# ---- Lanbide/SEPE — servicio web de seguimiento (Anexo V, Orden TMS/369/2019) ----
+# Credenciales WS-Security (wsse:UsernameToken/PasswordText) que usará el SEPE
+# para autenticarse contra nuestra URL de seguimiento. Se acuerdan con Lanbide
+# al declarar la URL en la solicitud de acreditación/inscripción — vacías por
+# defecto significa que el endpoint rechaza toda petición (fail-closed).
+LANBIDE_WS_USERNAME = os.getenv("LANBIDE_WS_USERNAME", "")
+LANBIDE_WS_PASSWORD = os.getenv("LANBIDE_WS_PASSWORD", "")
+
 # LAN школы (подставь свои сети)
 MZ_SCHOOL_LAN_CIDRS = [
     "10.0.0.0/8",

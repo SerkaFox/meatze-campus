@@ -129,3 +129,135 @@ cambia completamente el alcance:
 
 Contactar `teleformacion@lanbide.eus` para confirmar bajo qué modalidad está
 acreditado cada curso antes de invertir tiempo en el servicio SOAP.
+
+## Modelo de datos real (Anexo V) — verificado sobre el WSDL y el PDF oficiales
+
+A diferencia de todo lo anterior (que salía de texto legal), esto sale de los
+artefactos técnicos reales publicados por el SEPE, descargados y parseados
+directamente:
+- WSDL: `https://www.sepe.es/SiteSepe/contenidos/personas/formacion/centros_formacion/pdf/ProveedorCentroTFWS_20140619.wsdl`
+- Modelo de datos (27 págs.): `.../pdf/Modelo_Datos_Seguimiento_Teleformacion.pdf`
+
+### Las 6 operaciones (nosotros somos el SERVIDOR SOAP, el SEPE es el cliente)
+
+| Operación | Entrada | Salida | Quién la dispara |
+|---|---|---|---|
+| `crearCentro` | `DATOS_IDENTIFICATIVOS` (sin CODIGO_CENTRO) | `RESPUESTA_DATOS_CENTRO` con el `CODIGO_CENTRO` que nos asigna el SEPE | SEPE, una vez tras acreditación |
+| `obtenerDatosCentro` | (vacío) | `RESPUESTA_DATOS_CENTRO` | SEPE, cuando quiera |
+| `crearAccion` | `ACCION_FORMATIVA` (sin código) | `RESPUESTA_OBT_ACCION` con `CODIGO_ACCION` asignado | SEPE, tras autorizar cada acción formativa |
+| `obtenerListaAcciones` | (vacío) | lista de `ID_ACCION` | SEPE |
+| `obtenerAccion` | `ID_ACCION` | `RESPUESTA_OBT_ACCION` (toda la ficha + uso + participantes) | SEPE, periódicamente (inicio/durante/fin) |
+| `eliminarAccion` | `ID_ACCION` | `RESPUESTA_ELIMINAR_ACCION` | SEPE |
+
+Todas devuelven `CODIGO_RETORNO` (-2 WS no disponible, -1 error inesperado, 0
+correcto, 1 conflicto/ya existe, 2 error de parámetro) + `ETIQUETA_ERROR`
+(nombre del campo que falló, si aplica).
+
+### DATOS_IDENTIFICATIVOS (centro)
+`ID_CENTRO{ORIGEN_CENTRO, CODIGO_CENTRO}`, `NOMBRE_CENTRO` (≤40), `URL_PLATAFORMA`,
+`URL_SEGUIMIENTO` (la que declaramos en la acreditación — es la única fuente válida,
+no se puede cambiar libremente), `TELEFONO`, `EMAIL`.
+`CODIGO_CENTRO` = provincia (2 dígitos; teleformación siempre **80**, no hay
+provincia física) + secuencial de 8 dígitos que **asigna el SEPE**, no nosotros.
+
+### ACCION_FORMATIVA (lo grande)
+```
+ID_ACCION{ORIGEN_ACCION, CODIGO_ACCION}      # CODIGO_ACCION lo asigna el SEPE
+SITUACION                                     # 10 Solicitada / 20 Programada-Autorizada /
+                                               # 30 Iniciada / 40 Finalizada / 50 Cancelada
+ID_ESPECIALIDAD_PRINCIPAL{ORIGEN, AREA_PROFESIONAL(4), CODIGO_ESPECIALIDAD(14)}
+DURACION (horas), FECHA_INICIO, FECHA_FIN (dd/mm/aaaa)
+IND_ITINERARIO_COMPLETO (SI/NO)
+TIPO_FINANCIACION                             # PU público / PR privado
+NUMERO_ASISTENTES
+DESCRIPCION_ACCION{DENOMINACION, INFORMACION_GENERAL, HORARIOS, REQUISITOS, CONTACTO_ACCION}
+ESPECIALIDADES_ACCION.ESPECIALIDAD[]          # un módulo/unidad formativa por entrada:
+  ID_ESPECIALIDAD{ORIGEN, AREA_PROFESIONAL, CODIGO_ESPECIALIDAD}
+  CENTRO_IMPARTICION{ORIGEN_CENTRO, CODIGO_CENTRO}
+  FECHA_INICIO, FECHA_FIN
+  MODALIDAD_IMPARTICION                       # TF teleformación / PR presencial / PE práctica
+  DATOS_DURACION{HORAS_PRESENCIAL, HORAS_TELEFORMACION}
+  CENTROS_SESIONES_PRESENCIALES.CENTRO_PRESENCIAL[]{ORIGEN, CODIGO}   # EM si es empresa
+  TUTORES_FORMADORES.TUTOR_FORMADOR[]
+    ID_TUTOR{TIPO_DOCUMENTO(D/E/U/W/G/H), NUM_DOCUMENTO, LETRA_NIF}
+    ACREDITACION_TUTOR (texto libre, título/certificación máxima)
+    EXPERIENCIA_PROFESIONAL (años, entero)
+    COMPETENCIA_DOCENTE                       # código 01-06, ver tabla abajo
+    EXPERIENCIA_MODALIDAD_TELEFORMACION (horas como tutor online)
+    FORMACION_MODALIDAD_TELEFORMACION         # código 01-06 análogo, formación específica en teleform.
+  USO.{HORARIO_MANANA|TARDE|NOCHE}{NUM_PARTICIPANTES, NUMERO_ACCESOS, DURACION_TOTAL}
+      .SEGUIMIENTO_EVALUACION{NUM_PARTICIPANTES, NUMERO_ACTIVIDADES_APRENDIZAJE,
+                               NUMERO_INTENTOS, NUMERO_ACTIVIDADES_EVALUACION}
+PARTICIPANTES.PARTICIPANTE[]
+  ID_PARTICIPANTE{TIPO_DOCUMENTO, NUM_DOCUMENTO, LETRA_NIF}   # NIF/NIE real del alumno
+  INDICADOR_COMPETENCIAS_CLAVE
+  CONTRATO_FORMACION{ID_CONTRATO_CFA?, CIF_EMPRESA?, ID_TUTOR_EMPRESA?, ID_TUTOR_FORMACION?}
+  ESPECIALIDADES_PARTICIPANTE.ESPECIALIDAD[]  # por cada módulo en el que está matriculado:
+    ID_ESPECIALIDAD{...}, FECHA_ALTA, FECHA_BAJA
+    TUTORIAS_PRESENCIALES.TUTORIA_PRESENCIAL[]{CENTRO_PRESENCIAL_TUTORIA, FECHA_INICIO, FECHA_FIN}
+    EVALUACION_FINAL{CENTRO_PRESENCIAL_EVALUACION?, FECHA_INICIO?, FECHA_FIN?}
+    RESULTADOS{RESULTADO_FINAL?, CALIFICACION_FINAL?, PUNTUACION_FINAL?}
+```
+
+`TIPO_DOCUMENTO`: D=DNI, E=NIE, U=identificación EEE sin NIE, W=identificación
+fuera del EEE sin NIE, G=persona privada de libertad, H=identificación
+convencional (duplicados/casos especiales).
+
+`COMPETENCIA_DOCENTE` / `FORMACION_MODALIDAD_TELEFORMACION` (códigos 01-06):
+01 certificado de profesionalidad de docencia FPE, 02 certificado formador
+ocupacional, 03 CAP/especialización didáctica, 04 máster habilitante docencia,
+05 curso equivalente a formación pedagógica, 06 experiencia docente ≥600h en
+los últimos 10 años.
+
+### WS-Security (autenticación de las llamadas entrantes del SEPE hacia nosotros)
+SOAP 1.1 sobre HTTPS, cabecera `wsse:UsernameToken` tipo `wsse:PasswordText`
+(usuario/contraseña en texto plano dentro del sobre, protegido solo por el TLS
+del transporte — por eso el requisito explícito de SSL). Las credenciales se
+acuerdan con el SEPE/Lanbide al declarar la URL de seguimiento en la
+acreditación; no las inventamos nosotros solos.
+
+## Gaps de datos que faltan hoy en Meatze para poder rellenar esto
+
+Ninguno de estos campos existe actualmente en el modelo de datos:
+- **NIF/NIE de alumnos y tutores** — `User`/`UserProfile` no tienen ningún
+  campo de documento de identidad.
+- **Cualificación del tutor** (`ACREDITACION_TUTOR`, `COMPETENCIA_DOCENTE`,
+  `EXPERIENCIA_PROFESIONAL`, `EXPERIENCIA_MODALIDAD_TELEFORMACION`,
+  `FORMACION_MODALIDAD_TELEFORMACION`) — no se registra en ningún sitio.
+- **Resultado/calificación final por alumno y módulo** (`RESULTADOS`) — no
+  existe un modelo de notas/evaluación, solo entregas de tareas (`TaskSubmission`).
+- **Código de especialidad formativa** (área profesional + código de 14
+  dígitos del Catálogo SEPE) por curso/módulo — `Curso.modules` es JSON libre
+  sin ese código.
+- **Modalidad de impartición por módulo** (TF/PR/PE) — no existe, todo se
+  trata igual.
+
+## Plan de implementación propuesto (por fases)
+
+1. ✅ **Fontanería del servicio SOAP** — `api/lanbide_soap.py`, endpoint en
+   `/lanbide/seguimiento/` (`meatze_site/urls.py`). Implementado y probado
+   end-to-end (`curl` con sobres SOAP reales):
+   - Parseo del sobre + validación `wsse:UsernameToken`/`PasswordText`
+     (fail-closed: sin `LANBIDE_WS_USERNAME`/`LANBIDE_WS_PASSWORD`
+     configurados, rechaza todo con `soapenv:Fault`).
+   - `crearCentro`: guarda `DATOS_IDENTIFICATIVOS` en el modelo
+     `LanbideCentro` (fila única). Si ya existe centro, devuelve
+     `CODIGO_RETORNO=1` (conflicto) con los datos actuales en vez de
+     sobrescribir.
+   - `obtenerDatosCentro`: devuelve lo que tengamos guardado.
+   - `crearAccion` / `obtenerAccion` / `obtenerListaAcciones` /
+     `eliminarAccion`: responden de forma válida (XML conforme al WSDL)
+     con `CODIGO_RETORNO=-2` ("WS no disponible") hasta la fase 2/3.
+   - Credenciales de prueba en `deploy/.env`
+     (`LANBIDE_WS_USERNAME=aurora_test_user`) — **sustituir por las reales
+     antes de declarar la URL a Lanbide**.
+2. **Modelo de datos que falta**: NIF/NIE, campos de cualificación del tutor,
+   código de especialidad por módulo, modalidad de impartición, resultado
+   final — más la UI de admin para rellenarlos.
+3. **Mapeo real**: construir `ACCION_FORMATIVA`/`PARTICIPANTE` a partir de
+   `Enrol`, `AttendanceSession`, `LearningEvent`, `TaskSubmission` y los
+   campos nuevos de la fase 2.
+4. **Acreditar de verdad con Lanbide** (`teleformacion@lanbide.eus`): darles
+   la URL de seguimiento real, coordinar credenciales WS-Security, y validar
+   con la herramienta de autoevaluación del SEPE (`ProvCentTFVal_20161118.zip`,
+   publicada en sepe.es) antes de presentar la solicitud.

@@ -16,6 +16,7 @@ from django.contrib.sitemaps.views import sitemap
 from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
 from api.views_horario_day import horario_day, horario_slot_delete, horario_day_delete
+from api import lanbide_soap
 class StaticViewSitemap(Sitemap):
     priority = 0.8
     changefreq = "weekly"
@@ -38,7 +39,7 @@ from django.http import JsonResponse
 
 def api_root(request):
     return JsonResponse({
-        "api": "MEATZE API",
+        "api": "Aurora API",
         "version": "v5"
     })
     
@@ -53,6 +54,7 @@ urlpatterns = [
     path("acceder/", api_views.acceder, name="acceder"),
 
     path("admin-panel/", core_views.admin_panel, name="admin_panel"),
+    path("lanbide/seguimiento/", lanbide_soap.soap_endpoint, name="lanbide_soap"),
     path("v5/me", api_auth.me_view, name="meatze-me"),
     path("v5/me/profile", api_profile.me_profile),
     path("v5/me/password", api_profile.me_change_password),

@@ -272,3 +272,26 @@ class LearningEvent(models.Model):
             models.Index(fields=["session_id", "user", "-created_at"]),
             models.Index(fields=["event", "-created_at"]),
         ]
+
+
+class LanbideCentro(models.Model):
+    """
+    Estado local del 'centro de teleformación' tal como lo conoce el SEPE
+    (Anexo V, Orden TMS/369/2019 — servicio web de seguimiento).
+    Fila única: el CODIGO_CENTRO lo asigna el SEPE la primera vez que invoca
+    crearCentro contra nuestra URL de seguimiento; hasta entonces queda vacío.
+    """
+    origen_centro = models.CharField(max_length=10, blank=True, default="")
+    codigo_centro = models.CharField(max_length=20, blank=True, default="")
+
+    nombre_centro = models.CharField(max_length=40, blank=True, default="")
+    url_plataforma = models.URLField(max_length=255, blank=True, default="")
+    url_seguimiento = models.URLField(max_length=255, blank=True, default="")
+    telefono = models.CharField(max_length=20, blank=True, default="")
+    email = models.EmailField(blank=True, default="")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.nombre_centro or '(sin nombre)'} · centro={self.codigo_centro or '(sin asignar)'}"
