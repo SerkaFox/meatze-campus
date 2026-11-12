@@ -7,6 +7,21 @@ This repository contains the **backend source code** of the MEATZE Campus platfo
 
 ---
 
+<!-- readme-screenshots -->
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/meatze-desktop.jpg" alt="Aurora Campus — public home" width="72%">
+  <img src="docs/screenshots/meatze-mobile.jpg" alt="Mobile" width="24%">
+</p>
+<p align="center"><em>Aurora Campus — public home · Mobile</em></p>
+
+<p align="center">
+  <img src="docs/screenshots/meatze-course-setup.jpg" alt="Course setup in 4 steps (demo) (AI-generated illustration)" width="100%">
+</p>
+<p align="center"><em>Course setup in 4 steps (demo) <sub>(AI-generated illustration)</sub></em></p>
+<!-- readme-screenshots -->
+
 ## 🚀 Main Features
 
 - Django 6.x backend
