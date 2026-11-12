@@ -15,6 +15,7 @@ Django==6.0
 django-cors-headers==4.9.0
 djangorestframework==3.16.1
 docxtpl==0.20.2
+edge-tts==7.2.8
 et_xmlfile==2.0.0
 greenlet==3.3.0
 gunicorn==23.0.0

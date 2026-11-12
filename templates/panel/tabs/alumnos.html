@@ -170,9 +170,9 @@
 
 /* col widths */
 #mz-alumnos-tab .mz-alu-tbl .c-idx{ width:40px; }
-#mz-alumnos-tab .mz-alu-tbl .c-student{ width:44%; }
-#mz-alumnos-tab .mz-alu-tbl .c-prog{ width:36%; }
-#mz-alumnos-tab .mz-alu-tbl .c-act{ width:108px; }
+#mz-alumnos-tab .mz-alu-tbl .c-student{ width:42%; }
+#mz-alumnos-tab .mz-alu-tbl .c-prog{ width:34%; }
+#mz-alumnos-tab .mz-alu-tbl .c-act{ width:176px; }
 
 #mz-alumnos-tab .th-idx,
 #mz-alumnos-tab .td-idx{ width:40px; text-align:center; opacity:.85; }
@@ -624,6 +624,163 @@
 .mz-mod-dd .btn:hover{
   border-color:rgba(191,219,254,.9);
 }
+
+/* ===== Alumnos CRM controls ===== */
+#mz-alumnos-tab .mz-alu-metrics{
+  display:grid;
+  grid-template-columns:repeat(4, minmax(0, 1fr));
+  gap:8px;
+  margin:12px 0 10px;
+}
+#mz-alumnos-tab .mz-alu-metric{
+  min-width:0;
+  border:1px solid rgba(148,163,184,.35);
+  border-radius:8px;
+  background:rgba(11,18,32,.58);
+  padding:10px;
+}
+#mz-alumnos-tab .mz-alu-metric b{
+  display:block;
+  font-size:1.15rem;
+  color:#f9fafb;
+}
+#mz-alumnos-tab .mz-alu-metric span{
+  display:block;
+  margin-top:2px;
+  color:#9ca3af;
+  font-size:.76rem;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+#mz-alumnos-tab .mz-alu-toolbar{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  margin-bottom:10px;
+}
+#mz-alumnos-tab .mz-alu-toolbar .mzc-inp{
+  min-height:38px;
+}
+#mz-alumnos-tab #mz-alu-search{
+  flex:1 1 auto;
+  min-width:180px;
+}
+#mz-alumnos-tab #mz-alu-filter{
+  flex:0 0 220px;
+}
+#mz-alumnos-tab .mz-stu-namebtn{
+  appearance:none;
+  border:0;
+  background:transparent;
+  color:#f9fafb;
+  padding:0;
+  text-align:left;
+  cursor:pointer;
+  font:inherit;
+  font-weight:800;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+#mz-alumnos-tab .mz-stu-namebtn:hover{
+  color:#bfdbfe;
+}
+#mz-alumnos-tab .mz-alu-empty{
+  display:none;
+  padding:14px 8px;
+  color:#9ca3af;
+}
+#mz-alumnos-tab .mz-alu-drawer{
+  position:fixed;
+  z-index:99997;
+  top:0;
+  right:0;
+  width:min(430px, 94vw);
+  height:100vh;
+  transform:translateX(105%);
+  transition:transform 180ms ease;
+  background:#0b1220;
+  color:#e5e7eb;
+  border-left:1px solid rgba(148,163,184,.45);
+  box-shadow:-18px 0 45px rgba(0,0,0,.45);
+  display:flex;
+  flex-direction:column;
+}
+#mz-alumnos-tab .mz-alu-drawer.open{ transform:translateX(0); }
+#mz-alumnos-tab .mz-alu-drawer-head{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  justify-content:space-between;
+  padding:16px;
+  border-bottom:1px solid rgba(148,163,184,.25);
+}
+#mz-alumnos-tab .mz-alu-drawer-title{
+  font-size:1rem;
+  font-weight:900;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+}
+#mz-alumnos-tab .mz-alu-drawer-sub{
+  margin-top:4px;
+  font-size:.82rem;
+  color:#9ca3af;
+  overflow-wrap:anywhere;
+}
+#mz-alumnos-tab .mz-alu-drawer-body{
+  padding:14px 16px 18px;
+  overflow:auto;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+#mz-alumnos-tab .mz-alu-drawer-grid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:8px;
+}
+#mz-alumnos-tab .mz-alu-drawer-box{
+  border:1px solid rgba(148,163,184,.28);
+  border-radius:8px;
+  background:rgba(15,23,42,.72);
+  padding:10px;
+}
+#mz-alumnos-tab .mz-alu-drawer-box span{
+  display:block;
+  color:#9ca3af;
+  font-size:.74rem;
+  margin-bottom:4px;
+}
+#mz-alumnos-tab .mz-alu-drawer-box b{
+  display:block;
+  font-size:.95rem;
+  overflow-wrap:anywhere;
+}
+#mz-alumnos-tab .mz-alu-drawer-list{
+  margin:0;
+  padding-left:18px;
+  color:#cbd5e1;
+  font-size:.83rem;
+}
+#mz-alumnos-tab .mz-alu-drawer-list li{ margin:4px 0; overflow-wrap:anywhere; }
+
+@media (min-width: 1024px){
+  #mz-alumnos-tab .mz-alu-tablewrap{ display:block; }
+  #mz-alumnos-tab .mz-alu-cards{ display:none; }
+}
+@media (max-width: 780px){
+  #mz-alumnos-tab .mz-alu-metrics{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+  #mz-alumnos-tab .mz-alu-toolbar{
+    flex-direction:column;
+    align-items:stretch;
+  }
+  #mz-alumnos-tab #mz-alu-filter{
+    flex:1 1 auto;
+  }
+}
 </style>
 
 <div id="mz-alumnos-tab" data-focus="alumnos_tab">
@@ -653,6 +810,24 @@
       </div>
     </div>
 
+    <div class="mz-alu-metrics" aria-live="polite">
+      <div class="mz-alu-metric"><b data-alu-total>{{ students|length }}</b><span>Alumnos</span></div>
+      <div class="mz-alu-metric"><b data-alu-present>0</b><span>En clase</span></div>
+      <div class="mz-alu-metric"><b data-alu-pending>0</b><span>Por confirmar</span></div>
+      <div class="mz-alu-metric"><b data-alu-risk>0</b><span>Con pendientes</span></div>
+    </div>
+
+    <div class="mz-alu-toolbar">
+      <input id="mz-alu-search" class="mzc-inp" type="search" placeholder="Buscar alumno o email">
+      <select id="mz-alu-filter" class="mzc-inp">
+        <option value="all">Todos</option>
+        <option value="in_class">En clase</option>
+        <option value="pending">Esperando confirmación</option>
+        <option value="missing_materials">Materiales pendientes</option>
+        <option value="low_grade">Nota baja</option>
+      </select>
+    </div>
+
     <div class="mz-alu-tablewrap" data-focus="attendance">
         <table class="mz-tbl mz-alu-tbl">
 <colgroup>
@@ -673,16 +848,25 @@
         <tbody>
           {% if students %}
             {% for s in students %}
-				<tr>
+				<tr data-student-row
+            data-student-id-row="{{ s.id }}"
+            data-student-name="{{ s.name|escape }}"
+            data-student-email="{{ s.email|escape }}"
+            data-downloads="{{ s.downloaded_files }}"
+            data-total-files="{{ s.total_files }}"
+            data-receipts="{{ s.receipts_count }}"
+            data-avg-grade="{% if s.avg_grade is not None %}{{ s.avg_grade }}{% else %}-1{% endif %}"
+            data-graded-tasks="{{ s.graded_tasks }}"
+            data-presence="NONE">
 				  <td class="td-idx">{{ s.idx }}</td>
 
 				  <td class="td-student">
 					<div class="mz-stu">
-					  <div class="mz-stu-name">{{ s.name }}</div>
+					  <button type="button" class="mz-stu-namebtn" data-student-open data-student-id="{{ s.id }}">{{ s.name }}</button>
 					  <div class="mz-stu-mail" title="{{ s.email }}">{{ s.email }}</div>
 
 					  {% if s.last_pass %}
-						<div class="mz-stu-pass mz-inline-pass" data-pass="{{ s.last_pass }}">
+						<div class="mz-stu-pass mz-inline-pass" data-pass="{{ s.last_pass }}" data-pass-student="{{ s.id }}">
 						  <span class="lbl">Nueva clave:</span>
 						  <code>{{ s.last_pass }}</code>
 
@@ -698,7 +882,8 @@
 						  <button type="button"
 								  class="mz-icbtn mz-pass-hide"
 								  title="Ocultar"
-								  aria-label="Ocultar">
+								  aria-label="Ocultar"
+                  data-student-id="{{ s.id }}">
 							✕
 						  </button>
 						</div>
@@ -743,6 +928,14 @@
 						  🔑
 						</button>
 					  </form>
+            <button type="button"
+                    class="mz-icbtn"
+                    title="Ficha del alumno"
+                    aria-label="Ficha del alumno"
+                    data-student-open
+                    data-student-id="{{ s.id }}">
+              👁
+            </button>
 						<button type="button"
 								class="mz-icbtn"
 								title="Módulos"
@@ -782,14 +975,24 @@
 	{# ===== DESKTOP: CARDS ===== #}
 <div class="mz-alu-cards" data-view="cards">
   {% for s in students %}
-    <div class="mz-alu-card">
+    <div class="mz-alu-card"
+         data-student-card
+         data-student-id-card="{{ s.id }}"
+         data-student-name="{{ s.name|escape }}"
+         data-student-email="{{ s.email|escape }}"
+         data-downloads="{{ s.downloaded_files }}"
+         data-total-files="{{ s.total_files }}"
+         data-receipts="{{ s.receipts_count }}"
+         data-avg-grade="{% if s.avg_grade is not None %}{{ s.avg_grade }}{% else %}-1{% endif %}"
+         data-graded-tasks="{{ s.graded_tasks }}"
+         data-presence="NONE">
 
       <div class="mz-alu-card-head">
-        <div class="mz-alu-card-name" title="{{ s.name }}">{{ s.name }}</div>
+        <button type="button" class="mz-stu-namebtn mz-alu-card-name" title="{{ s.name }}" data-student-open data-student-id="{{ s.id }}">{{ s.name }}</button>
         <div class="mz-alu-card-mail" title="{{ s.email }}">{{ s.email }}</div>
 
         {% if s.last_pass %}
-          <div class="mz-stu-pass mz-inline-pass" data-pass="{{ s.last_pass }}">
+          <div class="mz-stu-pass mz-inline-pass" data-pass="{{ s.last_pass }}" data-pass-student="{{ s.id }}">
             <span class="lbl">Nueva clave:</span>
             <code>{{ s.last_pass }}</code>
 
@@ -803,7 +1006,8 @@
             <button type="button"
                     class="mz-icbtn mz-pass-hide"
                     title="Ocultar"
-                    aria-label="Ocultar">✕</button>
+                    aria-label="Ocultar"
+                    data-student-id="{{ s.id }}">✕</button>
           </div>
         {% endif %}
       </div>
@@ -839,6 +1043,12 @@
                   data-action="alumno.password.reset"
                   data-alumno-id="{{ s.id }}">🔑</button>
         </form>
+        <button type="button"
+                class="mz-icbtn"
+                title="Ficha del alumno"
+                aria-label="Ficha del alumno"
+                data-student-open
+                data-student-id="{{ s.id }}">👁</button>
 <button type="button"
         class="mz-icbtn"
         title="Módulos"
@@ -864,6 +1074,35 @@
     </div>
   {% endfor %}
 </div>
+    <div class="mz-alu-empty" data-alu-empty>No hay alumnos con este filtro.</div>
+
+    <aside class="mz-alu-drawer" id="mz-alu-drawer" aria-hidden="true">
+      <div class="mz-alu-drawer-head">
+        <div>
+          <div class="mz-alu-drawer-title" data-drawer-name>Alumno</div>
+          <div class="mz-alu-drawer-sub" data-drawer-email></div>
+        </div>
+        <button type="button" class="mz-icbtn" data-drawer-close aria-label="Cerrar">✕</button>
+      </div>
+      <div class="mz-alu-drawer-body">
+        <div class="mz-alu-drawer-grid">
+          <div class="mz-alu-drawer-box"><span>Presencia</span><b data-drawer-presence>—</b></div>
+          <div class="mz-alu-drawer-box"><span>IP</span><b data-drawer-ip>—</b></div>
+          <div class="mz-alu-drawer-box"><span>Descargas</span><b data-drawer-downloads>—</b></div>
+          <div class="mz-alu-drawer-box"><span>Material físico</span><b data-drawer-receipts>—</b></div>
+          <div class="mz-alu-drawer-box"><span>Nota media</span><b data-drawer-grade>—</b></div>
+          <div class="mz-alu-drawer-box"><span>Evaluaciones</span><b data-drawer-graded>—</b></div>
+        </div>
+        <div class="mz-alu-drawer-box">
+          <span>Materiales descargados</span>
+          <ul class="mz-alu-drawer-list" data-drawer-dl><li>Sin datos</li></ul>
+        </div>
+        <div class="mz-alu-drawer-box">
+          <span>Material físico confirmado</span>
+          <ul class="mz-alu-drawer-list" data-drawer-rc><li>Sin datos</li></ul>
+        </div>
+      </div>
+    </aside>
   </div>
 
   {# ==== ACCESOS TEMPORALES (через V5 API, как раньше) ==== #}
@@ -927,8 +1166,26 @@
     }
 
     if (btnHide){
-      btnHide.addEventListener('click', function(){
-        box.remove(); // скрыть блок пароля
+      btnHide.addEventListener('click', async function(){
+        const studentId = btnHide.dataset.studentId || box.dataset.passStudent || '';
+        const csrf = document.getElementById('mz-csrf')?.value || '';
+        try{
+          if (studentId){
+            const fd = new FormData();
+            fd.append('hide_pass_id', studentId);
+            await fetch(window.location.pathname + '?tab=alumnos', {
+              method: 'POST',
+              credentials: 'include',
+              headers: {
+                'X-CSRFToken': csrf,
+                'X-Requested-With': 'XMLHttpRequest'
+              },
+              body: fd
+            });
+          }
+        }catch(e){}
+        document.querySelectorAll(`.mz-inline-pass[data-pass-student="${studentId}"]`).forEach(el => el.remove());
+        if (!studentId) box.remove();
       });
     }
   });
@@ -1232,6 +1489,131 @@ function renderTempTable(list){
     }[m]));
   }
 
+  const searchInput = tab.querySelector('#mz-alu-search');
+  const filterInput = tab.querySelector('#mz-alu-filter');
+  const emptyState = tab.querySelector('[data-alu-empty]');
+  const drawer = tab.querySelector('#mz-alu-drawer');
+  const rowNodes = Array.from(tab.querySelectorAll('[data-student-row]'));
+  const cardNodes = Array.from(tab.querySelectorAll('[data-student-card]'));
+  const allStudentNodes = rowNodes.concat(cardNodes);
+
+  function studentNodeById(studentId){
+    return tab.querySelector(`[data-student-id-row="${studentId}"]`)
+        || tab.querySelector(`[data-student-id-card="${studentId}"]`);
+  }
+
+  function studentPresenceText(status){
+    status = String(status || 'NONE');
+    if (status === 'CONFIRMED') return 'En clase';
+    if (status === 'PENDING') return 'Esperando confirmación';
+    if (status === 'OFFSITE') return 'Fuera';
+    if (status === 'REJECTED') return 'Rechazado';
+    if (status === 'ENDED') return 'Terminado';
+    return 'Sin señal';
+  }
+
+  function updateAlumnosSummary(){
+    const uniqueRows = rowNodes;
+    let present = 0;
+    let pending = 0;
+    let risk = 0;
+    uniqueRows.forEach(node => {
+      const status = String(node.dataset.presence || 'NONE');
+      const downloads = Number(node.dataset.downloads || 0);
+      const totalFiles = Number(node.dataset.totalFiles || 0);
+      const grade = Number(node.dataset.avgGrade || -1);
+      if (status === 'CONFIRMED') present++;
+      if (status === 'PENDING') pending++;
+      if ((totalFiles > 0 && downloads < totalFiles) || (grade >= 0 && grade < 5)) risk++;
+    });
+    const totalEl = tab.querySelector('[data-alu-total]');
+    const presentEl = tab.querySelector('[data-alu-present]');
+    const pendingEl = tab.querySelector('[data-alu-pending]');
+    const riskEl = tab.querySelector('[data-alu-risk]');
+    if (totalEl) totalEl.textContent = String(uniqueRows.length);
+    if (presentEl) presentEl.textContent = String(present);
+    if (pendingEl) pendingEl.textContent = String(pending);
+    if (riskEl) riskEl.textContent = String(risk);
+  }
+
+  function passesAlumnosFilter(node){
+    const q = (searchInput?.value || '').trim().toLowerCase();
+    const mode = filterInput?.value || 'all';
+    const hay = `${node.dataset.studentName || ''} ${node.dataset.studentEmail || ''}`.toLowerCase();
+    const downloads = Number(node.dataset.downloads || 0);
+    const totalFiles = Number(node.dataset.totalFiles || 0);
+    const grade = Number(node.dataset.avgGrade || -1);
+    const presence = String(node.dataset.presence || 'NONE');
+
+    if (q && !hay.includes(q)) return false;
+    if (mode === 'in_class' && presence !== 'CONFIRMED') return false;
+    if (mode === 'pending' && presence !== 'PENDING') return false;
+    if (mode === 'missing_materials' && !(totalFiles > 0 && downloads < totalFiles)) return false;
+    if (mode === 'low_grade' && !(grade >= 0 && grade < 5)) return false;
+    return true;
+  }
+
+  function applyAlumnosFilters(){
+    let visibleRows = 0;
+    allStudentNodes.forEach(node => {
+      const ok = passesAlumnosFilter(node);
+      node.style.display = ok ? '' : 'none';
+      if (ok && node.matches('[data-student-row]')) visibleRows++;
+    });
+    if (emptyState) emptyState.style.display = visibleRows ? 'none' : 'block';
+  }
+
+  function listHtml(items){
+    if (!Array.isArray(items) || !items.length) return '<li>Sin datos</li>';
+    return items.slice(0, 60).map(x => `<li>${escapeHtml(x)}</li>`).join('');
+  }
+
+  function openStudentDrawer(studentId){
+    if (!drawer) return;
+    const node = studentNodeById(studentId);
+    if (!node) return;
+    const item = (lastData.items || {})[studentId] || {};
+    const pres = (lastData.presence || {})[studentId] || {};
+    const downloads = Number(node.dataset.downloads || item.d || 0);
+    const totalFiles = Number(node.dataset.totalFiles || lastData.total_files || 0);
+    const receipts = Number(node.dataset.receipts || item.r || 0);
+    const totalPhys = Number(lastData.total_phys || 0);
+    const grade = Number(node.dataset.avgGrade || -1);
+    const graded = Number(node.dataset.gradedTasks || 0);
+
+    drawer.querySelector('[data-drawer-name]').textContent = node.dataset.studentName || 'Alumno';
+    drawer.querySelector('[data-drawer-email]').textContent = node.dataset.studentEmail || '';
+    drawer.querySelector('[data-drawer-presence]').textContent = studentPresenceText(pres.status || node.dataset.presence);
+    drawer.querySelector('[data-drawer-ip]').textContent = pres.ip || '—';
+    drawer.querySelector('[data-drawer-downloads]').textContent = `${downloads}/${totalFiles}`;
+    drawer.querySelector('[data-drawer-receipts]').textContent = totalPhys ? `${receipts}/${totalPhys}` : String(receipts);
+    drawer.querySelector('[data-drawer-grade]').textContent = grade >= 0 ? String(grade) : '—';
+    drawer.querySelector('[data-drawer-graded]').textContent = String(graded);
+    drawer.querySelector('[data-drawer-dl]').innerHTML = listHtml(item.dl);
+    drawer.querySelector('[data-drawer-rc]').innerHTML = listHtml(item.rc);
+    drawer.classList.add('open');
+    drawer.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeStudentDrawer(){
+    if (!drawer) return;
+    drawer.classList.remove('open');
+    drawer.setAttribute('aria-hidden', 'true');
+  }
+
+  searchInput?.addEventListener('input', applyAlumnosFilters);
+  filterInput?.addEventListener('change', applyAlumnosFilters);
+  tab.querySelector('[data-drawer-close]')?.addEventListener('click', closeStudentDrawer);
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') closeStudentDrawer();
+  });
+  tab.addEventListener('click', function(e){
+    const b = e.target.closest('[data-student-open]');
+    if (!b) return;
+    e.preventDefault();
+    openStudentDrawer(String(b.dataset.studentId || ''));
+  });
+
   function renderTip(studentId){
     const it = (lastData.items && lastData.items[studentId]) || null;
     if (!it) { tip.innerHTML = '<div class="muted">Sin datos…</div>'; return; }
@@ -1297,6 +1679,11 @@ function renderTempTable(list){
     function setAllAct(html){
       acts.forEach(a => { a.innerHTML = html; });
     }
+    function setPresenceDataset(status){
+      tab.querySelectorAll(`[data-student-id-row="${studentId}"], [data-student-id-card="${studentId}"]`).forEach(node => {
+        node.dataset.presence = status || 'NONE';
+      });
+    }
     function drawActions(aid){
       if (!aid) return '';
       return `
@@ -1309,11 +1696,13 @@ function renderTempTable(list){
     setAllAct('');
 
     if (!p){
+      setPresenceDataset('NONE');
       setAllChip('mz-pres-chip mz-pres-none', '—');
       return;
     }
 
     const status = String(p.status || '');
+    setPresenceDataset(status);
     const mins = fmtMin(p.active_sec || 0);
     const aid = p.id;
 
@@ -1427,6 +1816,11 @@ function renderTempTable(list){
         tab.querySelectorAll(`[data-p-dl="${id}"]`).forEach(el => {
           el.textContent = `📥 ${d}/${total}`;
         });
+        tab.querySelectorAll(`[data-student-id-row="${id}"], [data-student-id-card="${id}"]`).forEach(el => {
+          el.dataset.downloads = String(d);
+          el.dataset.totalFiles = String(total);
+          el.dataset.receipts = String(r);
+        });
 
         tab.querySelectorAll(`[data-p-rc="${id}"]`).forEach(el => {
           el.textContent = `📦 ${r}/${totalPhys}${(totalPhys && r >= totalPhys) ? " ✔" : ""}`;
@@ -1435,11 +1829,15 @@ function renderTempTable(list){
         renderPresenceFor(id);
       });
 
+      updateAlumnosSummary();
+      applyAlumnosFilters();
       if (hoverId && tip.style.display !== 'none') renderTip(hoverId);
 
     }catch(e){}
   }
 
+  updateAlumnosSummary();
+  applyAlumnosFilters();
   refreshProgress();
   setInterval(refreshProgress, 8000);
 })();

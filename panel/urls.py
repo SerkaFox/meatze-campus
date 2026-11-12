@@ -97,7 +97,7 @@ from .views_materiales_upload import (
     materiales_drive_create_folder,
 )
 
-from .views_materiales_fs_ops import materiales_move_folder
+from .views_materiales_fs_ops import materiales_fs_op, materiales_move_folder
 
 urlpatterns += [
     path(
@@ -129,6 +129,11 @@ urlpatterns += [
         "curso/<str:codigo>/materiales/fs/move-folder/",
         materiales_move_folder,
         name="materiales_move_folder",
+    ),
+    path(
+        "curso/<str:codigo>/materiales/fs/op/",
+        materiales_fs_op,
+        name="materiales_fs_op",
     ),
     path(
     "curso/<str:codigo>/materiales/drive/list-folder/",

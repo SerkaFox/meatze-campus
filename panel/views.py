@@ -253,7 +253,7 @@ def alumnos_status(request, codigo: str):
               .exclude(status=AttendanceSession.STATUS_ENDED)
               .order_by("-last_heartbeat_at", "-last_seen_at", "-started_at", "-id")
               .values("id","user_id","status","active_sec","active_confirmed_sec",
-                      "started_at","confirmed_at","last_heartbeat_at"))
+                      "started_at","confirmed_at","last_heartbeat_at","ip"))
 
         for r in qs:
             uid = str(r["user_id"])
@@ -264,6 +264,7 @@ def alumnos_status(request, codigo: str):
                 "status": r["status"],
                 "active_sec": int(r["active_sec"] or 0),
                 "confirmed": bool(r["confirmed_at"]),
+                "ip": r["ip"] or "",
                 "last": r["last_heartbeat_at"].isoformat() if r["last_heartbeat_at"] else None,
                 "started": r["started_at"].isoformat() if r["started_at"] else None,
             }
@@ -433,6 +434,105 @@ def course_panel(request, codigo):
     context["google_drive_client_id"] = getattr(settings, "GOOGLE_DRIVE_CLIENT_ID", "")
     context["google_drive_api_key"] = getattr(settings, "GOOGLE_DRIVE_API_KEY", "")
     context["google_drive_app_id"] = getattr(settings, "GOOGLE_DRIVE_APP_ID", "")
+
+    today = timezone.localdate()
+    now_time = timezone.localtime().time()
+    upcoming_slot = (
+        Horario.objects
+        .filter(curso=curso)
+        .filter(Q(dia__gt=today) | Q(dia=today, hora_fin__gte=now_time))
+        .order_by("dia", "hora_inicio")
+        .first()
+    )
+    today_slots = list(Horario.objects.filter(curso=curso, dia=today).order_by("hora_inicio")[:4])
+    next_slots = list(
+        Horario.objects
+        .filter(curso=curso, dia__gte=today)
+        .order_by("dia", "hora_inicio")[:3]
+    )
+
+    def _slot_hours(slot):
+        try:
+            start = timezone.datetime.combine(slot.dia, slot.hora_inicio)
+            end = timezone.datetime.combine(slot.dia, slot.hora_fin)
+            return max((end - start).total_seconds() / 3600.0, 0.0)
+        except Exception:
+            return 0.0
+
+    completed_hours = 0.0
+    for h in Horario.objects.filter(curso=curso).filter(Q(dia__lt=today) | Q(dia=today, hora_fin__lt=now_time)):
+        completed_hours += _slot_hours(h)
+    progress_pct = int(round((completed_hours / total_hours) * 100)) if total_hours else 0
+    progress_pct = max(0, min(progress_pct, 100))
+
+    visible_files_qs = CursoFile.objects.filter(curso=curso).filter(
+        Q(tipo=CursoFile.TIPO_ALUMNOS) |
+        (Q(share_alumnos=True) & Q(tipo__in=[CursoFile.TIPO_DOCENTES, CursoFile.TIPO_PRIVADO]))
+    )
+    visible_file_ids = list(visible_files_qs.values_list("id", flat=True))
+    course_tasks_qs = CourseTask.objects.filter(curso=curso)
+    published_tasks_qs = course_tasks_qs.filter(is_published=True)
+
+    students_qs = Enrol.objects.filter(codigo=curso.codigo, role="student")
+    students_total = students_qs.count()
+    if is_teacher:
+        submitted_total = TaskSubmission.objects.filter(task__curso=curso).count()
+        pending_submissions = TaskSubmission.objects.filter(
+            task__curso=curso,
+            status=TaskSubmission.STATUS_SUBMITTED,
+        ).count()
+        graded_submissions = TaskSubmission.objects.filter(
+            task__curso=curso,
+            status=TaskSubmission.STATUS_GRADED,
+        ).count()
+        missing_total = 0
+        student_ids = set(students_qs.values_list("user_id", flat=True))
+        for task in course_tasks_qs:
+            submitted_ids = set(task.submissions.values_list("alumno_id", flat=True))
+            missing_total += len(student_ids - submitted_ids)
+        info_stats = {
+            "pending_submissions": pending_submissions,
+            "graded_submissions": graded_submissions,
+            "submitted_total": submitted_total,
+            "missing_total": missing_total,
+            "students_total": students_total,
+            "visible_files_total": len(visible_file_ids),
+            "tasks_total": course_tasks_qs.count(),
+        }
+    else:
+        my_downloads = MaterialDownload.objects.filter(alumno=user, file_id__in=visible_file_ids).count()
+        my_submissions = {
+            s.task_id: s
+            for s in TaskSubmission.objects.filter(alumno=user, task__in=published_tasks_qs).order_by("task_id", "-submitted_at")
+        }
+        pending_tasks = 0
+        graded_tasks = 0
+        review_tasks = 0
+        for task in published_tasks_qs:
+            sub = my_submissions.get(task.id)
+            if not sub:
+                pending_tasks += 1
+            elif sub.status == TaskSubmission.STATUS_GRADED:
+                graded_tasks += 1
+            else:
+                review_tasks += 1
+        info_stats = {
+            "pending_tasks": pending_tasks,
+            "review_tasks": review_tasks,
+            "graded_tasks": graded_tasks,
+            "visible_files_total": len(visible_file_ids),
+            "downloaded_files": my_downloads,
+            "undownloaded_files": max(len(visible_file_ids) - my_downloads, 0),
+        }
+
+    context.update({
+        "info_upcoming_slot": upcoming_slot,
+        "info_today_slots": today_slots,
+        "info_next_slots": next_slots,
+        "info_completed_hours": completed_hours,
+        "info_progress_pct": progress_pct,
+        "info_stats": info_stats,
+    })
 
     # ───────────── ВКЛАДКА "MATERIALES" ─────────────
     if active_tab == "materiales":
@@ -1144,6 +1244,7 @@ def course_panel(request, codigo):
             if action == "upload_folder_bundle":
                 files = request.FILES.getlist('files')
                 rels  = request.POST.getlist('paths')
+                target_path = _normalize_path(request.POST.get("target_path") or "")
 
                 if len(files) != len(rels):
                     return JsonResponse({"ok": False, "error": "bad_payload"}, status=400)
@@ -1159,8 +1260,9 @@ def course_panel(request, codigo):
                     if not rel:
                         continue
 
-                    folder = rel.rsplit("/", 1)[0] if "/" in rel else ""
-                    folder = normalize_path(folder)
+                    rel_folder = rel.rsplit("/", 1)[0] if "/" in rel else ""
+                    rel_folder = normalize_path(rel_folder)
+                    folder = normalize_path(f"{target_path}/{rel_folder}" if target_path and rel_folder else (target_path or rel_folder))
 
                     if folder and folder not in created_folders:
                         cur = ""
@@ -1379,19 +1481,34 @@ def course_panel(request, codigo):
             f = request.FILES.get("task_file")
             files = request.FILES.getlist("task_files") 
             module_key = (request.POST.get("module_key") or "").strip()
+            variant = (request.POST.get("variant") or "").strip().upper()
+            task_type = (request.POST.get("task_type") or "task").strip()
+            is_published = (request.POST.get("is_published") == "on")
 
             # NEW:
-            is_final_exam = (request.POST.get("is_final_exam") == "on")
+            is_final_exam = (request.POST.get("is_final_exam") == "on") or task_type == "exam"
             conv_raw = (request.POST.get("convocatoria") or "").strip()
             convocatoria = None
             if is_final_exam and conv_raw in {"1", "2"}:
                 convocatoria = int(conv_raw)
+
+            due_at = None
+            due_raw = (request.POST.get("due_at") or "").strip()
+            if due_raw:
+                try:
+                    due_at = timezone.datetime.fromisoformat(due_raw)
+                    if timezone.is_naive(due_at):
+                        due_at = timezone.make_aware(due_at, timezone.get_current_timezone())
+                except ValueError:
+                    due_at = None
 
             valid = {k for k, _ in curso_modules_choices(curso)}
             if module_key not in valid:
                 return HttpResponseBadRequest("Módulo inválido")
 
             if title:
+                if is_final_exam and variant and f"variante {variant.lower()}" not in title.lower():
+                    title = f"{title} · Variante {variant}"
                 t = CourseTask.objects.create(
                     curso=curso,
                     created_by=user,
@@ -1399,14 +1516,15 @@ def course_panel(request, codigo):
                     description=description,
                     module_key=module_key,
                     module_label=curso_module_label(curso, module_key),
-                    is_published=True,
+                    is_published=is_published,
                     is_closed=False,
+                    due_at=due_at,
 
                     # NEW:
                     is_final_exam=is_final_exam,
                     convocatoria=convocatoria,
                 )
-                if files:
+                if files and not f:
                     f0 = files[0]
                     t.file = f0
                     t.file_name = f0.name
@@ -1828,6 +1946,20 @@ def course_panel(request, codigo):
 
             # обработка POST: reset / remove
             if request.method == "POST":
+                if "hide_pass_id" in request.POST:
+                    uid = request.POST.get("hide_pass_id")
+                    try:
+                        uid_int = int(uid)
+                    except (TypeError, ValueError):
+                        uid_int = None
+                    if uid_int:
+                        last_passes.pop(str(uid_int), None)
+                        request.session["panel_last_passes"] = last_passes
+                        request.session.modified = True
+                    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                        return JsonResponse({"ok": True})
+                    return redirect(f"{request.path}?tab=alumnos")
+
                 # удалить ученика с курса (и при необходимости удалить user целиком)
                 if "remove_id" in request.POST:
                     uid = request.POST.get("remove_id")

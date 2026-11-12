@@ -63,38 +63,19 @@
   })();
 
   // -----------------------------
-  // Layout toggle: tree <-> cards
+  // Materials now uses Explorer as the only visible layout.
   // -----------------------------
   (function initLayoutToggle(){
     const treeWrap  = document.getElementById('mz-tree-wrap');
     const cardsWrap = document.getElementById('mz-cards-wrap');
+    const explorerWrap = document.getElementById('mz-explorer-wrap');
     if(!treeWrap || !cardsWrap) return;
 
-    const KEY = 'mz_materiales_layout_v1';
-
-    function setLayout(mode){
-      const isCards = (mode === 'cards');
-      treeWrap.hidden  = isCards;
-      cardsWrap.hidden = !isCards;
-
-      document.querySelectorAll('[data-layout]').forEach(b=>{
-        b.classList.toggle('is-act', b.getAttribute('data-layout') === mode);
-      });
-
-      try{ localStorage.setItem(KEY, mode); }catch(_){}
-    }
-
-    document.addEventListener('click', (e)=>{
-      const btn = e.target.closest('[data-layout]');
-      if(!btn) return;
-      e.preventDefault();
-      setLayout(btn.getAttribute('data-layout'));
-    });
-
-    let saved = 'tree';
-    try{ saved = localStorage.getItem(KEY) || 'tree'; }catch(_){}
-    if(saved !== 'tree' && saved !== 'cards') saved = 'tree';
-    setLayout(saved);
+    treeWrap.hidden = true;
+    cardsWrap.hidden = true;
+    if(explorerWrap) explorerWrap.hidden = false;
+    try{ localStorage.setItem('mz_materiales_layout_v1', 'explorer'); }catch(_){}
+    document.dispatchEvent(new CustomEvent('mz:materials-layout', { detail:{ mode:'explorer' } }));
   })();
 // ---------------------------------------
 // 6) URL upload AJAX: upload by link + insert into DOM (no reload)

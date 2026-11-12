@@ -98,8 +98,12 @@
 }
 
 /* ---- hide blocks by mode ---- */
-#mz-tareas-tab[data-mode="inbox"] .mz-mode-tasks{ display:none; }
-#mz-tareas-tab[data-mode="tasks"] .mz-mode-inbox{ display:none; }
+#mz-tareas-tab[data-mode="inbox"] .mz-mode-tasks,
+#mz-tareas-tab[data-mode="inbox"] .mz-mode-gradebook{ display:none; }
+#mz-tareas-tab[data-mode="tasks"] .mz-mode-inbox,
+#mz-tareas-tab[data-mode="tasks"] .mz-mode-gradebook{ display:none; }
+#mz-tareas-tab[data-mode="gradebook"] .mz-mode-inbox,
+#mz-tareas-tab[data-mode="gradebook"] .mz-mode-tasks{ display:none; }
 
 #mz-grade.is-hidden{ display:none; }
 #mz-grade{
@@ -402,6 +406,158 @@
 #mz-tareas-tab .mz-create-row .mz-inp{ height:38px; padding:8px 10px; }
 #mz-tareas-tab .mz-create-row .grow{ flex:1 1 320px; min-width:240px; }
 #mz-tareas-tab .mz-create-row .file{ flex:1 1 260px; min-width:240px; }
+#mz-tareas-tab .mz-create-launch{
+  margin-top:12px;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  border:1px solid rgba(148,163,184,.22);
+  border-radius:16px;
+  background:rgba(15,23,42,.45);
+  padding:12px;
+}
+#mz-tareas-tab .mz-create-launch-title{
+  color:#f8fafc;
+  font-weight:900;
+}
+#mz-tareas-tab .mz-create-launch-sub{
+  color:#94a3b8;
+  font-size:.82rem;
+  margin-top:3px;
+}
+#mz-task-create-modal.is-hidden{ display:none; }
+#mz-task-create-modal{
+  position:fixed;
+  inset:0;
+  z-index:10020;
+}
+#mz-task-create-modal .mz-create-backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(2,6,23,.76);
+}
+#mz-task-create-modal .mz-create-panel{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%, -50%);
+  width:min(980px, 96vw);
+  max-height:92vh;
+  overflow:auto;
+  border:1px solid rgba(148,163,184,.35);
+  border-radius:18px;
+  background:rgba(15,23,42,.98);
+  box-shadow:0 30px 90px rgba(0,0,0,.55);
+}
+#mz-task-create-modal .mz-create-head{
+  position:sticky;
+  top:0;
+  z-index:2;
+  display:flex;
+  gap:10px;
+  align-items:center;
+  justify-content:space-between;
+  padding:12px;
+  border-bottom:1px solid rgba(148,163,184,.22);
+  background:rgba(15,23,42,.98);
+}
+#mz-task-create-modal .mz-create-title{
+  color:#f8fafc;
+  font-weight:900;
+}
+#mz-task-create-modal .mz-create-body{
+  padding:12px;
+  display:grid;
+  gap:14px;
+}
+#mz-task-create-modal .mz-create-section{
+  border:1px solid rgba(148,163,184,.20);
+  border-radius:14px;
+  background:rgba(2,6,23,.22);
+  padding:12px;
+}
+#mz-task-create-modal .mz-create-section-title{
+  color:#e5e7eb;
+  font-weight:900;
+  margin-bottom:10px;
+}
+#mz-task-create-modal .mz-create-filehint{
+  color:#94a3b8;
+  font-size:.82rem;
+  line-height:1.35;
+  margin-top:-4px;
+  margin-bottom:10px;
+}
+#mz-task-create-modal .mz-create-row .mz-upload{
+  flex:1 1 360px;
+  min-width:260px;
+  width:auto;
+}
+#mz-task-create-modal .mz-type-grid{
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:10px;
+}
+#mz-task-create-modal .mz-type-card{
+  position:relative;
+  display:block;
+  border:1px solid rgba(148,163,184,.28);
+  border-radius:14px;
+  background:rgba(15,23,42,.62);
+  padding:12px;
+  cursor:pointer;
+}
+#mz-task-create-modal .mz-type-card input{
+  position:absolute;
+  opacity:0;
+  pointer-events:none;
+}
+#mz-task-create-modal .mz-type-name{
+  color:#f8fafc;
+  font-weight:900;
+}
+#mz-task-create-modal .mz-type-desc{
+  margin-top:5px;
+  color:#94a3b8;
+  font-size:.82rem;
+  line-height:1.35;
+}
+#mz-task-create-modal .mz-type-card:has(input:checked){
+  border-color:rgba(56,189,248,.85);
+  box-shadow:0 0 0 2px rgba(56,189,248,.14) inset;
+}
+#mz-task-create-modal .mz-form-grid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:10px;
+}
+#mz-task-create-modal .mz-form-grid .full{ grid-column:1 / -1; }
+#mz-task-create-modal .mz-field-label{
+  display:block;
+  color:#cbd5e1;
+  font-size:.78rem;
+  font-weight:850;
+  margin-bottom:6px;
+}
+#mz-task-create-modal .mz-create-foot{
+  position:sticky;
+  bottom:0;
+  display:flex;
+  gap:8px;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px;
+  border-top:1px solid rgba(148,163,184,.22);
+  background:rgba(15,23,42,.98);
+}
+#mz-task-create-modal .mz-exam-only{ display:none; }
+#mz-task-create-modal[data-kind="exam"] .mz-exam-only{ display:block; }
+@media (max-width: 760px){
+  #mz-task-create-modal .mz-type-grid,
+  #mz-task-create-modal .mz-form-grid{ grid-template-columns:1fr; }
+}
 
 #mz-tareas-tab .mz-iconbtn{
   width:36px;
@@ -936,6 +1092,113 @@
   flex:0 0 auto;
 }
 
+/* ===== Teacher review workspace ===== */
+#mz-tareas-tab .mz-review-tools{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  align-items:center;
+  margin-top:10px;
+}
+#mz-tareas-tab .mz-mode-inbox .mz-inbox-body,
+#mz-tareas-tab .mz-mode-gradebook .mz-inbox-body{
+  display:block;
+  padding:12px;
+}
+#mz-tareas-tab .mz-review-tools .mz-inp{
+  height:36px;
+  padding:8px 10px;
+}
+#mz-tareas-tab .mz-review-tools .mz-review-search{
+  flex:1 1 260px;
+  min-width:220px;
+}
+#mz-tareas-tab .mz-review-tablewrap,
+#mz-tareas-tab .mz-gradebook-wrap{
+  width:100%;
+  overflow:auto;
+  border:1px solid rgba(148,163,184,.22);
+  border-radius:14px;
+  background:rgba(2,6,23,.18);
+}
+#mz-tareas-tab .mz-review-table,
+#mz-tareas-tab .mz-gradebook{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  min-width:860px;
+}
+#mz-tareas-tab .mz-review-table th,
+#mz-tareas-tab .mz-review-table td,
+#mz-tareas-tab .mz-gradebook th,
+#mz-tareas-tab .mz-gradebook td{
+  padding:10px 12px;
+  border-bottom:1px solid rgba(148,163,184,.16);
+  vertical-align:middle;
+  text-align:left;
+}
+#mz-tareas-tab .mz-review-table th,
+#mz-tareas-tab .mz-gradebook th{
+  position:sticky;
+  top:0;
+  z-index:1;
+  background:rgba(15,23,42,.96);
+  color:#cbd5e1;
+  font-size:.76rem;
+  text-transform:uppercase;
+  letter-spacing:0;
+}
+#mz-tareas-tab .mz-review-table tr:last-child td,
+#mz-tareas-tab .mz-gradebook tr:last-child td{ border-bottom:0; }
+#mz-tareas-tab .mz-review-table tbody tr:hover,
+#mz-tareas-tab .mz-gradebook tbody tr:hover{
+  background:rgba(56,189,248,.06);
+}
+#mz-tareas-tab .mz-review-primary{
+  color:#f8fafc;
+  font-weight:850;
+  max-width:320px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#mz-tareas-tab .mz-review-secondary{
+  margin-top:3px;
+  color:#94a3b8;
+  font-size:.78rem;
+  max-width:360px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#mz-tareas-tab .mz-review-actions{
+  display:flex;
+  gap:8px;
+  justify-content:flex-end;
+  align-items:center;
+  white-space:nowrap;
+}
+#mz-tareas-tab .mz-mode-gradebook .mz-inbox{
+  margin-top:12px;
+}
+#mz-tareas-tab .mz-gradebook td.is-empty{
+  color:#64748b;
+}
+#mz-tareas-tab .mz-gradebook td.is-pending{
+  color:#facc15;
+  font-weight:850;
+}
+#mz-tareas-tab .mz-gradebook td.is-graded{
+  color:#86efac;
+  font-weight:900;
+}
+
+@media (max-width: 760px){
+  #mz-tareas-tab .mz-review-tools .mz-review-search{ flex-basis:100%; }
+  #mz-tareas-tab .mz-review-tablewrap,
+  #mz-tareas-tab .mz-gradebook-wrap{ border-radius:10px; }
+}
+
 
 </style>
 
@@ -948,8 +1211,9 @@
 
 			{% if is_teacher %}
 			  <div class="mz-ta-tabs">
-				<button class="mz-ta-tabbtn is-active" type="button" data-mode-btn="inbox">Bandeja de corrección</button>
-				<button class="mz-ta-tabbtn" type="button" data-mode-btn="tasks">Lista de tareas</button>
+				<button class="mz-ta-tabbtn is-active" type="button" data-mode-btn="inbox">Corrección</button>
+				<button class="mz-ta-tabbtn" type="button" data-mode-btn="tasks">Tareas y exámenes</button>
+				<button class="mz-ta-tabbtn" type="button" data-mode-btn="gradebook">Libro de notas</button>
 			  </div>
 
 			<div class="mz-ta-stats">
@@ -978,10 +1242,39 @@
 			</button>
 		  </div>
 		  <div class="mz-mini" id="mz-inbox-hint" style="margin-top:8px"></div>
+		  <div class="mz-review-tools">
+		    <input class="mz-inp mz-review-search" id="mz-review-search" type="search"
+		           placeholder="Buscar alumno, tarea o módulo">
+		    <select class="mz-inp" id="mz-review-status">
+		      <option value="pending">Pendientes primero</option>
+		      <option value="all">Todas las entregas</option>
+		      <option value="graded">Solo calificadas</option>
+		    </select>
+		    <select class="mz-inp" id="mz-review-sort">
+		      <option value="date_desc">Más recientes</option>
+		      <option value="student_asc">Alumno A-Z</option>
+		      <option value="task_asc">Tarea A-Z</option>
+		      <option value="grade_desc">Nota alta-baja</option>
+		    </select>
+		  </div>
 		</div>
 
 		<div class="mz-inbox-body" id="mz-inbox-list">
 		  <div class="mz-lock">Cargando bandeja…</div>
+		</div>
+	  </div>
+	</div>
+
+	<div class="mz-mode-gradebook">
+	  <div class="mz-inbox">
+		<div class="mz-inbox-head" style="display:block">
+		  <div class="mz-inbox-title">Libro de notas</div>
+		  <div class="mz-mini" style="margin-top:6px">
+		    Vista rápida por alumno y tarea. Las celdas pendientes se abren directamente para corregir.
+		  </div>
+		</div>
+		<div class="mz-inbox-body" id="mz-gradebook-host">
+		  <div class="mz-lock">Cargando libro de notas…</div>
 		</div>
 	  </div>
 	</div>
@@ -990,68 +1283,151 @@
   <div class="mz-mode-tasks">
 
     {% if is_teacher %}
-      {# ---- твоя форма создания + фильтр по модулю ---- #}
-<div class="mz-create-compact">
-  <form method="post" enctype="multipart/form-data">
+<div class="mz-create-launch">
+  <div>
+    <div class="mz-create-launch-title">Tareas, tests y exámenes</div>
+    <div class="mz-create-launch-sub">Crea el enunciado, define módulo, convocatoria, fecha límite y archivos para el alumno.</div>
+  </div>
+  <button class="mzc-btn" type="button" id="mz-open-task-create">Crear</button>
+</div>
+
+<div id="mz-task-create-modal" class="is-hidden" aria-hidden="true" data-kind="task">
+  <div class="mz-create-backdrop" data-create-close></div>
+  <div class="mz-create-panel" role="dialog" aria-modal="true" aria-label="Crear tarea o examen">
+  <form method="post" enctype="multipart/form-data" id="mz-task-create-form">
     {% csrf_token %}
     <input type="hidden" name="action" value="task_create">
+    <input type="hidden" name="is_final_exam" id="mz-create-final-hidden" value="">
 
-    <!-- Row 1: title + file -->
-    <div class="mz-create-row">
-      <input class="mz-inp grow" name="title" placeholder="Nombre del examen / tarea" required>
-      <div class="mz-drop" data-dropzone>
-  <input class="mz-drop-input" type="file" name="task_file" data-drop-input>
-  <span class="mz-drop-ico" aria-hidden="true">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 21h14"/>
-    </svg>
-  </span>
-  <span class="mz-drop-txt">
-    <div class="mz-drop-title">Arrastra un archivo aquí</div>
-    <div class="mz-drop-sub" data-drop-label>o haz clic para elegir</div>
-  </span>
-  <button class="mz-drop-clear" type="button" data-drop-clear style="display:none">Quitar</button>
-</div>
-      <button class="mzc-btn" type="submit" style="margin-left:auto">Crear</button>
+    <div class="mz-create-head">
+      <div class="mz-create-title">Crear</div>
+      <button class="mzc-btn ghost" type="button" data-create-close>Cerrar</button>
     </div>
 
-    <!-- Row 2: ANEXO VI -->
-    <div class="mz-create-row">
-      <label class="mz-chip" style="cursor:pointer">
-        <input type="checkbox" name="is_final_exam" id="mz-is-final-exam"
-               style="transform:translateY(1px);margin-right:8px">
-        ANEXO VI (Examen final)
-      </label>
+    <div class="mz-create-body">
+      <div class="mz-create-section">
+        <div class="mz-create-section-title">Tipo</div>
+        <div class="mz-type-grid">
+          <label class="mz-type-card">
+            <input type="radio" name="task_type" value="task" checked>
+            <div class="mz-type-name">Tarea</div>
+            <div class="mz-type-desc">Trabajo normal con entrega y corrección del docente.</div>
+          </label>
+          <label class="mz-type-card">
+            <input type="radio" name="task_type" value="test">
+            <div class="mz-type-name">Test</div>
+            <div class="mz-type-desc">Prueba corta o diagnóstico. Usa la misma cola de corrección.</div>
+          </label>
+          <label class="mz-type-card">
+            <input type="radio" name="task_type" value="exam">
+            <div class="mz-type-name">Examen ANEXO VI</div>
+            <div class="mz-type-desc">Examen final con convocatoria y variante visible.</div>
+          </label>
+        </div>
+      </div>
 
-      <select class="mz-inp" name="convocatoria" id="mz-convocatoria" style="max-width:220px" disabled>
-        <option value="">Auto</option>
-        <option value="1">1ª</option>
-        <option value="2">2ª</option>
-      </select>
+      <div class="mz-create-section">
+        <div class="mz-create-section-title">Datos principales</div>
+        <div class="mz-form-grid">
+          <div>
+            <label class="mz-field-label" for="mz-create-title-input">Título</label>
+            <input class="mz-inp" id="mz-create-title-input" name="title" placeholder="Nombre visible para el alumno" required>
+          </div>
+          <div>
+            <label class="mz-field-label" for="mz-create-module">Módulo</label>
+            <select class="mz-inp" name="module_key" id="mz-create-module" required>
+              <option value="" selected disabled>— Selecciona módulo —</option>
+              {% for k, label in module_choices %}
+                <option value="{{ k }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mz-exam-only">
+            <label class="mz-field-label" for="mz-convocatoria">Convocatoria</label>
+            <select class="mz-inp" name="convocatoria" id="mz-convocatoria">
+              <option value="">Auto</option>
+              <option value="1">1ª convocatoria</option>
+              <option value="2">2ª convocatoria</option>
+            </select>
+          </div>
+          <div class="mz-exam-only">
+            <label class="mz-field-label" for="mz-create-variant">Variante</label>
+            <select class="mz-inp" name="variant" id="mz-create-variant">
+              <option value="">Sin variante</option>
+              <option value="A">Variante A</option>
+              <option value="B">Variante B</option>
+              <option value="C">Variante C</option>
+            </select>
+          </div>
+          <div>
+            <label class="mz-field-label" for="mz-create-due">Fecha límite</label>
+            <input class="mz-inp" type="datetime-local" name="due_at" id="mz-create-due">
+          </div>
+          <div>
+            <label class="mz-field-label">Publicación</label>
+            <label class="mz-chip" style="cursor:pointer">
+              <input type="checkbox" name="is_published" checked style="transform:translateY(1px);margin-right:8px">
+              Publicado para alumnos
+            </label>
+          </div>
+          <div class="full">
+            <label class="mz-field-label" for="mz-create-description">Instrucciones</label>
+            <textarea class="mz-txt" name="description" id="mz-create-description" placeholder="Qué debe hacer el alumno, criterios, formato de entrega..." style="min-height:110px"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="mz-create-section">
+        <div class="mz-create-section-title">Archivos para el alumno</div>
+        <div class="mz-create-filehint">El enunciado es el archivo principal. En anexos puedes añadir varios archivos y verlos antes de crear la tarea.</div>
+        <div class="mz-create-row">
+          <div class="mz-drop" data-dropzone>
+            <input class="mz-drop-input" type="file" name="task_file" data-drop-input>
+            <span class="mz-drop-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 21h14"/>
+              </svg>
+            </span>
+            <span class="mz-drop-txt">
+              <div class="mz-drop-title">Enunciado</div>
+              <div class="mz-drop-sub" data-drop-label>Archivo principal</div>
+            </span>
+            <button class="mz-drop-clear" type="button" data-drop-clear style="display:none">Quitar</button>
+          </div>
+          <div class="mz-upload">
+            <div class="mz-drop" data-dropzone data-multi="1">
+              <input class="mz-drop-input" type="file" name="task_files" multiple data-drop-input>
+              <span class="mz-drop-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 21h14"/>
+                </svg>
+              </span>
+              <span class="mz-drop-txt">
+                <div class="mz-drop-title">Anexos</div>
+                <div class="mz-drop-sub" data-drop-label>Varios archivos opcionales</div>
+              </span>
+              <button class="mz-drop-clear" type="button" data-drop-clear style="display:none">Vaciar</button>
+            </div>
+            <div class="mz-drop-files" data-drop-files></div>
+            <button class="mzc-btn ghost mz-drop-add" type="button" data-drop-add style="display:none">
+              + Añadir más
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Row 3: module -->
-    <div class="mz-create-row">
-      <select class="mz-inp grow" name="module_key" required>
-        <option value="" selected disabled>— Selecciona módulo —</option>
-        {% for k, label in module_choices %}
-          <option value="{{ k }}">{{ label }}</option>
-        {% endfor %}
-      </select>
+    <div class="mz-create-foot">
+      <span class="mz-lock">La rúbrica privada del docente la dejaremos como siguiente paso para no mezclar archivos visibles.</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+        <button class="mzc-btn ghost" type="button" data-create-close>Cancelar</button>
+        <button class="mzc-btn" type="submit">Crear</button>
+      </div>
     </div>
 
   </form>
+  </div>
 </div>
-
-<script>
-(function(){
-  const cb = document.getElementById('mz-is-final-exam');
-  const sel = document.getElementById('mz-convocatoria');
-  if(!cb || !sel) return;
-  function sync(){ sel.disabled = !cb.checked; if(!cb.checked) sel.value = ""; }
-  cb.addEventListener('change', sync); sync();
-})();
-</script>
 
 <!-- Module pills (built by JS from existing tasks) -->
 <div class="mz-modbar" id="mz-modbar">
@@ -1397,6 +1773,16 @@
 
 			  {% elif t.my_sub and t.my_sub.status == "graded" %}
 				<div class="mz-stu-box">
+				  <div class="mz-chip ok">
+				    ✅ Calificado{% if t.my_sub.grade != None %} · Nota: {{ t.my_sub.grade }}{% endif %}
+				  </div>
+				  {% if t.my_sub.teacher_feedback %}
+				    <div class="mz-gradefb" style="margin-top:10px;color:#cbd5e1">
+				      {{ t.my_sub.teacher_feedback }}
+				    </div>
+				  {% else %}
+				    <div class="mz-lock" style="margin-top:10px">El docente aún no añadió comentario.</div>
+				  {% endif %}
 				  <div class="mz-lock" style="margin-top:10px">Ya está calificado. No puedes enviar más intentos.</div>
 
 				  {% if t.my_sub.file %}
@@ -1546,6 +1932,77 @@
 </div>
 
 <script>
+/* TAREAS: create modal */
+(function(){
+  const modal = document.getElementById('mz-task-create-modal');
+  const openBtn = document.getElementById('mz-open-task-create');
+  const form = document.getElementById('mz-task-create-form');
+  if(!modal || !openBtn || !form) return;
+
+  const typeInputs = Array.from(form.querySelectorAll('input[name="task_type"]'));
+  const finalHidden = document.getElementById('mz-create-final-hidden');
+  const titleInput = document.getElementById('mz-create-title-input');
+  const moduleSelect = document.getElementById('mz-create-module');
+  const convocatoria = document.getElementById('mz-convocatoria');
+  const variant = document.getElementById('mz-create-variant');
+  let titleTouched = false;
+  let lastFocus = null;
+
+  function selectedType(){
+    const cur = typeInputs.find(x => x.checked);
+    return cur ? cur.value : 'task';
+  }
+  function moduleShort(){
+    const opt = moduleSelect && moduleSelect.selectedOptions ? moduleSelect.selectedOptions[0] : null;
+    const txt = opt ? (opt.textContent || '').trim() : '';
+    return (txt.split(' - ')[0] || txt || '').trim();
+  }
+  function syncTitle(){
+    if(titleTouched) return;
+    const kind = selectedType();
+    if(kind === 'task') titleInput.value = '';
+    if(kind === 'test') titleInput.value = moduleShort() ? `Test · ${moduleShort()}` : 'Test';
+    if(kind === 'exam'){
+      const conv = convocatoria && convocatoria.value ? `${convocatoria.value}ª convocatoria` : 'convocatoria';
+      const vari = variant && variant.value ? ` · Variante ${variant.value}` : '';
+      titleInput.value = moduleShort() ? `ANEXO VI · ${moduleShort()} · ${conv}${vari}` : `ANEXO VI · ${conv}${vari}`;
+    }
+  }
+  function syncType(){
+    const kind = selectedType();
+    modal.setAttribute('data-kind', kind === 'exam' ? 'exam' : kind);
+    if(finalHidden) finalHidden.value = kind === 'exam' ? 'on' : '';
+    syncTitle();
+  }
+  function openModal(){
+    lastFocus = document.activeElement;
+    modal.classList.remove('is-hidden');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    syncType();
+    setTimeout(() => titleInput && titleInput.focus(), 30);
+  }
+  function closeModal(){
+    modal.classList.add('is-hidden');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    if(lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
+    lastFocus = null;
+  }
+
+  openBtn.addEventListener('click', openModal);
+  modal.addEventListener('click', (e) => {
+    if(e.target.matches('[data-create-close]') || e.target.closest('[data-create-close]')) closeModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && !modal.classList.contains('is-hidden')) closeModal();
+  });
+  titleInput && titleInput.addEventListener('input', () => { titleTouched = true; });
+  typeInputs.forEach(inp => inp.addEventListener('change', syncType));
+  [moduleSelect, convocatoria, variant].forEach(el => el && el.addEventListener('change', syncTitle));
+})();
+</script>
+<script>
 (function(){
   const root = document.getElementById('mz-tareas-tab');
   if(!root) return;
@@ -1620,7 +2077,12 @@
 
 	const $ = (s, r=document) => r.querySelector(s);
 	const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
-	const esc = (s)=> (s ?? '').toString();
+	const esc = (s)=> (s ?? '').toString()
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 
 	function computeMissingFromTasks(){
 	  const taskCards = $$('div.mz-task-card[data-task][data-missing-count]');
@@ -1641,6 +2103,10 @@
 	const hint = $('#mz-inbox-hint');
 	const inboxModbar = $('#mz-inbox-modbar');
 	const inboxCountAll = $('#mz-inbox-count-all');
+  const reviewSearch = $('#mz-review-search');
+  const reviewStatus = $('#mz-review-status');
+  const reviewSort = $('#mz-review-sort');
+  const gradebookHost = $('#mz-gradebook-host');
 	let activeInboxMod = '__all__';
 
   // drawer elements
@@ -1706,6 +2172,7 @@ function collectCards(){
     const fileDownload = card.getAttribute('data-file-download') || '';
     const subId = card.getAttribute('data-sub') || '';
     const taskId = card.getAttribute('data-task') || '';
+    const gradeVal = card.getAttribute('data-grade-val') || '';
 	
 
     return {
@@ -1721,9 +2188,11 @@ function collectCards(){
       submitted,
       fileInline,
       fileDownload,
-	  gradeVal: card.getAttribute('data-grade-val') || '',
+	  gradeVal,
 	  feedback: card.getAttribute('data-feedback') || '',
 	  fileExt: (card.getAttribute('data-file-ext') || '').toLowerCase(),
+      haystack: `${alumno} ${taskTitle} ${modLabel} ${mod}`.toLowerCase(),
+      gradeNum: gradeVal === '' ? null : Number(String(gradeVal).replace(',', '.')),
     };
   });
 
@@ -1738,6 +2207,7 @@ function collectCards(){
   const mm = computeMissingFromTasks();
   if(statMissing) statMissing.textContent = `📭 Sin entregar: ${mm.missing}`;
   buildInboxPills(items);
+  buildGradebook(items);
   return items;
 }
 
@@ -1746,7 +2216,9 @@ function shortLabel(label){
   if(!s) return 'Sin módulo';
   const i = s.indexOf('-');
   return (i > 0 ? s.slice(0, i) : s).trim();
-}let missCache = new Map(); // modKey -> {missing, names:Set}
+}
+
+let missCache = new Map(); // modKey -> {missing, names:Set}
 
 function buildInboxPills(items){
   if(!inboxModbar) return;
@@ -1871,26 +2343,129 @@ if(todosBtn){
     });
 }
 
-function renderInbox(){
-  if(!inboxList) return;
-
-  if(!inboxCache.length){
-    inboxList.innerHTML = '<div class="mz-lock">No hay entregas.</div>';
-    if(hint) hint.textContent = '';
+function buildGradebook(items){
+  if(!gradebookHost) return;
+  if(!items.length){
+    gradebookHost.innerHTML = '<div class="mz-lock">Aún no hay entregas para el libro de notas.</div>';
     return;
   }
 
+  const tasks = [];
+  const taskSeen = new Set();
+  items.forEach(x => {
+    if(taskSeen.has(x.taskId)) return;
+    taskSeen.add(x.taskId);
+    tasks.push({
+      id: x.taskId,
+      title: x.taskTitle,
+      modLabel: x.modLabel,
+      isFinal: x.isFinal,
+    });
+  });
+  tasks.sort((a,b) => a.title.localeCompare(b.title));
+
+  const students = new Map();
+  items.forEach(x => {
+    if(!students.has(x.alumno)){
+      students.set(x.alumno, { name:x.alumno, cells:new Map(), pending:0, graded:0 });
+    }
+    const row = students.get(x.alumno);
+    row.cells.set(x.taskId, x);
+    if(x.status === 'graded') row.graded++;
+    else row.pending++;
+  });
+
+  const head = tasks.map(t => `
+    <th title="${esc(t.title)}">
+      <div class="mz-review-primary">${esc(t.title)}</div>
+      <div class="mz-review-secondary">${esc(t.modLabel || '')}${t.isFinal ? ' · ANEXO VI' : ''}</div>
+    </th>
+  `).join('');
+
+  const body = Array.from(students.values())
+    .sort((a,b) => a.name.localeCompare(b.name))
+    .map(st => {
+      const cells = tasks.map(t => {
+        const sub = st.cells.get(t.id);
+        if(!sub) return '<td class="is-empty">—</td>';
+        if(sub.status === 'graded'){
+          const grade = sub.gradeVal !== '' ? esc(sub.gradeVal) : '✓';
+          return `<td class="is-graded"><button class="mzc-btn ghost" type="button" data-grade="${esc(sub.subId)}">${grade}</button></td>`;
+        }
+        return `<td class="is-pending"><button class="mzc-btn ghost" type="button" data-grade="${esc(sub.subId)}">Pendiente</button></td>`;
+      }).join('');
+      return `
+        <tr>
+          <td>
+            <div class="mz-review-primary">${esc(st.name)}</div>
+            <div class="mz-review-secondary">Pendientes: ${st.pending} · Calificadas: ${st.graded}</div>
+          </td>
+          ${cells}
+        </tr>
+      `;
+    }).join('');
+
+  gradebookHost.innerHTML = `
+    <div class="mz-gradebook-wrap">
+      <table class="mz-gradebook">
+        <thead>
+          <tr>
+            <th>Alumno</th>
+            ${head}
+          </tr>
+        </thead>
+        <tbody>${body}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function namesForActiveMissing(){
+  const names = [];
+  if(activeInboxMod === '__all__'){
+    missCache.forEach(v => { v.names && v.names.forEach(n => names.push(n)); });
+  }else{
+    const mrow = missCache.get(activeInboxMod) || { names:new Set() };
+    (mrow.names || new Set()).forEach(n => names.push(n));
+  }
+  const uniq = Array.from(new Set(names));
+  return uniq.slice(0, 18).join(', ') + (uniq.length > 18 ? `, … +${uniq.length-18}` : '');
+}
+
+function filteredInboxItems(){
   let list = inboxCache.slice();
-  const activeKey = (activeInboxMod === '__all__') ? '__all__' : activeInboxMod;
 
   if(activeInboxMod !== '__all__'){
     list = list.filter(x => (x.mod || '__none__') === activeInboxMod);
   }
 
-  const pending = list.filter(x => x.status !== 'graded').length;
-  const graded  = list.filter(x => x.status === 'graded').length;
+  const status = reviewStatus ? reviewStatus.value : 'pending';
+  if(status === 'pending') list = list.filter(x => x.status !== 'graded');
+  if(status === 'graded') list = list.filter(x => x.status === 'graded');
 
-  // missing для выбранного модуля
+  const q = reviewSearch ? (reviewSearch.value || '').trim().toLowerCase() : '';
+  if(q) list = list.filter(x => (x.haystack || '').includes(q));
+
+  const sort = reviewSort ? reviewSort.value : 'date_desc';
+  list.sort((a,b) => {
+    if(sort === 'student_asc') return a.alumno.localeCompare(b.alumno);
+    if(sort === 'task_asc') return a.taskTitle.localeCompare(b.taskTitle);
+    if(sort === 'grade_desc') return (b.gradeNum ?? -1) - (a.gradeNum ?? -1);
+    if(a.status !== b.status) return a.status === 'graded' ? 1 : -1;
+    return Number(b.subId || 0) - Number(a.subId || 0);
+  });
+
+  return list;
+}
+
+function renderInbox(){
+  if(!inboxList) return;
+
+  const totalInScope = inboxCache.filter(x => activeInboxMod === '__all__' || (x.mod || '__none__') === activeInboxMod);
+  const visible = filteredInboxItems();
+  const pending = totalInScope.filter(x => x.status !== 'graded').length;
+  const graded  = totalInScope.filter(x => x.status === 'graded').length;
+
   let missing = 0;
   if(activeInboxMod === '__all__'){
     missCache.forEach(v => { missing += (v.missing || 0); });
@@ -1899,68 +2474,72 @@ function renderInbox(){
     missing = mrow.missing || 0;
   }
 
-let namesShort = '';
-if(activeInboxMod === '__all__'){
-  const names = [];
-  missCache.forEach(v => { v.names && v.names.forEach(n => names.push(n)); });
-  const uniq = Array.from(new Set(names));
-  namesShort = uniq.slice(0, 18).join(', ') + (uniq.length > 18 ? `, … +${uniq.length-18}` : '');
-} else {
-  const mrow = missCache.get(activeInboxMod) || { names:new Set() };
-  const uniq = Array.from(mrow.names || []);
-  namesShort = uniq.slice(0, 18).join(', ') + (uniq.length > 18 ? `, … +${uniq.length-18}` : '');
-}
+  if(hint){
+    const namesShort = namesForActiveMissing();
+    const base = `Mostrando ${visible.length} de ${totalInScope.length} entregas · pendientes: ${pending} · sin entregar: ${missing} · calificadas: ${graded}`;
+    hint.innerHTML = base + (missing ? `<div style="margin-top:6px;opacity:.9">No entregó: ${esc(namesShort)}</div>` : '');
+  }
 
-if(hint){
-  const base = `Mostrando ${list.length} · pendientes: ${pending} · sin entregar: ${missing} · calificadas: ${graded}`;
-  hint.innerHTML = base + (missing ? `<div style="margin-top:6px;opacity:.9">👤 No entregó: ${esc(namesShort)}</div>` : '');
-}
-
-  if(!list.length){
-    inboxList.innerHTML = '<div class="mz-lock">No hay entregas en este módulo.</div>';
+  if(!inboxCache.length){
+    inboxList.innerHTML = '<div class="mz-lock">No hay entregas.</div>';
     return;
   }
 
-  inboxList.innerHTML = '';
-  list.forEach((x) => {
+  if(!visible.length){
+    inboxList.innerHTML = '<div class="mz-lock">No hay entregas con estos filtros.</div>';
+    return;
+  }
+
+  const rows = visible.map(x => {
     const isGraded = x.status === 'graded';
-
-    const el = document.createElement('div');
-    el.className = 'mz-inbox-item';
-    el.setAttribute('data-sub', x.subId);
-
     const gradeTxt = (x.gradeVal !== '' && x.gradeVal != null) ? ` · ${esc(x.gradeVal)}` : '';
-const statusHtml = isGraded
-  ? `<span class="mz-chip ok">✅ Calificado${gradeTxt}</span>`
-  : `<span class="mz-chip warn">⏳ Pendiente</span>`;
+    const statusHtml = isGraded
+      ? `<span class="mz-chip ok">Calificado${gradeTxt}</span>`
+      : `<span class="mz-chip warn">Pendiente</span>`;
+    const viewUrl = x.fileInline || x.fileDownload || '';
 
-const viewUrl = x.fileInline || x.fileDownload || '';
+    return `
+      <tr class="mz-review-row" data-sub="${esc(x.subId)}">
+        <td>
+          <div class="mz-review-primary" title="${esc(x.alumno)}">${esc(x.alumno)}</div>
+          <div class="mz-review-secondary">${esc(x.submitted || '')}</div>
+        </td>
+        <td>
+          <div class="mz-review-primary" title="${esc(x.taskTitle)}">${esc(x.taskTitle)}</div>
+          <div class="mz-review-secondary">${esc(x.modLabel || 'Sin módulo')}${x.isFinal ? ' · ANEXO VI' : ''}</div>
+        </td>
+        <td>${statusHtml}</td>
+        <td>${x.fileExt ? esc(x.fileExt.toUpperCase()) : '—'}</td>
+        <td>
+          <div class="mz-review-actions">
+            ${viewUrl
+              ? `<button class="mzc-btn ghost" type="button" data-open-any="${esc(viewUrl)}">Ver</button>`
+              : `<span class="mz-lock">Sin archivo</span>`}
+            <button class="mzc-btn ${isGraded ? 'ghost' : ''}" type="button" data-grade="${esc(x.subId)}">
+              ${isGraded ? 'Ver nota' : 'Calificar'}
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
 
-el.innerHTML = `
-  <div class="mz-inbox-main">
-    <div class="mz-inbox-line">
-      <div class="mz-inbox-taskline" title="${esc(x.taskTitle)}">${esc(x.taskTitle)}</div>
-      <div class="mz-inbox-meta">
-        <span class="mz-mini">🕒 ${esc(x.submitted)}</span>
-        ${statusHtml}
-        ${x.isFinal ? `<span class="mz-chip ok">🏁 ANEXO VI</span>` : ``}
-      </div>
+  inboxList.innerHTML = `
+    <div class="mz-review-tablewrap">
+      <table class="mz-review-table">
+        <thead>
+          <tr>
+            <th>Alumno</th>
+            <th>Tarea / examen</th>
+            <th>Estado</th>
+            <th>Archivo</th>
+            <th style="text-align:right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
     </div>
-    <div class="mz-mini" style="margin-top:4px;opacity:.85">${esc(x.alumno)}</div>
-  </div>
-
-  <div class="mz-inbox-actions">
-    ${viewUrl
-      ? `<button class="mzc-btn ghost" type="button" data-open-any="${esc(viewUrl)}">Ver</button>`
-      : `<span class="mz-lock">Sin archivo</span>`}
-    <button class="mzc-btn ${isGraded ? 'ghost' : ''}" type="button" data-grade="${esc(x.subId)}">
-      ${isGraded ? 'Ver nota' : 'Calificar'}
-    </button>
-  </div>
-`;
-
-    inboxList.appendChild(el);
-  });
+  `;
 }
   // ---------- drawer load from item ----------
   function findItemBySub(subId){
@@ -2046,7 +2625,7 @@ function loadIntoDrawer(item){
   }
 
 	function getVisibleSubIds(){
-	  const inboxIds = $$('#mz-inbox-list .mz-inbox-item[data-sub]').map(x => x.getAttribute('data-sub'));
+	  const inboxIds = $$('#mz-inbox-list [data-sub]').map(x => x.getAttribute('data-sub'));
 	  if(inboxIds.length) return inboxIds;
 
 	  // fallback: все карточки на странице (tasks mode)
@@ -2190,6 +2769,12 @@ if(inboxModbar){
     renderInbox();
   });
 }
+
+  [reviewSearch, reviewStatus, reviewSort].forEach(ctrl => {
+    if(!ctrl) return;
+    const ev = ctrl.tagName === 'INPUT' ? 'input' : 'change';
+    ctrl.addEventListener(ev, renderInbox);
+  });
 
   // initial build
   inboxCache = collectCards();
@@ -2419,6 +3004,25 @@ if(inboxModbar){
     const lab = zone.querySelector('[data-drop-label]');
     if(lab) lab.textContent = text || '';
   }
+  function escHtml(s){
+    return (s ?? '').toString()
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+  function getUploadWrap(zone){
+    return zone.closest('.mz-upload') || zone.parentElement || zone;
+  }
+  function getFilesBox(zone){
+    const wrap = getUploadWrap(zone);
+    return zone.querySelector('[data-drop-files]') || (wrap ? wrap.querySelector('[data-drop-files]') : null);
+  }
+  function getAddButton(zone){
+    const wrap = getUploadWrap(zone);
+    return zone.querySelector('[data-drop-add]') || (wrap ? wrap.querySelector('[data-drop-add]') : null);
+  }
 
   // --- multi-file state ---
   function getMultiState(zone){
@@ -2438,8 +3042,8 @@ if(inboxModbar){
 
   function renderFilesList(zone){
     const inp = zone.querySelector('[data-drop-input]');
-    const box = zone.closest('.mz-upload')?.querySelector('[data-drop-files]');
-    const btnAdd = zone.querySelector('[data-drop-add]');
+    const box = getFilesBox(zone);
+    const btnAdd = getAddButton(zone);
     const btnClear = zone.querySelector('[data-drop-clear]');
     const isMultiUI = zone.getAttribute('data-multi') === '1' && inp && inp.multiple;
 
@@ -2462,8 +3066,9 @@ if(inboxModbar){
     filesArr.forEach((f, idx) => {
       const row = document.createElement('div');
       row.className = 'mz-drop-file';
+      const name = escHtml(f.name || 'Archivo');
       row.innerHTML = `
-        <div class="mz-drop-file-name" title="${(f.name||'Archivo')}">${(f.name||'Archivo')}</div>
+        <div class="mz-drop-file-name" title="${name}">${name}</div>
         <div class="mz-drop-file-size">${fmtSize(f.size||0)}</div>
         <div class="mz-drop-file-del">
           <button class="mzc-btn ghost mz-iconbtn" type="button" data-drop-del="${idx}" aria-label="Quitar">
@@ -2616,8 +3221,8 @@ if(inboxModbar){
   function attach(zone){
     const inp = zone.querySelector('[data-drop-input]');
     const clear = zone.querySelector('[data-drop-clear]');
-    const addBtn = zone.querySelector('[data-drop-add]');
-    const filesBox = zone.querySelector('[data-drop-files]');
+    const addBtn = getAddButton(zone);
+    const filesBox = getFilesBox(zone);
     if(!inp) return;
 
     // click -> open picker (ignore clicks on controls)

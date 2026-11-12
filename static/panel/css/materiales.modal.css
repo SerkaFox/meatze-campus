@@ -60,10 +60,24 @@
 
 .mz-modal-actions{
   display:flex; justify-content:flex-end; gap:10px;
+  flex-wrap:wrap;
+  min-width:0;
   padding:12px 16px;
   border-top:1px solid rgba(148,163,184,.18);
 }
-.mz-modal-actions .mzc-btn{ white-space:nowrap; }
+.mz-modal-actions .mzc-btn{
+  white-space:normal;
+  overflow-wrap:anywhere;
+  max-width:100%;
+}
+
+.mz-zip-target-name{
+  margin-top:8px;
+  max-width:100%;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+  color:#cbd5e1;
+}
 
 /* danger accents */
 .mz-modal-danger{ border-color: rgba(239,68,68,.35); }

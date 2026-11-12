@@ -1,5 +1,140 @@
 
 <section id="ui-wa" class="mz-pane" data-active="false">
+  <div class="mz-card wa-hero" id="mzw-crm">
+    <div>
+      <div class="wa-kicker">WhatsApp CRM</div>
+      <h3>Centro de mensajes del centro formativo</h3>
+      <p class="mz-help">
+        Prepara avisos para alumnos, docentes y contactos externos. La entrega real quedará lista para conectarse a WhatsApp Web con QR.
+      </p>
+    </div>
+    <div class="wa-qr-box" aria-label="Estado WhatsApp Web">
+      <div class="wa-qr-fake">
+        <span></span><span></span><span></span><span></span>
+      </div>
+      <div>
+        <b>WhatsApp Web</b>
+        <span>Pendiente de vincular por QR</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="mz-card wa-auto-card" id="mzw-automations">
+    <div class="wa-section-head">
+      <div>
+        <div class="wa-kicker">Automatizaciones</div>
+        <h3>Plantillas automáticas</h3>
+      </div>
+      <div class="wa-auto-summary">
+        <span class="wa-chip ok" id="mzw-auto-enabled">0 activas</span>
+        <button type="button" class="mz-btn link sm" id="mzw-auto-save">Guardar reglas</button>
+      </div>
+    </div>
+    <div class="wa-auto-note">
+      Las reglas quedan guardadas para el futuro motor WhatsApp Web con QR. Si una regla está activa, el ejecutor podrá enviarla automáticamente cuando se cumpla el evento.
+    </div>
+    <div class="wa-auto-grid" id="mzw-auto-grid"></div>
+    <div id="mzw-auto-status" class="mz-help"></div>
+  </div>
+
+  <div class="wa-crm-grid">
+    <div class="mz-card wa-panel">
+      <div class="wa-section-head">
+        <div>
+          <div class="wa-kicker">1 · Destinatarios</div>
+          <h4>Audiencia</h4>
+        </div>
+        <span class="wa-chip" id="mzw-audience-chip">Alumnos</span>
+      </div>
+
+      <div class="wa-segments" role="tablist" aria-label="Audiencia WhatsApp">
+        <button type="button" class="is-active" data-wa-audience="students">Alumnos</button>
+        <button type="button" data-wa-audience="teachers">Docentes</button>
+        <button type="button" data-wa-audience="guests">Invitados</button>
+      </div>
+
+      <label class="wa-field">
+        <span>Curso / grupo</span>
+        <input id="mzw-course" class="mz-inp" value="IFCT0209" placeholder="Ej. IFCT0209, Bilbao mañana">
+      </label>
+
+      <label class="wa-field">
+        <span>Fecha principal</span>
+        <input id="mzw-date" class="mz-inp" type="date">
+      </label>
+
+      <label class="wa-field">
+        <span>Hora / detalle</span>
+        <input id="mzw-extra" class="mz-inp" placeholder="Ej. 09:00, aula 3, prácticas en empresa">
+      </label>
+
+      <div class="wa-mini-list" id="mzw-recipient-hints"></div>
+    </div>
+
+    <div class="mz-card wa-panel">
+      <div class="wa-section-head">
+        <div>
+          <div class="wa-kicker">2 · Mensaje</div>
+          <h4>Plantilla</h4>
+        </div>
+        <span class="wa-chip muted" id="mzw-template-chip">Aviso</span>
+      </div>
+
+      <div class="wa-template-list" id="mzw-template-list"></div>
+
+      <label class="wa-field">
+        <span>Texto editable</span>
+        <textarea id="mzw-message" class="mz-inp wa-message" rows="9"></textarea>
+      </label>
+
+      <div class="wa-actions-row">
+        <button type="button" id="mzw-copy" class="mz-btn">Copiar texto</button>
+        <button type="button" id="mzw-save" class="mz-btn link">Guardar borrador</button>
+        <button type="button" id="mzw-clear" class="mz-btn link">Limpiar</button>
+      </div>
+      <div id="mzw-status" class="mz-help"></div>
+    </div>
+
+    <div class="mz-card wa-preview-card" id="mzw-preview">
+      <div class="wa-section-head">
+        <div>
+          <div class="wa-kicker">3 · Revisión</div>
+          <h4>Vista previa</h4>
+        </div>
+        <span class="wa-chip ok">Centro formativo</span>
+      </div>
+
+      <div class="wa-phone">
+        <div class="wa-phone-top">
+          <div class="wa-avatar">CF</div>
+          <div>
+            <b>Учебный центр</b>
+            <span>cuenta oficial</span>
+          </div>
+        </div>
+        <div class="wa-phone-body">
+          <div class="wa-bubble" id="mzw-preview-text"></div>
+        </div>
+      </div>
+
+      <div class="wa-send-plan">
+        <div><b id="mzw-plan-title">Listo para preparar</b><span id="mzw-plan-sub">Selecciona plantilla y revisa el texto.</span></div>
+        <button type="button" id="mzw-mark-ready" class="mz-btn">Marcar listo</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mz-card" id="mzw-examples">
+    <div class="wa-section-head">
+      <div>
+        <div class="wa-kicker">Biblioteca</div>
+        <h3>Ejemplos rápidos</h3>
+      </div>
+      <span class="mz-help">Pulsa una tarjeta para cargarla en el editor.</span>
+    </div>
+    <div class="wa-example-grid" id="mzw-examples-grid"></div>
+  </div>
+
   <div class="mz-card">
     <h3 style="margin-top:0">Mensajes entrantes WhatsApp</h3>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">

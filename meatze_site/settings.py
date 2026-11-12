@@ -217,6 +217,13 @@ MZ_SCHOOL_LAN_CIDRS = [
     # "100.64.0.0/10",
 ]
 
+# IP ranges of reverse proxies between Django and the browser. These addresses
+# are ignored when deciding whether a student is physically in the school LAN.
+MZ_TRUSTED_PROXY_CIDRS = [
+    "127.0.0.0/8",
+    "172.16.0.0/12",
+]
+
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024      # 10MB (можно меньше/больше)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024 * 1024 # 6GB общий лимит тела запроса (пример)
 

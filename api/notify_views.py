@@ -873,6 +873,53 @@ def wa_upsert(request):
     )
 
     return Response({"ok": True, "wa": obj.wa})
+
+
+@api_view(["GET", "POST"])
+@permission_classes([AllowAny])
+@authentication_classes([])
+def wa_automations(request):
+    """
+    Stores WhatsApp automation rules for the admin CRM UI. The actual sending
+    worker can later read the same MZSetting key and execute enabled rules.
+    """
+    err = _require_admin(request)
+    if err:
+        return err
+
+    key = "wa_automations"
+    if request.method == "GET":
+        obj = MZSetting.objects.filter(key=key).first()
+        value = obj.value if obj and isinstance(obj.value, dict) else {}
+        return Response({"ok": True, "value": value})
+
+    data = request.data or {}
+    automations = data.get("automations")
+    if not isinstance(automations, list):
+        return Response({"ok": False, "message": "automations debe ser una lista."}, status=400)
+
+    clean = []
+    for item in automations[:50]:
+        if not isinstance(item, dict):
+            continue
+        clean.append({
+            "id": str(item.get("id") or "")[:80],
+            "enabled": bool(item.get("enabled")),
+            "audience": str(item.get("audience") or "students")[:30],
+            "event": str(item.get("event") or "")[:80],
+            "timing": str(item.get("timing") or "")[:120],
+            "title": str(item.get("title") or "")[:160],
+            "message": str(item.get("message") or "")[:4000],
+            "mode": str(item.get("mode") or "draft")[:20],
+        })
+
+    value = {
+        "version": 1,
+        "updated_at": timezone.now().isoformat(),
+        "automations": clean,
+    }
+    MZSetting.objects.update_or_create(key=key, defaults={"value": value})
+    return Response({"ok": True, "value": value})
 def wa_send_list(to: str, header: str, body: str, button_text: str, rows: list[dict], footer: str = ""):
     """
     rows: [{"id":"curso:IFCT0309", "title":"IFCT0309", "description":"Nombre curso"}...]

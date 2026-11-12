@@ -1,8 +1,84 @@
 {% load static %}
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.0/dist/aframe-extras.min.js"></script>
 
 <div class="mzc-card" id="mzt-ai">
-  <h4 class="mzc-h2">Asistente IA (Docentes)</h4>
+  <div class="mzt-ai-head-row">
+    <h4 class="mzc-h2" style="margin:0">Asistente IA (Docentes)</h4>
+    <div class="mz-seg mzt-mode-seg" id="mzt-mode-seg" role="group" aria-label="Vista del asistente">
+      <button type="button" class="mzc-btn ghost mzt-mode-btn is-act" data-mode="robot">🤖 Robot</button>
+      <button type="button" class="mzc-btn ghost mzt-mode-btn" data-mode="texto">📝 Texto</button>
+    </div>
+  </div>
 
+  {# --- AVATAR 3D -------------------------------------------------------- #}
+  <div class="mzc-card mzt-avatar-card" id="mzt-avatar-card">
+    <div class="mzt-avatar-head">
+      <div class="mzt-avatar-picker" id="mzt-avatar-picker">
+        <button type="button" class="mzt-avatar-pick is-act" data-bot="maria">María</button>
+        <button type="button" class="mzt-avatar-pick" data-bot="jose">José</button>
+      </div>
+      <div class="mzt-avatar-headbtns">
+        <label class="mzt-avatar-voice-toggle" title="Leer la respuesta en voz alta">
+          <input type="checkbox" id="mzt-avatar-voice" checked> 🔊 Voz
+        </label>
+        <button id="mzt-avatar-full" class="mzc-btn ghost mzt-sm-btn" type="button">⛶ Pantalla completa</button>
+      </div>
+    </div>
+
+    <div class="mzt-avatar-body-row" id="mzt-avatar-body-row">
+    <div class="mzt-programa-panel" id="mzt-programa-panel">
+      <div class="mzt-programa-head">
+        <span>Programa del curso</span>
+        <button id="mzt-programa-gen-btn" class="mzc-btn ghost mzt-sm-btn" type="button">Generar</button>
+      </div>
+      <div class="mzt-programa-list" id="mzt-programa-list">
+        <div class="mzc-note">Genera el programa día a día a partir del calendario del curso — el robot lo va contando y resalta el día del que habla.</div>
+      </div>
+      <div class="mzt-programa-actions" id="mzt-programa-actions" style="display:none">
+        <button id="mzt-programa-narrate-btn" class="mzc-btn mzt-main-btn" type="button">▶ Narrar</button>
+        <button id="mzt-programa-stop-btn" class="mzc-btn ghost mzt-sm-btn" type="button" style="display:none">■ Parar</button>
+      </div>
+    </div>
+    <div class="mzt-avatar-stage" id="mzt-avatar-stage">
+      <div class="mzt-avatar-officebg" id="mzt-avatar-officebg"></div>
+      <a-scene id="mzt-avatar-scene"
+        embedded
+        renderer="colorManagement: true; physicallyCorrectLights: true; alpha: true"
+        vr-mode-ui="enabled: false"
+        device-orientation-permission-ui="enabled: false"
+        loading-screen="enabled: false">
+        <a-assets>
+          <a-asset-item id="mzt-asset-maria" src="{% static 'aurora/ai_avatar/maria.glb' %}"></a-asset-item>
+          <a-asset-item id="mzt-asset-jose" src="{% static 'aurora/ai_avatar/jose.glb' %}"></a-asset-item>
+        </a-assets>
+        <a-entity camera="fov: 50" position="0 1.45 2.5" rotation="-4 0 0" look-controls="enabled: false" wasd-controls="enabled: false"></a-entity>
+        <a-entity light="type: ambient; intensity: 0.95"></a-entity>
+        <a-entity light="type: directional; intensity: 0.8" position="1 2 1"></a-entity>
+        <a-entity id="mzt-avatar-foostage" position="0 0.97 0">
+          <a-entity id="mzt-avatar-robot" gltf-model="{% static 'aurora/ai_avatar/maria.glb' %}" position="0 0 0" rotation="0 0 0" scale="1 1 1"></a-entity>
+          <a-image id="mzt-avatar-desk" src="{% static 'aurora/ai_avatar/desk.png' %}"
+            transparent="true" side="double" width="1.445" height="0.573" position="0 -0.07 1.3"></a-image>
+        </a-entity>
+      </a-scene>
+      <div class="mzt-avatar-subtitle" id="mzt-avatar-subtitle">
+        Hola, soy María. Elige un tema arriba o pulsa un botón y te ayudo con la clase.
+      </div>
+      <button id="mzt-avatar-stage-full" class="mzt-avatar-stage-full" type="button" title="Pantalla completa">⛶</button>
+    </div>
+    </div>{# /mzt-avatar-body-row #}
+
+    <div class="mzt-avatar-ask-row">
+      <input id="mzt-avatar-ask" class="mzc-inp" placeholder="Escribe tu pregunta para el asistente…">
+      <button id="mzt-avatar-ask-btn" class="mzc-btn mzt-main-btn" type="button">Preguntar</button>
+    </div>
+    <div class="mzc-note" style="margin-top:6px">
+      ¿Necesitas presets, nivel de detalle o vista para el aula? Cambia a modo «📝 Texto».
+    </div>
+  </div>
+
+  {# --- MODO TEXTO (herramienta clásica) -------------------------------- #}
+  <div id="mzt-text-mode" style="display:none">
   {# --- ПРЕСЕТЫ -------------------------------------------------------- #}
   <div class="mzt-presets-wrap">
     <div class="mzt-presets-label">¿Qué necesitas hoy?</div>
@@ -86,6 +162,7 @@
     </div>
     <div id="mzt-out" class="mzt-out"></div>
   </div>
+  </div>{# /mzt-text-mode #}
 	<div id="mzt-toast" class="mzt-toast">Respuesta lista.</div>
 
   {# --- FULLSCREEN PARA PROYECTOR ------------------------------------- #}
@@ -108,6 +185,121 @@
 </div>
 
 <style>
+/* ===== IA TAB · AVATAR ROBOT ======================================= */
+.mzt-ai-head-row{
+  display:flex; align-items:center; justify-content:space-between;
+  flex-wrap:wrap; gap:10px; margin-bottom:14px;
+}
+.mzt-mode-seg{ display:flex; gap:6px; }
+.mzt-mode-btn.is-act{
+  background:linear-gradient(135deg,#38bdf8,#0ea5e9); color:#0b1220; border-color:transparent;
+}
+.mzt-avatar-card{
+  background:linear-gradient(160deg, rgba(15,23,42,.9), rgba(15,23,42,.7));
+  border:1px solid rgba(148,163,184,.3);
+}
+.mzt-avatar-head{
+  display:flex; align-items:center; justify-content:space-between;
+  flex-wrap:wrap; gap:10px; margin-bottom:10px;
+}
+.mzt-avatar-picker{ display:flex; gap:8px; }
+.mzt-avatar-pick{
+  padding:6px 14px; border-radius:999px; border:1px solid rgba(148,163,184,.4);
+  background:rgba(15,23,42,.6); color:#cbd5f5; font-size:13px; font-weight:600; cursor:pointer;
+}
+.mzt-avatar-pick.is-act{
+  background:linear-gradient(135deg,#818cf8,#22d3ee); color:#0b1220; border-color:transparent;
+}
+.mzt-avatar-headbtns{ display:flex; align-items:center; gap:10px; }
+.mzt-avatar-ask-row{
+  display:flex; gap:8px; margin-top:12px;
+}
+.mzt-avatar-ask-row .mzc-inp{ flex:1; }
+.mzt-avatar-voice-toggle{ font-size:12.5px; color:#9ca3af; display:flex; align-items:center; gap:5px; cursor:pointer; }
+.mzt-avatar-body-row{
+  display:flex; gap:12px; align-items:stretch;
+}
+.mzt-programa-panel{
+  width:250px; flex-shrink:0;
+  display:flex; flex-direction:column;
+  background:radial-gradient(circle at top left, rgba(15,23,42,0.98), rgba(15,23,42,0.94));
+  border:1px solid rgba(148,163,184,.35); border-radius:16px;
+  padding:12px;
+}
+.mzt-programa-head{
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+  color:#9ca3af; margin-bottom:8px; gap:8px;
+}
+.mzt-programa-list{
+  flex:1; overflow-y:auto; max-height:340px;
+  display:flex; flex-direction:column; gap:6px;
+}
+.mzt-programa-day{
+  border:1px solid rgba(148,163,184,.3); border-radius:10px; padding:7px 9px;
+  cursor:pointer; transition:border-color .15s ease, background-color .15s ease;
+}
+.mzt-programa-day:hover{ border-color:rgba(148,163,184,.6); }
+.mzt-programa-day.is-narrating{
+  border-color:#22d3ee; background:rgba(34,211,238,.1);
+  box-shadow:0 0 0 1px rgba(34,211,238,.4);
+}
+.mzt-programa-day-date{ font-size:11px; color:#9ca3af; font-weight:700; }
+.mzt-programa-day-modulo{ font-size:12.5px; color:#e5e7eb; font-weight:600; margin-top:1px; }
+.mzt-programa-day-topic{ font-size:11.5px; color:#93c5fd; margin-top:3px; line-height:1.35; }
+.mzt-programa-day-task{ font-size:11.5px; color:#86efac; margin-top:2px; line-height:1.35; }
+.mzt-programa-actions{ display:flex; gap:6px; margin-top:10px; }
+@media (max-width:900px){
+  .mzt-avatar-body-row{ flex-direction:column; }
+  .mzt-programa-panel{ width:auto; }
+  .mzt-programa-list{ max-height:180px; }
+}
+.mzt-avatar-stage{
+  position:relative;
+  flex:1;
+  min-width:0;
+  height:380px;
+  border-radius:16px;
+  overflow:hidden;
+  background:radial-gradient(circle at 50% 20%, rgba(56,189,248,.12), transparent 60%),
+             linear-gradient(180deg,#0b1220,#060a14);
+  border:1px solid rgba(51,65,85,.7);
+}
+.mzt-avatar-stage:fullscreen{
+  height:100vh; border-radius:0;
+}
+.mzt-avatar-stage:fullscreen a-scene{ height:100vh !important; }
+.mzt-avatar-officebg{
+  position:absolute; inset:0; z-index:0;
+  background:url('{% static "aurora/ai_avatar/office_bg.jpg" %}') center/cover no-repeat;
+}
+.mzt-avatar-stage a-scene{
+  position:relative; z-index:1; width:100%; height:100%; display:block;
+}
+.mzt-avatar-stage a-scene canvas{ width:100% !important; height:100% !important; }
+/* Subtítulo único, arriba y centrado — antes había uno igual abajo también
+   (duplicado sin necesidad, reportado por el usuario) y el de arriba solo
+   tenía sombra de texto sin fondo propio, ilegible sobre fondos claros de
+   la oficina. Ahora solo existe este, con el mismo fondo sólido que tenía
+   la burbuja de abajo. */
+.mzt-avatar-subtitle{
+  position:absolute; top:14px; left:16px; right:16px; z-index:2;
+  text-align:center;
+  background:rgba(2,6,23,.82); backdrop-filter:blur(6px);
+  border:1px solid rgba(148,163,184,.35); border-radius:14px;
+  padding:10px 14px; font-size:14px; font-weight:600; line-height:1.5; color:#e5f3ff;
+  max-height:84px; overflow-y:auto;
+}
+.mzt-avatar-stage-full{
+  position:absolute; top:12px; right:12px;
+  width:34px; height:34px; border-radius:10px;
+  background:rgba(2,6,23,.6); border:1px solid rgba(148,163,184,.4);
+  color:#e5e7eb; cursor:pointer; font-size:15px;
+}
+@media (max-width:640px){
+  .mzt-avatar-stage{ height:300px; }
+}
+
 /* ===== IA TAB · SHELL ======================================= */
 #mzt-ai{
   background:
@@ -541,6 +733,480 @@
   const copyBtn    = root.querySelector('#mzt-copy');
   const fullBtn    = root.querySelector('#mzt-full');
 
+  // ===== Avatar 3D (María / José) =====
+  // Robots originales de webimpulsa (José = robot A, María = robot C) — con
+  // sus 16 animaciones ya funcionando de fábrica, sin necesidad de ningún
+  // retargeting (el intento de dar estas mismas animaciones a mallas
+  // humanas nuevas no salió limpio sin un editor visual de Blender).
+  const AVATARS = {
+    maria: {
+      src: "{% static 'aurora/ai_avatar/maria.glb' %}",
+      name: 'María',
+      greet: 'Hola, soy María. Elige un tema arriba o pulsa un botón y te ayudo con la clase.',
+      // Con una sola voz en español instalada (caso frecuente), el pitch es
+      // lo ÚNICO que diferencia — 1.15 no bastaba para sonar femenina de
+      // verdad (reportado: "María sigue con voz de hombre"). Subido al
+      // máximo razonable + un poco más de velocidad.
+      voice: { pitch: 1.75, rate: 1.05, gender: 'female' },
+    },
+    jose: {
+      src: "{% static 'aurora/ai_avatar/jose.glb' %}",
+      name: 'José',
+      greet: 'Hola, soy José. Cuéntame qué necesitas para la clase de hoy.',
+      voice: { pitch: 0.7, rate: 0.95, gender: 'male' },
+    },
+  };
+  const ANIM_IDLE  = 'male_standing_pose_m';
+  const ANIM_THINK = 'kneeling_inspecting_m';
+  const ANIM_GREET = 'waving_hand_m';
+  const ANIM_HAPPY = 'button_pushing_m';
+  const ANIM_ERROR = 'shove_reaction';
+  // duración real de cada clip "once" (ms) — animation-mixer no expone un
+  // evento "finished" fiable entre versiones, así que se vuelve a la pose de
+  // reposo con un temporizador ajustado a la duración real del clip.
+  const CLIP_MS = {
+    waving_hand_m: 3250,
+    button_pushing_m: 3250,
+    shove_reaction: 2450,
+    kneeling_inspecting_m: 4960,
+  };
+
+  let currentBot = 'maria';
+  let onceTimer = null;
+  const robotEl      = root.querySelector('#mzt-avatar-robot');
+  const avatarBubble = root.querySelector('#mzt-avatar-bubble');
+  const avatarSubtitle = root.querySelector('#mzt-avatar-subtitle');
+  function setAvatarSpeech(text) {
+    if (avatarBubble) avatarBubble.textContent = text;
+    if (avatarSubtitle) avatarSubtitle.textContent = text;
+  }
+  const avatarStage  = root.querySelector('#mzt-avatar-stage');
+  const avatarCard   = root.querySelector('#mzt-avatar-card');
+  const voiceToggle  = root.querySelector('#mzt-avatar-voice');
+
+  // Cada clip de mocap se grabó con el actor en un punto distinto del set,
+  // así que el canal Hips.position lleva un desplazamiento real (y muy
+  // distinto de un clip a otro) — sin esto el personaje aparece hundido o
+  // desplazado en cuanto se activa cualquier animación. En producción
+  // (webimpulsa) esto se limpia con un componente aparte nada más cargar el
+  // modelo; aquí se hace igual, a mano, sobre las animaciones del mesh.
+  function stripRootMotion(el) {
+    if (!el) return;
+    const mesh = el.getObject3D && el.getObject3D('mesh');
+    if (mesh && mesh.animations) {
+      mesh.animations.forEach((clip) => {
+        clip.tracks.forEach((track) => {
+          if (/Hips\.position$/i.test(track.name)) track.values.fill(0);
+        });
+      });
+    }
+    // Borrar el desplazamiento de los DATOS del clip no bastaba: al volver
+    // a un personaje ya visto antes (María→José→María) el hueso Hips
+    // aparecía con una posición LOCAL propia distinta de cero (confirmado
+    // inspeccionando el hueso directamente), aunque el clip activo ya
+    // estuviera limpio — por lo que se ve, el mixer no re-evalúa ese primer
+    // fotograma a tiempo tras recargar el modelo. Forzar aquí también la
+    // posición ACTUAL del hueso a cero, no solo los datos del clip, lo
+    // corrige de raíz sea cual sea la causa exacta del timing.
+    el.object3D.traverse((o) => {
+      if (o.isBone && /Hips$/i.test(o.name)) o.position.set(0, 0, 0);
+    });
+  }
+  // Depender solo del listener de 'model-loaded' para esto no era fiable:
+  // en la carga inicial funcionaba, pero al cambiar de avatar (María→José→
+  // María) el segundo/tercer modelo volvía a aparecer con el desplazamiento
+  // sin limpiar — parece una carrera con el propio ciclo interno de
+  // animation-mixer al re-procesar el nuevo clip. Repetir el strip justo
+  // antes de CADA reproducción (además de en model-loaded) lo hace
+  // independiente de ese timing: es barato e idempotente.
+  robotEl && robotEl.addEventListener('model-loaded', (e) => {
+    stripRootMotion(robotEl);
+  });
+
+  function playAvatarAnim(name, { loop = true } = {}) {
+    if (!robotEl) return;
+    stripRootMotion(robotEl);
+    robotEl.setAttribute('animation-mixer', `clip: ${name}; loop: ${loop ? 'repeat' : 'once'}; clampWhenFinished: true; crossFadeDuration: 0.25`);
+  }
+  function setAvatarIdle() { playAvatarAnim(ANIM_IDLE, { loop: true }); }
+  function setAvatarOnce(name, thenIdle = true) {
+    if (!robotEl) return;
+    playAvatarAnim(name, { loop: false });
+    if (onceTimer) clearTimeout(onceTimer);
+    if (thenIdle) {
+      onceTimer = setTimeout(setAvatarIdle, (CLIP_MS[name] || 2000) + 80);
+    }
+  }
+  // "Pensando/leyendo": antes usaba kneeling_inspecting_m (el robot se
+  // agachaba a inspeccionar algo) — reportado como que parecía miedo, no
+  // encajaba con "el profesor está hablando". Ahora se queda de pie en
+  // calma (ANIM_IDLE) con un cabeceo sutil de TODA la entidad (más simple
+  // y fiable que mover un hueso suelto, que competiría cada frame con lo
+  // que ya escribe el mixer de animación sobre ese mismo hueso) y, de vez
+  // en cuando, un gesto breve con las manos.
+  let readingGestureTimer = null;
+  function scheduleReadingGesture() {
+    if (readingGestureTimer) clearTimeout(readingGestureTimer);
+    readingGestureTimer = setTimeout(() => {
+      setAvatarOnce(ANIM_HAPPY);
+      scheduleReadingGesture();
+    }, 4000 + Math.random() * 3000);
+  }
+  function startReadingBehavior() {
+    if (!robotEl) return;
+    setAvatarIdle();
+    robotEl.setAttribute('animation__nod',
+      'property: rotation; to: 4 0 0; dir: alternate; loop: true; dur: 1400; easing: easeInOutSine');
+    scheduleReadingGesture();
+  }
+  function stopReadingBehavior() {
+    if (!robotEl) return;
+    if (readingGestureTimer) { clearTimeout(readingGestureTimer); readingGestureTimer = null; }
+    robotEl.removeAttribute('animation__nod');
+    robotEl.setAttribute('rotation', '0 0 0');
+  }
+  function pulseThink() { startReadingBehavior(); }
+  function pulseHappy() { stopReadingBehavior(); setAvatarOnce(ANIM_HAPPY); }
+  function pulseError() { stopReadingBehavior(); setAvatarOnce(ANIM_ERROR); }
+
+  // Chrome (y algunos otros) devuelven getVoices() VACÍO la primera vez que
+  // se llama, hasta que dispara 'voiceschanged' — si se habla antes de eso,
+  // la utterance se pierde en silencio, sin ningún error. Y forzar
+  // u.lang='es-ES' cuando NINGUNA voz instalada coincide con ese idioma
+  // también puede hacer que algunos motores se callen sin avisar — mejor
+  // usar una voz española si existe, y si no, cualquiera disponible, antes
+  // que forzar un idioma sin voz real detrás.
+  let _voicesReadyPromise = null;
+  function voicesReady() {
+    if (_voicesReadyPromise) return _voicesReadyPromise;
+    _voicesReadyPromise = new Promise((resolve) => {
+      if (!('speechSynthesis' in window)) return resolve([]);
+      const existing = window.speechSynthesis.getVoices();
+      if (existing.length) return resolve(existing);
+      window.speechSynthesis.addEventListener('voiceschanged', () => {
+        resolve(window.speechSynthesis.getVoices());
+      }, { once: true });
+      // por si el navegador nunca dispara el evento (pasa en algunos)
+      setTimeout(() => resolve(window.speechSynthesis.getVoices()), 1200);
+    });
+    return _voicesReadyPromise;
+  }
+  // Nombres típicos que los distintos motores TTS usan para voces en
+  // español, para intentar acertar el género real de la voz — el pitch
+  // solo (lo que había antes) no bastaba: con una única voz instalada,
+  // subir/bajar el tono no la hacía sonar femenina/masculina de verdad
+  // (reportado por el usuario: "María habla con voz de hombre").
+  const FEMALE_VOICE_HINTS = /elvira|helena|laura|mónica|monica|paloma|conchita|lucia|lucía|maría|isabela|female|mujer|zira/i;
+  const MALE_VOICE_HINTS   = /álvaro|alvaro|pablo|jorge|diego|enrique|juan|male|hombre|david/i;
+  function pickVoice(voices, gender) {
+    if (!voices || !voices.length) return null;
+    const spanish = voices.filter(v => /^es/i.test(v.lang));
+    const pool = spanish.length ? spanish : voices;
+    const hints = gender === 'female' ? FEMALE_VOICE_HINTS : (gender === 'male' ? MALE_VOICE_HINTS : null);
+    if (hints) {
+      const byName = pool.find(v => hints.test(v.name));
+      if (byName) return byName;
+    }
+    // sin coincidencia por nombre: si hay dos o más voces en español, al
+    // menos usar UNA DISTINTA para cada género en vez de la misma para
+    // los dos (mejor que nada, aunque no se sepa cuál es cuál de verdad)
+    if (pool.length > 1 && gender === 'male') return pool[1];
+    return pool[0];
+  }
+
+  // Antes el subtítulo entero aparecía de golpe — pedido: que salga
+  // progresivo, palabra a palabra, a un ritmo parecido al de la voz (o a
+  // un ritmo de lectura normal si la voz está desactivada), para que se
+  // pueda leer cómodamente en vez de recibir el bloque entero de golpe.
+  let _revealTimer = null;
+  function revealAvatarSpeechMs(text, totalMs) {
+    if (_revealTimer) { clearInterval(_revealTimer); _revealTimer = null; }
+    if (!avatarSubtitle) return;
+    if (!text) { avatarSubtitle.textContent = ''; return; }
+    const words = text.split(/\s+/).filter(Boolean);
+    if (!words.length) { avatarSubtitle.textContent = ''; return; }
+    const stepMs = Math.max(60, totalMs / words.length);
+    let i = 0;
+    avatarSubtitle.textContent = '';
+    _revealTimer = setInterval(() => {
+      i++;
+      avatarSubtitle.textContent = words.slice(0, i).join(' ');
+      if (i >= words.length) { clearInterval(_revealTimer); _revealTimer = null; }
+    }, stepMs);
+  }
+  function revealAvatarSpeech(text, rate) {
+    const charsPerSec = 13 * (rate || 1);
+    const totalMs = Math.max(600, ((text || '').length / charsPerSec) * 1000);
+    revealAvatarSpeechMs(text, totalMs);
+  }
+
+  // Voz: se genera en el SERVIDOR con Edge TTS (las mismas voces neuronales
+  // que ya usan los robots de webimpulsa — es-ES-ElviraNeural para María,
+  // es-ES-AlvaroNeural para José) en vez de depender de la voz que trae el
+  // propio navegador, que en muchos sistemas ni siquiera tiene una voz
+  // femenina en español instalada de verdad (sonaba "a hombre con el tono
+  // subido", reportado por el usuario). Si el servidor de voz falla por lo
+  // que sea (sin red, Edge caído...), cae a la síntesis del navegador como
+  // red de seguridad, en vez de quedarse mudo del todo.
+  let _currentVoiceAudio = null;
+  function playAvatarVoice(text, onEnd) {
+    const clean = (text || '').replace(/\[AULA\]|\[DOCENTE\]/g, '').trim().slice(0, 1000);
+    if (_currentVoiceAudio) { try { _currentVoiceAudio.pause(); } catch (_) {} _currentVoiceAudio = null; }
+    if (!voiceToggle || !voiceToggle.checked || !clean) { if (onEnd) onEnd(); return; }
+    fetch(`${V5_API}/ai/avatar_tts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ speaker: currentBot, text: clean }),
+    })
+      .then((r) => { if (!r.ok) throw new Error('avatar_tts http ' + r.status); return r.blob(); })
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        _currentVoiceAudio = audio;
+        const cleanup = () => URL.revokeObjectURL(url);
+        audio.addEventListener('loadedmetadata', () => {
+          const ms = (isFinite(audio.duration) && audio.duration > 0) ? audio.duration * 1000 : (clean.length / 13) * 1000;
+          revealAvatarSpeechMs(clean, ms);
+        });
+        audio.addEventListener('ended', () => { cleanup(); if (onEnd) onEnd(); });
+        audio.addEventListener('error', () => { cleanup(); speakBrowserFallback(clean, onEnd); });
+        audio.play().catch(() => { cleanup(); speakBrowserFallback(clean, onEnd); });
+      })
+      .catch(() => speakBrowserFallback(clean, onEnd));
+  }
+
+  // Red de seguridad si /v5/ai/avatar_tts no responde — la voz del propio
+  // navegador, mejor que ninguna voz.
+  function speakBrowserFallback(text, onEnd) {
+    if (!('speechSynthesis' in window) || !text) { if (onEnd) onEnd(); return; }
+    voicesReady().then((voices) => {
+      try {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text.slice(0, 600));
+        const botVoice = (AVATARS[currentBot] && AVATARS[currentBot].voice) || {};
+        const voice = pickVoice(voices, botVoice.gender);
+        if (voice) { u.voice = voice; u.lang = voice.lang; } else { u.lang = 'es-ES'; }
+        u.pitch = botVoice.pitch || 1;
+        u.rate = botVoice.rate || 1;
+        u.onend = () => { if (onEnd) onEnd(); };
+        u.onerror = (e) => { console.warn('TTS error:', e.error); if (onEnd) onEnd(); };
+        window.speechSynthesis.speak(u);
+        revealAvatarSpeech(text, botVoice.rate);
+      } catch (e) { console.warn('TTS exception:', e); if (onEnd) onEnd(); }
+    });
+  }
+
+  function setBotAvatar(key) {
+    const bot = AVATARS[key];
+    if (!bot || !robotEl) return;
+    currentBot = key;
+    // Referenciar el <a-asset-item> por #id (en vez de la URL directa) se
+    // rompe en el SEGUNDO cambio de avatar en adelante (A-Frame 1.5.0):
+    // el gltf-model reintenta resolver la referencia y acaba pidiendo la
+    // propia página HTML en vez del .glb ("Unexpected token '<'"). La URL
+    // directa evita esa capa de caché de assets y funciona de forma fiable
+    // en cualquier número de cambios; el navegador igualmente cachea el
+    // archivo por HTTP tras la primera carga.
+    // Actualizar el atributo animation-mixer YA EXISTENTE (en vez de
+    // quitarlo y ponerlo de nuevo) tras cambiar de modelo en la MISMA
+    // entidad dejaba la acción con weight:1 pero sin llamar a .play() de
+    // verdad — se veía "congelado" en el primer fotograma. Quitando el
+    // componente del todo antes de cargar el nuevo modelo, se fuerza a
+    // A-Frame a inicializarlo desde cero al volver a añadirlo (igual que en
+    // la carga inicial de la página, que sí funcionaba bien).
+    robotEl.removeAttribute('animation-mixer');
+    robotEl.setAttribute('gltf-model', bot.src);
+    setAvatarSpeech(bot.greet);
+    root.querySelectorAll('.mzt-avatar-pick').forEach(b => b.classList.toggle('is-act', b.dataset.bot === key));
+    const onLoad = () => {
+      robotEl.removeEventListener('model-loaded', onLoad);
+      setAvatarOnce(ANIM_GREET);
+      maybeGreetWithVoice(key);
+    };
+    robotEl.addEventListener('model-loaded', onLoad);
+  }
+
+  // ===== Programa del curso (panel izquierdo) =====
+  const programaListEl    = root.querySelector('#mzt-programa-list');
+  const programaGenBtn    = root.querySelector('#mzt-programa-gen-btn');
+  const programaActions   = root.querySelector('#mzt-programa-actions');
+  const programaNarrateBtn = root.querySelector('#mzt-programa-narrate-btn');
+  const programaStopBtn   = root.querySelector('#mzt-programa-stop-btn');
+
+  let programaDays = [];
+  let narrating = false;
+  let narrateIndex = 0;
+  let narrateStopped = false;
+
+  function renderPrograma() {
+    if (!programaListEl) return;
+    if (!programaDays.length) {
+      programaListEl.innerHTML = '<div class="mzc-note">Sin días programados en el calendario de este curso.</div>';
+      return;
+    }
+    programaListEl.innerHTML = programaDays.map((d, i) => `
+      <div class="mzt-programa-day" data-idx="${i}">
+        <div class="mzt-programa-day-date">${escapeHtml(d.date)}</div>
+        <div class="mzt-programa-day-modulo">${escapeHtml(d.modulo)}</div>
+        ${d.intro ? `<div class="mzt-programa-day-topic">📘 ${escapeHtml(d.intro)}</div>` : (d.pending ? '<div class="mzc-note">Pendiente de generar…</div>' : '')}
+        ${d.tarea1 ? `<div class="mzt-programa-day-task">✅ ${escapeHtml(d.tarea1)}</div>` : ''}
+        ${d.tarea2 ? `<div class="mzt-programa-day-task">✅ ${escapeHtml(d.tarea2)}</div>` : ''}
+      </div>
+    `).join('');
+    programaListEl.querySelectorAll('.mzt-programa-day').forEach(el => {
+      el.addEventListener('click', () => {
+        const i = parseInt(el.dataset.idx, 10);
+        stopNarration();
+        narrateOne(i);
+      });
+    });
+  }
+
+  async function fetchPrograma() {
+    if (!programaGenBtn) return;
+    programaGenBtn.disabled = true;
+    programaGenBtn.textContent = 'Generando…';
+    programaListEl.innerHTML = '<div class="mzc-note">Generando programa a partir del calendario (puede tardar unos segundos)…</div>';
+    try {
+      const resp = await fetch(`${V5_API}/ai/programa/${encodeURIComponent(curso.codigo)}`);
+      const r = await resp.json();
+      if (!resp.ok || !r.ok) {
+        programaListEl.innerHTML = `<div class="mzc-note">${escapeHtml(r.message || 'No se pudo generar el programa.')}</div>`;
+        return;
+      }
+      programaDays = r.days || [];
+      renderPrograma();
+      if (programaActions) programaActions.style.display = programaDays.length ? 'flex' : 'none';
+      if (r.more_pending) {
+        showToast('Programa parcial generado — pulsa «Generar» otra vez para completar el resto.');
+      }
+    } catch (e) {
+      programaListEl.innerHTML = '<div class="mzc-note">Error al generar el programa.</div>';
+    } finally {
+      programaGenBtn.disabled = false;
+      programaGenBtn.textContent = 'Generar';
+    }
+  }
+
+  function narrateOne(i, thenNext) {
+    const d = programaDays[i];
+    if (!d) return;
+    programaListEl.querySelectorAll('.mzt-programa-day').forEach(el => el.classList.remove('is-narrating'));
+    const el = programaListEl.querySelector(`.mzt-programa-day[data-idx="${i}"]`);
+    if (el) { el.classList.add('is-narrating'); el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+
+    // el guion ya viene redactado como lo diría un profesor (con sus
+    // propias tareas incluidas) — no se reconstruye a partir de campos
+    // sueltos, se lee tal cual lo generó el modelo.
+    const text = d.narration || d.modulo;
+    startReadingBehavior();
+
+    if (!voiceToggle || !voiceToggle.checked || !text) {
+      // sin voz: igualmente se revela progresivo, a ritmo de lectura, y se
+      // espera esa misma duración estimada antes de pasar al siguiente día
+      // (en vez de un fijo 900ms que cortaba textos largos a mitad).
+      revealAvatarSpeech(text, 1);
+      const estMs = Math.max(900, (text.length / 13) * 1000);
+      setTimeout(() => {
+        stopReadingBehavior();
+        if (thenNext) thenNext();
+      }, estMs);
+      return;
+    }
+    playAvatarVoice(text, () => {
+      stopReadingBehavior();
+      if (thenNext) thenNext();
+    });
+  }
+
+  function narrateNext() {
+    if (narrateStopped || narrateIndex >= programaDays.length) {
+      stopNarration();
+      return;
+    }
+    const i = narrateIndex;
+    narrateIndex += 1;
+    narrateOne(i, narrateNext);
+  }
+
+  function startNarration() {
+    if (!programaDays.length) return;
+    narrating = true;
+    narrateStopped = false;
+    narrateIndex = 0;
+    if (programaNarrateBtn) programaNarrateBtn.style.display = 'none';
+    if (programaStopBtn) programaStopBtn.style.display = '';
+    narrateNext();
+  }
+
+  function stopNarration() {
+    narrating = false;
+    narrateStopped = true;
+    window.speechSynthesis && window.speechSynthesis.cancel();
+    programaListEl && programaListEl.querySelectorAll('.mzt-programa-day').forEach(el => el.classList.remove('is-narrating'));
+    if (programaNarrateBtn) programaNarrateBtn.style.display = '';
+    if (programaStopBtn) programaStopBtn.style.display = 'none';
+  }
+
+  programaGenBtn && programaGenBtn.addEventListener('click', fetchPrograma);
+  programaNarrateBtn && programaNarrateBtn.addEventListener('click', startNarration);
+  programaStopBtn && programaStopBtn.addEventListener('click', stopNarration);
+
+  root.querySelectorAll('.mzt-avatar-pick').forEach(btn => {
+    btn.addEventListener('click', () => setBotAvatar(btn.dataset.bot));
+  });
+
+  // Saludo con voz solo la PRIMERA vez que se ve CADA personaje en la
+  // sesión del navegador — antes la marca era global, así que si María ya
+  // había saludado, José se quedaba mudo al cambiar a él aunque a ÉL nunca
+  // se le hubiera presentado (reportado por el usuario). Con una marca por
+  // personaje, cada uno saluda la primera vez que aparece y ya está.
+  // sessionStorage sobrevive cambios de pestaña/recargas dentro de la misma
+  // sesión, pero se olvida al cerrar la pestaña del navegador.
+  function maybeGreetWithVoice(key) {
+    const storageKey = 'mzt_avatar_greeted_' + key;
+    if (sessionStorage.getItem(storageKey)) return;
+    sessionStorage.setItem(storageKey, '1');
+    playAvatarVoice(AVATARS[key].greet);
+  }
+  robotEl && robotEl.addEventListener('model-loaded', () => {
+    setAvatarOnce(ANIM_GREET);
+    maybeGreetWithVoice(currentBot);
+  }, { once: true });
+
+  function toggleAvatarFullscreen() {
+    if (!avatarStage) return;
+    if (!document.fullscreenElement) avatarStage.requestFullscreen?.();
+    else document.exitFullscreen?.();
+  }
+  root.querySelector('#mzt-avatar-full')?.addEventListener('click', toggleAvatarFullscreen);
+  root.querySelector('#mzt-avatar-stage-full')?.addEventListener('click', toggleAvatarFullscreen);
+
+  // modo Robot / Texto — exclusivo, uno u otro, nunca los dos a la vez
+  const textModeWrap = root.querySelector('#mzt-text-mode');
+  root.querySelectorAll('.mzt-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      root.querySelectorAll('.mzt-mode-btn').forEach(b => b.classList.remove('is-act'));
+      btn.classList.add('is-act');
+      const mode = btn.dataset.mode;
+      if (avatarCard)   avatarCard.style.display   = (mode === 'robot') ? '' : 'none';
+      if (textModeWrap) textModeWrap.style.display = (mode === 'robot') ? 'none' : '';
+    });
+  });
+
+  // preguntar directamente desde la barra del avatar (modo Robot)
+  const avatarAskInput = root.querySelector('#mzt-avatar-ask');
+  const avatarAskBtn   = root.querySelector('#mzt-avatar-ask-btn');
+  avatarAskBtn && avatarAskBtn.addEventListener('click', () => {
+    const q = (avatarAskInput.value || '').trim();
+    if (!q) { setAvatarSpeech('Escribe primero tu pregunta.'); return; }
+    input.value = q;
+    askAI();
+  });
+  avatarAskInput && avatarAskInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); avatarAskBtn?.click(); }
+  });
+
   let currentLevel = 'medio';
   const lvlBtns = root.querySelectorAll('.mzt-lvl');
 
@@ -858,6 +1524,8 @@ IMPORTANTE:
     sendBtn.disabled = true;
     setStatus('Conectando con el servidor IA…');
     out.textContent = 'Pensando…';
+    pulseThink();
+    setAvatarSpeech('Pensando…');
 
     try {
       const resp = await fetch(`${V5_API}/ai/ask`, {
@@ -873,9 +1541,19 @@ IMPORTANTE:
       setStatus('Respuesta generada.');
       showToast('Respuesta lista para usar en clase.');
 
+      pulseHappy();
+      // el subtítulo lo revela playAvatarVoice() progresivamente, no se
+      // muestra de golpe aquí (pedido: que se pueda leer al ritmo de la voz)
+      playAvatarVoice(lastSplit.aula || answer);
+      if (!voiceToggle || !voiceToggle.checked) {
+        revealAvatarSpeech((lastSplit.aula || answer).slice(0, 220), 1);
+      }
+
     } catch(e){
       out.textContent = e?.message || 'No se pudo generar respuesta.';
       setStatus('Error al llamar a /ai/ask.');
+      pulseError();
+      setAvatarSpeech('Uy, algo ha fallado. Inténtalo de nuevo.');
     } finally {
       sendBtn.disabled = false;
     }

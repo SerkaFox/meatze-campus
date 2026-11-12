@@ -1595,6 +1595,8 @@ function hasDuplicateNameInParent(parentPath, name){
 
   // куда вставлять UI (можно поменять якорь)
   const host =
+    document.querySelector('.mz-explorer-help') ||
+    document.querySelector('[data-explorer-toolbar]') ||
     document.querySelector('.mz-mat-sort') ||
     document.querySelector('.mz-mat-topbar') ||
     tree;
@@ -1755,6 +1757,12 @@ function hasDuplicateNameInParent(parentPath, name){
 
 	  const fileId = btn.getAttribute('data-file-id') || '';
 	  const folder = btn.getAttribute('data-folder') || '';
+
+	  if(typeof window.mzMaterialsExplorerOpenFile === 'function'){
+		window.mzMaterialsExplorerOpenFile(fileId, folder || '');
+		box.hidden = true;
+		return;
+	  }
 
 	  // 1) Всегда раскрываем дерево (и сохраняем состояние)
 	  openFolder(folder);

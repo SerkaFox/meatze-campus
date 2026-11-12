@@ -28,8 +28,6 @@ logger = logging.getLogger(__name__)
 class CsrfExemptSessionAuthentication(SessionAuthentication):
     def enforce_csrf(self, request):
         return
-import ipaddress
-from django.conf import settings
 
 def _norm_ip(ip: str) -> str:
     return (ip or "").strip()
@@ -58,11 +56,19 @@ def _all_client_ips(request) -> list[str]:
     return out
 
 def _client_ip(request) -> str:
-    ips = _all_client_ips(request)
+    ips = _school_candidate_ips(request)
+    if not ips:
+        ips = _all_client_ips(request)
     return ips[0] if ips else ""
 
 def _lan_networks():
-    cidrs = getattr(settings, "MZ_SCHOOL_LAN_CIDRS", None) or []
+    cidrs = list(getattr(settings, "MZ_SCHOOL_LAN_CIDRS", None) or [])
+    public_ips = []
+    single_public = (getattr(settings, "MZ_SCHOOL_PUBLIC_IP", "") or "").strip()
+    if single_public:
+        public_ips.append(single_public)
+    public_ips.extend(getattr(settings, "MZ_SCHOOL_PUBLIC_IPS", None) or [])
+    cidrs.extend(public_ips)
     nets = []
     for c in cidrs:
         try:
@@ -71,12 +77,60 @@ def _lan_networks():
             continue
     return nets
 
+def _trusted_proxy_networks():
+    cidrs = getattr(settings, "MZ_TRUSTED_PROXY_CIDRS", None) or [
+        "127.0.0.0/8",
+        "172.16.0.0/12",
+    ]
+    nets = []
+    for c in cidrs:
+        try:
+            nets.append(ipaddress.ip_network(str(c).strip(), strict=False))
+        except Exception:
+            continue
+    return nets
+
+def _ip_in_any(ip: str, nets) -> bool:
+    try:
+        addr = ipaddress.ip_address(ip)
+    except Exception:
+        return False
+    return any(addr in net for net in nets)
+
+def _xff_ips(request) -> list[str]:
+    out: list[str] = []
+    raw = _norm_ip(request.META.get("HTTP_X_FORWARDED_FOR"))
+    if not raw:
+        return out
+    for part in raw.split(","):
+        ip = _norm_ip(part)
+        try:
+            ipaddress.ip_address(ip)
+        except Exception:
+            continue
+        if ip not in out:
+            out.append(ip)
+    return out
+
+def _school_candidate_ips(request) -> list[str]:
+    trusted = _trusted_proxy_networks()
+    xff = _xff_ips(request)
+    if xff:
+        candidates = [ip for ip in xff if not _ip_in_any(ip, trusted)]
+        return candidates or xff[:1]
+
+    ips = _all_client_ips(request)
+    non_proxy = [ip for ip in ips if not _ip_in_any(ip, trusted)]
+    return non_proxy or ips
+
 def _is_school_lan_request(request) -> tuple[bool, dict]:
     ips = _all_client_ips(request)
+    candidates = _school_candidate_ips(request)
     nets = _lan_networks()
+    trusted = _trusted_proxy_networks()
 
     hit = None
-    for ip in ips:
+    for ip in candidates:
         try:
             addr = ipaddress.ip_address(ip)
         except Exception:
@@ -90,7 +144,9 @@ def _is_school_lan_request(request) -> tuple[bool, dict]:
 
     return (hit is not None), {
         "ips": ips,
+        "candidates": candidates,
         "lan_cidrs": [str(n) for n in nets],
+        "trusted_proxy_cidrs": [str(n) for n in trusted],
         "hit": hit,
         "xff": request.META.get("HTTP_X_FORWARDED_FOR", ""),
         "xreal": request.META.get("HTTP_X_REAL_IP", ""),

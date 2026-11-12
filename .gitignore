@@ -34,3 +34,7 @@ yarn-error.log*
 .DS_Store
 .idea/
 .vscode/
+
+# Local DB/volume snapshots (contain personal data) and raw 3D sources
+backups/
+/*.fbx

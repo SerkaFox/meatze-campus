@@ -6,6 +6,7 @@
 <link rel="stylesheet" href="{% static 'panel/css/materiales.preview.css' %}?v={% now 'U' %}">
 <link rel="stylesheet" href="{% static 'panel/css/materiales.modal.css' %}?v={% now 'U' %}">
 <link rel="stylesheet" href="{% static 'panel/css/materiales.drop.css' %}?v={% now 'U' %}">
+<link rel="stylesheet" href="{% static 'panel/css/materiales_explorer.css' %}?v={% now 'U' %}">
 <div class="mzc-card mz-mat-card">
 <div class="mz-mat-head">
   <div>
@@ -36,72 +37,30 @@
 	</div>
 </div>
 
-  {# ---- верхний бар: alumnos / docentes / mis ---- #}
+  {# ---- подсказка + технические формы (только преподаватель) ---- #}
   {% if is_teacher %}
-    <div class="mz-mat-audience">
-      <div class="mz-seg">
-        {% for key,label in audience_options %}
-          <a
-            href="?tab=materiales&aud={{ key|urlencode }}&p={{ current_path|default:''|urlencode }}&mod={{ selected_mod|default:''|urlencode }}&sort={{ sort|default:'new'|urlencode }}"
-            class="mzc-btn ghost{% if audience == key %} is-act{% endif %}"
-            data-action="materials.audience"
-            data-aud="{{ key }}"
-          >
-            {{ label }}
-          </a>
-        {% endfor %}
+    <div class="mz-explorer-help" data-focus="upload">
+      <div class="mz-explorer-help-title">Cómo trabajar con materiales</div>
+      <div class="mz-explorer-help-grid">
+        <div>Usa <b>Subir</b> para archivos sueltos y <b>Subir carpeta</b> para mantener una estructura completa.</div>
+        <div>Arrastra archivos o carpetas dentro del panel derecho o sobre una carpeta del árbol izquierdo.</div>
+        <div>Click derecho abre acciones: copiar, cortar, pegar, acceso, ZIP y descomprimir.</div>
+        <div>El acceso se gestiona por archivo o carpeta desde <b>Acceso...</b>.</div>
       </div>
     </div>
-  {% endif %}
 
-  {# ---- форма загрузки (только преподаватель) ---- #}
-  {% if is_teacher %}
-    <div class="mz-upl-wrap" data-focus="upload">
-	<div id="mz-gdrive-cfg"
-     data-client-id="{{ google_drive_client_id }}"
-     data-api-key="{{ google_drive_api_key }}"
-     data-app-id="{{ google_drive_app_id }}"></div>
+    <div class="mz-upl-wrap mz-upl-technical" hidden>
+      <div id="mz-gdrive-cfg"
+           data-client-id="{{ google_drive_client_id }}"
+           data-api-key="{{ google_drive_api_key }}"
+           data-app-id="{{ google_drive_app_id }}"></div>
+
       <form id="mz-upload-form" method="post" enctype="multipart/form-data" class="mz-upl">
         {% csrf_token %}
         <input type="hidden" name="upload" value="1">
         <input type="hidden" name="folder_path" value="{{ current_path }}">
         <input type="hidden" name="tipo"
                value="{% if audience == 'docentes' %}docentes{% elif audience == 'mis' %}privado{% else %}alumnos{% endif %}">
-
-        <div class="mzc-note" style="margin-bottom:10px">
-          <b>Cómo subir materiales:</b>
-          <ul style="margin:8px 0 0 18px; line-height:1.35">
-            <li><b>Arrastra</b> archivos desde tu ordenador y <b>suéltalos</b> encima de una carpeta en el árbol.</li>
-            <li>O pulsa <b>“Subir aquí”</b> en una carpeta (si lo tienes) para seleccionar archivos.</li>
-            <li>Si necesitas subir un archivo que está online, usa <b>Subir por URL</b> abajo.</li>
-          </ul>
-        </div>
-
-        <!-- ===== По ссылке ===== -->
-        <div class="mz-upl-section" data-upl="url">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-            <div style="font-weight:800;color:#e5e7eb">🔗 Subir por URL</div>
-            <div style="font-size:.78rem;color:#9ca3af">Enlace directo a un archivo</div>
-          </div>
-
-          <div class="mz-upl-row" style="width:100%">
-            <input type="url"
-                   name="url_1"
-                   data-role="url"
-                   class="mz-upl-input"
-                   placeholder="https://..."
-                   style="flex:1;min-width:320px">
-
-            <input type="text"
-                   name="url_title_1"
-                   data-role="url_title"
-                   class="mz-upl-input"
-                   placeholder="Título (opcional)"
-                   style="min-width:220px">
-
-            <input type="hidden" name="url_module_key_1" data-role="url_module_key" value="">
-          </div>
-        </div>
       </form>
 
       <form id="mz-folder-create-form" method="post" style="display:none">
@@ -111,17 +70,10 @@
         <input type="hidden" name="folder_parent" value="{{ current_path|default:'' }}">
         <input type="hidden" name="aud" value="{{ audience }}">
       </form>
-
-      <button type="submit"
-              form="mz-upload-form"
-              id="mzf-send"
-              class="mz-upload-cta">
-        ⬆ Subir
-      </button>
     </div>
   {% endif %}
 
-  <div class="mz-mat-sort" style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+  <div class="mz-mat-sort" hidden style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; align-items:center">
     <span style="font-size:.78rem; color:#9ca3af; margin-right:6px;">Orden:</span>
 
     <a href="?tab=materiales&aud={{ audience }}&p={{ current_path|urlencode }}&mod={{ selected_mod|default:''|urlencode }}&sort=new"
@@ -147,15 +99,58 @@
     </div>
   {% endif %}
 
-  {# ===== Layout switch ===== #}
-  <div class="mz-mat-layout" style="margin-top:10px; display:flex; justify-content:flex-end">
-    <div class="mz-seg">
-      <button type="button" class="mzc-btn ghost is-act" data-layout="tree">🌲 Árbol</button>
-      <button type="button" class="mzc-btn ghost" data-layout="cards">🗂️ Tarjetas</button>
+  {% if is_teacher %}
+    <div class="mz-explorer-toolbar" data-explorer-toolbar>
+      <button type="button" class="mz-explorer-btn" data-explorer-action="new-folder" title="Nueva carpeta">📁＋</button>
+      <button type="button" class="mz-explorer-btn" data-explorer-action="upload" title="Subir archivos aquí">⬆️</button>
+      <button type="button" class="mz-explorer-btn" data-explorer-action="upload-folder" title="Subir carpeta aquí">🗂️⬆️</button>
+      <button type="button" class="mz-explorer-btn" data-explorer-action="google-drive" title="Google Drive">☁️</button>
+      <button type="button" class="mz-explorer-btn" data-explorer-action="cut" title="Cortar">✂️</button>
+      <button type="button" class="mz-explorer-btn" data-explorer-action="copy" title="Copiar">📄</button>
+      <button type="button" class="mz-explorer-btn" data-explorer-action="paste" title="Pegar">📋</button>
+      <span class="mz-explorer-sep"></span>
+      <button type="button" class="mz-explorer-btn" data-explorer-action="zip-download" title="Descargar ZIP">⬇️</button>
+      <button type="button" class="mz-explorer-btn" data-explorer-action="zip-extract" title="Descomprimir ZIP">📦</button>
+      <button type="button" class="mz-explorer-btn" data-explorer-action="access" title="Acceso">👥</button>
+      <button type="button" class="mz-explorer-btn" data-explorer-action="rename" title="Cambiar nombre">✏️</button>
+      <button type="button" class="mz-explorer-btn danger" data-explorer-action="delete" title="Eliminar">🗑️</button>
+      <span class="mz-explorer-status" data-explorer-status>0 seleccionados</span>
+    </div>
+  {% endif %}
+
+  <div id="mz-explorer-wrap">
+    <div class="mz-explorer-shell">
+      <aside class="mz-explorer-left" aria-label="Árbol de carpetas">
+        <div class="mz-explorer-left-head">Carpetas</div>
+        <div class="mz-explorer-nav" id="mz-explorer-nav"></div>
+      </aside>
+
+      <section class="mz-explorer-right" aria-label="Contenido de carpeta">
+        <div class="mz-explorer-pathbar">
+          <div class="mz-explorer-path-main">
+            <div class="mz-explorer-path" id="mz-explorer-path">Raíz</div>
+            <div class="mz-explorer-summary" id="mz-explorer-summary">0 carpetas · 0 archivos</div>
+          </div>
+          <div class="mz-explorer-path-actions">
+            <div class="mz-explorer-viewseg" aria-label="Vista">
+              <button type="button" class="mz-explorer-mini is-active" data-explorer-view="large" title="Iconos grandes">▦</button>
+              <button type="button" class="mz-explorer-mini" data-explorer-view="table" title="Tabla">☷</button>
+            </div>
+            <select class="mz-explorer-sort" id="mz-explorer-sort" aria-label="Orden">
+              <option value="name-asc">Nombre A-Z</option>
+              <option value="time-desc">Más recientes</option>
+              <option value="time-asc">Más antiguos</option>
+              <option value="size-desc">Tamaño mayor</option>
+              <option value="size-asc">Tamaño menor</option>
+            </select>
+          </div>
+        </div>
+        <div class="mz-explorer-content" id="mz-explorer-content" data-drop-folder=""></div>
+      </section>
     </div>
   </div>
 
-  <div id="mz-tree-wrap">
+  <div id="mz-tree-wrap" hidden aria-hidden="true" data-explorer-source="tree">
     {% if is_teacher %}
       <div class="mz-tree-node" data-drop-folder="">
         <div class="mz-tree-row" style="gap:10px">
@@ -525,3 +520,4 @@
 <script src="{% static 'panel/js/materiales_gdrive.js' %}?v={% now 'U' %}"></script>
 <script src="{% static 'panel/js/materiales_fs_move.js' %}?v={% now 'U' %}"></script>
 <script src="{% static 'panel/js/materiales_fs.js' %}?v={% now 'U' %}"></script>
+<script src="{% static 'panel/js/materiales_explorer.js' %}?v={% now 'U' %}"></script>

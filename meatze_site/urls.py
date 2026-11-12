@@ -65,6 +65,7 @@ urlpatterns = [
     path("v5/notify/subscribers", notify_views.subscribers),
     path("v5/notify/wa-upsert", notify_views.wa_upsert),
     path("v5/notify/wa-toggle", notify_views.wa_toggle),
+    path("v5/notify/wa-automations", notify_views.wa_automations),
     path("v5/notify/wa-inbox-delete", notify_views.wa_inbox_delete),
     path("v5/notify/wa-import", notify_views.wa_import),
     path("v5/notify/upload-wa", notify_views.upload_wa),
@@ -98,6 +99,8 @@ urlpatterns = [
     path("v5/ai/warmup", views_ai.ai_warmup),
     path("v5/ai/ask", views_ai.ai_ask),
     path("v5/ai/help", ai_help),
+    path("v5/ai/programa/<str:codigo>", views_ai.ai_programa),
+    path("v5/ai/avatar_tts", views_ai.ai_avatar_tts),
     
     # docentes
     
@@ -188,4 +191,3 @@ urlpatterns += [
     path("help/context", help_views.help_context, name="help_context_legacy"),
     path("v5/help/context", help_views.help_context, name="help_context"),
 ]
-

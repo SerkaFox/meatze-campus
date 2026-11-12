@@ -5,6 +5,10 @@
      data-file-id="{{ f.id }}"
      data-name="{{ f.display_name|default:f.filename|escape }}"
      data-folder="{{ f.folder_path|default:''|escape }}"
+     data-tipo="{{ f.tipo|default:''|escape }}"
+     data-share-alumnos="{% if f.share_alumnos %}1{% else %}0{% endif %}"
+     data-ext="{{ f.ext|default:''|lower|escape }}"
+     data-size="{{ f.size|default:0 }}"
      data-ts="{{ f.created_at|date:'U' }}">
 
   {% if is_teacher %}

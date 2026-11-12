@@ -1,50 +1,155 @@
-<div class="mz-info-card" data-action="course.info.view">
+<div class="mz-info-dashboard" data-action="course.info.view">
+  <section class="mz-info-hero">
+    <div class="mz-info-hero-main">
+      <div class="mz-info-kicker">{{ curso.codigo }}</div>
+      <h4 class="mz-info-title">{{ curso.titulo }}</h4>
+      {% if curso.descripcion %}
+        <p class="mz-info-desc">{{ curso.descripcion }}</p>
+      {% else %}
+        <p class="mz-info-desc">Panel de seguimiento del curso, accesos principales, calendario y progreso.</p>
+      {% endif %}
 
-  <div class="mz-info-head">
-    <h4 class="mz-info-title">{{ curso.titulo }}</h4>
-
-    <div class="mz-info-meta">
-      <div class="mz-info-line">
-        <span class="mz-info-label">Código</span>
-        <span class="mz-info-value">{{ curso.codigo }}</span>
-      </div>
-
-      <div class="mz-info-line">
-        <span class="mz-info-label">Fechas</span>
-        <span class="mz-info-value">
-          {% if curso.fecha_inicio %}{{ curso.fecha_inicio }}{% endif %}
-          {% if curso.fecha_fin %} → {{ curso.fecha_fin }}{% endif %}
-        </span>
-      </div>
-
-      <div class="mz-info-line">
-        <span class="mz-info-label">Duración total</span>
-        <span class="mz-info-value">
-          {{ total_hours|floatformat:"-0" }} h
-        </span>
-      </div>
-    </div>
-  </div>
-
-  <div class="mz-info-mods">
-    <div class="mz-info-mods-head">
-      <span class="mz-info-mods-title">Módulos</span>
-      <span class="mz-info-chip">
-        {{ mods|length }} módulos · {{ total_hours|floatformat:"-0" }} h
-      </span>
     </div>
 
-    <ul class="mz-info-mods-list">
+    <div class="mz-info-progress">
+      <div class="mz-info-progress-ring" style="--p: {{ info_progress_pct|default:0 }}%">
+        <span>{{ info_progress_pct|default:0 }}%</span>
+      </div>
+      <div>
+        <div class="mz-info-progress-title">Progreso estimado</div>
+        <div class="mz-info-progress-sub">
+          {{ info_completed_hours|floatformat:"-0" }} h completadas · {{ total_hours|floatformat:"-0" }} h totales
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mz-info-grid">
+    <div class="mz-info-panel mz-info-next">
+      <div class="mz-info-panel-head">
+        <span class="mz-info-panel-title">Próxima clase</span>
+        {% if curso.live_is_open %}
+          <span class="mz-info-status is-open">Directo abierto</span>
+        {% else %}
+          <span class="mz-info-status">Directo cerrado</span>
+        {% endif %}
+      </div>
+
+      {% if info_upcoming_slot %}
+        <div class="mz-info-next-date">{{ info_upcoming_slot.dia }} · {{ info_upcoming_slot.hora_inicio }}-{{ info_upcoming_slot.hora_fin }}</div>
+        <div class="mz-info-next-mod">{{ info_upcoming_slot.modulo|default:"Módulo pendiente de definir" }}</div>
+        {% if info_upcoming_slot.aula %}
+          <div class="mz-info-next-room">{{ info_upcoming_slot.aula }}</div>
+        {% endif %}
+      {% else %}
+        <div class="mz-info-empty">No hay próximas clases configuradas.</div>
+      {% endif %}
+    </div>
+
+    <div class="mz-info-panel">
+      <div class="mz-info-panel-head">
+        <span class="mz-info-panel-title">{% if is_teacher %}Control docente{% else %}Mi estado{% endif %}</span>
+      </div>
+
+      {% if is_teacher %}
+        <div class="mz-info-kpis">
+          <a class="mz-info-kpi" href="?tab=tareas">
+            <span>{{ info_stats.pending_submissions }}</span>
+            <small>Por corregir</small>
+          </a>
+          <a class="mz-info-kpi" href="?tab=tareas">
+            <span>{{ info_stats.missing_total }}</span>
+            <small>Sin entregar</small>
+          </a>
+          <a class="mz-info-kpi" href="?tab=materiales">
+            <span>{{ info_stats.visible_files_total }}</span>
+            <small>Materiales visibles</small>
+          </a>
+          <a class="mz-info-kpi" href="?tab=alumnos">
+            <span>{{ info_stats.students_total }}</span>
+            <small>Alumnos</small>
+          </a>
+        </div>
+      {% else %}
+        <div class="mz-info-kpis">
+          <a class="mz-info-kpi" href="?tab=tareas">
+            <span>{{ info_stats.pending_tasks }}</span>
+            <small>Por entregar</small>
+          </a>
+          <a class="mz-info-kpi" href="?tab=tareas">
+            <span>{{ info_stats.review_tasks }}</span>
+            <small>En revisión</small>
+          </a>
+          <a class="mz-info-kpi" href="?tab=tareas">
+            <span>{{ info_stats.graded_tasks }}</span>
+            <small>Calificadas</small>
+          </a>
+          <a class="mz-info-kpi" href="?tab=materiales">
+            <span>{{ info_stats.undownloaded_files }}</span>
+            <small>Materiales nuevos</small>
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="mz-info-grid">
+    <div class="mz-info-panel">
+      <div class="mz-info-panel-head">
+        <span class="mz-info-panel-title">Datos del curso</span>
+      </div>
+      <div class="mz-info-meta">
+        <div class="mz-info-line">
+          <span class="mz-info-label">Código</span>
+          <span class="mz-info-value">{{ curso.codigo }}</span>
+        </div>
+        <div class="mz-info-line">
+          <span class="mz-info-label">Fechas</span>
+          <span class="mz-info-value">
+            {% if curso.fecha_inicio %}{{ curso.fecha_inicio }}{% else %}Sin inicio{% endif %}
+            {% if curso.fecha_fin %} → {{ curso.fecha_fin }}{% endif %}
+          </span>
+        </div>
+        <div class="mz-info-line">
+          <span class="mz-info-label">Duración</span>
+          <span class="mz-info-value">{{ total_hours|floatformat:"-0" }} h</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mz-info-panel">
+      <div class="mz-info-panel-head">
+        <span class="mz-info-panel-title">Próximas sesiones</span>
+        <a class="mz-info-small-link" href="?tab=calendario">Ver calendario</a>
+      </div>
+      <div class="mz-info-sessions">
+        {% for h in info_next_slots %}
+          <a class="mz-info-session" href="?tab=calendario">
+            <span>{{ h.dia }} · {{ h.hora_inicio }}-{{ h.hora_fin }}</span>
+            <strong>{{ h.modulo|default:"Sin módulo" }}</strong>
+          </a>
+        {% empty %}
+          <div class="mz-info-empty">No hay sesiones próximas.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="mz-info-panel mz-info-mods">
+    <div class="mz-info-panel-head">
+      <span class="mz-info-panel-title">Módulos</span>
+      <span class="mz-info-chip">{{ mods|length }} módulos · {{ total_hours|floatformat:"-0" }} h</span>
+    </div>
+
+    <div class="mz-info-mods-list">
       {% for m in mods %}
-        <li class="mz-info-mod-item">
-          <div class="mz-info-mod-name">
-            {{ m.name }}
-          </div>
-          <div class="mz-info-mod-hours">
-            {{ m.hours|floatformat:"-0" }} h
-          </div>
-        </li>
+        <a class="mz-info-mod-item" href="?tab=materiales">
+          <span class="mz-info-mod-name">{{ m.name }}</span>
+          <span class="mz-info-mod-hours">{{ m.hours|floatformat:"-0" }} h</span>
+        </a>
+      {% empty %}
+        <div class="mz-info-empty">No hay módulos configurados.</div>
       {% endfor %}
-    </ul>
-  </div>
+    </div>
+  </section>
 </div>
